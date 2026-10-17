@@ -35,7 +35,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final p = Prefs.instance;
     final me = ref.watch(sessionProvider).me;
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false, title: const Text('الإعدادات')),
+      appBar: AppBar(title: const Text('الإعدادات')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
         children: [

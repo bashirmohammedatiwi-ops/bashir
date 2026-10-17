@@ -63,3 +63,9 @@ final brandsProvider = FutureProvider<List<NamedRef>>((ref) => ref.watch(repoPro
 
 /// يزداد بعد أي تعديل — الشاشات المفتوحة (البحث، الرئيسية) تعيد التحميل.
 final dataVersionProvider = StateProvider<int>((ref) => 0);
+
+/// يزداد بعد تغيير حالة طلب أو وصول طلب جديد — قائمة الطلبات تعيد التحميل.
+final ordersVersionProvider = StateProvider<int>((ref) => 0);
+
+/// عدد الطلبات الجديدة (PENDING) — شارة تبويب الطلبات.
+final pendingOrdersProvider = StateProvider<int>((ref) => 0);

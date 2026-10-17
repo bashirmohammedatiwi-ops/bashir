@@ -9,6 +9,8 @@ import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../widgets/common.dart';
+import '../catalog/attach_shade_flow.dart';
+import '../catalog/create_product_screen.dart';
 import '../drafts/save_draft_screen.dart';
 import '../product/product_screen.dart';
 
@@ -93,12 +95,12 @@ Future<void> openCode(BuildContext context, WidgetRef ref, String raw, {ScanSour
   );
 }
 
-class NotFoundSheet extends StatelessWidget {
+class NotFoundSheet extends ConsumerWidget {
   const NotFoundSheet({super.key, required this.result});
   final LookupResult result;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final pos = result.pos;
     return SafeArea(
       child: Padding(
@@ -196,15 +198,46 @@ class NotFoundSheet extends StatelessWidget {
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: () async {
-                final saved = await Navigator.of(context).push<bool>(
+                final nav = Navigator.of(context);
+                nav.pop();
+                await nav.push(
                   MaterialPageRoute(
-                    builder: (_) => SaveDraftScreen(barcode: result.code, posName: pos?.name),
+                    builder: (_) =>
+                        CreateProductScreen(barcode: result.code, posName: pos?.name, posPrice: pos?.price, posStock: pos?.stock),
                   ),
                 );
-                if (saved == true && context.mounted) Navigator.pop(context);
               },
-              icon: const Icon(Icons.bookmark_add_rounded),
-              label: Text(result.drafts.isEmpty ? 'احفظه مع صورة في مجموعة' : 'أضف صوراً أو احفظه في مجموعة أخرى'),
+              icon: const Icon(Icons.add_box_rounded),
+              label: const Text('أضف المنتج للتطبيق الآن'),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final saved = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => SaveDraftScreen(barcode: result.code, posName: pos?.name),
+                        ),
+                      );
+                      if (saved == true && context.mounted) Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.bookmark_add_rounded),
+                    label: const Text('احفظه لاحقاً'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      if (await attachAsShade(context, ref, result.code) && context.mounted) Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.palette_outlined),
+                    label: const Text('تدرج لمنتج'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق')),

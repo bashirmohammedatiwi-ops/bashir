@@ -7,14 +7,18 @@ import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../catalog/create_product_screen.dart';
+import '../catalog/pos_missing_screen.dart';
+import '../drafts/groups_screen.dart';
 import '../product/product_screen.dart';
+import '../sales/sales_screen.dart';
 import '../scan/lookup_flow.dart';
 import '../scan/scan_screen.dart';
 import '../search/search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key, required this.onOpenDrafts});
-  final VoidCallback onOpenDrafts;
+  const HomeScreen({super.key, required this.onOpenOrders});
+  final VoidCallback onOpenOrders;
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
@@ -33,6 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.invalidate(statsProvider);
         ref.invalidate(activityProvider);
+        ref.invalidate(salesProvider);
       });
     }
     final me = ref.watch(sessionProvider).me;
@@ -46,6 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onRefresh: () async {
           ref.invalidate(statsProvider);
           ref.invalidate(activityProvider);
+          ref.invalidate(salesProvider);
           setState(() {});
           try {
             await ref.read(statsProvider.future);
@@ -139,6 +145,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: 14),
+                  _TodayRow(onOpenOrders: widget.onOpenOrders),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Quick(
+                          icon: Icons.add_box_rounded,
+                          label: 'إضافة منتج',
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateProductScreen())),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _Quick(
+                          icon: Icons.point_of_sale_rounded,
+                          label: 'نواقص الكاشير',
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PosMissingScreen())),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _Quick(
+                          icon: Icons.bookmarks_rounded,
+                          label: 'المحفوظات',
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GroupsScreen())),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SectionTitle('نظرة سريعة'),
                   stats.when(
                     loading: () => const Padding(
@@ -196,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           value: s.draftsPending,
                           sub: '${s.draftsAdded} أُضيفت لاحقاً',
                           color: AppColors.primary,
-                          onTap: widget.onOpenDrafts,
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GroupsScreen())),
                         ),
                       ],
                     ),
@@ -354,6 +390,91 @@ class _StatTile extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// مبيعات اليوم (للمدير) + الطلبات الجديدة.
+class _TodayRow extends ConsumerWidget {
+  const _TodayRow({required this.onOpenOrders});
+  final VoidCallback onOpenOrders;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(sessionProvider).me;
+    final isAdmin = me == null || me.role != 'STAFF';
+    final pending = ref.watch(pendingOrdersProvider);
+    final sales = isAdmin ? ref.watch(salesProvider).valueOrNull : null;
+    final ordersCard = Material(
+      color: pending > 0 ? AppColors.warningSoft : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onOpenOrders,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.receipt_long_rounded, color: pending > 0 ? AppColors.warning : AppColors.muted),
+                  const Spacer(),
+                  if (pending > 0) const Icon(Icons.circle, size: 10, color: AppColors.danger),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$pending',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: pending > 0 ? AppColors.warning : AppColors.ink),
+              ),
+              const Text('طلبات جديدة', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (sales == null) return ordersCard;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: SalesTodayCard(
+            s: sales,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SalesScreen())),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: ordersCard),
+      ],
+    );
+  }
+}
+
+class _Quick extends StatelessWidget {
+  const _Quick({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Panel(
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+    onTap: onTap,
+    child: Column(
+      children: [
+        Icon(icon, color: AppColors.primary),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
         ),
       ],
     ),

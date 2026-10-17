@@ -169,7 +169,8 @@ class Api {
       _run(() => dio.post(path, data: data, options: options), map);
   Future<T> patch<T>(String path, {Object? data, T Function(dynamic)? map}) => _run(() => dio.patch(path, data: data), map);
   Future<T> put<T>(String path, {Object? data, T Function(dynamic)? map}) => _run(() => dio.put(path, data: data), map);
-  Future<T> delete<T>(String path, {T Function(dynamic)? map}) => _run(() => dio.delete(path), map);
+  // جسم فارغ {} دائماً: Fastify يرفض DELETE بنوع JSON وجسم فارغ.
+  Future<T> delete<T>(String path, {T Function(dynamic)? map}) => _run(() => dio.delete(path, data: const <String, dynamic>{}), map);
 
   /// قائمة مرقّمة كما هي ({data, meta}).
   Future<Map<String, dynamic>> page(String path, Map<String, dynamic> query) async {

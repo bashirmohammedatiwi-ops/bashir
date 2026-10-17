@@ -10,6 +10,8 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../catalog/attach_shade_flow.dart';
+import '../catalog/create_product_screen.dart';
 import '../image/gallery_viewer.dart';
 import '../product/product_screen.dart';
 import '../scan/scan_screen.dart';
@@ -71,12 +73,46 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
       await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductScreen(productId: d.productId!)));
       return;
     }
-    final ok = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => SaveDraftScreen(barcode: d.barcode, draft: d),
+    final a = await showModalBottomSheet<String>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_box_rounded, color: AppColors.primary),
+              title: const Text('أضف المنتج للتطبيق الآن', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('بصوره ومعلوماته المحفوظة'),
+              onTap: () => Navigator.pop(c, 'create'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.palette_outlined, color: AppColors.rose),
+              title: const Text('أضفه كتدرج لمنتج موجود', style: TextStyle(fontWeight: FontWeight.w700)),
+              onTap: () => Navigator.pop(c, 'shade'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_rounded),
+              title: const Text('تعديل / إضافة صور'),
+              onTap: () => Navigator.pop(c, 'edit'),
+            ),
+          ],
+        ),
       ),
     );
-    if (ok == true) _refreshAll();
+    if (a == null || !mounted) return;
+    if (a == 'create') {
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateProductScreen(draft: d)));
+      _refreshAll();
+    } else if (a == 'shade') {
+      if (await attachAsShade(context, ref, d.barcode, hint: d.name)) _refreshAll();
+    } else {
+      final ok = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => SaveDraftScreen(barcode: d.barcode, draft: d),
+        ),
+      );
+      if (ok == true) _refreshAll();
+    }
   }
 
   void _toggleSel(Draft d) => setState(() => _selected.contains(d.id) ? _selected.remove(d.id) : _selected.add(d.id));

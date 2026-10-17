@@ -13,6 +13,8 @@ import '../../data/session.dart';
 import '../../widgets/common.dart';
 import '../image/crop_screen.dart';
 import '../image/gallery_viewer.dart';
+import '../catalog/pickers.dart';
+import 'add_shade_sheet.dart';
 import 'product_edit_screen.dart';
 import 'shade_sheet.dart';
 
@@ -132,8 +134,41 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   }
 
   Future<void> _addImages({bool asCover = false}) async {
-    final src = await askPhotoSource(context, title: asCover ? 'صورة غلاف جديدة' : 'إضافة صور للمنتج');
-    if (src == null) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(asCover ? 'صورة غلاف جديدة' : 'إضافة صور للمنتج', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
+                title: const Text('الكاميرا'),
+                onTap: () => Navigator.pop(c, 'camera'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                title: const Text('المعرض (عدة صور)'),
+                onTap: () => Navigator.pop(c, 'gallery'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.travel_explore_rounded, color: AppColors.primary),
+                title: const Text('بحث في الويب والمتاجر'),
+                subtitle: const Text('بالباركود أو بالاسم'),
+                onTap: () => Navigator.pop(c, 'web'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (choice == 'web') return _addWebImages(asCover: asCover);
+    final src = choice == 'camera' ? PhotoSource.camera : PhotoSource.gallery;
     final files = await pickPhotos(src);
     if (files.isEmpty || !mounted) return;
     setState(() {
@@ -155,6 +190,48 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       if (mounted) toastError(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _addWebImages({bool asCover = false}) async {
+    final p = _p!;
+    final code = p.barcode ?? (p.shades.isNotEmpty ? p.shades.first.barcode : null) ?? p.sku;
+    final picked = await pickWebImages(context, barcode: code, name: p.nameEn ?? p.name);
+    if (picked == null || picked.isEmpty || !mounted) return;
+    setState(() {
+      _busy = true;
+      _busyLabel = 'تنزيل ${picked.length} صورة إلى السيرفر...';
+    });
+    try {
+      final ids = <String>[];
+      var failed = 0;
+      for (var i = 0; i < picked.length; i++) {
+        if (mounted) setState(() => _busyLabel = 'تنزيل الصورة ${i + 1} من ${picked.length}...');
+        try {
+          ids.add(await _repo.uploadFromUrl(picked[i].url));
+        } catch (_) {
+          failed += 1;
+        }
+      }
+      if (ids.isEmpty) throw Exception('تعذّر تنزيل الصور المختارة — جرّب صوراً أخرى');
+      final next = await _repo.addImages(p.id, ids, asCover: asCover);
+      if (!mounted) return;
+      setState(() => _p = next);
+      ref.read(dataVersionProvider.notifier).state++;
+      toast(context, failed > 0 ? 'أُضيفت ${ids.length} — تعذّر $failed' : 'أُضيفت ${ids.length} صورة');
+    } catch (e) {
+      if (mounted) toastError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _addShade() async {
+    final next = await showAddShadeSheet(context, _p!);
+    if (next != null && mounted) {
+      setState(() => _p = next);
+      ref.read(dataVersionProvider.notifier).state++;
+      toast(context, 'أُضيف التدرج');
     }
   }
 
@@ -445,7 +522,22 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
                 sliver: SliverList.list(
-                  children: [_header(p), _imagesSection(p), if (p.shades.isNotEmpty) _shadesSection(p), _infoSection(p)],
+                  children: [
+                    _header(p),
+                    _imagesSection(p),
+                    if (p.shades.isNotEmpty)
+                      _shadesSection(p)
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: OutlinedButton.icon(
+                          onPressed: _addShade,
+                          icon: const Icon(Icons.palette_outlined),
+                          label: const Text('إضافة تدرجات (ألوان) لهذا المنتج'),
+                        ),
+                      ),
+                    _infoSection(p),
+                  ],
                 ),
               ),
             ],
@@ -755,14 +847,20 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         SectionTitle(
           'التدرجات (${p.shades.length})',
           subtitle: off > 0 ? '$off موقوف · ${p.shades.length - off} ظاهر' : 'كلها ظاهرة للزبائن',
-          trailing: PopupMenuButton<String>(
-            onSelected: _bulkShades,
-            icon: const Icon(Icons.tune_rounded),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'on', child: Text('تشغيل كل التدرجات')),
-              PopupMenuItem(value: 'off', child: Text('إيقاف كل التدرجات')),
-              PopupMenuItem(value: 'offEmpty', child: Text('إيقاف النافدة (مخزون 0)')),
-              PopupMenuItem(value: 'onStock', child: Text('تشغيل المتوفرة الموقوفة')),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton.filledTonal(tooltip: 'إضافة تدرج', onPressed: _addShade, icon: const Icon(Icons.add_rounded)),
+              PopupMenuButton<String>(
+                onSelected: _bulkShades,
+                icon: const Icon(Icons.tune_rounded),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'on', child: Text('تشغيل كل التدرجات')),
+                  PopupMenuItem(value: 'off', child: Text('إيقاف كل التدرجات')),
+                  PopupMenuItem(value: 'offEmpty', child: Text('إيقاف النافدة (مخزون 0)')),
+                  PopupMenuItem(value: 'onStock', child: Text('تشغيل المتوفرة الموقوفة')),
+                ],
+              ),
             ],
           ),
         ),

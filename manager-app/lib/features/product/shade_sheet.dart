@@ -9,6 +9,7 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../widgets/common.dart';
 import '../image/crop_screen.dart';
+import '../catalog/pickers.dart';
 import '../image/gallery_viewer.dart';
 
 const _palette = [
@@ -131,6 +132,43 @@ class _ShadeSheetState extends ConsumerState<ShadeSheet> {
         _changed = true;
       });
       toast(context, 'تم قص صورة التدرج');
+    }
+  }
+
+  Future<void> _fromWeb() async {
+    final picked = await pickWebImages(context, barcode: _s.barcode, name: '${_p.nameEn ?? _p.name} ${_s.name}', single: true);
+    if (picked == null || picked.isEmpty || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final id = await _repo.uploadFromUrl(picked.first.url);
+      await _patch({'imageMediaId': id}, ok: 'تم تعيين الصورة');
+    } catch (e) {
+      if (mounted) toastError(context, e);
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _delete() async {
+    if (!await confirm(
+      context,
+      title: 'حذف التدرج «${_s.name}»؟',
+      message: 'يُحذف نهائياً من المنتج. للإخفاء المؤقت استخدم مفتاح الإيقاف بدلاً من الحذف.',
+      ok: 'حذف',
+      danger: true,
+    )) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final p = await _repo.deleteShade(_s.id);
+      if (!mounted) return;
+      toast(context, 'حُذف التدرج');
+      Navigator.pop(context, p);
+    } catch (e) {
+      if (mounted) {
+        toastError(context, e);
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -272,6 +310,7 @@ class _ShadeSheetState extends ConsumerState<ShadeSheet> {
                   children: [
                     _Act(Icons.add_a_photo_rounded, s.image == null ? 'إضافة صورة' : 'صورة جديدة', _photo),
                     if (_p.images.isNotEmpty) _Act(Icons.photo_library_outlined, 'من صور المنتج', _fromProduct),
+                    _Act(Icons.travel_explore_rounded, 'من الويب', _fromWeb),
                     if (s.image != null) _Act(Icons.crop_rounded, 'قص', _crop),
                     if (s.image != null)
                       _Act(Icons.delete_outline_rounded, 'إزالة', () => _patch({'imageMediaId': ''}, ok: 'أُزيلت الصورة'), danger: true),
@@ -300,6 +339,13 @@ class _ShadeSheetState extends ConsumerState<ShadeSheet> {
                       if (v != null && v.trim() != (s.barcode ?? '')) await _patch({'barcode': v.trim()}, ok: 'تم حفظ الباركود');
                     }),
                   ],
+                ),
+                const SizedBox(height: 18),
+                TextButton.icon(
+                  onPressed: _delete,
+                  style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: const Text('حذف التدرج نهائياً'),
                 ),
               ],
             ),

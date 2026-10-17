@@ -19,7 +19,6 @@ class GroupsScreen extends ConsumerWidget {
     final groups = ref.watch(groupsProvider);
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: const Text('الباركودات المحفوظة'),
         actions: [
           IconButton(

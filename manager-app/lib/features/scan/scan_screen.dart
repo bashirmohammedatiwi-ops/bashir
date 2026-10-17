@@ -29,7 +29,10 @@ class _Hit {
 /// مسح بالكاميرا. الوضع العادي يفتح النتيجة مباشرة؛
 /// «المسح المتتالي» يجمع النتائج في قائمة دون مغادرة الكاميرا (مناسب للمرور على الرفوف).
 class ScanScreen extends ConsumerStatefulWidget {
-  const ScanScreen({super.key, this.targetGroupId, this.continuous});
+  const ScanScreen({super.key, this.targetGroupId, this.continuous, this.pickOnly = false});
+
+  /// يرجع أول باركود يُقرأ للشاشة التي فتحته (تجهيز طلب، باركود تدرج جديد...).
+  final bool pickOnly;
 
   /// عند الفتح من مجموعة: الباركودات الناقصة تُحفظ فيها مباشرة.
   final String? targetGroupId;
@@ -56,7 +59,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
       BarcodeFormat.dataMatrix,
     ],
   );
-  late bool _continuous = widget.continuous ?? (widget.targetGroupId != null || Prefs.instance.continuous);
+  late bool _continuous = !widget.pickOnly && (widget.continuous ?? (widget.targetGroupId != null || Prefs.instance.continuous));
   late String? _groupId = widget.targetGroupId ?? Prefs.instance.lastGroupId;
   final _hits = <_Hit>[];
   String? _lastCode;
@@ -112,6 +115,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
     if (code == _lastCode && now.difference(_lastAt) < const Duration(seconds: 3)) return;
     _lastCode = code;
     _lastAt = now;
+
+    if (widget.pickOnly) {
+      if (_handling) return;
+      _handling = true;
+      Prefs.instance.feedback();
+      Navigator.of(context).pop(code);
+      return;
+    }
 
     if (!_continuous) {
       if (_handling) return;
@@ -288,25 +299,26 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
             right: 0,
             child: Column(
               children: [
-                Container(
-                  decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(24)),
-                  padding: const EdgeInsets.all(4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _ModeBtn(
-                        label: 'مسح واحد',
-                        selected: !_continuous,
-                        onTap: () => setState(() => Prefs.instance.continuous = _continuous = false),
-                      ),
-                      _ModeBtn(
-                        label: 'مسح متتالي',
-                        selected: _continuous,
-                        onTap: () => setState(() => Prefs.instance.continuous = _continuous = true),
-                      ),
-                    ],
+                if (!widget.pickOnly)
+                  Container(
+                    decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(24)),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ModeBtn(
+                          label: 'مسح واحد',
+                          selected: !_continuous,
+                          onTap: () => setState(() => Prefs.instance.continuous = _continuous = false),
+                        ),
+                        _ModeBtn(
+                          label: 'مسح متتالي',
+                          selected: _continuous,
+                          onTap: () => setState(() => Prefs.instance.continuous = _continuous = true),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 if (_camError == null)
                   SizedBox(
                     width: size.width * .7,

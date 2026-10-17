@@ -180,6 +180,10 @@ class ProductDetail {
       discountPercent = _int(j['discountPercent']),
       stock = _int(j['stock']),
       soldCount = _int(j['soldCount']),
+      brandId = _str(j['brandId']),
+      categoryId = _str(j['categoryId']),
+      subcategoryIds = _list(j['subcategories']).map((c) => '${c['id']}').toList(),
+      tertiaryCategoryIds = _list(j['tertiaryCategories']).map((c) => '${c['id']}').toList(),
       brand = NamedRef.from(j['brand']),
       category = NamedRef.from(j['category']),
       subcategory = NamedRef.from(j['subcategory']),
@@ -210,6 +214,10 @@ class ProductDetail {
   final int discountPercent;
   final int stock;
   final int soldCount;
+  final String? brandId;
+  final String? categoryId;
+  final List<String> subcategoryIds;
+  final List<String> tertiaryCategoryIds;
   final NamedRef? brand;
   final NamedRef? category;
   final NamedRef? subcategory;
@@ -384,6 +392,14 @@ class ActivityItem {
         return 'تأطير كل الصور';
       case 'draft.save':
         return 'حفظ باركود ناقص';
+      case 'product.create':
+        return 'إضافة منتج جديد';
+      case 'product.bulk':
+        return meta['isActive'] == true ? 'تشغيل منتجات (جماعي: ${meta['count']})' : 'إيقاف منتجات (جماعي: ${meta['count']})';
+      case 'shade.add':
+        return 'إضافة تدرج${meta['name'] != null ? ' «${meta['name']}»' : ''}';
+      case 'shade.delete':
+        return 'حذف تدرج${meta['name'] != null ? ' «${meta['name']}»' : ''}';
       default:
         return action;
     }
@@ -395,4 +411,188 @@ class PageResult<T> {
   final List<T> items;
   final int total;
   final bool hasNext;
+}
+
+// ---------------------------------------------------------------- orders
+
+const orderStatusLabels = {
+  'PENDING': 'جديد',
+  'CONFIRMED': 'مؤكد',
+  'PROCESSING': 'قيد التحضير',
+  'SHIPPED': 'تم الشحن',
+  'DELIVERED': 'مكتمل',
+  'CANCELLED': 'ملغي',
+  'REFUNDED': 'مسترد',
+};
+const orderStatusFlow = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+const paymentMethodLabels = {'COD': 'الدفع عند الاستلام', 'CARD': 'بطاقة (كي كارد)', 'WALLET': 'محفظة'};
+const paymentStatusLabels = {'PENDING': 'بانتظار الدفع', 'PAID': 'مدفوع', 'FAILED': 'فشل الدفع', 'REFUNDED': 'مسترد'};
+const deliveryLabels = {'STANDARD': 'توصيل عادي', 'EXPRESS': 'توصيل سريع', 'PICKUP': 'استلام من المتجر'};
+
+class OrderSummary {
+  OrderSummary.fromJson(Map<String, dynamic> j)
+    : id = '${j['id']}',
+      orderNumber = '${j['orderNumber']}',
+      status = '${j['status']}',
+      paymentStatus = '${j['paymentStatus']}',
+      paymentMethod = '${j['paymentMethod']}',
+      deliveryOption = '${j['deliveryOption']}',
+      total = _int(j['total']),
+      itemsCount = _int(j['itemsCount']),
+      quantity = _int(j['quantity']),
+      createdAt = parseDate(j['createdAt']),
+      customer = '${j['customer'] ?? ''}',
+      phone = _str(j['phone']),
+      place = _str(j['place']),
+      thumbs = (j['thumbs'] as List? ?? const []).map((e) => '$e').toList();
+  final String id, orderNumber, status, paymentStatus, paymentMethod, deliveryOption, customer;
+  final int total, itemsCount, quantity;
+  final DateTime? createdAt;
+  final String? phone, place;
+  final List<String> thumbs;
+}
+
+class OrderItemLine {
+  OrderItemLine.fromJson(Map<String, dynamic> j)
+    : id = '${j['id']}',
+      productId = '${j['productId']}',
+      name = '${j['name'] ?? ''}',
+      sku = _str(j['sku']),
+      barcode = _str(j['barcode']),
+      quantity = _int(j['quantity']),
+      unitPrice = _int(j['unitPrice']),
+      totalPrice = _int(j['totalPrice']),
+      thumb = _str(j['thumb']),
+      shadeName = _str((j['shade'] as Map?)?['name']),
+      shadeHex = _str((j['shade'] as Map?)?['colorHex']),
+      shadeHexEnd = _str((j['shade'] as Map?)?['colorHexEnd']),
+      shadeActive = (j['shade'] as Map?)?['isActive'] != false;
+  final String id, productId, name;
+  final String? sku, barcode, thumb, shadeName, shadeHex, shadeHexEnd;
+  final int quantity, unitPrice, totalPrice;
+  final bool shadeActive;
+}
+
+class OrderDetail {
+  OrderDetail.fromJson(Map<String, dynamic> j)
+    : id = '${j['id']}',
+      orderNumber = '${j['orderNumber']}',
+      status = '${j['status']}',
+      paymentStatus = '${j['paymentStatus']}',
+      paymentMethod = '${j['paymentMethod']}',
+      deliveryOption = '${j['deliveryOption']}',
+      notes = _str(j['notes']),
+      subtotal = _int(j['subtotal']),
+      discountTotal = _int(j['discountTotal']),
+      shippingTotal = _int(j['shippingTotal']),
+      total = _int(j['total']),
+      loyaltySpent = _int(j['loyaltySpent']),
+      coupon = _str(j['coupon']),
+      createdAt = parseDate(j['createdAt']),
+      customerName = '${(j['customer'] as Map?)?['name'] ?? ''}',
+      customerPhone = _str((j['customer'] as Map?)?['phone']),
+      customerOrders = _int((j['customer'] as Map?)?['ordersCount']),
+      address = j['address'] is Map ? Map<String, dynamic>.from(j['address']) : null,
+      items = _list(j['items']).map(OrderItemLine.fromJson).toList(),
+      history = _list(j['history']),
+      payments = _list(j['payments']);
+  final String id, orderNumber, status, paymentStatus, paymentMethod, deliveryOption, customerName;
+  final String? notes, coupon, customerPhone;
+  final int subtotal, discountTotal, shippingTotal, total, loyaltySpent, customerOrders;
+  final DateTime? createdAt;
+  final Map<String, dynamic>? address;
+  final List<OrderItemLine> items;
+  final List<Map<String, dynamic>> history, payments;
+
+  int get units => items.fold(0, (n, i) => n + i.quantity);
+  String get addressLine => address == null
+      ? ''
+      : [
+          address!['governorate'],
+          address!['city'],
+          address!['area'],
+          address!['street'],
+          address!['house'],
+        ].where((e) => e != null && '$e'.trim().isNotEmpty).join(' · ');
+}
+
+class SalesPoint {
+  SalesPoint(this.revenue, this.orders);
+  final int revenue, orders;
+  static SalesPoint from(dynamic j) => SalesPoint(_int((j as Map?)?['revenue']), _int(j?['orders']));
+}
+
+class SalesSummary {
+  SalesSummary.fromJson(Map<String, dynamic> j)
+    : today = SalesPoint.from(j['today']),
+      yesterday = SalesPoint.from(j['yesterday']),
+      week = SalesPoint.from(j['week']),
+      month = SalesPoint.from(j['month']),
+      averageOrder = _int(j['averageOrder']),
+      newCustomersWeek = _int(j['newCustomersWeek']),
+      days = _list(j['days']).map((d) => (day: '${d['day']}', revenue: _int(d['revenue']), orders: _int(d['orders']))).toList(),
+      top = _list(j['top']),
+      counts = Map<String, dynamic>.from(j['counts'] as Map? ?? const {});
+  final SalesPoint today, yesterday, week, month;
+  final int averageOrder, newCustomersWeek;
+  final List<({String day, int revenue, int orders})> days;
+  final List<Map<String, dynamic>> top;
+  final Map<String, dynamic> counts;
+}
+
+// ---------------------------------------------------------------- catalog
+
+class CategoryNode {
+  CategoryNode.fromJson(Map<String, dynamic> j)
+    : id = '${j['id']}',
+      name = '${j['name']}',
+      isActive = j['isActive'] != false,
+      children = _list(j['children']).map(CategoryNode.fromJson).toList();
+  final String id, name;
+  final bool isActive;
+  final List<CategoryNode> children;
+}
+
+class PosItem {
+  PosItem.fromJson(Map<String, dynamic> j)
+    : barcode = '${j['barcode']}',
+      name = _str(j['name']),
+      price = _int(j['price']),
+      stock = _int(j['stock']),
+      discountPercent = _int(j['discountPercent']),
+      syncedAt = parseDate(j['syncedAt']),
+      drafts = _list(j['drafts']).map((d) => DraftRef.fromJson(d)).toList();
+  final String barcode;
+  final String? name;
+  final int price, stock, discountPercent;
+  final DateTime? syncedAt;
+  final List<DraftRef> drafts;
+}
+
+class WebImage {
+  WebImage(this.url, this.thumb, this.title, this.source);
+  final String url;
+  final String? thumb, title, source;
+  static WebImage from(Map<String, dynamic> j) => WebImage('${j['url']}', _str(j['thumbUrl']), _str(j['title']), _str(j['source']));
+}
+
+/// نتيجة التعبئة الذكية بالباركود (أسماء، براند، قسم، صور مقترحة).
+class Autofill {
+  Autofill.fromJson(Map<String, dynamic> j)
+    : nameAr = _str(j['nameAr']) ?? '',
+      nameEn = _str(j['nameEn']) ?? '',
+      brandAr = _str(j['brandAr']) ?? '',
+      brandEn = _str(j['brandEn']) ?? '',
+      descriptionAr = _str(j['descriptionAr']) ?? '',
+      descriptionEn = _str(j['descriptionEn']) ?? '',
+      categoryId = _str((j['category'] as Map?)?['categoryId']),
+      subcategoryIds = ((j['category'] as Map?)?['subcategoryIds'] as List? ?? const []).map((e) => '$e').toList(),
+      tertiaryIds = ((j['category'] as Map?)?['tertiaryCategoryIds'] as List? ?? const []).map((e) => '$e').toList(),
+      images = _list(j['images']).map(WebImage.from).toList(),
+      exists = j['exists'] == true;
+  final String nameAr, nameEn, brandAr, brandEn, descriptionAr, descriptionEn;
+  final String? categoryId;
+  final List<String> subcategoryIds, tertiaryIds;
+  final List<WebImage> images;
+  final bool exists;
 }

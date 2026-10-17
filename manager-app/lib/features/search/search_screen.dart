@@ -49,6 +49,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Object? _error;
   int _seq = 0;
   int _seenVersion = 0;
+  final _sel = <String>{};
 
   @override
   void initState() {
@@ -135,6 +136,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  Future<void> _bulk(bool active) async {
+    final ids = _sel.toList();
+    if (!active &&
+        !await confirm(context, title: 'إيقاف ${ids.length} منتج؟', message: 'ستختفي كلها من التطبيق فوراً.', ok: 'إيقاف', danger: true)) {
+      return;
+    }
+    try {
+      final n = await ref.read(repoProvider).bulkProducts(ids, active);
+      if (!mounted) return;
+      setState(() {
+        for (final p in _items) {
+          if (_sel.contains(p.id)) p.isActive = active;
+        }
+        _sel.clear();
+      });
+      ref.read(dataVersionProvider.notifier).state++;
+      _seenVersion = ref.read(dataVersionProvider);
+      ref.invalidate(statsProvider);
+      toast(context, active ? 'شُغّل $n منتج' : 'أُوقف $n منتج');
+    } catch (e) {
+      if (mounted) toastError(context, e);
+    }
+  }
+
   Future<void> _toggle(ProductSummary p, bool v) async {
     if (!v && !await confirm(context, title: 'إيقاف «${p.name}»؟', message: 'سيختفي من التطبيق فوراً.', ok: 'إيقاف', danger: true)) return;
     setState(() => p.isActive = v);
@@ -199,7 +224,32 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !widget.embedded,
-        title: const Text('المنتجات'),
+        backgroundColor: _sel.isEmpty ? null : AppColors.primarySoft,
+        leading: _sel.isEmpty ? null : IconButton(onPressed: () => setState(_sel.clear), icon: const Icon(Icons.close_rounded)),
+        title: Text(_sel.isEmpty ? 'المنتجات' : '${_sel.length} محدد'),
+        actions: _sel.isEmpty
+            ? null
+            : [
+                IconButton(
+                  tooltip: 'تحديد الكل',
+                  onPressed: () => setState(() => _sel.addAll(_items.map((e) => e.id))),
+                  icon: const Icon(Icons.select_all_rounded),
+                ),
+                TextButton(
+                  onPressed: () => _bulk(true),
+                  child: const Text(
+                    'تشغيل',
+                    style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _bulk(false),
+                  child: const Text(
+                    'إيقاف',
+                    style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(118),
           child: Padding(
@@ -308,7 +358,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   final p = _items[i - 1];
                   return ProductTile(
                     product: p,
-                    onTap: () => _open(p),
+                    selected: _sel.isEmpty ? null : _sel.contains(p.id),
+                    onLongPress: () => setState(() => _sel.contains(p.id) ? _sel.remove(p.id) : _sel.add(p.id)),
+                    onTap: () => _sel.isEmpty ? _open(p) : setState(() => _sel.contains(p.id) ? _sel.remove(p.id) : _sel.add(p.id)),
                     onToggle: (v) => _toggle(p, v),
                     onShadeTap: (s) => _open(p, shadeId: s.id),
                     onShadeToggle: _toggleShade,
@@ -321,9 +373,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 }
 
 class ProductTile extends StatelessWidget {
-  const ProductTile({super.key, required this.product, required this.onTap, required this.onToggle, this.onShadeTap, this.onShadeToggle});
+  const ProductTile({
+    super.key,
+    required this.product,
+    required this.onTap,
+    required this.onToggle,
+    this.onShadeTap,
+    this.onShadeToggle,
+    this.onLongPress,
+    this.selected,
+  });
   final ProductSummary product;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+
+  /// null = خارج وضع التحديد.
+  final bool? selected;
   final ValueChanged<bool> onToggle;
   final void Function(MatchedShade)? onShadeTap;
   final void Function(MatchedShade, bool)? onShadeToggle;
@@ -331,165 +396,172 @@ class ProductTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = product;
-    return Panel(
-      padding: const EdgeInsets.all(10),
-      onTap: onTap,
-      color: p.isActive ? Colors.white : const Color(0xFFFCF7F7),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                children: [
-                  NetImg(p.thumb, size: 74, fit: BoxFit.contain),
-                  if (!p.isActive)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(color: const Color(0x88FFFFFF), borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.visibility_off_rounded, color: AppColors.danger),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Panel(
+        padding: const EdgeInsets.all(10),
+        onTap: onTap,
+        color: selected == true
+            ? AppColors.primarySoft
+            : p.isActive
+            ? Colors.white
+            : const Color(0xFFFCF7F7),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
                   children: [
+                    NetImg(p.thumb, size: 74, fit: BoxFit.contain),
+                    if (!p.isActive)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(color: const Color(0x88FFFFFF), borderRadius: BorderRadius.circular(12)),
+                          child: const Icon(Icons.visibility_off_rounded, color: AppColors.danger),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w700, height: 1.45),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [p.brand?.name, money(p.price)].whereType<String>().join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          if (p.exactBarcode)
+                            const Pill(
+                              'مطابقة الباركود',
+                              color: AppColors.info,
+                              bg: AppColors.infoSoft,
+                              small: true,
+                              icon: Icons.qr_code_rounded,
+                            ),
+                          if (p.stock <= 0) const Pill('نافد', color: AppColors.danger, bg: AppColors.dangerSoft, small: true),
+                          if (p.imageCount == 0)
+                            const Pill(
+                              'بلا صور',
+                              color: AppColors.warning,
+                              bg: AppColors.warningSoft,
+                              small: true,
+                              icon: Icons.image_not_supported_outlined,
+                            ),
+                          if (p.shadeCount > 0)
+                            Pill(
+                              p.shadesOff > 0 ? '${p.shadeCount} تدرج · ${p.shadesOff} موقوف' : '${p.shadeCount} تدرج',
+                              color: p.shadesOff > 0 ? AppColors.rose : AppColors.primary,
+                              bg: p.shadesOff > 0 ? AppColors.roseSoft : AppColors.primaryLight,
+                              small: true,
+                              icon: Icons.palette_outlined,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  children: [
+                    Switch(value: p.isActive, onChanged: onToggle),
                     Text(
-                      p.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w700, height: 1.45),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [p.brand?.name, money(p.price)].whereType<String>().join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        if (p.exactBarcode)
-                          const Pill(
-                            'مطابقة الباركود',
-                            color: AppColors.info,
-                            bg: AppColors.infoSoft,
-                            small: true,
-                            icon: Icons.qr_code_rounded,
-                          ),
-                        if (p.stock <= 0) const Pill('نافد', color: AppColors.danger, bg: AppColors.dangerSoft, small: true),
-                        if (p.imageCount == 0)
-                          const Pill(
-                            'بلا صور',
-                            color: AppColors.warning,
-                            bg: AppColors.warningSoft,
-                            small: true,
-                            icon: Icons.image_not_supported_outlined,
-                          ),
-                        if (p.shadeCount > 0)
-                          Pill(
-                            p.shadesOff > 0 ? '${p.shadeCount} تدرج · ${p.shadesOff} موقوف' : '${p.shadeCount} تدرج',
-                            color: p.shadesOff > 0 ? AppColors.rose : AppColors.primary,
-                            bg: p.shadesOff > 0 ? AppColors.roseSoft : AppColors.primaryLight,
-                            small: true,
-                            icon: Icons.palette_outlined,
-                          ),
-                      ],
+                      p.isActive ? 'ظاهر' : 'موقوف',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.isActive ? AppColors.success : AppColors.danger),
                     ),
                   ],
                 ),
-              ),
-              Column(
-                children: [
-                  Switch(value: p.isActive, onChanged: onToggle),
-                  Text(
-                    p.isActive ? 'ظاهر' : 'موقوف',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.isActive ? AppColors.success : AppColors.danger),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (p.matchedShades.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                children: [
-                  for (final s in p.matchedShades)
-                    InkWell(
-                      onTap: onShadeTap == null ? null : () => onShadeTap!(s),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 2, 4, 2),
-                        child: Row(
-                          children: [
-                            Swatch(hex: s.colorHex, hexEnd: s.colorHexEnd, size: 26, off: !s.isActive),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    s.name,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13.5,
-                                      decoration: s.isActive ? null : TextDecoration.lineThrough,
-                                    ),
-                                  ),
-                                  if (s.barcode != null)
+              ],
+            ),
+            if (p.matchedShades.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
+                child: Column(
+                  children: [
+                    for (final s in p.matchedShades)
+                      InkWell(
+                        onTap: onShadeTap == null ? null : () => onShadeTap!(s),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 2, 4, 2),
+                          child: Row(
+                            children: [
+                              Swatch(hex: s.colorHex, hexEnd: s.colorHexEnd, size: 26, off: !s.isActive),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      s.barcode!,
-                                      textDirection: TextDirection.ltr,
-                                      style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+                                      s.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13.5,
+                                        decoration: s.isActive ? null : TextDecoration.lineThrough,
+                                      ),
                                     ),
-                                ],
+                                    if (s.barcode != null)
+                                      Text(
+                                        s.barcode!,
+                                        textDirection: TextDirection.ltr,
+                                        style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Text(
-                              s.stock > 0 ? '${s.stock}' : 'نافد',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: s.stock > 0 ? AppColors.success : AppColors.danger,
+                              Text(
+                                s.stock > 0 ? '${s.stock}' : 'نافد',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: s.stock > 0 ? AppColors.success : AppColors.danger,
+                                ),
                               ),
-                            ),
-                            Transform.scale(
-                              scale: .82,
-                              child: Switch(value: s.isActive, onChanged: onShadeToggle == null ? null : (v) => onShadeToggle!(s, v)),
-                            ),
-                          ],
+                              Transform.scale(
+                                scale: .82,
+                                child: Switch(value: s.isActive, onChanged: onShadeToggle == null ? null : (v) => onShadeToggle!(s, v)),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                  ],
+                ),
+              ),
+            ] else if (p.shadePreview.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  for (final d in p.shadePreview)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 4),
+                      child: Swatch(hex: d.colorHex, hexEnd: d.colorHexEnd, size: 18, off: !d.isActive),
+                    ),
+                  if (p.shadeCount > p.shadePreview.length)
+                    Text(
+                      ' +${p.shadeCount - p.shadePreview.length}',
+                      textDirection: TextDirection.ltr,
+                      style: const TextStyle(color: AppColors.muted, fontSize: 12),
                     ),
                 ],
               ),
-            ),
-          ] else if (p.shadePreview.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                for (final d in p.shadePreview)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 4),
-                    child: Swatch(hex: d.colorHex, hexEnd: d.colorHexEnd, size: 18, off: !d.isActive),
-                  ),
-                if (p.shadeCount > p.shadePreview.length)
-                  Text(
-                    ' +${p.shadeCount - p.shadePreview.length}',
-                    textDirection: TextDirection.ltr,
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12),
-                  ),
-              ],
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

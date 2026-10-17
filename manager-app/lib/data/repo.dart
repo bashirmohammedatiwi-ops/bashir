@@ -230,3 +230,125 @@ class Repo {
   Future<void> deleteDrafts(List<String> ids) => api.post('/control/drafts/delete', data: {'ids': ids});
   Future<void> moveDrafts(List<String> ids, String groupId) => api.post('/control/drafts/move', data: {'ids': ids, 'groupId': groupId});
 }
+
+/// ملحقات المرحلة الثانية: الطلبات، المبيعات، إنشاء المنتجات، التدرجات، نواقص الكاشير، صور الويب.
+extension RepoMore on Repo {
+  // ---------------- orders
+  Future<({List<OrderSummary> items, int total, bool hasNext, Map<String, int> counts})> orders({
+    String? status,
+    String? q,
+    int page = 1,
+  }) async {
+    final res = await api.page('/control/orders', {
+      'status': ?status,
+      if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+      'page': page,
+      'limit': 30,
+    });
+    final meta = res['meta'] as Map;
+    return (
+      items: (res['data'] as List).map((e) => OrderSummary.fromJson(Map<String, dynamic>.from(e))).toList(),
+      total: (meta['total'] as num).toInt(),
+      hasNext: meta['hasNext'] == true,
+      counts: (res['counts'] as Map).map((k, v) => MapEntry('$k', (v as num).toInt())),
+    );
+  }
+
+  Future<OrderDetail> order(String id) => api.get('/control/orders/$id', map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)));
+
+  Future<OrderDetail> setOrderStatus(String id, String status) =>
+      api.patch('/control/orders/$id/status', data: {'status': status}, map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)));
+
+  Future<({int pending, String? latestId, String? latestNumber, DateTime? latestAt})> pulse() => api.get(
+    '/control/orders/pulse',
+    map: (b) {
+      final j = b as Map;
+      final l = j['latest'] as Map?;
+      return (
+        pending: (j['pending'] as num).toInt(),
+        latestId: l?['id']?.toString(),
+        latestNumber: l?['orderNumber']?.toString(),
+        latestAt: DateTime.tryParse('${l?['createdAt']}'),
+      );
+    },
+  );
+
+  Future<SalesSummary> sales() => api.get('/control/sales', map: (b) => SalesSummary.fromJson(Map<String, dynamic>.from(b)));
+
+  // ---------------- catalog
+  Future<List<CategoryNode>> categories() =>
+      api.get('/control/categories', map: (b) => (b as List).map((e) => CategoryNode.fromJson(Map<String, dynamic>.from(e))).toList());
+
+  Future<({List<PosItem> items, int total, int units, bool hasNext})> posMissing({
+    String? q,
+    bool unsavedOnly = false,
+    int page = 1,
+  }) async {
+    final res = await api.page('/control/pos-missing', {
+      if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+      if (unsavedOnly) 'saved': 'unsaved',
+      'page': page,
+      'limit': 40,
+    });
+    final meta = res['meta'] as Map;
+    return (
+      items: (res['data'] as List).map((e) => PosItem.fromJson(Map<String, dynamic>.from(e))).toList(),
+      total: (meta['total'] as num).toInt(),
+      units: (meta['units'] as num).toInt(),
+      hasNext: meta['hasNext'] == true,
+    );
+  }
+
+  Future<({ProductDetail product, int failedImages})> createProduct(Map<String, dynamic> body) => api.post(
+    '/control/products',
+    data: body,
+    map: (b) {
+      final j = b as Map;
+      return (
+        product: ProductDetail.fromJson(Map<String, dynamic>.from(j['product'])),
+        failedImages: (j['failedImages'] as num?)?.toInt() ?? 0,
+      );
+    },
+  );
+
+  Future<ProductDetail> addShade(String productId, Map<String, dynamic> body) =>
+      api.post('/control/products/$productId/shades', data: body, map: (b) => ProductDetail.fromJson(Map<String, dynamic>.from(b)));
+
+  Future<ProductDetail> deleteShade(String shadeId) =>
+      api.delete('/control/shades/$shadeId', map: (b) => ProductDetail.fromJson(Map<String, dynamic>.from(b)));
+
+  Future<int> bulkProducts(List<String> ids, bool active) =>
+      api.post('/control/products/bulk', data: {'ids': ids, 'isActive': active}, map: (b) => ((b as Map)['updated'] as num).toInt());
+
+  // ---------------- web images & AI
+  /// صور المنتج من الويب/المتاجر بالباركود أو بالاسم (بلا ذكاء اصطناعي).
+  Future<List<WebImage>> webImages({String? barcode, String? name, bool byName = false}) {
+    final code = (barcode ?? '').replaceAll(RegExp(r'[^0-9A-Za-z\-]'), '');
+    return api.post(
+      '/ai-product/images',
+      data: {
+        'barcode': code.length >= 6 ? code : '000000',
+        'mode': byName ? 'name' : 'barcode',
+        if (name != null && name.trim().isNotEmpty) 'nameHint': name.trim(),
+        if (byName && name != null) 'query': name.trim(),
+      },
+      options: Options(receiveTimeout: const Duration(seconds: 60)),
+      map: (b) => ((b as Map)['images'] as List? ?? const []).map((e) => WebImage.from(Map<String, dynamic>.from(e))).toList(),
+    );
+  }
+
+  /// تعبئة ذكية: الأسماء والوصف والبراند والقسم والصور من الباركود.
+  Future<Autofill> autofill(String barcode, {String? hint}) => api.post(
+    '/ai-product/autofill',
+    data: {'barcode': barcode, if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim()},
+    options: Options(receiveTimeout: const Duration(seconds: 180)),
+    map: (b) => Autofill.fromJson(Map<String, dynamic>.from(b)),
+  );
+
+  Future<String> uploadFromUrl(String url, {String purpose = 'PRODUCT'}) => api.post(
+    '/media/upload-from-url',
+    data: {'url': url, 'purpose': purpose},
+    options: Options(receiveTimeout: const Duration(seconds: 120)),
+    map: (b) => '${(b as Map)['id']}',
+  );
+}
