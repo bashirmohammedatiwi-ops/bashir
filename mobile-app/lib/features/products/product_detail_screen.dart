@@ -123,9 +123,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final s = ref.s;
     final shade = product.shadeForCart(selected: _shade);
     if (product.hasMultipleDisplayableShades && shade == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.selectShadeFirst)),
-      );
+      AppSnackbar.show(context, s.selectShadeFirst);
       return;
     }
     HapticFeedback.mediumImpact();
@@ -353,9 +351,7 @@ class _GalleryAppBar extends ConsumerWidget {
             final slug = product.slug.isNotEmpty ? product.slug : product.id;
             final url = AppConfig.productShareUrl(slug);
             Clipboard.setData(ClipboardData(text: url));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(s.linkCopied), behavior: SnackBarBehavior.floating),
-            );
+            AppSnackbar.success(context, s.linkCopied);
           },
         ),
         _CircleAction(
@@ -1447,13 +1443,11 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           _commentCtrl.clear();
           _rating = 5;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(ref.s.thanksForReview)));
+        AppSnackbar.success(context, ref.s.thanksForReview);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(friendlyError(e)), backgroundColor: AppColors.sale));
+        AppSnackbar.show(context, friendlyError(e));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

@@ -1,3 +1,4 @@
+import '../../core/utils/friendly_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,7 +46,7 @@ class _LoyaltyBody extends ConsumerWidget {
           child: CircularProgressIndicator(color: context.worldTheme.accent),
         ),
         error: (e, _) => ErrorView(
-          message: e.toString(),
+          message: friendlyError(e),
           onRetry: () => ref.invalidate(loyaltyProvider),
         ),
         data: (summary) => RefreshIndicator(

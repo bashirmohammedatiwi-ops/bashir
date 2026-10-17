@@ -7,7 +7,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/app_snackbar.dart';
+import '../../data/models/order.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../cart/widgets/cart_theme.dart';
@@ -16,6 +18,7 @@ import '../profile/profile_providers.dart';
 import '../worlds/world_theme.dart';
 import '../payments/payment_strings.dart';
 import 'checkout_strings.dart';
+import 'delivery_estimate.dart';
 
 class OrderSuccessScreen extends ConsumerWidget {
   final String orderId;
@@ -77,6 +80,10 @@ class OrderSuccessScreen extends ConsumerWidget {
                           error: (_, __) => const SizedBox.shrink(),
                         ),
                       ),
+                      if (order.valueOrNull case final o?) ...[
+                        const SizedBox(height: 12),
+                        _FadeUp(delay: 460, child: _OrderRecap(order: o)),
+                      ],
                       const SizedBox(height: 16),
                       _FadeUp(
                         delay: 520,
@@ -154,6 +161,82 @@ class _OrderNumberCard extends ConsumerWidget {
               AppSnackbar.success(context, s.orderNumberCopied);
             },
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ملخص سريع: المنتجات والمجموع، موعد الوصول، النقاط المكتسبة، والهدية.
+class _OrderRecap extends ConsumerWidget {
+  final AppOrder order;
+  const _OrderRecap({required this.order});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    final zones = ref.watch(shippingZonesProvider).valueOrNull ?? const [];
+    final window = order.deliveryOption == 'PICKUP' ? null : windowFor(zones, order.address?.governorate);
+    final thumbs = order.items.map((e) => e.imageUrl).where((u) => u.isNotEmpty).take(4).toList();
+    Widget line(IconData icon, String text, {Color? color}) => Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: [
+              Icon(icon, size: 17, color: color ?? t.accentDark),
+              const SizedBox(width: 8),
+              Expanded(child: Text(text, style: AppText.bodySmall.copyWith(color: color ?? t.inkSoft, fontWeight: FontWeight.w600))),
+            ],
+          ),
+        );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: CartTheme.cardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              if (thumbs.isNotEmpty) ...[
+                SizedBox(
+                  width: 40.0 + 26 * (thumbs.length - 1),
+                  height: 40,
+                  child: Stack(
+                    children: [
+                      for (var i = 0; i < thumbs.length; i++)
+                        PositionedDirectional(
+                          start: i * 26.0,
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: t.accentSoft, width: 1.5),
+                            ),
+                            child: ClipOval(child: ProductCoverImage(url: thumbs[i], fit: BoxFit.contain)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  arProducts(order.items.fold<int>(0, (s, e) => s + e.quantity)),
+                  style: AppText.label.copyWith(color: t.inkSoft),
+                ),
+              ),
+              Text(order.totalLabel, style: AppText.title2.copyWith(color: t.ink)),
+            ],
+          ),
+          if (window != null) line(Icons.schedule_rounded, window.label()),
+          if (order.deliveryOption == 'PICKUP') line(Icons.storefront_outlined, 'استلام من الفرع — نبلغكِ حين يجهز طلبكِ'),
+          if (order.loyaltyEarned > 0)
+            line(Icons.stars_rounded, 'أُضيفت ${arPoints(order.loyaltyEarned)} لرصيدكِ ✨', color: const Color(0xFFB7791F)),
+          if (order.isGift) line(Icons.card_giftcard_rounded, 'نغلّفه كهدية${order.giftMessage != null ? ' مع رسالتكِ' : ''} 🎁'),
         ],
       ),
     );

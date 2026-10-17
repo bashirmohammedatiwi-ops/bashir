@@ -1,3 +1,5 @@
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/utils/friendly_error.dart';
 import '../catalog/catalog_providers.dart';
 import '../../core/widgets/product_card.dart';
 import 'package:flutter/material.dart';
@@ -272,14 +274,10 @@ class AccountScreen extends ConsumerWidget {
     try {
       await ref.read(authProvider.notifier).deleteAccount();
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(s.deleteAccountSuccess)));
+      AppSnackbar.success(context, s.deleteAccountSuccess);
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      AppSnackbar.show(context, friendlyError(e));
     }
   }
 }

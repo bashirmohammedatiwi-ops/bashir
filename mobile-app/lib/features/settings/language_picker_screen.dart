@@ -1,3 +1,4 @@
+import '../../core/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,9 +45,7 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
       ref.invalidate(offersFeedProvider);
       if (!mounted) return;
       context.pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(AppStrings(code).languageChanged)));
+      AppSnackbar.success(context, AppStrings(code).languageChanged);
     }
   }
 

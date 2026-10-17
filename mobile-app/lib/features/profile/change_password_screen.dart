@@ -1,3 +1,5 @@
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/utils/friendly_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,15 +48,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             newPassword: _next.text,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(ref.s.passwordChangedSuccess)));
+      AppSnackbar.success(context, ref.s.passwordChangedSuccess);
       context.pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppSnackbar.show(context, friendlyError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

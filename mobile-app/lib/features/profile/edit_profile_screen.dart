@@ -1,3 +1,6 @@
+import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/app_snackbar.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,17 +53,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           .updateProfile(name: _name.text.trim(), phone: _phone.text.trim());
       await ref.read(authProvider.notifier).refreshUser();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ref.read(stringsProvider).acctChangesSaved)),
-        );
+        HapticFeedback.mediumImpact();
+        AppSnackbar.success(context, ref.read(stringsProvider).acctChangesSaved);
         context.pop();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
+      // رسالة مفهومة بدل نص الخطأ التقني.
+      if (mounted) AppSnackbar.show(context, friendlyError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -69,6 +68,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final s = ref.s;
+    // الحساب وصل بعد فتح الصفحة (تحميل الجلسة): نملأ الحقول الفارغة فقط.
+    ref.listen(authProvider.select((a) => a.user), (_, user) {
+      if (user == null) return;
+      if (_name.text.isEmpty) _name.text = user.name;
+      if (_phone.text.isEmpty) _phone.text = formatPhoneLocal(user.phone);
+    });
     return AuthGate(
       title: s.editProfile,
       emptyTitle: s.loginToEditProfile,

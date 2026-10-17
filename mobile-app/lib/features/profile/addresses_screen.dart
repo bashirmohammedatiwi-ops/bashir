@@ -1,3 +1,5 @@
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/utils/friendly_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,7 +52,7 @@ class _AddressesBody extends ConsumerWidget {
           child: CircularProgressIndicator(color: context.worldTheme.accent),
         ),
         error: (e, _) => ErrorView(
-          message: e.toString(),
+          message: friendlyError(e),
           onRetry: () => ref.invalidate(addressesProvider),
         ),
         data: (list) {
@@ -95,9 +97,7 @@ class _AddressesBody extends ConsumerWidget {
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppSnackbar.show(context, friendlyError(e));
       }
     }
   }
@@ -114,9 +114,7 @@ class _AddressesBody extends ConsumerWidget {
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppSnackbar.show(context, friendlyError(e));
       }
     }
   }
@@ -140,9 +138,7 @@ class _AddressesBody extends ConsumerWidget {
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppSnackbar.show(context, friendlyError(e));
       }
     }
   }

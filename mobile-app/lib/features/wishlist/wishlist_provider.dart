@@ -1,3 +1,4 @@
+import '../../core/utils/friendly_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
@@ -37,7 +38,7 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
       state = WishlistState(
         products: state.products,
         ids: state.ids,
-        error: e.toString(),
+        error: friendlyError(e),
       );
     }
   }
