@@ -442,9 +442,13 @@ class PosSyncScreen extends ConsumerWidget {
             final runs = d.$2;
             final snaps = Map<String, dynamic>.from(o['snapshots'] as Map? ?? const {});
             final last = runs.isEmpty ? null : runs.first;
-            final lastAt = parseDate(last?['createdAt']) ?? parseDate(snaps['lastSyncedAt']);
+            // الأحدث بين سجل التشغيل وآخر صنف وصل من الكاشير (بعض أجهزة الكاشير لا تسجّل التشغيلات)
+            final runAt = parseDate(last?['createdAt']);
+            final snapAt = parseDate(snaps['lastSyncedAt']);
+            final lastAt = _latest(runAt, snapAt);
             final stale = lastAt == null || DateTime.now().difference(lastAt.toLocal()).inMinutes > 60;
-            final ok = last?['ok'] != false && !stale;
+            final lastRunFailed = last?['ok'] == false && runAt != null && (snapAt == null || !snapAt.isAfter(runAt));
+            final ok = !lastRunFailed && !stale;
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
               children: [
@@ -606,7 +610,7 @@ class HealthScreen extends ConsumerWidget {
                     ),
                     title: const Text('مزامنة الكاشير', style: TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(
-                      'آخر تحديث ${timeAgo(s.posLastRunAt ?? s.posSyncedAt)}${s.posFailedDay > 0 ? ' · فشل ${s.posFailedDay} اليوم' : ''}',
+                      'آخر تحديث ${timeAgo(_latest(s.posLastRunAt, s.posSyncedAt))}${s.posFailedDay > 0 ? ' · فشل ${s.posFailedDay} اليوم' : ''}',
                     ),
                     trailing: const Icon(Icons.chevron_left_rounded),
                   ),
@@ -659,3 +663,5 @@ class HealthScreen extends ConsumerWidget {
     );
   }
 }
+
+DateTime? _latest(DateTime? a, DateTime? b) => a == null ? b : (b == null || a.isAfter(b) ? a : b);

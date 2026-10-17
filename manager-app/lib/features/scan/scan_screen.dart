@@ -247,110 +247,121 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
     );
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: MobileScanner(
-              controller: _ctrl,
-              onDetect: _onDetect,
-              scanWindow: window,
-              errorBuilder: (_, e) {
-                if (_camError == null) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? setState(() => _camError = e) : null);
-                return const ColoredBox(color: Color(0xFF15131A));
-              },
-            ),
-          ),
-          if (_camError == null)
+      // SizedBox.expand: جسم Scaffold يأخذ قيود ارتفاع مرنة؛ بدونها يتقلص الـ Stack لارتفاع الشريط العلوي
+      // فتظهر الكاميرا في شريط صغير أعلى الشاشة والباقي أسود (وضع المسح الواحد).
+      body: SizedBox.expand(
+        child: Stack(
+          children: [
             Positioned.fill(
-              child: IgnorePointer(child: CustomPaint(painter: _WindowPainter(window))),
-            )
-          else
-            Positioned.fromRect(
-              rect: window.inflate(10),
-              child: _CameraError(error: _camError!, onManual: _manual),
+              child: MobileScanner(
+                controller: _ctrl,
+                onDetect: _onDetect,
+                scanWindow: window,
+                errorBuilder: (_, e) {
+                  if (_camError == null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? setState(() => _camError = e) : null);
+                  }
+                  return const ColoredBox(color: Color(0xFF15131A));
+                },
+              ),
             ),
-          // الشريط العلوي
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  _RoundBtn(icon: Icons.close_rounded, onTap: () => Navigator.maybePop(context)),
-                  const Spacer(),
-                  ValueListenableBuilder(
-                    valueListenable: _ctrl,
-                    builder: (_, state, _) => _RoundBtn(
-                      icon: state.torchState == TorchState.on ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                      active: state.torchState == TorchState.on,
-                      onTap: () => _ctrl.toggleTorch(),
-                    ),
+            if (_camError == null)
+              Positioned.fill(
+                child: IgnorePointer(child: CustomPaint(painter: _WindowPainter(window))),
+              )
+            else
+              Positioned.fromRect(
+                rect: window.inflate(10),
+                child: _CameraError(error: _camError!, onManual: _manual),
+              ),
+            // الشريط العلوي
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    children: [
+                      _RoundBtn(icon: Icons.close_rounded, onTap: () => Navigator.maybePop(context)),
+                      const Spacer(),
+                      ValueListenableBuilder(
+                        valueListenable: _ctrl,
+                        builder: (_, state, _) => _RoundBtn(
+                          icon: state.torchState == TorchState.on ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                          active: state.torchState == TorchState.on,
+                          onTap: () => _ctrl.toggleTorch(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _RoundBtn(icon: Icons.cameraswitch_rounded, onTap: () => _ctrl.switchCamera()),
+                      const SizedBox(width: 8),
+                      _RoundBtn(icon: Icons.keyboard_rounded, onTap: _manual),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _RoundBtn(icon: Icons.cameraswitch_rounded, onTap: () => _ctrl.switchCamera()),
-                  const SizedBox(width: 8),
-                  _RoundBtn(icon: Icons.keyboard_rounded, onTap: _manual),
+                ),
+              ),
+            ),
+            // تبديل الوضع + التكبير
+            Positioned(
+              top: window.bottom + 14,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  if (!widget.pickOnly)
+                    Container(
+                      decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(24)),
+                      padding: const EdgeInsets.all(4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ModeBtn(
+                            label: 'مسح واحد',
+                            selected: !_continuous,
+                            onTap: () => setState(() => Prefs.instance.continuous = _continuous = false),
+                          ),
+                          _ModeBtn(
+                            label: 'مسح متتالي',
+                            selected: _continuous,
+                            onTap: () => setState(() => Prefs.instance.continuous = _continuous = true),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_camError == null)
+                    SizedBox(
+                      width: size.width * .7,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.zoom_out_rounded, color: Colors.white70, size: 20),
+                          Expanded(
+                            child: Slider(
+                              value: _zoom,
+                              onChanged: (v) {
+                                setState(() => _zoom = v);
+                                _ctrl.setZoomScale(v);
+                              },
+                              activeColor: Colors.white,
+                              inactiveColor: Colors.white30,
+                            ),
+                          ),
+                          const Icon(Icons.zoom_in_rounded, color: Colors.white70, size: 20),
+                        ],
+                      ),
+                    ),
+                  if (!_continuous && _camError == null)
+                    const Text(
+                      'وجّه الكاميرا نحو الباركود',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
                 ],
               ),
             ),
-          ),
-          // تبديل الوضع + التكبير
-          Positioned(
-            top: window.bottom + 14,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                if (!widget.pickOnly)
-                  Container(
-                    decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(24)),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _ModeBtn(
-                          label: 'مسح واحد',
-                          selected: !_continuous,
-                          onTap: () => setState(() => Prefs.instance.continuous = _continuous = false),
-                        ),
-                        _ModeBtn(
-                          label: 'مسح متتالي',
-                          selected: _continuous,
-                          onTap: () => setState(() => Prefs.instance.continuous = _continuous = true),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (_camError == null)
-                  SizedBox(
-                    width: size.width * .7,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.zoom_out_rounded, color: Colors.white70, size: 20),
-                        Expanded(
-                          child: Slider(
-                            value: _zoom,
-                            onChanged: (v) {
-                              setState(() => _zoom = v);
-                              _ctrl.setZoomScale(v);
-                            },
-                            activeColor: Colors.white,
-                            inactiveColor: Colors.white30,
-                          ),
-                        ),
-                        const Icon(Icons.zoom_in_rounded, color: Colors.white70, size: 20),
-                      ],
-                    ),
-                  ),
-                if (!_continuous && _camError == null)
-                  const Text(
-                    'وجّه الكاميرا نحو الباركود',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
-              ],
-            ),
-          ),
-          if (_continuous) _results(),
-        ],
+            if (_continuous) _results(),
+          ],
+        ),
       ),
     );
   }

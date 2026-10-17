@@ -1,7 +1,7 @@
 name: manager_app
 description: "ديما الحياة — تطبيق المدير: مسح الباركود، تشغيل وإيقاف المنتجات والتدرجات، إدارة الصور، وحفظ الباركودات الناقصة."
 publish_to: 'none'
-version: 1.2.0+4
+version: 1.2.1+5
 
 environment:
   sdk: ^3.11.0
