@@ -156,7 +156,10 @@ export class OrdersService {
     let couponId: string | undefined;
     let freeShipping = false;
     if (dto.couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: dto.couponCode } });
+      // الكود بأي حالة أحرف («sale20» = «SALE20»).
+      const coupon = await this.prisma.coupon.findFirst({
+        where: { code: { equals: dto.couponCode.trim(), mode: "insensitive" } },
+      });
       if (!coupon || !coupon.isActive) throw new BadRequestException("Invalid coupon");
       // المدة والعدد المسموح: كوبون منتهٍ أو مستنفد لا يُقبل عند إنشاء الطلب.
       const now = new Date();
@@ -165,6 +168,12 @@ export class OrdersService {
       }
       if (coupon.maxRedemptions != null && coupon.redeemedCount >= coupon.maxRedemptions) {
         throw new BadRequestException("نفد استخدام هذا الكوبون");
+      }
+      if (coupon.perUserLimit != null) {
+        const mine = await this.prisma.order.count({
+          where: { userId, couponId: coupon.id, status: { not: OrderStatus.CANCELLED } },
+        });
+        if (mine >= coupon.perUserLimit) throw new BadRequestException("استخدمتِ هذا الكوبون مسبقاً");
       }
       if (coupon.minOrder && subtotal < coupon.minOrder)
         throw new BadRequestException("Minimum order not met");
@@ -181,6 +190,9 @@ export class OrdersService {
           ? Math.round((subtotal * coupon.value) / 100)
           : coupon.value;
       }
+      // سقف الخصم (للنسبة المئوية)، ولا يتجاوز الخصم قيمة الطلب.
+      if (coupon.maxDiscount != null && coupon.maxDiscount > 0) discountTotal = Math.min(discountTotal, coupon.maxDiscount);
+      discountTotal = Math.min(discountTotal, subtotal);
       couponId = coupon.id;
     }
 

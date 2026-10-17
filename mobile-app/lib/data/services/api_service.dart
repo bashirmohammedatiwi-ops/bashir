@@ -663,13 +663,36 @@ class ApiService {
   }
 
   // ---- COUPONS ----
+  /// كوبونات الصفحة الرئيسية (الظاهرة والصالحة الآن) — لعالم معيّن إن وُجد.
+  Future<List<Coupon>> getFeaturedCoupons({String? world}) async {
+    try {
+      final r = await _dio.get('/coupons/featured', queryParameters: {if (world != null) 'world': world});
+      return asList(_data(r)).map((e) => Coupon.fromJson(asMap(e))).where((c) => c.code.isNotEmpty).toList();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// تحقق مع سبب الرفض («انتهت صلاحية الكود»، «لأول طلب فقط»…).
+  Future<({Coupon? coupon, String? reason})> checkCoupon(String code) async {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) return (coupon: null, reason: null);
+    try {
+      final r = await _dio.get('/coupons/check/${Uri.encodeComponent(trimmed)}');
+      final m = asMap(_data(r));
+      if (m['ok'] == true && m['coupon'] is Map) return (coupon: Coupon.fromJson(asMap(m['coupon'])), reason: null);
+      return (coupon: null, reason: m['reason']?.toString());
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   Future<Coupon?> validateCoupon(String code) async {
     final trimmed = code.trim();
     if (trimmed.isEmpty) return null;
     try {
       final r = await _dio.get(
         '/coupons/validate/${Uri.encodeComponent(trimmed)}',
-        options: Options(extra: {'auth': false}),
       );
       final raw = _data(r);
       if (raw == null) return null;

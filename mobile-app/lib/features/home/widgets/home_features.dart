@@ -13,6 +13,9 @@ import '../../../core/widgets/ui/ui.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../auth/auth_provider.dart';
 import '../../cart/cart_provider.dart';
+import '../../cart/coupon_provider.dart';
+import '../../cart/widgets/coupon_ticket.dart';
+import '../../shell/main_shell.dart';
 import '../../catalog/catalog_providers.dart';
 import '../../wishlist/wishlist_provider.dart';
 import '../../shell/nav_tabs.dart';
@@ -321,6 +324,51 @@ class HomeWishlistShelf extends ConsumerWidget {
               lite: true,
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── كوبونات لكِ ─────────────────────────────────────────────────────────────
+
+/// بطاقات الكوبونات المختارة من لوحة التحكم — «استخدمي الكود» يفعّله للسلة بلمسة.
+class HomeCouponsShelf extends ConsumerWidget {
+  const HomeCouponsShelf({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coupons = ref.watch(featuredCouponsProvider).valueOrNull ?? const [];
+    if (coupons.isEmpty) return const SizedBox.shrink();
+    final ar = ref.s.isAr;
+    void viewCart() {
+      context.go('/');
+      ref.read(navIndexProvider.notifier).state = NavTabs.cart;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppSectionTitle(
+          title: ar ? 'كوبونات لكِ ✂️' : 'Coupons for you ✂️',
+          subtitle: ar ? 'لمسة وحدة ويتفعّل الخصم على سلتكِ' : 'One tap and it applies to your bag',
+        ),
+        LayoutBuilder(
+          builder: (context, c) {
+            final single = coupons.length == 1;
+            final w = single ? c.maxWidth - 32 : (c.maxWidth * 0.84).clamp(260.0, 380.0);
+            return SizedBox(
+              height: 154,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: single ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
+                itemCount: coupons.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (_, i) => CouponTicket(coupon: coupons[i], width: w, onViewCart: viewCart),
+              ),
+            );
+          },
         ),
       ],
     );

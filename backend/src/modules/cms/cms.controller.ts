@@ -1,3 +1,5 @@
+import { OptionalJwtGuard } from "../advisor/optional-jwt.guard";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import {
   Body,
   Controller,
@@ -93,8 +95,21 @@ export class CmsController {
     return this.coupons.list();
   }
 
-  @Public() @Get("coupons/validate/:code") validate(@Param("code") code: string) {
-    return this.coupons.validate(code);
+  @Public() @UseGuards(OptionalJwtGuard) @Get("coupons/validate/:code")
+  validate(@Param("code") code: string, @CurrentUser() user?: { id: string }) {
+    return this.coupons.validate(code, user?.id);
+  }
+
+  /** مثل validate مع سبب الرفض («انتهت صلاحية الكود»، «لأول طلب فقط»…). */
+  @Public() @UseGuards(OptionalJwtGuard) @Get("coupons/check/:code")
+  checkCoupon(@Param("code") code: string, @CurrentUser() user?: { id: string }) {
+    return this.coupons.check(code, user?.id);
+  }
+
+  /** كوبونات الصفحة الرئيسية للتطبيق (الظاهرة والصالحة الآن). */
+  @Public() @UseGuards(OptionalJwtGuard) @Get("coupons/featured")
+  featuredCoupons(@Query("world") world?: string, @CurrentUser() user?: { id: string }) {
+    return this.coupons.featured(world || undefined, user?.id);
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/ui/ui.dart';
@@ -72,18 +71,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     });
 
     try {
-      final coupon = await ref.read(apiServiceProvider).validateCoupon(code);
-      final subtotal = ref.read(cartProvider).subtotal;
+      // التحقق مع السبب؛ والكود يبقى مفعّلاً حتى لو كانت السلة دون حدّه الأدنى (يُعرض كم ينقص).
+      final res = await ref.read(apiServiceProvider).checkCoupon(code);
+      final coupon = res.coupon;
 
       if (coupon == null) {
         ref.read(appliedCouponProvider.notifier).state = null;
-        setState(() => _couponError = s.invalidCoupon);
-        return;
-      }
-
-      if (coupon.minOrder > 0 && subtotal < coupon.minOrder) {
-        ref.read(appliedCouponProvider.notifier).state = null;
-        setState(() => _couponError = s.minOrderAmount(formatPrice(coupon.minOrder)));
+        setState(() => _couponError = res.reason ?? s.invalidCoupon);
         return;
       }
 
@@ -134,16 +128,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   void _validateCouponOnCartChange(Coupon? coupon) {
-    final s = ref.s;
-    final cart = ref.read(cartProvider);
-    if (coupon == null) return;
-    if (coupon.minOrder > 0 && cart.subtotal < coupon.minOrder) {
-      ref.read(appliedCouponProvider.notifier).state = null;
-      if (mounted) {
-        setState(() => _couponError = s.minOrderAmount(formatPrice(coupon.minOrder)));
-      }
-    }
+    // لا نلغي الكود حين ينزل المجموع عن حدّه: الخصم يتوقف ويظهر «أضيفي X» حتى يبلغه مجدداً.
+    if (coupon == null || _couponError == null) return;
+    if (coupon.eligibleFor(ref.read(cartProvider).subtotal) && mounted) setState(() => _couponError = null);
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +213,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                 discount: discount,
                                 onApply: _applyCoupon,
                                 onRemove: _removeCoupon,
+                                subtotal: cart.subtotal,
                               ),
                             ),
                           ),

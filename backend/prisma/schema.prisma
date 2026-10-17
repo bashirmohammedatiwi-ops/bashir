@@ -614,12 +614,27 @@ model Coupon {
   startsAt        DateTime?
   endsAt          DateTime?
   isActive        Boolean       @default(true)
+  /// عنوان العرض في التطبيق («خصم الجمعة») وسطره الثاني.
+  title           String?
+  subtitle        String?
+  /// يظهر كبطاقة في الصفحة الرئيسية للتطبيق، بترتيب homePosition.
+  showOnHome      Boolean       @default(false)
+  homePosition    Int           @default(0)
+  /// لون البطاقة: rose | gold | violet | midnight | mint | coral
+  theme           String        @default("rose")
+  /// سقف الخصم بالدينار (للنسبة المئوية) — فارغ = بلا سقف.
+  maxDiscount     Int?
+  /// كم مرة تستخدمه الزبونة الواحدة — فارغ = بلا حد.
+  perUserLimit    Int?
+  /// عوالم يظهر فيها (slugs) — فارغة = كل العوالم.
+  worldSlugs      String[]      @default([])
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   orders          Order[]
 
   @@index([isActive])
+  @@index([showOnHome])
 }
 
 // ---------------------- PACKAGES ----------------------

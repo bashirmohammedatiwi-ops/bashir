@@ -10,6 +10,8 @@ import '../../../data/models/coupon.dart';
 import '../../worlds/world_theme.dart';
 import '../cart_strings.dart';
 import 'cart_theme.dart';
+import 'coupon_ticket.dart';
+import '../coupon_provider.dart';
 
 class CartCouponSection extends ConsumerStatefulWidget {
   final TextEditingController controller;
@@ -20,6 +22,8 @@ class CartCouponSection extends ConsumerStatefulWidget {
   final int discount;
   final VoidCallback onApply;
   final VoidCallback onRemove;
+  /// مجموع السلة — لعرض «أضيفي X لتفعيل الخصم» حين يكون دون الحد الأدنى.
+  final int subtotal;
 
   const CartCouponSection({
     super.key,
@@ -31,6 +35,7 @@ class CartCouponSection extends ConsumerStatefulWidget {
     required this.discount,
     required this.onApply,
     required this.onRemove,
+    this.subtotal = 0,
   });
 
   @override
@@ -72,7 +77,7 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
       curve: Curves.easeOutCubic,
       alignment: AlignmentDirectional.topCenter,
       child: widget.applied != null
-          ? _AppliedCoupon(coupon: widget.applied!, discount: widget.discount, onRemove: widget.onRemove)
+          ? _AppliedCoupon(coupon: widget.applied!, discount: widget.discount, subtotal: widget.subtotal, onRemove: widget.onRemove)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -106,6 +111,8 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
                     ),
                   ),
                 ),
+                // كوبونات متاحة: بطاقات صغيرة بلمسة «استخدمي».
+                const _AvailableCoupons(),
                 if (_open) ...[
                   const SizedBox(height: 12),
                   Row(
@@ -205,14 +212,51 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
 class _AppliedCoupon extends ConsumerWidget {
   final Coupon coupon;
   final int discount;
+  final int subtotal;
   final VoidCallback onRemove;
 
-  const _AppliedCoupon({required this.coupon, required this.discount, required this.onRemove});
+  const _AppliedCoupon({required this.coupon, required this.discount, required this.subtotal, required this.onRemove});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
     final t = context.worldTheme;
+    final missing = coupon.missingFor(subtotal);
+    // مفعّل لكن السلة دون الحد الأدنى: كم ينقص، مع شريط تقدّم.
+    if (missing > 0) {
+      return Row(
+        children: [
+          CartTheme.iconBadge(context, Icons.hourglass_top_rounded, size: 36),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(coupon.code, maxLines: 1, style: AppText.title3.copyWith(color: t.ink, letterSpacing: 0.8)),
+                Text(
+                  'أضيفي ${formatPrice(missing)} ويتفعّل ${coupon.benefitLabel(formatPrice: formatPrice)}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.caption.copyWith(color: t.accentDark, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    value: (subtotal / coupon.minOrder).clamp(0.0, 1.0),
+                    minHeight: 5,
+                    backgroundColor: t.accentLight,
+                    color: t.accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          AppIconButton(icon: Icons.close_rounded, size: 34, iconSize: 17, tooltip: s.removeCoupon, color: t.inkSoft, onTap: onRemove),
+        ],
+      );
+    }
     return Row(
       children: [
         CartTheme.iconBadge(context, Icons.verified_rounded, color: AppColors.success, size: 36),
@@ -245,6 +289,36 @@ class _AppliedCoupon extends ConsumerWidget {
           onTap: onRemove,
         ),
       ],
+    );
+  }
+}
+
+class _AvailableCoupons extends ConsumerWidget {
+  const _AvailableCoupons();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coupons = ref.watch(featuredCouponsProvider).valueOrNull ?? const [];
+    if (coupons.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 2),
+      child: LayoutBuilder(
+        builder: (context, c) => SizedBox(
+          height: 124,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            padding: const EdgeInsets.only(bottom: 10),
+            itemCount: coupons.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) => CouponTicket(
+              coupon: coupons[i],
+              compact: true,
+              width: coupons.length == 1 ? c.maxWidth : (c.maxWidth * 0.86).clamp(240.0, 340.0),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

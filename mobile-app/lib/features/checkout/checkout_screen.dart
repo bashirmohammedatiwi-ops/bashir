@@ -190,21 +190,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final s = ref.s;
     setState(() => _couponError = null);
     try {
-      final coupon = await ref.read(apiServiceProvider).validateCoupon(code);
+      final res = await ref.read(apiServiceProvider).checkCoupon(code);
+      final coupon = res.coupon;
       final subtotal = ref.read(cartProvider).subtotal;
       if (coupon == null) {
         setState(() {
           _coupon = null;
-          _couponError = s.invalidCoupon;
+          _couponError = res.reason ?? s.invalidCoupon;
         });
         return;
       }
-      if (coupon.minOrder > 0 && subtotal < coupon.minOrder) {
-        setState(() {
-          _coupon = null;
-          _couponError = s.minOrderAmount(formatPrice(coupon.minOrder));
-        });
-        return;
+      // دون الحد الأدنى: نبقيه مفعّلاً ونوضح كم ينقص (يتفعّل الخصم حين تبلغه السلة).
+      if (!coupon.eligibleFor(subtotal)) {
+        setState(() => _couponError = s.minOrderAmount(formatPrice(coupon.minOrder)));
       }
       setState(() => _coupon = coupon);
       ref.read(appliedCouponProvider.notifier).state = coupon;
@@ -307,7 +305,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .createOrder(
             items: cart.items.map((e) => e.toOrderItem()).toList(),
             addressId: address.id,
-            couponCode: _coupon?.code,
+            // الكود يُرسل فقط إن بلغت السلة حدّه الأدنى (وإلا يرفض السيرفر الطلب).
+            couponCode: _coupon != null && _coupon!.eligibleFor(cart.subtotal) ? _coupon!.code : null,
             notes: _notesCtrl.text.trim(),
             loyaltySpent: _useLoyalty ? _loyaltySpent : 0,
             paymentMethod: _paymentMethod,
@@ -408,7 +407,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final points = user?.points ?? 0;
     final subtotal = cart.subtotal;
     final discount = _coupon?.discountFor(subtotal) ?? 0;
-    final shipping = (_coupon?.freeShipping ?? false) ? 0 : _shippingFee;
+    final shipping = (_coupon?.freeShipping ?? false) && _coupon!.eligibleFor(subtotal) ? 0 : _shippingFee;
     final beforeLoyalty = (subtotal - discount + shipping).clamp(0, 1 << 31);
     final loyaltyDiscount = _useLoyalty ? _loyaltyDiscount : 0;
     final total = (beforeLoyalty - loyaltyDiscount).clamp(0, 1 << 31);
