@@ -595,6 +595,18 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
   }
 
   async update(id: string, dto: UpdateProductDto) {
+    // حالة التشغيل لكل تدرج تُحفظ عبر إعادة الإنشاء (الواجهات التي لا ترسل isActive).
+    if (dto.shades) {
+      const prev = await this.prisma.productShade.findMany({
+        where: { productId: id },
+        select: { name: true, barcode: true, isActive: true },
+      });
+      const state = shadeStateMap(prev);
+      dto = {
+        ...dto,
+        shades: dto.shades.map((s) => ({ ...s, isActive: s.isActive ?? previousShadeActive(state, s) ?? true })),
+      };
+    }
     dto = await this.applySyncedPricing(dto);
     dto = this.applyShadeAggregates(dto);
     await this.ensureExists(id);
@@ -866,11 +878,13 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
       where: {
         barcode: { in: candidates },
         product: productWhere,
+        ...(opts.storefrontOnly ? { isActive: true } : {}),
       },
       select: {
         id: true,
         name: true,
         barcode: true,
+        isActive: true,
         product: { select: productSelect },
       },
     });
@@ -885,7 +899,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
         return {
           barcode: code,
           product: shade.product,
-          matchedShade: { id: shade.id, name: shade.name },
+          matchedShade: { id: shade.id, name: shade.name, isActive: shade.isActive },
         };
       }
     }
@@ -1080,6 +1094,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
 
   private shadeCreateData(shades: CreateProductDto["shades"]) {
     return sortShadesByNumber(shades ?? []).map((s, i) => ({
+      isActive: s.isActive ?? true,
       name: s.name,
       colorHex: s.colorHex,
       colorHexEnd: s.colorHexEnd,
@@ -1096,9 +1111,11 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
   private applyShadeAggregates<T extends { shades?: CreateProductDto["shades"]; stock?: number; price?: number; originalPrice?: number; discountPercent?: number; isPromo?: boolean }>(dto: T): T {
     if (!dto.shades?.length) return dto;
 
-    const totalStock = dto.shades.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
-    const inStock = dto.shades.filter((shade) => (shade.stock ?? 0) > 0);
-    const pool = inStock.length ? inStock : dto.shades;
+    // التدرج الموقوف لا يُحسب في مخزون المنتج ولا سعره (التدرج الصريح فقط — الفارغ يعتبر شغالاً).
+    const live = dto.shades.filter((shade) => shade.isActive !== false);
+    const totalStock = live.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
+    const inStock = live.filter((shade) => (shade.stock ?? 0) > 0);
+    const pool = inStock.length ? inStock : live.length ? live : dto.shades;
     const lead = [...pool].sort((a, b) => {
       const disc = (b.discountPercent ?? 0) - (a.discountPercent ?? 0);
       if (disc !== 0) return disc;
@@ -1106,7 +1123,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
     })[0];
     if (!lead) return dto;
 
-    const maxDiscount = Math.max(0, ...dto.shades.map((s) => s.discountPercent ?? 0));
+    const maxDiscount = Math.max(0, ...(live.length ? live : dto.shades).map((s) => s.discountPercent ?? 0));
 
     return {
       ...dto,
@@ -1236,4 +1253,32 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
         return storefront ? catalogOrder : { createdAt: "desc" };
     }
   }
+}
+
+/** مفتاح مطابقة التدرج عبر إعادة الإنشاء: الباركود أولاً ثم الاسم. */
+function shadeKeys(s: { name?: string | null; barcode?: string | null }): string[] {
+  const keys: string[] = [];
+  const code = s.barcode?.trim();
+  if (code) keys.push(`b:${code}`);
+  const name = s.name?.trim().toLowerCase();
+  if (name) keys.push(`n:${name}`);
+  return keys;
+}
+
+function shadeStateMap(rows: Array<{ name: string; barcode: string | null; isActive: boolean }>) {
+  const map = new Map<string, boolean>();
+  for (const row of rows) for (const key of shadeKeys(row)) if (!map.has(key)) map.set(key, row.isActive);
+  return map;
+}
+
+function previousShadeActive(
+  previous: Map<string, boolean> | undefined,
+  shade: { name?: string | null; barcode?: string | null },
+): boolean | undefined {
+  if (!previous) return undefined;
+  for (const key of shadeKeys(shade)) {
+    const hit = previous.get(key);
+    if (hit !== undefined) return hit;
+  }
+  return undefined;
 }

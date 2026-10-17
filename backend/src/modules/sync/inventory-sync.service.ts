@@ -68,6 +68,15 @@ type ProductPricingUpdate = {
   item: SanitizedItem;
 };
 
+/**
+ * التدرجات المعروضة للبيع فقط (الموقوف من تطبيق المدير لا يُحسب في مخزون المنتج ولا سعره).
+ * إن كانت كلها موقوفة نرجعها كما هي لحساب السعر — ومخزونها يُصفَّر عند الجمع (isActive=false).
+ */
+export function liveShades<T extends { isActive?: boolean | null }>(shades: T[]): T[] {
+  const live = shades.filter((s) => s.isActive !== false);
+  return live.length ? live : shades;
+}
+
 function pickLeadShade<
   T extends { stock: number; price: number | null; originalPrice: number; discountPercent: number },
 >(shades: T[]): T {
@@ -463,18 +472,20 @@ export class InventorySyncService {
   }
 
   private async refreshProductStockFromShades(productId: string) {
-    const shades = await this.prisma.productShade.findMany({
+    const all = await this.prisma.productShade.findMany({
       where: { productId },
       select: {
         stock: true,
         price: true,
         originalPrice: true,
         discountPercent: true,
+        isActive: true,
       },
     });
-    if (!shades.length) return;
+    if (!all.length) return;
+    const shades = liveShades(all);
 
-    const totalStock = shades.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
+    const totalStock = shades.reduce((sum, shade) => sum + (shade.isActive ? shade.stock ?? 0 : 0), 0);
     const lead = pickLeadShade(shades);
     const maxDiscount = Math.max(0, ...shades.map((shade) => shade.discountPercent ?? 0));
 
@@ -836,6 +847,7 @@ export class InventorySyncService {
           price: true,
           originalPrice: true,
           discountPercent: true,
+          isActive: true,
         },
       }),
     ]);
@@ -873,9 +885,10 @@ export class InventorySyncService {
       const anyShadeSynced = shades.some((s) => shadeSynced(s.barcode));
 
       if (shades.length > 0 && anyShadeSynced) {
-        const totalStock = shades.reduce((sum, s) => sum + (s.stock ?? 0), 0);
-        const lead = pickLeadShade(shades);
-        const maxDiscount = Math.max(0, ...shades.map((s) => s.discountPercent ?? 0));
+        const live = liveShades(shades);
+        const totalStock = live.reduce((sum, s) => sum + (s.isActive ? s.stock ?? 0 : 0), 0);
+        const lead = pickLeadShade(live);
+        const maxDiscount = Math.max(0, ...live.map((s) => s.discountPercent ?? 0));
         updates.push({
           productId: product.id,
           barcode: fallback.barcode,

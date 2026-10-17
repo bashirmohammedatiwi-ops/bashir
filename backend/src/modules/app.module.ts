@@ -5,6 +5,7 @@ import { BullModule } from "@nestjs/bullmq";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { TransformInterceptor } from "../common/interceptors/transform.interceptor";
 import { MobilePayloadInterceptor } from "../common/interceptors/mobile-payload.interceptor";
+import { StorefrontShadesInterceptor } from "../common/interceptors/storefront-shades.interceptor";
 import { PrismaModule } from "../common/prisma.module";
 import { RedisCacheModule } from "../common/redis-cache.module";
 import { HealthModule } from "./health/health.module";
@@ -29,6 +30,7 @@ import { AiProductModule } from "./ai-product/ai-product.module";
 import { AssistantModule } from "./assistant/assistant.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { AlertsModule } from "./alerts/alerts.module";
+import { ControlModule } from "./control/control.module";
 import { AdvisorModule } from "./advisor/advisor.module";
 import { AdminCacheController } from "./admin/admin-cache.controller";
 
@@ -82,11 +84,13 @@ const conditionalImports: DynamicModule[] = redisEnabled
     PaymentsModule,
     AlertsModule,
     AdvisorModule,
+    ControlModule,
   ],
   controllers: [AdminCacheController],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_INTERCEPTOR, useClass: MobilePayloadInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: StorefrontShadesInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

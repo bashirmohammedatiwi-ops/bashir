@@ -212,8 +212,8 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
           subcategory: { select: { id: true, slug: true, name: true, nameAr: true } },
           tertiaryCategory: { select: { id: true, slug: true, name: true, nameAr: true } },
           images: { take: 1, orderBy: { position: "asc" }, select: { media: true } },
-          _count: { select: { shades: true } },
-          shades: { select: { name: true }, take: 60 },
+          _count: { select: { shades: { where: { isActive: true } } } },
+          shades: { where: { isActive: true }, select: { name: true }, take: 60 },
         },
       }),
       this.prisma.assistantProductTag.findMany({

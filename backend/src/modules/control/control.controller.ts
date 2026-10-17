@@ -1,0 +1,183 @@
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Role } from "@prisma/client";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { BarcodeDraftsService } from "./barcode-drafts.service";
+import { ControlImagesService } from "./control-images.service";
+import { ControlService } from "./control.service";
+import {
+  ControlImagesAddDto,
+  ControlImagesSetDto,
+  ControlProductPatchDto,
+  ControlSearchDto,
+  ControlShadePatchDto,
+  ControlShadesBulkDto,
+  DraftDto,
+  DraftGroupDto,
+  DraftsDeleteDto,
+  DraftsMoveDto,
+  DraftsQueryDto,
+  ImageEditDto,
+  ImagesBatchFrameDto,
+} from "./dto/control.dto";
+
+type Actor = { id?: string; sub?: string } | undefined;
+const actorId = (u: Actor) => u?.id ?? u?.sub;
+
+/** تطبيق المدير + «مركز التحكم» في لوحة التحكم — كل المسارات للموظفين فقط. */
+@ApiTags("control")
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+@Controller("control")
+export class ControlController {
+  constructor(
+    private readonly control: ControlService,
+    private readonly images: ControlImagesService,
+    private readonly drafts: BarcodeDraftsService,
+  ) {}
+
+  @Get("stats")
+  stats() {
+    return this.control.stats();
+  }
+
+  @Get("brands")
+  brands() {
+    return this.control.brands();
+  }
+
+  @Get("activity")
+  activity(@Query("limit") limit?: string) {
+    return this.control.activity(Number(limit) || 40);
+  }
+
+  @Get("search")
+  search(@Query() q: ControlSearchDto) {
+    return this.control.search(q);
+  }
+
+  @Get("lookup")
+  lookup(@Query("code") code: string) {
+    return this.control.lookup(code ?? "");
+  }
+
+  // ---------------- products & shades
+
+  @Get("products/:id")
+  product(@Param("id") id: string) {
+    return this.control.detail(id);
+  }
+
+  @Patch("products/:id")
+  patchProduct(@Param("id") id: string, @Body() dto: ControlProductPatchDto, @CurrentUser() user: Actor) {
+    return this.control.patchProduct(id, dto, actorId(user));
+  }
+
+  @Patch("shades/:id")
+  patchShade(@Param("id") id: string, @Body() dto: ControlShadePatchDto, @CurrentUser() user: Actor) {
+    return this.control.patchShade(id, dto, actorId(user));
+  }
+
+  @Post("products/:id/shades/bulk")
+  bulkShades(@Param("id") id: string, @Body() dto: ControlShadesBulkDto, @CurrentUser() user: Actor) {
+    return this.control.bulkShades(id, dto, actorId(user));
+  }
+
+  // ---------------- images
+
+  @Post("products/:id/images")
+  addImages(@Param("id") id: string, @Body() dto: ControlImagesAddDto, @CurrentUser() user: Actor) {
+    return this.images.add(id, dto.mediaIds, dto.at, actorId(user));
+  }
+
+  @Put("products/:id/images")
+  setImages(@Param("id") id: string, @Body() dto: ControlImagesSetDto, @CurrentUser() user: Actor) {
+    return this.images.set(id, dto.mediaIds, actorId(user));
+  }
+
+  @Delete("products/:id/images/:mediaId")
+  removeImage(@Param("id") id: string, @Param("mediaId") mediaId: string, @CurrentUser() user: Actor) {
+    return this.images.remove(id, mediaId, actorId(user));
+  }
+
+  @Post("products/:id/images/replace")
+  replaceImage(@Param("id") id: string, @Body() body: { from: string; to: string }, @CurrentUser() user: Actor) {
+    return this.images.replace(id, String(body?.from ?? ""), String(body?.to ?? ""), actorId(user));
+  }
+
+  @Post("products/:id/images/frame")
+  frameAll(@Param("id") id: string, @Body() dto: ImagesBatchFrameDto, @CurrentUser() user: Actor) {
+    return this.images.batchFrame(id, dto, actorId(user));
+  }
+
+  @Post("media/:mediaId/edit")
+  editImage(@Param("mediaId") mediaId: string, @Body() dto: ImageEditDto, @CurrentUser() user: Actor) {
+    return this.images.edit(mediaId, dto, actorId(user));
+  }
+
+  // ---------------- barcode drafts
+
+  @Get("draft-groups")
+  groups(@Query("archived") archived?: string) {
+    return this.drafts.groups(archived === "1" || archived === "true");
+  }
+
+  @Post("draft-groups")
+  createGroup(@Body() dto: DraftGroupDto, @CurrentUser() user: Actor) {
+    return this.drafts.createGroup(dto, actorId(user));
+  }
+
+  @Post("draft-groups/reorder")
+  reorderGroups(@Body() body: { ids: string[] }) {
+    return this.drafts.reorderGroups(Array.isArray(body?.ids) ? body.ids.map(String) : []);
+  }
+
+  @Patch("draft-groups/:id")
+  updateGroup(@Param("id") id: string, @Body() dto: DraftGroupDto) {
+    return this.drafts.updateGroup(id, dto);
+  }
+
+  @Delete("draft-groups/:id")
+  deleteGroup(@Param("id") id: string) {
+    return this.drafts.deleteGroup(id);
+  }
+
+  @Get("drafts")
+  listDrafts(@Query() q: DraftsQueryDto) {
+    return this.drafts.list(q);
+  }
+
+  @Post("drafts")
+  createDraft(@Body() dto: DraftDto, @CurrentUser() user: Actor) {
+    return this.drafts.create(dto, actorId(user));
+  }
+
+  @Post("drafts/move")
+  moveDrafts(@Body() dto: DraftsMoveDto) {
+    return this.drafts.move(dto.ids, dto.groupId);
+  }
+
+  @Post("drafts/delete")
+  deleteDrafts(@Body() dto: DraftsDeleteDto) {
+    return this.drafts.remove(dto.ids);
+  }
+
+  @Get("drafts/:id")
+  draft(@Param("id") id: string) {
+    return this.drafts.one(id);
+  }
+
+  @Patch("drafts/:id")
+  updateDraft(@Param("id") id: string, @Body() dto: DraftDto) {
+    return this.drafts.update(id, dto);
+  }
+
+  @Delete("drafts/:id")
+  deleteDraft(@Param("id") id: string) {
+    return this.drafts.remove([id]);
+  }
+}

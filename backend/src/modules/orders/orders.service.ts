@@ -131,6 +131,15 @@ export class OrdersService {
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds } },
     });
+    // تدرج أوقفه المدير بعد أن أضافته الزبونة للسلة — لا يُطلب.
+    const shadeIds = dto.items.map((i) => i.shadeId).filter((id): id is string => !!id);
+    if (shadeIds.length) {
+      const off = await this.prisma.productShade.findFirst({
+        where: { id: { in: shadeIds }, isActive: false },
+        select: { name: true },
+      });
+      if (off) throw new BadRequestException(`اللون «${off.name}» غير متوفر حالياً — احذفيه من السلة`);
+    }
 
     let subtotal = 0;
     const itemsData = dto.items.map((it) => {

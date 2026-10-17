@@ -24,6 +24,8 @@ export class ProductShadeDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) discountPercent?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) stock?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
+  /** فارغ = يبقى كما كان (يُطابق بالباركود ثم الاسم) — الواجهات القديمة لا تُعيد تشغيل تدرج موقوف. */
+  @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
 export class ProductVariantDto {

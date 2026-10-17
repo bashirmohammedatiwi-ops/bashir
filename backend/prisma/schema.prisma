@@ -390,6 +390,8 @@ model ProductShade {
   discountPercent Int        @default(0)
   stock           Int        @default(0)
   position        Int        @default(0)
+  /// موقوف = لا يظهر في المتجر ولا يُطلب (يبقى في لوحة التحكم وتطبيق المدير).
+  isActive        Boolean    @default(true)
 
   product         Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   image           Media?     @relation("ShadeImage", fields: [imageId], references: [id])
@@ -1122,3 +1124,49 @@ model AdvisorTraining {
   lastError    String?
   updatedAt    DateTime  @updatedAt
 }
+
+// ---------------------- BARCODE DRAFTS (تطبيق المدير) ----------------------
+/// مجموعة باركودات محفوظة لمنتجات غير موجودة بعد («رف العطور»، «طلبية تركيا»...).
+model BarcodeDraftGroup {
+  id          String         @id @default(uuid())
+  name        String
+  /// rose | violet | gold | mint | sky | coral | slate
+  color       String         @default("violet")
+  note        String?
+  position    Int            @default(0)
+  isArchived  Boolean        @default(false)
+  createdById String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  drafts      BarcodeDraft[]
+
+  @@index([position])
+}
+
+/// باركود منتج غير موجود في التطبيق — يُحفظ مع صوره ليُضاف لاحقاً.
+/// يصبح «مُضاف» تلقائياً حين يظهر منتج أو تدرج بنفس الباركود.
+model BarcodeDraft {
+  id          String            @id @default(uuid())
+  groupId     String
+  barcode     String
+  name        String?
+  note        String?
+  /// معرّفات Media للصور الملتقطة بالهاتف (بالترتيب).
+  imageIds    String[]          @default([])
+  quantity    Int?
+  /// المنتج الذي أضيف لاحقاً بنفس الباركود (يُملأ تلقائياً).
+  productId   String?
+  shadeId     String?
+  addedAt     DateTime?
+  createdById String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  group       BarcodeDraftGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, barcode])
+  @@index([barcode])
+  @@index([groupId, addedAt])
+}
+
