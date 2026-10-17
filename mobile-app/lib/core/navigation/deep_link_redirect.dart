@@ -29,6 +29,12 @@ String? resolveDeepLink(Uri uri) {
       return path;
     case '/brands':
       return '/brands';
+    // دليل البشرة والباقات والروتين — للإشعارات والحملات.
+    case '/skin-guide':
+    case '/skin-quiz':
+      return path;
+    case '/packages':
+      return uri.hasQuery ? '/packages?${uri.query}' : '/packages';
     case '/cart':
       return '/cart';
     // صفحات الزبونة — للإشعارات والحملات (افتحي مفضلتك، تتبّعي طلبك…).
@@ -61,6 +67,9 @@ String? resolveDeepLink(Uri uri) {
 
   final packageSeg = RegExp(r'^/package/([^/]+)$').firstMatch(path);
   if (packageSeg != null) return '/package/${packageSeg.group(1)}';
+
+  final guideSeg = RegExp(r'^/skin-guide/([^/]+)$').firstMatch(path);
+  if (guideSeg != null) return '/skin-guide/${guideSeg.group(1)}';
 
   final categorySeg = RegExp(r'^/category/([^/]+)$').firstMatch(path);
   if (categorySeg != null) return '/category/${categorySeg.group(1)}';

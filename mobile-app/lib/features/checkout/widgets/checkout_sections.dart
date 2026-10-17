@@ -452,6 +452,8 @@ class CheckoutSummaryCard extends StatefulWidget {
   final AppStrings s;
   final int subtotal;
   final int discount;
+  /// توفير الباقات المكتملة (سعر الباقة أقل من مجموع منتجاتها).
+  final int packageSaving;
   final int loyaltyDiscount;
   final int shipping;
   final int total;
@@ -463,6 +465,7 @@ class CheckoutSummaryCard extends StatefulWidget {
     required this.s,
     required this.subtotal,
     required this.discount,
+    this.packageSaving = 0,
     required this.loyaltyDiscount,
     required this.shipping,
     required this.total,
@@ -527,6 +530,8 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
             ),
           ],
           _Row(label: s.subtotal, value: formatPrice(widget.subtotal)),
+          if (widget.packageSaving > 0)
+            _Row(label: s.isAr ? 'توفير الباقات 🎁' : 'Bundle savings 🎁', value: '- ${formatPrice(widget.packageSaving)}', valueColor: AppColors.success),
           if (widget.discount > 0)
             _Row(label: s.couponDiscount, value: '- ${formatPrice(widget.discount)}', valueColor: AppColors.success),
           if (widget.loyaltyDiscount > 0)
@@ -561,7 +566,7 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
               ),
             ],
           ),
-          if (widget.discount + widget.loyaltyDiscount > 0) ...[
+          if (widget.discount + widget.loyaltyDiscount + widget.packageSaving > 0) ...[
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -575,7 +580,7 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      s.youSaved(formatPrice(widget.discount + widget.loyaltyDiscount)),
+                      s.youSaved(formatPrice(widget.discount + widget.loyaltyDiscount + widget.packageSaving)),
                       style: AppText.label.copyWith(color: AppColors.success),
                     ),
                   ),

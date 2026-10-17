@@ -2,6 +2,7 @@ import '../../core/utils/json.dart';
 import '../../core/l10n/localized_text.dart' as l10n;
 import '../../core/utils/media_url.dart';
 import 'banner.dart';
+import 'beauty.dart';
 import 'brand.dart';
 import 'category.dart';
 import 'product.dart';
@@ -194,6 +195,9 @@ class HomeSection {
   final List<HomePackage> packages;
   final List<dynamic> items;
   final List<Category> skinConcerns;
+  /// نفس العناصر بشكلها الكامل لأقسام «دليل البشرة» و«الروتين» و«الباقات».
+  final List<SkinConcern> concerns;
+  final List<BeautyPackage> beautyPackages;
   final PromoStrip? promoStrip;
   final String? display;
   final String? shape;
@@ -249,6 +253,8 @@ class HomeSection {
     this.packages = const [],
     this.items = const [],
     this.skinConcerns = const [],
+    this.concerns = const [],
+    this.beautyPackages = const [],
     this.promoStrip,
     this.display,
     this.shape,
@@ -332,6 +338,8 @@ class HomeSection {
         packages: asList(json['packages']).map((e) => HomePackage.fromJson(asMap(e))).toList(),
         items: asList(json['items']),
         skinConcerns: asList(json['skinConcerns']).map((e) => Category.fromJson(asMap(e))).toList(),
+        concerns: asList(json['skinConcerns']).map((e) => SkinConcern.fromJson(asMap(e))).toList(),
+        beautyPackages: asList(json['packages']).map((e) => BeautyPackage.fromJson(asMap(e))).toList(),
         promoStrip: json['promoStrip'] != null
             ? PromoStrip.fromJson(asMap(json['promoStrip']))
             : null,

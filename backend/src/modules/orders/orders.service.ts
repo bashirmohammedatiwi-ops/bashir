@@ -123,6 +123,47 @@ export class OrdersService {
     return order;
   }
 
+  /**
+   * توفير الباقات: لكل باقة صالحة في الطلب، عدد النسخ المكتملة = أقل (كمية المنتج ÷ كميته في الباقة)،
+   * والتوفير = (مجموع أسعار منتجاتها الحالية − سعر الباقة) × النسخ المكتملة. باقة ناقصة = بلا توفير.
+   */
+  private async packageSavings(
+    dto: CreateOrderDto,
+    itemsData: { productId: string; quantity: number; unitPrice: number }[],
+  ) {
+    const wanted = (dto.packages ?? []).filter((p) => p.packageId && p.quantity > 0).slice(0, 20);
+    if (!wanted.length) return 0;
+    const packs = await this.prisma.package.findMany({
+      where: { id: { in: wanted.map((p) => p.packageId) }, isActive: true },
+      include: { items: true },
+    });
+    const now = new Date();
+    // كمية كل منتج متاحة للباقات (لا تُحسب القطعة لباقتين).
+    const left = new Map<string, number>();
+    const price = new Map<string, number>();
+    for (const it of itemsData) {
+      left.set(it.productId, (left.get(it.productId) ?? 0) + it.quantity);
+      price.set(it.productId, it.unitPrice);
+    }
+    let saving = 0;
+    for (const w of wanted) {
+      const pack = packs.find((p) => p.id === w.packageId);
+      if (!pack || !pack.items.length || (pack.endsAt && pack.endsAt <= now)) continue;
+      let sets = w.quantity;
+      for (const pi of pack.items) {
+        const need = Math.max(1, pi.quantity);
+        sets = Math.min(sets, Math.floor((left.get(pi.productId) ?? 0) / need));
+      }
+      if (sets <= 0) continue;
+      const itemsTotal = pack.items.reduce((s, pi) => s + (price.get(pi.productId) ?? 0) * Math.max(1, pi.quantity), 0);
+      const perSet = itemsTotal - pack.price;
+      if (perSet <= 0) continue;
+      for (const pi of pack.items) left.set(pi.productId, (left.get(pi.productId) ?? 0) - sets * Math.max(1, pi.quantity));
+      saving += perSet * sets;
+    }
+    return saving;
+  }
+
   async create(userId: string, dto: CreateOrderDto) {
     if (!dto.items.length) throw new BadRequestException("Empty order");
     await this.assertPaymentMethodAvailable(userId, dto.paymentMethod ?? PaymentMethod.COD);
@@ -161,6 +202,11 @@ export class OrdersService {
       };
     });
 
+    // الباقات: توفير = مجموع منتجاتها − سعر الباقة، لكل باقة مكتملة في الطلب.
+    const packageDiscount = await this.packageSavings(dto, itemsData);
+    // الكوبون يُحسب على المجموع بعد توفير الباقات.
+    const couponBase = Math.max(0, subtotal - packageDiscount);
+
     let discountTotal = 0;
     let couponId: string | undefined;
     let freeShipping = false;
@@ -184,26 +230,27 @@ export class OrdersService {
         });
         if (mine >= coupon.perUserLimit) throw new BadRequestException("استخدمتِ هذا الكوبون مسبقاً");
       }
-      if (coupon.minOrder && subtotal < coupon.minOrder)
+      if (coupon.minOrder && couponBase < coupon.minOrder)
         throw new BadRequestException("Minimum order not met");
       if (coupon.type === DiscountType.FIRST_ORDER) {
         const prevOrders = await this.prisma.order.count({
           where: { userId, status: { not: OrderStatus.CANCELLED } },
         });
         if (prevOrders > 0) throw new BadRequestException("Coupon valid for first order only");
-        discountTotal = Math.round((subtotal * coupon.value) / 100);
+        discountTotal = Math.round((couponBase * coupon.value) / 100);
       } else if (coupon.type === DiscountType.FREE_SHIPPING) {
         freeShipping = true;
       } else {
         discountTotal = coupon.type === DiscountType.PERCENT
-          ? Math.round((subtotal * coupon.value) / 100)
+          ? Math.round((couponBase * coupon.value) / 100)
           : coupon.value;
       }
       // سقف الخصم (للنسبة المئوية)، ولا يتجاوز الخصم قيمة الطلب.
       if (coupon.maxDiscount != null && coupon.maxDiscount > 0) discountTotal = Math.min(discountTotal, coupon.maxDiscount);
-      discountTotal = Math.min(discountTotal, subtotal);
+      discountTotal = Math.min(discountTotal, couponBase);
       couponId = coupon.id;
     }
+    discountTotal += packageDiscount;
 
     const delivery = dto.deliveryOption ?? DeliveryOption.STANDARD;
     let shippingTotal = 0;
@@ -263,6 +310,7 @@ export class OrdersService {
           paymentStatus: PaymentStatus.PENDING,
           subtotal,
           discountTotal,
+          packageDiscount,
           shippingTotal,
           total,
           loyaltyEarned,

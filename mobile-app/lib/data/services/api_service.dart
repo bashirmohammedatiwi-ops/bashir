@@ -12,6 +12,7 @@ import '../models/barcode_lookup.dart';
 import '../models/brand.dart';
 import '../models/category.dart';
 import '../models/coupon.dart';
+import '../models/beauty.dart';
 import '../models/home_feed.dart';
 import '../models/loyalty_summary.dart';
 import '../models/notification.dart';
@@ -638,25 +639,82 @@ class ApiService {
   }
 
   // ---- PACKAGES ----
-  Future<Map<String, dynamic>> getPackage(String idOrSlug) async {
+  // ---- الباقات والروتين ودليل البشرة ----
+  /// صفحة باقة/روتين: المنتجات والخطوات والتوفير، وباقات مشابهة.
+  Future<BeautyPackage> getPackage(String idOrSlug) async {
     try {
-      final r = await _dio.get('/packages/$idOrSlug', options: Options(extra: {'auth': false}));
-      return asMap(_data(r));
+      final r = await _dio.get('/packages/${Uri.encodeComponent(idOrSlug)}', options: Options(extra: {'auth': false}));
+      return BeautyPackage.fromJson(asMap(_data(r)));
     } catch (e) {
-      try {
-        final r = await _dio.get('/packages/slug/$idOrSlug', options: Options(extra: {'auth': false}));
-        return asMap(_data(r));
-      } catch (e2) {
-        _throw(e);
-      }
+      _throw(e);
     }
   }
 
-  Future<List<Map<String, dynamic>>> getPackages() async {
+  /// الباقات الصالحة الآن. kind: routines | bundles | ROUTINE_MORNING | ROUTINE_EVENING | BRIDAL_KIT …
+  Future<List<BeautyPackage>> getPackages({String? world, String? kind, String? concern, String? skinType}) async {
     try {
-      final r = await _dio.get('/packages', queryParameters: {'all': '1', 'lite': '1'},
-          options: Options(extra: {'auth': false}));
-      return asList(_data(r)).map((e) => asMap(e)).toList();
+      final key = 'packages_v2_${world ?? '-'}_${kind ?? '-'}_${concern ?? '-'}_${skinType ?? '-'}';
+      final raw = await _cache.getOrFetch<List<dynamic>>(
+        key: key,
+        ttl: AppConfig.catalogCacheTtl,
+        fetch: () async {
+          final r = await _dio.get('/packages', queryParameters: {
+            if (world != null) 'world': world,
+            if (kind != null) 'kind': kind,
+            if (concern != null) 'concern': concern,
+            if (skinType != null) 'skinType': skinType,
+          }, options: Options(extra: {'auth': false}));
+          return asList(_data(r));
+        },
+        parse: (json) => asList(json),
+        serialize: (list) => list,
+      );
+      return raw.map((e) => BeautyPackage.fromJson(asMap(e))).toList();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// مشاكل البشرة لعالم معيّن (مع عدد المنتجات).
+  Future<List<SkinConcern>> getSkinConcerns({String? world}) async {
+    try {
+      final raw = await _cache.getOrFetch<List<dynamic>>(
+        key: 'skin_concerns_v2_${world ?? '-'}',
+        ttl: AppConfig.catalogCacheTtl,
+        fetch: () async {
+          final r = await _dio.get('/skin-concerns',
+              queryParameters: {if (world != null) 'world': world}, options: Options(extra: {'auth': false}));
+          return asList(_data(r));
+        },
+        parse: (json) => asList(json),
+        serialize: (list) => list,
+      );
+      return raw.map((e) => SkinConcern.fromJson(asMap(e))).toList();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// صفحة الدليل لمشكلة: المحتوى، المنتجات، الروتينات المناسبة.
+  Future<SkinGuide> getSkinGuide(String slug, {String? world}) async {
+    try {
+      final r = await _dio.get('/skin-guide/${Uri.encodeComponent(slug)}',
+          queryParameters: {if (world != null) 'world': world}, options: Options(extra: {'auth': false}));
+      return SkinGuide.fromJson(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// نتيجة اختبار البشرة.
+  Future<SkinMatch> matchSkin({String? skinType, List<String> concerns = const [], String? world}) async {
+    try {
+      final r = await _dio.get('/skin-guide/match', queryParameters: {
+        if (skinType != null) 'skinType': skinType,
+        if (concerns.isNotEmpty) 'concerns': concerns.join(','),
+        if (world != null) 'world': world,
+      }, options: Options(extra: {'auth': false}));
+      return SkinMatch.fromJson(asMap(_data(r)));
     } catch (e) {
       _throw(e);
     }
@@ -735,10 +793,13 @@ class ApiService {
     String deliveryOption = 'STANDARD',
     int loyaltySpent = 0,
     String paymentMethod = 'COD',
+    List<Map<String, dynamic>> packages = const [],
   }) async {
     try {
       final r = await _dio.post('/orders', data: {
         'items': items,
+        // باقات مكتملة في السلة — السيرفر يتحقق منها ويطبّق سعرها الخاص.
+        if (packages.isNotEmpty) 'packages': packages,
         'paymentMethod': paymentMethod,
         'deliveryOption': deliveryOption,
         if (addressId != null) 'addressId': addressId,

@@ -511,6 +511,8 @@ model Order {
   paymentMethod    PaymentMethod @default(COD)
   subtotal         Int
   discountTotal    Int           @default(0)
+  /// جزء من discountTotal: توفير الباقات (سعر الباقة أقل من مجموع منتجاتها).
+  packageDiscount  Int           @default(0)
   shippingTotal    Int           @default(0)
   total            Int
   couponId         String?
@@ -653,6 +655,16 @@ model Package {
   isActive        Boolean       @default(true)
   coverImageId    String?
   position        Int           @default(0)
+  /// شرح أطول يظهر في صفحة الباقة/الروتين («لماذا هذا الروتين؟»).
+  description     String        @default("")
+  /// عوالم تظهر فيها (slugs) — فارغة = كل العوالم.
+  worldSlugs      String[]      @default([])
+  /// مشاكل البشرة التي يعالجها (slugs من دليل البشرة).
+  concernSlugs    String[]      @default([])
+  /// أنواع البشرة المناسبة: dry | oily | combination | normal | sensitive — فارغة = للجميع.
+  skinTypes       String[]      @default([])
+  /// ينتهي العرض في هذا التاريخ (عدّاد في التطبيق) — فارغ = دائم.
+  endsAt          DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -670,6 +682,10 @@ model PackageItem {
   packageId       String
   productId       String
   position        Int      @default(0)
+  /// اسم الخطوة في الروتين («غسول»، «سيروم») وملاحظة الاستخدام.
+  stepTitle       String?
+  note            String?
+  quantity        Int      @default(1)
 
   pack            Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
   product         Product  @relation(fields: [productId], references: [id])
@@ -688,6 +704,18 @@ model SkinConcern {
   imageId         String?
   position        Int                  @default(0)
   isActive        Boolean              @default(true)
+  /// سطر قصير تحت الاسم ولون البطاقة (hex).
+  subtitle        String?
+  color           String?
+  /// عوالم يظهر فيها (slugs) — فارغة = كل العوالم.
+  worldSlugs      String[]             @default([])
+  /// محتوى الدليل: الأسباب، النصائح، مكونات تبحثين عنها، ما تتجنبينه.
+  causes          String[]             @default([])
+  tips            String[]             @default([])
+  ingredients     String[]             @default([])
+  avoid           String[]             @default([])
+  /// أنواع البشرة الأكثر عرضة (لاختبار البشرة).
+  skinTypes       String[]             @default([])
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 

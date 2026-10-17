@@ -104,8 +104,10 @@ String? buildSectionItemPath({
     return '/package/${Uri.encodeComponent(value)}';
   }
   if (type == 'skinConcern' && value.isNotEmpty) {
-    return '/products?concernSlug=${Uri.encodeComponent(value)}';
+    return '/skin-guide/${Uri.encodeComponent(value)}';
   }
+  if (type == 'skinGuide') return '/skin-guide';
+  if (type == 'packages') return '/packages';
   if (type == 'search' && value.isNotEmpty) {
     return '/search?q=${Uri.encodeComponent(value)}';
   }
@@ -276,7 +278,15 @@ void openSectionLink(
     return;
   }
   if (type == 'skinConcern' && value.isNotEmpty) {
-    context.push('/products?concernSlug=${Uri.encodeComponent(value)}');
+    context.push('/skin-guide/${Uri.encodeComponent(value)}');
+    return;
+  }
+  if (type == 'skinGuide') {
+    context.push('/skin-guide');
+    return;
+  }
+  if (type == 'packages') {
+    context.push('/packages');
     return;
   }
   if (type == 'search' && value.isNotEmpty) {

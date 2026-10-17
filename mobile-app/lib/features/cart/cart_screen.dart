@@ -13,6 +13,8 @@ import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
 import '../shell/main_shell.dart';
 import 'cart_provider.dart';
+import 'cart_packages_provider.dart';
+import 'widgets/cart_packages_card.dart';
 import 'coupon_provider.dart';
 import 'widgets/cart_checkout_bar.dart';
 import 'widgets/cart_coupon.dart';
@@ -117,6 +119,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             onPressed: () {
               HapticFeedback.mediumImpact();
               ref.read(cartProvider.notifier).clear();
+              ref.read(cartPackagesProvider.notifier).clear();
               _removeCoupon();
               Navigator.pop(ctx);
             },
@@ -147,9 +150,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       }
     });
 
-    final discount = coupon?.discountFor(cart.subtotal) ?? 0;
+    // الباقات المكتملة أولاً، ثم الكوبون على ما تبقّى (نفس قاعدة السيرفر).
+    final packageSaving = ref.watch(cartPackageSavingProvider);
+    final couponBase = cart.subtotal - packageSaving;
+    final discount = coupon?.discountFor(couponBase) ?? 0;
     final freeShipping = coupon?.freeShipping ?? false;
-    final total = (cart.subtotal - discount).clamp(0, 1 << 31);
+    final total = (couponBase - discount).clamp(0, 1 << 31);
     final topPad = MediaQuery.paddingOf(context).top;
     final t = context.worldTheme;
 
@@ -181,6 +187,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             },
                           ),
                         ),
+                        const SliverToBoxAdapter(child: CartPackagesCard()),
                         SliverToBoxAdapter(
                           child: CartSectionLabel(title: ref.s.yourProducts, subtitle: ref.s.swipeToRemoveHint),
                         ),
@@ -213,7 +220,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                 discount: discount,
                                 onApply: _applyCoupon,
                                 onRemove: _removeCoupon,
-                                subtotal: cart.subtotal,
+                                subtotal: couponBase,
                               ),
                             ),
                           ),
@@ -222,6 +229,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           child: CartSummaryCard(
                             subtotal: cart.subtotal,
                             discount: discount,
+                            packageSaving: packageSaving,
                             total: total,
                             itemCount: cart.count,
                             freeShippingThreshold: threshold,

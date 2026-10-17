@@ -61,3 +61,14 @@ export function toPayload(values: any, productIds: string[]) {
     productIds,
   };
 }
+
+/** مجموع المنتجات الحالي والتوفير (من عناصر الباقة في القائمة). */
+export function packageStats(row: any) {
+  const items: any[] = row?.items ?? [];
+  const itemsTotal = items.reduce(
+    (s, it) => s + (Number(it?.product?.price) || 0) * Math.max(1, Number(it?.quantity) || 1),
+    0,
+  );
+  const saving = Math.max(0, itemsTotal - (Number(row?.price) || 0));
+  return { itemsTotal, saving, percent: itemsTotal > 0 ? Math.round((saving / itemsTotal) * 100) : 0 };
+}

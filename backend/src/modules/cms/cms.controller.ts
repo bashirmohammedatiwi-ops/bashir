@@ -21,10 +21,11 @@ import { BannersService } from "./banners.service";
 import { CouponsService } from "./coupons.service";
 import { HomeBlocksService } from "./home-blocks.service";
 import { PackagesService } from "./packages.service";
+import { ShowcaseService } from "./showcase.service";
 import { SkinConcernsService } from "./skin-concerns.service";
 import { CreateBannerDto, UpdateBannerDto } from "./dto/banner.dto";
-import { CreatePackageDto, UpdatePackageDto } from "./dto/package.dto";
-import { CreateSkinConcernDto, UpdateSkinConcernDto } from "./dto/skin-concern.dto";
+
+const STAFF: string[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF];
 
 @ApiTags("cms")
 @Controller()
@@ -35,6 +36,7 @@ export class CmsController {
     private readonly coupons: CouponsService,
     private readonly home: HomeBlocksService,
     private readonly skinConcerns: SkinConcernsService,
+    private readonly showcase: ShowcaseService,
   ) {}
 
   // ---- Banners ----
@@ -58,35 +60,73 @@ export class CmsController {
   }
 
   // ---- Packages ----
-  @Public() @Get("packages") listPackages(
+  /**
+   * لوحة التحكم (all=1 مع حساب موظف): كل الباقات بما فيها الموقوفة.
+   * التطبيق: الباقات الصالحة الآن لعالم/نوع/مشكلة — بأسعار وتوفير محسوبين.
+   */
+  @Public() @UseGuards(OptionalJwtGuard) @Get("packages") listPackages(
+    @CurrentUser() user?: { id: string; role: string },
     @Query("all") all?: string,
     @Query("kind") kind?: string,
     @Query("lite") lite?: string,
+    @Query("world") world?: string,
+    @Query("concern") concern?: string,
+    @Query("skinType") skinType?: string,
   ) {
-    return this.packages.list(all !== "1", kind as any, lite === "1");
+    if (all === "1" && user && STAFF.includes(user.role)) {
+      return this.packages.list(false, (kind as any) || undefined, lite === "1");
+    }
+    return this.packages.listPublic({ world: world || undefined, kind: kind || undefined, concern: concern || undefined, skinType: skinType || undefined });
   }
 
   @Public() @Get("packages/slug/:slug") packageBySlug(@Param("slug") slug: string) {
-    return this.packages.findBySlug(slug);
+    return this.packages.findPublic(slug);
   }
 
-  @Public() @Get("packages/:id") packageOne(@Param("id") id: string) {
+  /** للوحة التحكم: الباقة كاملة (حتى الموقوفة) لتعديلها. */
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Get("packages/:id/admin") packageAdmin(@Param("id") id: string) {
     return this.packages.findOne(id);
   }
 
+  @Public() @Get("packages/:id") packageOne(@Param("id") id: string) {
+    return this.packages.findPublic(id);
+  }
+
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Post("packages") createPackage(@Body() data: CreatePackageDto) {
+  @Post("packages") createPackage(@Body() data: Record<string, unknown>) {
     return this.packages.create(data);
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Patch("packages/:id") updatePackage(@Param("id") id: string, @Body() data: UpdatePackageDto) {
+  @Patch("packages/:id") updatePackage(@Param("id") id: string, @Body() data: Record<string, unknown>) {
     return this.packages.update(id, data);
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete("packages/:id") removePackage(@Param("id") id: string) {
     return this.packages.remove(id);
+  }
+
+  // ---- العرض في رئيسية كل عالم (دليل البشرة / روتين البشرة / الباقات) ----
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Get("showcase/:kind") showcaseOverview(@Param("kind") kind: string) {
+    return this.showcase.overview(kind);
+  }
+
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Patch("showcase/:kind/:worldId") showcaseSave(
+    @Param("kind") kind: string,
+    @Param("worldId") worldId: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.showcase.save(kind, worldId, {
+      shown: body.shown as boolean | undefined,
+      title: typeof body.title === "string" ? body.title : undefined,
+      subtitle: typeof body.subtitle === "string" ? body.subtitle : undefined,
+      display: typeof body.display === "string" ? body.display : undefined,
+      afterBlockId: body.afterBlockId === undefined ? undefined : (body.afterBlockId as string | null),
+    });
   }
 
   // ---- Coupons ----
@@ -157,9 +197,27 @@ export class CmsController {
     return this.home.remove(id);
   }
 
-  // ---- Skin Concerns ----
-  @Public() @Get("skin-concerns") listSkinConcerns(@Query("all") all?: string) {
-    return this.skinConcerns.list(all !== "1", all === "1");
+  // ---- Skin Concerns (دليل البشرة) ----
+  @Public() @Get("skin-concerns") listSkinConcerns(@Query("all") all?: string, @Query("world") world?: string) {
+    return this.skinConcerns.list(all !== "1", true, world || undefined);
+  }
+
+  /** نتيجة اختبار البشرة: روتين صباحي ومسائي + منتجات كل مشكلة. */
+  @Public() @Get("skin-guide/match") skinMatch(
+    @Query("skinType") skinType?: string,
+    @Query("concerns") concerns?: string,
+    @Query("world") world?: string,
+  ) {
+    return this.skinConcerns.match({
+      skinType: skinType || undefined,
+      concerns: (concerns ?? "").split(",").map((x) => x.trim()).filter(Boolean),
+      world: world || undefined,
+    });
+  }
+
+  /** صفحة الدليل لمشكلة: المحتوى + المنتجات + الروتينات المناسبة. */
+  @Public() @Get("skin-guide/:slug") skinGuide(@Param("slug") slug: string, @Query("world") world?: string) {
+    return this.skinConcerns.guide(slug, world || undefined);
   }
 
   @Public() @Get("skin-concerns/:slug/products") skinConcernProducts(
@@ -170,13 +228,18 @@ export class CmsController {
     return this.skinConcerns.findBySlug(slug, Number(page) || 1, Number(limit) || 20);
   }
 
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Get("skin-concerns/:id/admin-products") skinConcernAdminProducts(@Param("id") id: string) {
+    return this.skinConcerns.adminProducts(id);
+  }
+
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Post("skin-concerns") createSkinConcern(@Body() data: CreateSkinConcernDto) {
+  @Post("skin-concerns") createSkinConcern(@Body() data: Record<string, unknown>) {
     return this.skinConcerns.create(data);
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Patch("skin-concerns/:id") updateSkinConcern(@Param("id") id: string, @Body() data: UpdateSkinConcernDto) {
+  @Patch("skin-concerns/:id") updateSkinConcern(@Param("id") id: string, @Body() data: Record<string, unknown>) {
     return this.skinConcerns.update(id, data);
   }
 

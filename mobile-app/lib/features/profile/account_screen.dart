@@ -201,6 +201,18 @@ class AccountScreen extends ConsumerWidget {
             subtitle: s.acctBrandsHint,
             onTap: () => context.push('/brands'),
           ),
+          ProfileMenuTile(
+            icon: Icons.spa_outlined,
+            title: s.isAr ? 'دليل البشرة' : 'Skin guide',
+            subtitle: s.isAr ? 'اختبار البشرة، المشاكل وحلولها' : 'Skin quiz, concerns and fixes',
+            onTap: () => context.push('/skin-guide'),
+          ),
+          ProfileMenuTile(
+            icon: Icons.card_giftcard_rounded,
+            title: s.isAr ? 'الباقات والروتين' : 'Bundles & routines',
+            subtitle: s.isAr ? 'منتجات مختارة بسعر أوفر' : 'Curated sets, better price',
+            onTap: () => context.push('/packages'),
+          ),
         ],
       ),
       const SizedBox(height: AccountTheme.sectionGap),

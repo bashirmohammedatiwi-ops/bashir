@@ -15,6 +15,7 @@ import 'pill_buttons.dart';
 class CartSummaryCard extends ConsumerWidget {
   final int subtotal;
   final int discount;
+  final int packageSaving;
   final int total;
   final int itemCount;
   final int freeShippingThreshold;
@@ -24,6 +25,7 @@ class CartSummaryCard extends ConsumerWidget {
     super.key,
     required this.subtotal,
     required this.discount,
+    this.packageSaving = 0,
     required this.total,
     required this.itemCount,
     required this.freeShippingThreshold,
@@ -55,6 +57,10 @@ class CartSummaryCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _Row(label: s.subtotalItems(itemCount), value: formatPrice(subtotal)),
+          if (packageSaving > 0) ...[
+            const SizedBox(height: 8),
+            _Row(label: ar ? 'توفير الباقات 🎁' : 'Bundle savings 🎁', value: '- ${formatPrice(packageSaving)}', valueColor: AppColors.success),
+          ],
           if (discount > 0) ...[
             const SizedBox(height: 8),
             _Row(label: s.couponDiscount, value: '- ${formatPrice(discount)}', valueColor: AppColors.success),
@@ -76,16 +82,16 @@ class CartSummaryCard extends ConsumerWidget {
               Text(formatPrice(total), style: AppText.title2.copyWith(color: t.accentDark)),
             ],
           ),
-          if (discount > 0 || points > 0) ...[
+          if (discount + packageSaving > 0 || points > 0) ...[
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (discount > 0)
+                if (discount + packageSaving > 0)
                   _Perk(
                     icon: Icons.savings_outlined,
-                    label: ar ? 'وفّرتِ ${formatPrice(discount)}' : 'You save ${formatPrice(discount)}',
+                    label: ar ? 'وفّرتِ ${formatPrice(discount + packageSaving)}' : 'You save ${formatPrice(discount + packageSaving)}',
                     color: AppColors.success,
                   ),
                 if (points > 0)

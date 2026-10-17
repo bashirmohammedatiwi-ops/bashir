@@ -46,7 +46,7 @@ export class CouponsService {
       by: ["couponId"],
       where: { couponId: { not: null }, status: { not: OrderStatus.CANCELLED } },
       _count: { _all: true },
-      _sum: { discountTotal: true, total: true },
+      _sum: { discountTotal: true, packageDiscount: true, total: true },
     });
     const by = new Map(stats.map((s) => [s.couponId, s]));
     const now = new Date();
@@ -55,7 +55,8 @@ export class CouponsService {
       live: isCouponLive(c, now),
       stats: {
         orders: by.get(c.id)?._count._all ?? 0,
-        discountGiven: by.get(c.id)?._sum.discountTotal ?? 0,
+        // خصم الكوبون وحده (بدون توفير الباقات).
+        discountGiven: (by.get(c.id)?._sum.discountTotal ?? 0) - (by.get(c.id)?._sum.packageDiscount ?? 0),
         sales: by.get(c.id)?._sum.total ?? 0,
       },
     }));

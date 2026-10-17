@@ -20,6 +20,7 @@ import 'sections/section_group_section.dart';
 import 'sections/promo_sections.dart';
 import 'sections/skin_concerns_strip.dart';
 import 'widgets/home_theme.dart';
+import '../beauty/beauty_home_sections.dart';
 
 export 'sections/hero_section.dart' show HeroHomeSection;
 
@@ -54,15 +55,20 @@ class HomeSectionWidget extends ConsumerWidget {
           : ProductCarouselSection(section: section, compactTop: isFirstAfterHero),
       'FLASH_SALE' => FlashSaleHomeSection(section: section, compactTop: isFirstAfterHero),
       'FEATURED_BRANDS' || 'BRAND_SHOWCASE' => BrandHomeSection(section: section, compactTop: isFirstAfterHero),
-      'PACKAGES' => PackagesHomeSection(section: section, compactTop: isFirstAfterHero),
+      'PACKAGES' => section.beautyPackages.isNotEmpty
+          ? PackagesShowcaseSection(section: section, compactTop: isFirstAfterHero)
+          : PackagesHomeSection(section: section, compactTop: isFirstAfterHero),
       'PROMO_STRIP' => PromoStripSection(section: section),
       'IMAGE_TILES' => ImageTilesSection(section: section),
       'IMAGE_MARQUEE' => ImageMarqueeSection(section: section),
       'MEDIA_GALLERY' || 'PHOTO_WALL' || 'IMAGE_COLLAGE' => PhotoWallSection(section: section),
       'SECTION_GROUP' => SectionGroupSection(section: section, compactTop: isFirstAfterHero),
       'CIRCLE_TILES' => CircleTilesSection(section: section),
-      'ROUTINE_CAROUSEL' => RoutineCarouselSection(section: section, compactTop: isFirstAfterHero),
+      'ROUTINE_CAROUSEL' => section.beautyPackages.isNotEmpty
+          ? RoutinesHomeSection(section: section, compactTop: isFirstAfterHero)
+          : RoutineCarouselSection(section: section, compactTop: isFirstAfterHero),
       'CARE_HUB' => CareHubSection(section: section, compactTop: isFirstAfterHero),
+      'SKIN_CONCERNS' when section.concerns.isNotEmpty => SkinGuideHomeSection(section: section, compactTop: isFirstAfterHero),
       'SKIN_CONCERNS' => SkinConcernsStrip(
           concerns: section.skinConcerns,
           title: section.titleForLang(ref.watch(languageCodeProvider)),

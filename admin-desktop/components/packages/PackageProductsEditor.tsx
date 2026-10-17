@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Input, Space, Table, Tag, message } from "antd";
+import { AutoComplete, Button, Input, InputNumber, Space, Table, Tag, message } from "antd";
+import { STEP_TITLES } from "@/lib/beauty";
 import { useCallback, useState } from "react";
 import { ProductThumb } from "@/components/ProductThumb";
 import { normalizeBarcodeInput } from "@/lib/inventorySync";
@@ -16,6 +17,9 @@ type PackageProductsEditorProps = {
   title?: string;
   emptyText?: string;
   scopeLabel?: string;
+  /** أعمدة الخطوة (الاسم والملاحظة) والكمية. */
+  withSteps?: boolean;
+  withQuantity?: boolean;
 };
 
 export function PackageProductsEditor({
@@ -25,7 +29,11 @@ export function PackageProductsEditor({
   title = "منتجات الباقة (بالباركود)",
   emptyText = "لم تُضف منتجات بعد — استخدم الباركود",
   scopeLabel = "الباقة",
+  withSteps = false,
+  withQuantity = false,
 }: PackageProductsEditorProps) {
+  const patch = (id: string, change: Partial<ResolvedPackageProduct>) =>
+    onChange(products.map((p) => (p.id === id ? { ...p, ...change } : p)));
   const [barcode, setBarcode] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -138,6 +146,51 @@ export function PackageProductsEditor({
               </div>
             ),
           },
+          ...(withSteps
+            ? [
+                {
+                  title: "اسم الخطوة / ملاحظة الاستخدام",
+                  width: 260,
+                  render: (_: unknown, row: ResolvedPackageProduct) => (
+                    <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                      <AutoComplete
+                        size="small"
+                        value={row.stepTitle ?? ""}
+                        options={STEP_TITLES.map((t) => ({ value: t }))}
+                        placeholder="غسول، سيروم، مرطب…"
+                        onChange={(v) => patch(row.id, { stepTitle: v })}
+                        filterOption={(input, o) => String(o?.value ?? "").includes(input)}
+                        style={{ width: "100%" }}
+                      />
+                      <Input
+                        size="small"
+                        value={row.note ?? ""}
+                        placeholder="مثال: على بشرة رطبة، قطرتين"
+                        onChange={(e) => patch(row.id, { note: e.target.value })}
+                      />
+                    </Space>
+                  ),
+                },
+              ]
+            : []),
+          ...(withQuantity
+            ? [
+                {
+                  title: "الكمية",
+                  width: 76,
+                  render: (_: unknown, row: ResolvedPackageProduct) => (
+                    <InputNumber
+                      size="small"
+                      min={1}
+                      max={10}
+                      value={row.quantity ?? 1}
+                      onChange={(v) => patch(row.id, { quantity: Number(v) || 1 })}
+                      style={{ width: 60 }}
+                    />
+                  ),
+                },
+              ]
+            : []),
           {
             title: "البراند",
             width: 96,

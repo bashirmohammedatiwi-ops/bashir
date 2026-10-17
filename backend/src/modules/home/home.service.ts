@@ -9,6 +9,8 @@ import { BrandsService } from "../catalog/brands.service";
 import { CategoriesService } from "../catalog/categories.service";
 import { SettingsService } from "../settings/settings.service";
 import { HomeSectionResolver } from "./home-section.resolver";
+import { isPackageLive, packageInclude, publicPackage, worldScope } from "../cms/packages.service";
+import { publicConcern } from "../cms/skin-concerns.service";
 
 const productInclude = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -92,6 +94,27 @@ export class HomeService {
     return payload;
   }
 
+  /** الباقات الصالحة بشكلها العام (أسعار وتوفير)، ودليل البشرة مع عدد المنتجات. */
+  private async beautyBlocks(
+    packageRows: Parameters<typeof publicPackage>[0][],
+    concernRows: Parameters<typeof publicConcern>[0][],
+  ) {
+    const now = new Date();
+    const packages = packageRows
+      .filter((p) => isPackageLive(p, now))
+      .map(publicPackage)
+      .filter((p) => p.stepCount > 0);
+    const counts = concernRows.length
+      ? await this.prisma.productSkinConcern.groupBy({
+          by: ["concernId"],
+          _count: { concernId: true },
+          where: { product: { isActive: true }, concernId: { in: concernRows.map((c) => c.id) } },
+        })
+      : [];
+    const countMap = new Map(counts.map((c) => [c.concernId, c._count.concernId]));
+    return { packages, skinConcerns: concernRows.map((c) => publicConcern(c, countMap.get(c.id) ?? 0)) };
+  }
+
   private async buildFeed(
     settings: Record<string, unknown>,
     worldId: string | null = null,
@@ -113,8 +136,8 @@ export class HomeService {
       banners,
       categories,
       brands,
-      packages,
-      skinConcerns,
+      packageRows,
+      skinConcernRows,
       homeBlocks,
       newArrivals,
       bestSellers,
@@ -137,13 +160,14 @@ export class HomeService {
             include: { logo: true },
           })
         : this.brands.list({ featuredOnly: true, storefront: true }),
+      // الباقات والروتينات ودليل البشرة: العامة + المخصصة لهذا العالم.
       this.prisma.package.findMany({
-        where: { isActive: true },
-        orderBy: { position: "asc" },
-        include: { coverImage: true, items: { include: { product: true } } },
+        where: { isActive: true, ...worldScope(world?.slug) },
+        orderBy: [{ isFeatured: "desc" }, { position: "asc" }],
+        include: packageInclude,
       }),
       this.prisma.skinConcern.findMany({
-        where: { isActive: true },
+        where: { isActive: true, ...worldScope(world?.slug) },
         orderBy: { position: "asc" },
         include: { image: true },
       }),
@@ -176,6 +200,8 @@ export class HomeService {
         include: productInclude,
       }),
     ]);
+
+    const { packages, skinConcerns } = await this.beautyBlocks(packageRows, skinConcernRows);
 
     const productBuckets = {
       new: newArrivals.map((p) => withPlaceholderImages(p)),
@@ -222,10 +248,7 @@ export class HomeService {
       categories,
       brands,
       packages,
-      skinConcerns: skinConcerns.map((c) => ({
-        ...c,
-        image: rewriteMediaRecord(c.image as Record<string, unknown> | null | undefined),
-      })),
+      skinConcerns,
       homeBlocks,
       flashSale: {
         endsAt: flashEndsAt,
@@ -254,7 +277,7 @@ export class HomeService {
       ...(s.hideProductsWithoutImages ? hasRealProductImagesWhere() : {}),
     };
 
-    const [banners, brands, packages, skinConcerns, offersBlocks, promoProducts] = await Promise.all([
+    const [banners, brands, packageRows, skinConcernRows, offersBlocks, promoProducts] = await Promise.all([
       this.prisma.banner.findMany({
         where: activeBannerWhere(null),
         orderBy: { position: "asc" },
@@ -267,8 +290,8 @@ export class HomeService {
       }),
       this.prisma.package.findMany({
         where: { isActive: true },
-        orderBy: { position: "asc" },
-        include: { coverImage: true, items: { include: { product: true } } },
+        orderBy: [{ isFeatured: "desc" }, { position: "asc" }],
+        include: packageInclude,
       }),
       this.prisma.skinConcern.findMany({
         where: { isActive: true },
@@ -286,6 +309,8 @@ export class HomeService {
         include: productInclude,
       }),
     ]);
+
+    const { packages, skinConcerns } = await this.beautyBlocks(packageRows, skinConcernRows);
 
     const productBuckets = {
       new: [],

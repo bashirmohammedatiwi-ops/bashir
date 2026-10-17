@@ -1,4 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { publicConcern } from "../cms/skin-concerns.service";
+import { isPackageLive, packageInclude, publicPackage } from "../cms/packages.service";
 import { HomeBlock, HomeBlockType } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { BrandsService } from "../catalog/brands.service";
@@ -726,37 +728,39 @@ export class HomeSectionResolver {
   private async resolvePackages(payload: Payload, fallback: unknown[]) {
     const ids = payload.packageIds as string[] | undefined;
     const kind = payload.kind as string | undefined;
-    const enrich = (p: Record<string, unknown>) => {
+    const limit = Number(payload.limit) || 12;
+    // bundles = كل ما ليس روتيناً، routines = الصباحي والمسائي.
+    const kindOk = (k: unknown) => {
+      const v = String(k ?? "");
+      if (!kind || kind === "all") return true;
+      if (kind === "bundles") return !v.startsWith("ROUTINE_");
+      if (kind === "routines") return v.startsWith("ROUTINE_");
+      return v === kind;
+    };
+    const enrich = (p: Record<string, unknown>, i: number) => {
       const slug = (p.slug as string) || (p.id as string);
       return withCardSize(
         { ...p, link: buildAppLink("package", slug) },
-        resolveCardSize(payload, p.id as string, 0),
+        resolveCardSize(payload, p.id as string, i),
       );
     };
     if (!ids?.length) {
-      let list = fallback as Record<string, unknown>[];
-      if (kind && kind !== "all") {
-        list = list.filter((p) => p.kind === kind);
-      }
-      return list.map((p) => enrich(p));
+      return (fallback as Record<string, unknown>[])
+        .filter((p) => kindOk(p.kind))
+        .slice(0, limit)
+        .map((p, i) => enrich(p, i));
     }
-    const where: Record<string, unknown> = { id: { in: ids }, isActive: true };
-    if (kind && kind !== "all") where.kind = kind;
-    const packages = await this.prisma.package.findMany({
-      where,
-      include: { coverImage: true, items: { include: { product: true } } },
-    });
-    const map = new Map(packages.map((p) => [p.id, p]));
+    const rows = await this.prisma.package.findMany({ where: { id: { in: ids }, isActive: true }, include: packageInclude });
+    const now = new Date();
+    const map = new Map(
+      rows
+        .filter((p) => isPackageLive(p, now) && kindOk(p.kind))
+        .map((p) => [p.id, publicPackage(p) as unknown as Record<string, unknown>]),
+    );
     return ids
-      .map((id, i) => {
-        const pkg = map.get(id);
-        if (!pkg) return null;
-        return withCardSize(
-          { ...pkg, link: buildAppLink("package", pkg.slug || pkg.id) } as Record<string, unknown>,
-          resolveCardSize(payload, id, i),
-        );
-      })
-      .filter(Boolean);
+      .map((id) => map.get(id))
+      .filter((p): p is Record<string, unknown> => !!p && (p.stepCount as number) > 0)
+      .map((p, i) => enrich(p, i));
   }
 
   private async resolveRoutinePackages(payload: Payload, fallback: unknown[]) {
@@ -781,7 +785,7 @@ export class HomeSectionResolver {
       nameEn: (c.nameEn as string | undefined) ?? null,
       descriptionEn: (c.descriptionEn as string | undefined) ?? null,
       link: buildAppLink("skinConcern", c.slug as string),
-      imageUrl: this.concernImageUrl(c),
+      imageUrl: (c.imageUrl as string | null | undefined) ?? this.concernImageUrl(c),
     });
     if (!ids?.length) {
       return (fallback as Record<string, unknown>[]).slice(0, max).map(enrich);
@@ -790,7 +794,7 @@ export class HomeSectionResolver {
       where: { id: { in: ids }, isActive: true },
       include: { image: true },
     });
-    const map = new Map(concerns.map((c) => [c.id, c]));
+    const map = new Map(concerns.map((c) => [c.id, publicConcern(c)]));
     return ids.map((id) => map.get(id)).filter(Boolean).map((c) => enrich(c as Record<string, unknown>));
   }
 

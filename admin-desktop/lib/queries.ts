@@ -92,6 +92,13 @@ export const queries = {
     api.get(`/loyalty/users/${userId}`).then((r) => r.data?.data ?? r.data),
   homePreview: () => api.get("/home").then((r) => r.data?.data ?? r.data),
   worldsManage: () => api.get("/worlds/manage").then((r) => r.data?.data ?? r.data),
+  /** الباقة كاملة بمنتجاتها وخطواتها (للتعديل). */
+  packageAdmin: (id: string) => api.get(`/packages/${id}/admin`).then((r) => r.data?.data ?? r.data),
+  /** منتجات مشكلة بشرة (لمحرّر الباركود). */
+  skinConcernProducts: (id: string) =>
+    api.get(`/skin-concerns/${id}/admin-products`).then((r) => r.data?.data ?? r.data),
+  /** العرض في رئيسية كل عالم: skinGuide | routines | packages */
+  showcase: (kind: string) => api.get(`/showcase/${kind}`).then((r) => r.data?.data ?? r.data),
 };
 
 export const mutations = {
@@ -210,6 +217,8 @@ export const mutations = {
   updatePackage: (id: string, data: any) =>
     api.patch(`/packages/${id}`, data).then((r) => r.data?.data ?? r.data),
   deletePackage: (id: string) => api.delete(`/packages/${id}`).then((r) => r.data),
+  saveShowcase: (kind: string, worldId: string, data: any) =>
+    api.patch(`/showcase/${kind}/${worldId}`, data).then((r) => r.data?.data ?? r.data),
 
   createSkinConcern: (data: any) =>
     api.post("/skin-concerns", data).then((r) => r.data?.data ?? r.data),

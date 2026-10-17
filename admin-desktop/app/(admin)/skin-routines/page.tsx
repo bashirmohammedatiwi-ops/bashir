@@ -14,12 +14,15 @@ import {
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { PackageFormModal } from "@/components/packages/PackageFormModal";
+import { HomeShowcasePanel } from "@/components/showcase/HomeShowcasePanel";
+import { skinTypeLabel } from "@/lib/beauty";
 import { mediaThumb } from "@/lib/mediaUrl";
 import {
   SKIN_ROUTINE_KINDS,
   type SkinRoutineKind,
   kindIcon,
   kindLabel,
+  packageStats,
 } from "@/lib/packageForm";
 import { mutations, queries } from "@/lib/queries";
 
@@ -62,7 +65,7 @@ export default function SkinRoutinesPage() {
       <Space direction="vertical" size={16} style={{ width: "100%" }}>
         <PageHeader
           title="روتين البشرة"
-          subtitle="روتينات صباحية ومسائية — غلاف مخصص + خطوات المنتجات بالباركود"
+          subtitle="روتينات صباحية ومسائية — خطوات بالترتيب مع اسم كل خطوة وطريقة استخدامها، وسعر خاص للروتين كاملاً"
           extra={
             <Button type="primary" onClick={openCreate}>
               + {tab === "ROUTINE_MORNING" ? "روتين صباحي" : "روتين مسائي"}
@@ -121,6 +124,29 @@ export default function SkinRoutinesPage() {
                                 {routine.isActive ? "نشط" : "موقوف"}
                               </Tag>
                             </div>
+                            {(() => {
+                              const st = packageStats(routine);
+                              return st.saving > 0 ? (
+                                <div style={{ fontSize: 12, color: "#389e0d", marginBottom: 6 }}>
+                                  توفير {st.saving.toLocaleString()} د.ع ({st.percent}%)
+                                </div>
+                              ) : null;
+                            })()}
+                            <Space size={[4, 4]} wrap style={{ marginBottom: 8 }}>
+                              {(routine.skinTypes ?? []).map((t: string) => (
+                                <Tag key={t} color="purple">
+                                  {skinTypeLabel(t)}
+                                </Tag>
+                              ))}
+                              {(routine.concernSlugs ?? []).map((c: string) => (
+                                <Tag key={c} color="magenta">
+                                  {c}
+                                </Tag>
+                              ))}
+                              {routine.worldSlugs?.length ? (
+                                <Tag color="gold">{routine.worldSlugs.length} عالم</Tag>
+                              ) : null}
+                            </Space>
                             <Space wrap>
                               <Button size="small" type="primary" ghost onClick={() => openEdit(routine)}>
                                 تعديل
@@ -146,6 +172,8 @@ export default function SkinRoutinesPage() {
             ),
           }))}
         />
+
+        <HomeShowcasePanel kind="routines" label="روتين البشرة" />
       </Space>
 
       <PackageFormModal

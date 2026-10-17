@@ -11,6 +11,10 @@ export type ResolvedPackageProduct = {
   stock?: number;
   brandName?: string;
   product?: any;
+  /** خطوة الروتين: اسمها وملاحظة الاستخدام وكميتها في الباقة. */
+  stepTitle?: string | null;
+  note?: string | null;
+  quantity?: number;
 };
 
 export async function resolveProductByBarcode(
@@ -75,5 +79,8 @@ export function packageProductFromItem(item: any): ResolvedPackageProduct | null
     stock: product?.stock,
     brandName: product?.brand?.name,
     product,
+    stepTitle: item?.stepTitle ?? null,
+    note: item?.note ?? null,
+    quantity: item?.quantity ?? 1,
   };
 }

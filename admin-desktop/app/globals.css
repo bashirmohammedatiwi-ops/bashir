@@ -872,3 +872,47 @@ body {
   align-items: center;
   margin-bottom: 12px;
 }
+
+/* ---- العرض في رئيسية كل عالم (دليل البشرة / روتين / باقات) ---- */
+.alhayaa-showcase .ant-card-head { padding-block: 12px; }
+.alhayaa-showcase-rows { display: flex; flex-direction: column; gap: 10px; }
+.alhayaa-showcase-row {
+  display: grid;
+  grid-template-columns: 190px 90px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #eee;
+  background: #fafafa;
+  transition: background 0.2s, border-color 0.2s;
+}
+.alhayaa-showcase-row.is-on {
+  background: color-mix(in srgb, var(--w) 6%, white);
+  border-color: color-mix(in srgb, var(--w) 30%, white);
+}
+.alhayaa-showcase-world { display: flex; gap: 10px; align-items: flex-start; }
+.alhayaa-showcase-dot { width: 14px; height: 14px; border-radius: 7px; background: var(--w); margin-top: 4px; flex: none; }
+.alhayaa-showcase-name { font-weight: 700; }
+.alhayaa-showcase-switch { padding-top: 4px; }
+.alhayaa-showcase-fields { display: flex; flex-direction: column; gap: 8px; }
+.alhayaa-showcase-selects { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .alhayaa-showcase-row { grid-template-columns: 1fr; }
+}
+
+/* ---- محرّر الباقة/الروتين ---- */
+.alhayaa-pkg-summary {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f7f3ff;
+  margin-bottom: 12px;
+}
+.alhayaa-pkg-summary b { font-size: 16px; }
+.alhayaa-pkg-summary .is-bad { color: #cf1322; }
+.alhayaa-pkg-summary .is-good { color: #389e0d; }
+.alhayaa-concern-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; }

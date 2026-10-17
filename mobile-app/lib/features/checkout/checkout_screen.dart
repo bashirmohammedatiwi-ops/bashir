@@ -23,6 +23,7 @@ import '../../data/models/user.dart';
 import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
+import '../cart/cart_packages_provider.dart';
 import '../cart/coupon_provider.dart';
 import '../shell/main_shell.dart';
 import '../shell/nav_tabs.dart';
@@ -192,7 +193,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       final res = await ref.read(apiServiceProvider).checkCoupon(code);
       final coupon = res.coupon;
-      final subtotal = ref.read(cartProvider).subtotal;
+      final int packageSaving = ref.read(cartPackageSavingProvider);
+      final subtotal = ref.read(cartProvider).subtotal - packageSaving;
       if (coupon == null) {
         setState(() {
           _coupon = null;
@@ -298,6 +300,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _placing = true);
     try {
       final cart = ref.read(cartProvider);
+      // الكوبون يُحسب على المجموع بعد توفير الباقات (نفس قاعدة السيرفر).
+      final int packageSaving = ref.read(cartPackageSavingProvider);
+      final couponBase = cart.subtotal - packageSaving;
+      final packs = [
+        for (final st in ref.read(cartPackageStatusProvider))
+          if (st.complete) {'packageId': st.pack.id, 'quantity': st.completeSets},
+      ];
       final address = await _upsertAddress();
       ref.invalidate(addressesProvider);
       final order = await ref
@@ -306,12 +315,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             items: cart.items.map((e) => e.toOrderItem()).toList(),
             addressId: address.id,
             // الكود يُرسل فقط إن بلغت السلة حدّه الأدنى (وإلا يرفض السيرفر الطلب).
-            couponCode: _coupon != null && _coupon!.eligibleFor(cart.subtotal) ? _coupon!.code : null,
+            couponCode: _coupon != null && _coupon!.eligibleFor(couponBase) ? _coupon!.code : null,
+            packages: packs,
             notes: _notesCtrl.text.trim(),
             loyaltySpent: _useLoyalty ? _loyaltySpent : 0,
             paymentMethod: _paymentMethod,
           );
       ref.read(cartProvider.notifier).clear();
+      ref.read(cartPackagesProvider.notifier).clear();
       ref.read(appliedCouponProvider.notifier).state = null;
       ref.invalidate(ordersProvider);
       ref.invalidate(loyaltyProvider);
@@ -406,9 +417,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     final points = user?.points ?? 0;
     final subtotal = cart.subtotal;
-    final discount = _coupon?.discountFor(subtotal) ?? 0;
-    final shipping = (_coupon?.freeShipping ?? false) && _coupon!.eligibleFor(subtotal) ? 0 : _shippingFee;
-    final beforeLoyalty = (subtotal - discount + shipping).clamp(0, 1 << 31);
+    final packageSaving = ref.watch(cartPackageSavingProvider);
+    final couponBase = subtotal - packageSaving;
+    final discount = _coupon?.discountFor(couponBase) ?? 0;
+    final shipping = (_coupon?.freeShipping ?? false) && _coupon!.eligibleFor(couponBase) ? 0 : _shippingFee;
+    final beforeLoyalty = (subtotal - packageSaving - discount + shipping).clamp(0, 1 << 31);
     final loyaltyDiscount = _useLoyalty ? _loyaltyDiscount : 0;
     final total = (beforeLoyalty - loyaltyDiscount).clamp(0, 1 << 31);
     final savedAddresses = addressesAsync.valueOrNull ?? [];
@@ -518,6 +531,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       items: cart.items,
                       subtotal: subtotal,
                       discount: discount,
+                      packageSaving: packageSaving,
                       loyaltyDiscount: loyaltyDiscount,
                       shipping: shipping,
                       total: total,

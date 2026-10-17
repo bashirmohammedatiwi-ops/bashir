@@ -16,6 +16,9 @@ import '../../features/checkout/order_success_screen.dart';
 import '../../features/orders/order_detail_screen.dart';
 import '../../features/orders/orders_screen.dart';
 import '../../features/packages/package_detail_screen.dart';
+import '../../features/packages/packages_screen.dart';
+import '../../features/beauty/skin_guide_screen.dart';
+import '../../features/beauty/skin_quiz_screen.dart';
 import '../../features/products/product_detail_screen.dart';
 import '../../features/products/product_listing_screen.dart';
 import '../../features/products/slug_listing_screen.dart';
@@ -165,6 +168,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/package/:id',
         builder: (_, s) => PackageDetailScreen(idOrSlug: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/packages',
+        builder: (_, s) => PackagesScreen(initialTab: s.uri.queryParameters['tab']),
+      ),
+      GoRoute(path: '/skin-guide', builder: (_, __) => const SkinGuideScreen()),
+      GoRoute(
+        path: '/skin-guide/:slug',
+        builder: (_, s) => SkinConcernScreen(slug: s.pathParameters['slug']!),
+      ),
+      GoRoute(
+        path: '/skin-quiz',
+        builder: (_, s) => SkinQuizScreen(showResult: s.uri.queryParameters['result'] == '1'),
       ),
       GoRoute(path: '/checkout', builder: (_, __) => const CheckoutScreen()),
       GoRoute(

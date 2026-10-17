@@ -20,9 +20,18 @@ export class OrderItemInputDto {
   @Type(() => Number) @IsInt() @Min(1) quantity: number;
 }
 
+/** باقة في السلة: سعرها الخاص يُطبَّق إن وُجدت كل منتجاتها بالكمية الكافية. */
+export class OrderPackageInputDto {
+  @IsString() @IsNotEmpty() packageId: string;
+  @Type(() => Number) @IsInt() @Min(1) quantity: number;
+}
+
 export class CreateOrderDto {
   @IsArray() @ValidateNested({ each: true }) @Type(() => OrderItemInputDto)
   items: OrderItemInputDto[];
+
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => OrderPackageInputDto)
+  packages?: OrderPackageInputDto[];
 
   @IsOptional() @IsString() addressId?: string;
   @IsOptional() @IsString() couponCode?: string;
