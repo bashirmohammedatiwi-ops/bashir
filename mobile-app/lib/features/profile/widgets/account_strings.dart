@@ -36,8 +36,8 @@ extension AccountStringsX on AppStrings {
   String acctOrdersCount(int n) =>
       isAr ? '$n طلب' : '$n ${n == 1 ? 'order' : 'orders'}';
   String acctItemsCount(int n) =>
-      isAr ? '$n منتج' : '$n ${n == 1 ? 'item' : 'items'}';
-  String acctPointsCount(int n) => isAr ? '$n نقطة' : '$n pts';
+      isAr ? arProducts(n) : '$n ${n == 1 ? 'item' : 'items'}';
+  String acctPointsCount(int n) => isAr ? arPoints(n) : '$n pts';
 
   // ── الحقول والنماذج ──
   String get acctOptional => isAr ? 'اختياري' : 'Optional';

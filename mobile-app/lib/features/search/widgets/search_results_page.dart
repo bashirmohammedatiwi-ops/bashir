@@ -1,3 +1,4 @@
+import '../../../core/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -63,7 +64,7 @@ class SearchResultsPage extends StatelessWidget {
                     child: skeleton
                         ? const ShimmerBox(key: ValueKey('s'), width: 80, height: 10, radius: 5)
                         : Text(
-                            r.total == 0 ? 'لا نتائج' : '${formatNumber(r.total)} منتج',
+                            r.total == 0 ? 'لا نتائج' : arProducts(r.total),
                             key: ValueKey(r.total),
                             style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700),
                           ),

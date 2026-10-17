@@ -1,3 +1,4 @@
+import '../../core/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -378,7 +379,7 @@ class _GuideBody extends ConsumerWidget {
                       Wrap(
                         spacing: 8,
                         children: [
-                          if (guide.productTotal > 0) _HeroChip('${guide.productTotal} منتج يعالجها'),
+                          if (guide.productTotal > 0) _HeroChip('${arProducts(guide.productTotal)} لعلاجها'),
                           if (guide.routines.isNotEmpty) _HeroChip('${guide.routines.length} روتين مقترح'),
                         ],
                       ),

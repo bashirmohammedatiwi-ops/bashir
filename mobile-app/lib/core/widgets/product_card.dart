@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/product.dart';
+import '../../features/brands/brand_search.dart';
 import '../../features/worlds/world_theme.dart';
 import '../l10n/app_strings.dart';
 import '../l10n/locale_provider.dart';
@@ -232,7 +233,7 @@ class _CardInfo extends ConsumerWidget {
           SizedBox(
             height: 34,
             child: Text(
-              product.localizedName(lang),
+              stripBrandPrefix(product.localizedName(lang), product.brand?.name),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppText.bodySmall.copyWith(

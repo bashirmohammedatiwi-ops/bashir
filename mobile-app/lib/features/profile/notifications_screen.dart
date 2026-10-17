@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/navigation/notification_navigation.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/states.dart';
@@ -61,6 +62,10 @@ class NotificationsScreen extends ConsumerWidget {
                 icon: Icons.notifications_none_rounded,
                 title: s.noNotifications,
                 subtitle: s.notificationsEmptySubtitle,
+                action: ProfilePrimaryButton(
+                  label: s.isAr ? 'تصفحي العروض' : 'Browse offers',
+                  onPressed: () => openOffersTab(context, ProviderScope.containerOf(context, listen: false)),
+                ),
               ),
             );
           }

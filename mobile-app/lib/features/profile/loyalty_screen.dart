@@ -223,6 +223,14 @@ class _PointsCard extends StatelessWidget {
             s.loyaltyAvailablePoints,
             style: AppText.body.copyWith(color: soft),
           ),
+          // بلا نقاط بعد: تشجيع بدل فراغ.
+          if (discount <= 0) ...[
+            const SizedBox(height: 14),
+            Text(
+              s.isAr ? 'كل 1,000 د.ع = نقطة ✨ و100 نقطة = خصم 1,000 د.ع' : 'Every 1,000 IQD = 1 point ✨ 100 points = 1,000 IQD off',
+              style: AppText.caption.copyWith(color: soft, fontWeight: FontWeight.w600),
+            ),
+          ],
           if (discount > 0) ...[
             const SizedBox(height: 16),
             Container(
@@ -337,7 +345,7 @@ class _NextRewardCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      ar ? 'باقي $remaining نقطة لخصم $reward إضافي' : '$remaining points to another $reward off',
+                      ar ? 'باقي ${arPoints(remaining)} لخصم $reward إضافي' : '$remaining points to another $reward off',
                       style: AppText.label.copyWith(color: t.ink, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),

@@ -103,7 +103,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             children: [
               Center(
                 child: ProfileAvatar(
-                  initial: name.isNotEmpty ? name[0] : '؟',
+                  initial: name.isNotEmpty ? name[0] : '🌸',
                   size: 76,
                 ),
               ),

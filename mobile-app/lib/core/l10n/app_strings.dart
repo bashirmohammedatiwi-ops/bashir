@@ -12,6 +12,27 @@ extension AppStringsX on WidgetRef {
 }
 
 /// نصوص واجهة التطبيق — عربي / إنجليزي.
+/// «5 نقاط» لا «5 نقطة»: تمييز العدد بالعربي (1 نقطة، 2 نقطتين، 3–10 نقاط، 11+ نقطة).
+String arPoints(int n) {
+  final m = n % 100;
+  if (n == 1) return 'نقطة واحدة';
+  if (n == 2) return 'نقطتين';
+  if (m >= 3 && m <= 10) return '$n نقاط';
+  return '$n نقطة';
+}
+
+/// «3 منتجات» / «15 منتج» / «منتجان» — تمييز العدد بالعربي.
+String arProducts(int n) {
+  final m = n % 100;
+  if (n == 1) return 'منتج واحد';
+  if (n == 2) return 'منتجان';
+  final num = n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  if (m >= 3 && m <= 10) return '$num منتجات';
+  return '$num منتج';
+}
+
+int _countOf(String n) => int.tryParse(n.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
 class AppStrings {
   final String lang;
   const AppStrings(this.lang);
@@ -135,7 +156,7 @@ class AppStrings {
       isAr ? 'ابحثي بين الأقسام… ماسكرا، شامبو، عطور' : 'Search categories… mascara, shampoo';
   String get catLensAll => isAr ? 'كل الأقسام' : 'All';
   String get catShopAll => isAr ? 'تسوقي الكل' : 'Shop all';
-  String catProducts(String n) => isAr ? '$n منتج' : '$n products';
+  String catProducts(String n) => isAr ? arProducts(_countOf(n)) : '$n products';
   String get catTopBrands => isAr ? 'أبرز البراندات' : 'Top brands';
   String get catBestSellers => isAr ? 'الأكثر طلباً هنا' : 'Most loved here';
   String get catSections => isAr ? 'الأقسام' : 'Sections';
@@ -203,7 +224,7 @@ class AppStrings {
   String lfPriceOver(String v) => isAr ? 'أكثر من $v' : 'Over $v';
   String lfPriceBetween(String a, String b) => '$a – $b';
   String lfRatingAtLeast(String r) => isAr ? '$r★ فأكثر' : '$r★ & up';
-  String lfResults(String n) => isAr ? '$n منتج' : '$n products';
+  String lfResults(String n) => isAr ? arProducts(_countOf(n)) : '$n products';
   String get sort => isAr ? 'ترتيب' : 'Sort';
   String get filter => isAr ? 'تصفية' : 'Filter';
   String get filterProducts => isAr ? 'تصفية المنتجات' : 'Filter Products';
@@ -216,6 +237,8 @@ class AppStrings {
   String get reset => isAr ? 'إعادة تعيين' : 'Reset';
   String get apply => isAr ? 'تطبيق' : 'Apply';
   String get productCount => isAr ? 'منتج' : 'products';
+  /// العدد مع التمييز الصحيح («4 منتجات»).
+  String productsN(int n) => isAr ? arProducts(n) : '$n products';
   String get browseProducts => isAr ? 'تصفّحي واختاري الأنسب' : 'Browse and find your match';
   String get availableProducts => isAr ? 'منتج متاح' : 'products available';
   String get subcategory => isAr ? 'القسم الفرعي' : 'Subcategory';
@@ -253,7 +276,7 @@ class AppStrings {
   String get viewCart => isAr ? 'عرض السلة' : 'View Cart';
   String get quantity => isAr ? 'الكمية' : 'Quantity';
   String earnPoints(int points) =>
-      isAr ? 'اكسبي $points نقطة عند شراء هذا المنتج' : 'Earn $points points when you buy this';
+      isAr ? 'اكسبي ${arPoints(points)} عند شراء هذا المنتج' : 'Earn $points points when you buy this';
   String get bestSeller => isAr ? 'الأكثر مبيعاً' : 'Best Seller';
   String reviewCount(int n) => isAr ? '($n تقييم)' : '($n reviews)';
   String savePercent(int p) => isAr ? 'وفّري \u2066$p%\u2069' : 'Save $p%';
@@ -396,7 +419,7 @@ class AppStrings {
   // ─── Checkout ─────────────────────────────────────────────────────────────
   String get checkout => isAr ? 'إتمام الطلب' : 'Checkout';
   String usePoints(int points) =>
-      isAr ? 'استخدمي $points نقطة' : 'Use $points points';
+      isAr ? 'استخدمي ${arPoints(points)}' : 'Use $points points';
 
   // ─── Package ──────────────────────────────────────────────────────────────
   String get packageTitle => isAr ? 'الباقة' : 'Package';
@@ -546,7 +569,7 @@ class AppStrings {
   String get confirmStep => isAr ? 'تأكيد' : 'Confirm';
   String get useLoyaltyPoints => isAr ? 'نقاط الولاء' : 'Loyalty points';
   String loyaltyUseTitle(int points) =>
-      isAr ? 'استخدمي $points نقطة ولاء' : 'Use $points loyalty points';
+      isAr ? 'استخدمي ${arPoints(points)} ولاء' : 'Use $points loyalty points';
   String loyaltyDiscountHint(String discount, String per100) => isAr
       ? 'خصم $discount (100 نقطة = $per100)'
       : '$discount off (100 pts = $per100)';

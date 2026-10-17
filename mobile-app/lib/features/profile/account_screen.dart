@@ -341,11 +341,12 @@ class _ProfileHero extends ConsumerWidget {
 
     return ProfileHeroCard(
       greeting: s.acctHello,
-      name: user.name,
+      // بلا اسم (سجّلت برقم الهاتف فقط): دعوة لطيفة لإكماله بدل «؟».
+      name: user.name.trim().isNotEmpty ? user.name : (s.isAr ? 'أضيفي اسمكِ ✨' : 'Add your name ✨'),
       subtitle: contact,
-      badge: '${user.points} ${s.loyaltyPointsCount}',
+      badge: s.isAr ? '${arPoints(user.points)} ولاء' : '${user.points} ${s.loyaltyPointsCount}',
       onBadgeTap: () => context.push('/loyalty'),
-      initial: user.name.trim().isNotEmpty ? user.name.trim()[0] : '؟',
+      initial: user.name.trim().isNotEmpty ? user.name.trim()[0] : '🌸',
       editLabel: s.editProfile,
       onEdit: () => context.push('/edit-profile'),
     );

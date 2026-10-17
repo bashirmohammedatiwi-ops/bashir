@@ -97,7 +97,7 @@ class CartSummaryCard extends ConsumerWidget {
                 if (points > 0)
                   _Perk(
                     icon: Icons.stars_rounded,
-                    label: ar ? 'ستكسبين $points نقطة' : "You'll earn $points points",
+                    label: ar ? 'ستكسبين ${arPoints(points)}' : "You'll earn $points points",
                     color: t.accentDark,
                   ),
               ],

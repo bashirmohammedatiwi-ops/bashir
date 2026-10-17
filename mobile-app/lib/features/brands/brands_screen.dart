@@ -313,7 +313,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                 child: _FeaturedBrands(
                   brands: featured.take(10).toList(),
                   lang: lang,
-                  productsLabel: s.productCount,
+                  productsLabel: s.productsN,
                   onTap: _openBrand,
                 ),
               ),
@@ -430,7 +430,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       return _BrandTile(
         brand: brand,
         name: name,
-        productsLabel: s.productCount,
+        productsLabel: s.productsN,
         onTap: () => _openBrand(brand, name),
       );
     }, childCount: brands.length),
@@ -554,7 +554,7 @@ class _SearchField extends StatelessWidget {
 class _FeaturedBrands extends StatelessWidget {
   final List<Brand> brands;
   final String lang;
-  final String productsLabel;
+  final String Function(int) productsLabel;
   final void Function(Brand, String) onTap;
 
   const _FeaturedBrands({
@@ -635,7 +635,7 @@ class _FeaturedBrands extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${formatNumber(b.productCount)} $productsLabel',
+                          productsLabel(b.productCount),
                           style: AppText.caption.copyWith(
                             color: Colors.white.withValues(alpha: 0.85),
                           ),
@@ -915,7 +915,7 @@ class _BrandsGridLoading extends StatelessWidget {
 class _BrandTile extends StatelessWidget {
   final Brand brand;
   final String name;
-  final String productsLabel;
+  final String Function(int) productsLabel;
   final VoidCallback onTap;
 
   const _BrandTile({
@@ -995,7 +995,7 @@ class _BrandTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppCorners.pill),
               ),
               child: Text(
-                '${formatNumber(brand.productCount)} $productsLabel',
+                productsLabel(brand.productCount),
                 maxLines: 1,
                 style: AppText.micro.copyWith(
                   color: t.accentDark,

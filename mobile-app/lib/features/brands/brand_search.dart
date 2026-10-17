@@ -332,3 +332,28 @@ class BrandSearchIndex {
     return ranked.take(3).map((e) => e.$1).toList();
   }
 }
+
+/// «جولدن روز - قلم كحل» تحت شعار GOLDEN ROSE → «قلم كحل»: البراند مكتوب فوق الاسم في البطاقة.
+/// تهجئات المتجر تختلف (غولدن / جولدن / قولدن)، فالمقارنة بهيكل النطق لا بالنص.
+String stripBrandPrefix(String name, String? brandName) {
+  final b = brandName?.trim() ?? '';
+  if (b.isEmpty) return name;
+  final parts = splitBrandName(b);
+  final keys = {phoneticKey(b), if (parts.ar != null) phoneticKey(parts.ar!), if (parts.en != null) phoneticKey(parts.en!)}
+    ..removeWhere((k) => k.length < 2);
+  final m = RegExp(r'^(.{2,32}?)\s+[-–—]\s+(.{4,})$').firstMatch(name.trim());
+  if (m == null) {
+    // بلا شرطة («كولدن روز لونغ ستاي…»): أول كلمة/كلمتين/ثلاث تطابق البراند نطقاً تماماً.
+    final words = name.trim().split(RegExp(r'\s+'));
+    for (var n = 1; n <= 3 && n <= words.length - 2; n++) {
+      final k = phoneticKey(words.take(n).join(' '));
+      if (k.length >= 3 && keys.contains(k)) return words.skip(n).join(' ');
+    }
+    return name;
+  }
+  final pk = phoneticKey(m.group(1)!);
+  if (pk.length < 2) return name;
+  // البادئة هي البراند نفسه أو جزء منه — لا أطول (فـ«فارماسيريس T» تبقى، T خط منتجات).
+  final same = keys.any((k) => k == pk || (pk.length >= 3 && k.startsWith(pk)));
+  return same ? m.group(2)!.trim() : name;
+}

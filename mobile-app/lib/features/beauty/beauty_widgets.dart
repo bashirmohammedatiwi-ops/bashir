@@ -1,3 +1,4 @@
+import '../../core/l10n/app_strings.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -599,7 +600,7 @@ class SkinConcernCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(AppCorners.pill)),
-                      child: Text('${concern.productCount} منتج', style: AppText.micro.copyWith(color: Colors.white)),
+                      child: Text(arProducts(concern.productCount), style: AppText.micro.copyWith(color: Colors.white)),
                     ),
                   ],
                 ],
