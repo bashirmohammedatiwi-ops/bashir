@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -163,9 +164,9 @@ export function ControlProductDrawer({
       extra={
         p ? (
           <Space>
-            <a href={`/products/?edit=${p.id}`} target="_blank" rel="noreferrer">
+            <Link href={`/products/?edit=${p.id}`} target="_blank" prefetch={false}>
               <Button>التعديل الكامل</Button>
-            </a>
+            </Link>
           </Space>
         ) : null
       }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Empty, Input, Select, Skeleton, Switch, Tag, Tooltip, message, Popconfirm } from "antd";
@@ -144,11 +145,11 @@ export function ControlCenterPage() {
               {c.sub ? <small>{c.sub}</small> : null}
             </button>
           ))}
-          <a className="control-stat" href="/barcode-drafts/">
+          <Link className="control-stat" href="/barcode-drafts/" prefetch={false}>
             <strong style={{ color: "#6e45b0" }}>{stats.drafts.pending.toLocaleString("en")}</strong>
             <span>باركودات محفوظة بانتظار</span>
             <small>{stats.drafts.added} أُضيفت لاحقاً</small>
-          </a>
+          </Link>
         </div>
       ) : null}
 

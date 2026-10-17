@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -393,9 +394,9 @@ export function BarcodeDraftsPage() {
                         أُضيف للتطبيق
                       </Tag>
                       {d.product ? (
-                        <a href={`/products/?edit=${d.product.id}`} style={{ display: "block", fontSize: 12, marginTop: 4 }}>
+                        <Link prefetch={false} href={`/products/?edit=${d.product.id}`} style={{ display: "block", fontSize: 12, marginTop: 4 }}>
                           {d.product.name}
-                        </a>
+                        </Link>
                       ) : null}
                     </div>
                   ) : (
@@ -421,11 +422,11 @@ export function BarcodeDraftsPage() {
                   <Space>
                     {d.status === "pending" ? (
                       <Tooltip title="إضافة المنتج بالذكاء الاصطناعي بهذا الباركود">
-                        <a href={`/ai-add/?barcode=${encodeURIComponent(d.barcode)}${d.name ? `&hint=${encodeURIComponent(d.name)}` : ""}`}>
+                        <Link prefetch={false} href={`/ai-add/?barcode=${encodeURIComponent(d.barcode)}${d.name ? `&hint=${encodeURIComponent(d.name)}` : ""}`}>
                           <Button size="small" type="primary" icon={<PlusOutlined />}>
                             أضفه
                           </Button>
-                        </a>
+                        </Link>
                       </Tooltip>
                     ) : null}
                     <Button
