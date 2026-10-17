@@ -28,7 +28,7 @@ class AppStrings {
   String get navAccount => isAr ? 'حسابي' : 'Account';
 
   // ─── Language ─────────────────────────────────────────────────────────────
-  String get chooseLanguage => isAr ? 'اختر اللغة' : 'Choose Language';
+  String get chooseLanguage => isAr ? 'اختاري اللغة' : 'Choose Language';
   String get chooseLanguageSubtitle =>
       isAr ? 'يمكنك تغييرها لاحقاً من حسابي' : 'You can change it later from Account';
   String get arabic => 'العربية';
@@ -84,7 +84,7 @@ class AppStrings {
   String get loyaltyPoints => isAr ? 'نقاط الولاء' : 'Loyalty Points';
   String get notifications => isAr ? 'الإشعارات' : 'Notifications';
   String get support => isAr ? 'الدعم' : 'Support';
-  String get whatsappSupport => isAr ? 'تواصل عبر واتساب' : 'Contact via WhatsApp';
+  String get whatsappSupport => isAr ? 'تواصلي عبر واتساب' : 'Contact via WhatsApp';
   String get callUs => isAr ? 'اتصل بنا' : 'Call Us';
   String get emailSupport => isAr ? 'راسلينا بالبريد' : 'Email us';
   String get settings => isAr ? 'الإعدادات' : 'Settings';
@@ -172,7 +172,7 @@ class AppStrings {
   String get browseTertiarySections =>
       isAr ? 'تصفّحي الأقسام الثانوية' : 'Browse sub-sections';
   String get selectTertiarySection =>
-      isAr ? 'اختر قسمًا ثانويًا' : 'Choose a sub-section';
+      isAr ? 'اختاري قسمًا ثانويًا' : 'Choose a sub-section';
   String get tertiarySectionsHint => isAr
       ? 'اضغطي على القسم الفرعي لعرض الأقسام الثانوية، أو على أيقونة الحقيبة لفتح كل منتجاته'
       : 'Tap a subcategory to expand secondary sections, or the bag icon for all its products';
@@ -243,7 +243,7 @@ class AppStrings {
   String get howToUse => isAr ? 'طريقة الاستخدام' : 'How to Use';
   String get reviews => isAr ? 'تقييم' : 'reviews';
   String get sales => isAr ? 'عملية بيع' : 'sold';
-  String get addToCart => isAr ? 'أضف للسلة' : 'Add to Cart';
+  String get addToCart => isAr ? 'أضيفي للسلة' : 'Add to Cart';
   String get outOfStock => isAr ? 'غير متوفر' : 'Out of Stock';
   String get newBadge => isAr ? 'جديد' : 'New';
   String get offerBadge => isAr ? 'عرض' : 'Sale';
@@ -289,7 +289,7 @@ class AppStrings {
       isAr ? 'سيتم حذف جميع المنتجات من سلتك.' : 'All items will be removed from your cart.';
   String get clearCart => isAr ? 'تفريغ' : 'Clear';
   String get clearCartTooltip => isAr ? 'تفريغ السلة' : 'Clear cart';
-  String get enterCouponCode => isAr ? 'أدخل كود الخصم' : 'Enter discount code';
+  String get enterCouponCode => isAr ? 'أدخلي كود الخصم' : 'Enter discount code';
   String get invalidCoupon => isAr ? 'كود الخصم غير صالح أو منتهي' : 'Invalid or expired coupon';
   String minOrderAmount(String amount) =>
       isAr ? 'الحد الأدنى للطلب $amount' : 'Minimum order $amount';
@@ -322,7 +322,7 @@ class AppStrings {
   String searchProductsFound(int count) =>
       isAr ? '$count ${count == 1 ? 'منتج' : 'منتجات'}' : '$count ${count == 1 ? 'product' : 'products'}';
   String get searchBrowseAlso => isAr ? 'تصفّحي أيضاً' : 'Browse also';
-  String get searchInStore => isAr ? 'ابحث في ديما الحياة' : 'Search Deema Alhayat';
+  String get searchInStore => isAr ? 'ابحثي في ديما الحياة' : 'Search Deema Alhayat';
   String get searchInStoreHint => isAr
       ? 'ابحثي بالعربي أو الإنجليزي — الاسم، البراند، القسم، أو الباركود'
       : 'Search in Arabic or English — name, brand, category, or barcode';
@@ -331,7 +331,7 @@ class AppStrings {
   String get quickIdeas => isAr ? 'اقتراحات سريعة' : 'Quick ideas';
   String get clear => isAr ? 'مسح' : 'Clear';
   String get scanResults => isAr ? 'نتائج المسح' : 'Scan Results';
-  String get scanHint => isAr ? 'وجّه الكاميرا نحو باركود المنتج' : 'Point the camera at the product barcode';
+  String get scanHint => isAr ? 'وجّهي الكاميرا نحو باركود المنتج' : 'Point the camera at the product barcode';
   String get switchCamera => isAr ? 'تبديل الكاميرا' : 'Switch camera';
   String get flash => isAr ? 'الفلاش' : 'Flash';
 
@@ -353,7 +353,7 @@ class AppStrings {
       : 'Discover beauty products and add them to your cart';
   String get shopNow => isAr ? 'تسوّقي الآن' : 'Shop Now';
   String get discountCodeLabel => isAr ? 'كود الخصم' : 'Discount code';
-  String get enterDiscountHint => isAr ? 'أدخل كود الخصم' : 'Enter discount code';
+  String get enterDiscountHint => isAr ? 'أدخلي كود الخصم' : 'Enter discount code';
   String get applyCode => isAr ? 'تطبيق الكود' : 'Apply code';
   String get orderSummary => isAr ? 'ملخص الطلب' : 'Order summary';
   String subtotalItems(int count) =>
@@ -383,7 +383,7 @@ class AppStrings {
   String get orderDetails => isAr ? 'تفاصيل الطلب' : 'Order Details';
   String get cancelOrder => isAr ? 'إلغاء الطلب' : 'Cancel Order';
   String get cancelOrderConfirm =>
-      isAr ? 'هل أنت متأكد من إلغاء هذا الطلب؟' : 'Are you sure you want to cancel this order?';
+      isAr ? 'هل أنتِ متأكدة من إلغاء هذا الطلب؟' : 'Are you sure you want to cancel this order?';
   String get goBack => isAr ? 'تراجع' : 'Go Back';
   String get reorder => isAr ? 'إعادة الطلب' : 'Reorder';
   String get continueShopping => isAr ? 'متابعة التسوق' : 'Continue Shopping';
@@ -396,7 +396,7 @@ class AppStrings {
   // ─── Checkout ─────────────────────────────────────────────────────────────
   String get checkout => isAr ? 'إتمام الطلب' : 'Checkout';
   String usePoints(int points) =>
-      isAr ? 'استخدم $points نقطة' : 'Use $points points';
+      isAr ? 'استخدمي $points نقطة' : 'Use $points points';
 
   // ─── Package ──────────────────────────────────────────────────────────────
   String get packageTitle => isAr ? 'الباقة' : 'Package';
@@ -406,38 +406,38 @@ class AppStrings {
   String get setDefaultAddress => isAr ? 'تعيين كعنوان افتراضي' : 'Set as default address';
 
   // ─── Loyalty ──────────────────────────────────────────────────────────────
-  String get loginToSeePoints => isAr ? 'سجّل الدخول لعرض نقاطك' : 'Sign in to view your points';
+  String get loginToSeePoints => isAr ? 'سجّلي الدخول لعرض نقاطك' : 'Sign in to view your points';
   String get pointsHistory => isAr ? 'سجل النقاط' : 'Points History';
   String get loyaltyAvailablePoints => isAr ? 'نقطة متاحة' : 'points available';
   String loyaltyRedeemAtCheckout(String amount) => isAr
       ? 'كل 100 نقطة = $amount خصم عند إتمام الطلب (اختياري)'
       : 'Every 100 points = $amount off at checkout (optional)';
   String get loyaltyEarnOnOrder => isAr
-      ? 'اكسب نقطة واحدة عن كل 1,000 د.ع في الطلب المكتمل'
+      ? 'اكسبي نقطة واحدة عن كل 1,000 د.ع في الطلب المكتمل'
       : 'Earn 1 point for every 1,000 IQD in completed orders';
   String get noHistoryYet => isAr ? 'لا يوجد سجل بعد' : 'No history yet';
   String get pointsWillAppearHere =>
       isAr ? 'ستظهر معاملات النقاط هنا' : 'Point transactions will appear here';
 
   String get loginToViewOrders =>
-      isAr ? 'سجّل الدخول لعرض طلباتك' : 'Sign in to view your orders';
+      isAr ? 'سجّلي الدخول لعرض طلباتك' : 'Sign in to view your orders';
   String get loginToViewWishlist =>
-      isAr ? 'سجّل الدخول لعرض المفضلة' : 'Sign in to view your wishlist';
+      isAr ? 'سجّلي الدخول لعرض المفضلة' : 'Sign in to view your wishlist';
   String get wishlistEmptySubtitle => isAr
-      ? 'احفظ منتجاتك المفضلة وتابعها بسهولة'
+      ? 'احفظي منتجاتك المفضلة وتابعها بسهولة'
       : 'Save your favorite products and track them easily';
   String get deliveryAddress => isAr ? 'عنوان التوصيل' : 'Delivery Address';
   String get paymentSummary => isAr ? 'ملخّص الدفع' : 'Payment Summary';
   String get save => isAr ? 'حفظ' : 'Save';
-  String get searchBrandsHint => isAr ? 'ابحث عن علامة...' : 'Search brands...';
+  String get searchBrandsHint => isAr ? 'ابحثي عن علامة...' : 'Search brands...';
   String get loginToEditProfile =>
-      isAr ? 'سجّل الدخول لتعديل بياناتك' : 'Sign in to edit your profile';
+      isAr ? 'سجّلي الدخول لتعديل بياناتك' : 'Sign in to edit your profile';
   String get loginToManageAddresses =>
-      isAr ? 'سجّل الدخول لإدارة عناوينك' : 'Sign in to manage your addresses';
+      isAr ? 'سجّلي الدخول لإدارة عناوينك' : 'Sign in to manage your addresses';
   String get loginToCheckout =>
-      isAr ? 'سجّل الدخول لإتمام الطلب' : 'Sign in to complete checkout';
+      isAr ? 'سجّلي الدخول لإتمام الطلب' : 'Sign in to complete checkout';
   String get loginToViewNotifications =>
-      isAr ? 'سجّل الدخول لعرض الإشعارات' : 'Sign in to view notifications';
+      isAr ? 'سجّلي الدخول لعرض الإشعارات' : 'Sign in to view notifications';
   String get emptyCartTitle => isAr ? 'السلة فارغة' : 'Your cart is empty';
   String get emptyCartSubtitle =>
       isAr ? 'أضيفي منتجات قبل إتمام الطلب' : 'Add products before checkout';
@@ -452,7 +452,7 @@ class AppStrings {
   String get addAddress => isAr ? 'إضافة عنوان' : 'Add Address';
   String get addressSaved => isAr ? 'تم حفظ العنوان' : 'Address saved';
   String get loginToChangePassword =>
-      isAr ? 'سجّل الدخول لتغيير كلمة المرور' : 'Sign in to change your password';
+      isAr ? 'سجّلي الدخول لتغيير كلمة المرور' : 'Sign in to change your password';
   String get defaultLabel => isAr ? 'افتراضي' : 'Default';
 
   String sortLabelFor(String key) => switch (key) {
@@ -484,34 +484,34 @@ class AppStrings {
   // ─── Auth screens ─────────────────────────────────────────────────────────
   String get welcomeBack => isAr ? 'مرحباً بعودتك' : 'Welcome back';
   String get loginPhoneSubtitle =>
-      isAr ? 'سجّل دخولك برقم هاتفك لمتابعة التسوّق' : 'Sign in with your phone to continue shopping';
+      isAr ? 'سجّلي دخولك برقم هاتفك لمتابعة التسوّق' : 'Sign in with your phone to continue shopping';
   String get registerJoinTitle => isAr ? 'انضمّي إلى ديما الحياة' : 'Join Deema Alhayat';
   String get registerPhoneSubtitle => isAr
-      ? 'أنشئ حسابك برقم هاتفك وابدأ التسوّق واكسب نقاط الولاء'
+      ? 'أنشئي حسابكِ برقم هاتفكِ وابدئي التسوّق واكسبي نقاط الولاء'
       : 'Create your account with your phone and start earning loyalty points';
   String get fullName => isAr ? 'الاسم الكامل' : 'Full name';
   String get phoneNumber => isAr ? 'رقم الهاتف' : 'Phone number';
   String get password => isAr ? 'كلمة المرور' : 'Password';
   String get passwordMin6 =>
       isAr ? 'كلمة المرور 6 أحرف على الأقل' : 'Password must be at least 6 characters';
-  String get enterYourName => isAr ? 'أدخل اسمك' : 'Enter your name';
-  String get enterYourNameShort => isAr ? 'أدخل الاسم' : 'Enter your name';
+  String get enterYourName => isAr ? 'أدخلي اسمك' : 'Enter your name';
+  String get enterYourNameShort => isAr ? 'أدخلي الاسم' : 'Enter your name';
   String get noAccountYet => isAr ? 'ليس لديك حساب؟' : "Don't have an account?";
   String get haveAccountAlready => isAr ? 'لديك حساب بالفعل؟' : 'Already have an account?';
-  String get signUp => isAr ? 'أنشئ حساباً' : 'Sign up';
-  String get signIn => isAr ? 'سجّل الدخول' : 'Sign in';
+  String get signUp => isAr ? 'أنشئي حساباً' : 'Sign up';
+  String get signIn => isAr ? 'سجّلي الدخول' : 'Sign in';
   String get totalLabel => isAr ? 'الإجمالي' : 'Total';
   String get yourProducts => isAr ? 'منتجاتك' : 'Your items';
   String get haveCouponCode => isAr ? 'لديك كود خصم؟' : 'Have a discount code?';
-  String get enterCode => isAr ? 'أدخل الكود' : 'Enter code';
+  String get enterCode => isAr ? 'أدخلي الكود' : 'Enter code';
   String get applyBtn => isAr ? 'تطبيق' : 'Apply';
   String itemRemoved(String name) => isAr ? 'حُذف «$name»' : 'Removed "$name"';
   String get maxQtyReached =>
       isAr ? 'وصلتِ للحد الأقصى المتاح' : 'Maximum available quantity reached';
-  String get enterCouponPrompt => isAr ? 'أدخل كود الخصم' : 'Enter a discount code';
+  String get enterCouponPrompt => isAr ? 'أدخلي كود الخصم' : 'Enter a discount code';
   String get invalidCouponShort => isAr ? 'الكوبون غير صالح' : 'Invalid coupon';
   String get cardPaymentDisabled => isAr
-      ? 'الدفع بالبطاقة قيد التفعيل — اختر الدفع عند الاستلام حالياً'
+      ? 'الدفع بالبطاقة قيد التفعيل — اختاري الدفع عند الاستلام حالياً'
       : 'Card payment is not available yet — please use cash on delivery';
 
   // ─── Checkout (extended) ──────────────────────────────────────────────────
@@ -520,15 +520,15 @@ class AppStrings {
       isAr ? 'تُملأ تلقائياً من حسابك — يمكنك تعديلها' : 'Auto-filled from your account — you can edit';
   String get deliveryLocation => isAr ? 'عنوان التوصيل' : 'Delivery address';
   String get deliveryLocationHint => isAr
-      ? 'اختر محافظتك واكتب العنوان بالتفصيل'
+      ? 'اختاري محافظتك واكتبي العنوان بالتفصيل'
       : 'Select your governorate and enter your address';
   String get streetLabel => isAr ? 'الشارع / أقرب نقطة دالة' : 'Street / landmark';
-  String get enterStreet => isAr ? 'أدخل الشارع أو نقطة دالة' : 'Enter street or landmark';
+  String get enterStreet => isAr ? 'أدخلي الشارع أو نقطة دالة' : 'Enter street or landmark';
   String get houseOptional => isAr ? 'رقم المنزل / الشقة (اختياري)' : 'House / apt (optional)';
   String get governorate => isAr ? 'المحافظة' : 'Governorate';
-  String get selectGovernorate => isAr ? 'اختر المحافظة' : 'Select governorate';
+  String get selectGovernorate => isAr ? 'اختاري المحافظة' : 'Select governorate';
   String get areaLabel => isAr ? 'المنطقة' : 'Area';
-  String get selectArea => isAr ? 'اختر المنطقة' : 'Select area';
+  String get selectArea => isAr ? 'اختاري المنطقة' : 'Select area';
   String get governorateCity => isAr ? 'المحافظة / المدينة' : 'Governorate / city';
   String get requiredField => isAr ? 'مطلوب' : 'Required';
   String get paymentMethod => isAr ? 'طريقة الدفع' : 'Payment method';
@@ -546,7 +546,7 @@ class AppStrings {
   String get confirmStep => isAr ? 'تأكيد' : 'Confirm';
   String get useLoyaltyPoints => isAr ? 'نقاط الولاء' : 'Loyalty points';
   String loyaltyUseTitle(int points) =>
-      isAr ? 'استخدم $points نقطة ولاء' : 'Use $points loyalty points';
+      isAr ? 'استخدمي $points نقطة ولاء' : 'Use $points loyalty points';
   String loyaltyDiscountHint(String discount, String per100) => isAr
       ? 'خصم $discount (100 نقطة = $per100)'
       : '$discount off (100 pts = $per100)';
@@ -567,7 +567,7 @@ class AppStrings {
       : 'Our team will contact you to confirm.\nCash on delivery.';
   String get trackOrder => isAr ? 'تتبّع الطلب' : 'Track order';
   String get codPaymentSubtitle =>
-      isAr ? 'ادفع نقداً عند استلام الطلب' : 'Pay in cash when you receive your order';
+      isAr ? 'ادفعي نقداً عند استلام الطلب' : 'Pay in cash when you receive your order';
   String couponAppliedShort(String code) =>
       isAr ? 'تم تطبيق $code' : 'Applied $code';
 
@@ -614,7 +614,7 @@ class AppStrings {
       : 'Add an address for faster checkout';
   String get edit => isAr ? 'تعديل' : 'Edit';
   String get quantityLabel => isAr ? 'الكمية' : 'Quantity';
-  String get addMoreForFreeShipping => isAr ? 'أضف المزيد' : 'Add more';
+  String get addMoreForFreeShipping => isAr ? 'أضيفي المزيد' : 'Add more';
   String get profileUpdated => isAr ? 'تم تحديث البيانات' : 'Profile updated';
   String get noAddressesSaved => isAr ? 'لا توجد عناوين محفوظة' : 'No saved addresses';
   String get setAsDefault => isAr ? 'تعيين كافتراضي' : 'Set as default';

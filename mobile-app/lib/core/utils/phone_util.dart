@@ -35,10 +35,10 @@ String formatPhoneLocal(String? phone) {
 String? validateIraqiPhone(String? value, {bool required = true}) {
   final trimmed = value?.trim() ?? '';
   if (trimmed.isEmpty) {
-    return required ? 'أدخل رقم الهاتف' : null;
+    return required ? 'أدخلي رقم الهاتف' : null;
   }
   if (!isValidIraqiPhone(trimmed)) {
-    return 'أدخل رقماً عراقياً صحيحاً (مثال: 07701234567)';
+    return 'أدخلي رقماً عراقياً صحيحاً (مثال: 07701234567)';
   }
   return null;
 }

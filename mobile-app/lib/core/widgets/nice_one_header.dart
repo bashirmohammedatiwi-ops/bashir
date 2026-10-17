@@ -171,7 +171,7 @@ class _SearchBar extends StatelessWidget {
                     ),
                     Expanded(
                       child: Text(
-                        'ابحث عن منتج، براند…',
+                        'ابحثي عن منتج، براند…',
                         style: TextStyle(
                           color: _fg(0.8),
                           fontSize: 14,

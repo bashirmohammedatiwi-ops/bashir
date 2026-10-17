@@ -177,7 +177,7 @@ class _WorldTopStageState extends ConsumerState<WorldTopStage> {
                         child: Text(
                           lang == 'en'
                               ? 'Choose your world'
-                              : 'اختر القسم المناسب لك',
+                              : 'اختاري القسم المناسب لك',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1358,7 +1358,7 @@ class WorldSwitchBar extends ConsumerWidget {
               Padding(
                 padding: EdgeInsets.fromLTRB(outerPadding, 8, outerPadding, 10),
                 child: Text(
-                  lang == 'en' ? 'Choose your world' : 'اختر القسم المناسب لك',
+                  lang == 'en' ? 'Choose your world' : 'اختاري القسم المناسب لك',
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     fontSize: 19,

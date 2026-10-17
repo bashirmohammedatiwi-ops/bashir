@@ -27,7 +27,7 @@ String _friendlyApiError(String message, int? status, bool isAr) {
       trimmed.contains('مسجّل مسبقاً') ||
       trimmed.contains('مسجل مسبقاً')) {
     return isAr
-        ? 'هذا البريد الإلكتروني مسجّل مسبقاً. سجّل الدخول أو استخدم بريداً آخر.'
+        ? 'هذا البريد الإلكتروني مسجّل مسبقاً. سجّلي الدخول أو استخدمي بريداً آخر.'
         : 'This email is already registered. Sign in or use another email.';
   }
 
@@ -44,12 +44,12 @@ String _friendlyApiError(String message, int? status, bool isAr) {
   }
 
   if (status == 403 || lower.contains('account disabled') || trimmed.contains('معطّل')) {
-    return isAr ? 'تم تعطيل هذا الحساب. تواصل مع الدعم.' : 'This account is disabled. Contact support.';
+    return isAr ? 'تم تعطيل هذا الحساب. تواصلي مع الدعم.' : 'This account is disabled. Contact support.';
   }
 
   if (status == 400 || status == 422) {
     if (lower.contains('email') || trimmed.contains('بريد')) {
-      return isAr ? 'أدخل بريداً إلكترونياً صحيحاً.' : 'Enter a valid email address.';
+      return isAr ? 'أدخلي بريداً إلكترونياً صحيحاً.' : 'Enter a valid email address.';
     }
     if (lower.contains('password') || trimmed.contains('كلمة المرور')) {
       return isAr
@@ -57,7 +57,7 @@ String _friendlyApiError(String message, int? status, bool isAr) {
           : 'Password must be at least 6 characters.';
     }
     if (lower.contains('name') || trimmed.contains('الاسم')) {
-      return isAr ? 'أدخل اسماً صحيحاً (حرفان على الأقل).' : 'Enter a valid name (at least 2 characters).';
+      return isAr ? 'أدخلي اسماً صحيحاً (حرفان على الأقل).' : 'Enter a valid name (at least 2 characters).';
     }
     if (lower.contains('phone') || trimmed.contains('هاتف')) {
       return isAr
@@ -69,9 +69,9 @@ String _friendlyApiError(String message, int? status, bool isAr) {
   if (lower.contains('socketexception') ||
       lower.contains('connection timeout') ||
       lower.contains('connection error') ||
-      trimmed.contains('تحقق من اتصالك')) {
+      trimmed.contains('تحققي من اتصالك')) {
     return isAr
-        ? 'تعذّر الاتصال بالخادم. تحقق من الإنترنت وحاول مجدداً.'
+        ? 'تعذّر الاتصال بالخادم. تحققي من الإنترنت وحاولي مجدداً.'
         : 'Could not connect. Check your internet and try again.';
   }
 
@@ -80,11 +80,11 @@ String _friendlyApiError(String message, int? status, bool isAr) {
   }
 
   if (status == 429 || lower.contains('too many')) {
-    return isAr ? 'محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً.' : 'Too many attempts. Wait and try again.';
+    return isAr ? 'محاولات كثيرة. انتظري قليلاً ثم حاولي مجدداً.' : 'Too many attempts. Wait and try again.';
   }
 
   if (status == 500 || status == 502 || status == 503) {
-    return isAr ? 'الخادم مشغول مؤقتاً. حاول بعد قليل.' : 'Server is busy. Try again shortly.';
+    return isAr ? 'الخادم مشغول مؤقتاً. حاولي بعد قليل.' : 'Server is busy. Try again shortly.';
   }
 
   if (trimmed.isNotEmpty &&
@@ -93,7 +93,7 @@ String _friendlyApiError(String message, int? status, bool isAr) {
     return trimmed;
   }
 
-  return isAr ? 'حدث خطأ. حاول مجدداً.' : 'Something went wrong. Please try again.';
+  return isAr ? 'حدث خطأ. حاولي مجدداً.' : 'Something went wrong. Please try again.';
 }
 
 bool isPhoneAlreadyRegisteredError(Object? error) {

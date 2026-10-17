@@ -38,7 +38,7 @@ class FreeShippingBanner extends StatelessWidget {
                 child: Text(
                   achieved
                       ? '🎉 مبروك! حصلت على توصيل مجاني'
-                      : 'أضف ${formatPrice(remaining)} للحصول على توصيل مجاني!',
+                      : 'أضيفي ${formatPrice(remaining)} للحصول على توصيل مجاني!',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -55,7 +55,7 @@ class FreeShippingBanner extends StatelessWidget {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('أضف المزيد', style: TextStyle(fontWeight: FontWeight.w700)),
+                  child: const Text('أضيفي المزيد', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
             ],
           ),

@@ -52,7 +52,7 @@ class ApiService {
             e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.sendTimeout ||
             e.type == DioExceptionType.receiveTimeout) {
-          msg = 'تحقق من اتصالك بالإنترنت';
+          msg = 'تحققي من اتصالك بالإنترنت';
         } else if (status != null) {
           msg = switch (status) {
             400 => 'البيانات المدخلة غير صحيحة',
@@ -60,8 +60,8 @@ class ApiService {
             403 => 'غير مسموح بهذا الإجراء',
             404 => 'غير موجود',
             409 => 'البيانات مستخدمة مسبقاً',
-            422 => 'تحقق من البيانات المدخلة',
-            429 => 'محاولات كثيرة — حاول لاحقاً',
+            422 => 'تحققي من البيانات المدخلة',
+            429 => 'محاولات كثيرة — حاولي لاحقاً',
             >= 500 => 'الخادم مشغول مؤقتاً',
             _ => 'حدث خطأ ($status)',
           };

@@ -5,7 +5,7 @@ extension PaymentStringsX on AppStrings {
   String get cardPaymentTitle => isAr ? 'الدفع بالبطاقة' : 'Pay by card';
   String get cardPaymentSubtitle => isAr ? 'دفع إلكتروني آمن ومشفّر' : 'Secure, encrypted payment';
   String get cardSecureNote => isAr
-      ? 'تُفتح صفحة دفع آمنة من كي كارد مع رمز تحقق يصل لهاتفك. لا نحفظ بيانات بطاقتك.'
+      ? 'تُفتح صفحة دفع آمنة من كي كارد مع رمز تحققي يصل لهاتفك. لا نحفظ بيانات بطاقتك.'
       : 'A secure Qi Card payment page opens inside the app with 3D Secure verification. We never store your card details.';
   String get secureCardNote => isAr ? 'دفع مشفّر عبر كي كارد' : 'Encrypted payment via Qi Card';
   String get sandboxBadge => isAr ? 'تجريبي' : 'Test';

@@ -50,8 +50,18 @@ class Address {
         'isDefault': isDefault,
       };
 
-  String get summary => [
-        [governorate, city, area].where((e) => (e ?? '').isNotEmpty).join(' - '),
-        [street, house].where((e) => (e ?? '').isNotEmpty).join(' '),
-      ].where((e) => e.isNotEmpty).join('، ');
+  /// «بغداد - المنصور، شارع 14، دار 12» — بلا تكرار المحافظة إن كانت هي المدينة.
+  String get summary {
+    final places = <String>[];
+    for (final p in [governorate, city, area]) {
+      final v = (p ?? '').trim();
+      if (v.isNotEmpty && !places.contains(v)) places.add(v);
+    }
+    final h = (house ?? '').trim();
+    return [
+      places.join(' - '),
+      (street ?? '').trim(),
+      if (h.isNotEmpty) RegExp(r'^\d').hasMatch(h) ? 'دار $h' : h,
+    ].where((e) => e.isNotEmpty).join('، ');
+  }
 }

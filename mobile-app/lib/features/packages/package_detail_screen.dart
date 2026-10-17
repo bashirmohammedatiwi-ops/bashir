@@ -108,7 +108,7 @@ class _PackageBody extends ConsumerWidget {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () => _addAll(context, ref, items),
-            child: const Text('أضف كل المنتجات للسلة'),
+            child: const Text('أضيفي كل المنتجات للسلة'),
           ),
         ),
       ],

@@ -129,12 +129,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
+  /// تعبئة البيانات من الحساب والعنوان الافتراضي — حين يجهز الاثنان معاً (أياً كان ترتيب وصولهما).
   void _maybeBootstrap() {
-    if (_bootstrapped) return;
+    if (_bootstrapped || !mounted) return;
     final user = ref.read(authProvider).user;
-    final addresses = ref.read(addressesProvider).valueOrNull;
-    if (user == null) return;
-    _bootstrapFromUser(user, addresses);
+    final addresses = ref.read(addressesProvider);
+    if (user == null || !(addresses.hasValue || addresses.hasError)) return;
+    _bootstrapFromUser(user, addresses.valueOrNull);
+    setState(() {});
   }
 
   void _bootstrapFromUser(AppUser user, List<Address>? addresses) {
@@ -371,14 +373,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final addressesAsync = ref.watch(addressesProvider);
     final payMethods = ref.watch(paymentMethodsProvider).valueOrNull ?? PaymentMethodsConfig.fallback;
 
-    ref.listen(addressesProvider, (prev, next) {
-      next.whenData((list) {
-        if (!_bootstrapped && user != null) {
-          _bootstrapFromUser(user, list);
-          if (mounted) setState(() {});
-        }
-      });
-    });
+    ref.listen(addressesProvider, (_, __) => WidgetsBinding.instance.addPostFrameCallback((_) => _maybeBootstrap()));
+    ref.listen(authProvider, (_, __) => WidgetsBinding.instance.addPostFrameCallback((_) => _maybeBootstrap()));
 
     if (cart.isEmpty) {
       return Scaffold(
