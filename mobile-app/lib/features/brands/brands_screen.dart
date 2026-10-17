@@ -41,6 +41,22 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   String _query = '';
   String? _selectedCategoryId;
   final _scroll = ScrollController();
+  /// مفاتيح عناوين الحروف — للقفز من شريط الفهرس.
+  final _letterKeys = <String, GlobalKey>{};
+
+  void _jumpTo(String letter) {
+    final ctx = _letterKeys[letter]?.currentContext;
+    if (ctx == null) return;
+    HapticFeedback.selectionClick();
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      // تحت شريط الأقسام الثابت.
+      alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
+      alignment: 0.02,
+    );
+  }
 
   static const _gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: 3,
@@ -90,10 +106,21 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     return latin || arabic ? c : '#';
   }
 
+  /// مفتاح ترتيب عربي: الهمزات تُعامل كألف حتى لا تنفصل «أ/إ/آ» عن «ا».
+  static String _sortKey(String s) => s
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp('[أإآٱ]'), 'ا')
+      .replaceAll('ة', 'ه')
+      .replaceAll('ى', 'ي');
+
+  /// فهرس واحد A–Z بالاسم اللاتيني للبراند (هويته المكتوبة على الشعار) —
+  /// أغلب البراندات أسماؤها لاتينية فقط، فالفهرس المزدوج كان يقسم القائمة نصفين.
+  /// البراند العربي فقط يُجمع تحت حرفه العربي بعد اللاتيني.
   List<_LetterGroup> _group(List<Brand> brands, String lang) {
     final map = <String, List<Brand>>{};
     for (final b in brands) {
-      map.putIfAbsent(_letterOf(b.localizedName(lang)), () => []).add(b);
+      map.putIfAbsent(_letterOf(b.label), () => []).add(b);
     }
     bool isArabic(String l) =>
         l.codeUnitAt(0) >= 0x0621 && l.codeUnitAt(0) <= 0x064A;
@@ -102,18 +129,15 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         if (a == '#') return 1;
         if (b == '#') return -1;
         final aa = isArabic(a), bb = isArabic(b);
-        // لغة الواجهة أولاً.
-        if (aa != bb) {
-          return (lang == 'ar') == aa ? -1 : 1;
-        }
-        return a.compareTo(b);
+        if (aa != bb) return aa ? 1 : -1;
+        return _sortKey(a).compareTo(_sortKey(b));
       });
     return [
       for (final l in letters)
         _LetterGroup(
           l,
           map[l]!..sort(
-            (a, b) => a.localizedName(lang).compareTo(b.localizedName(lang)),
+            (a, b) => _sortKey(a.label).compareTo(_sortKey(b.label)),
           ),
         ),
     ];
@@ -216,6 +240,16 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               ),
             );
         }
+        if (groups.length > 3) {
+          content.add(
+            SliverToBoxAdapter(
+              child: _LetterIndex(
+                letters: [for (final g in groups) g.letter],
+                onTap: _jumpTo,
+              ),
+            ),
+          );
+        }
         if (groups.isEmpty) {
           content.add(
             SliverPadding(
@@ -229,6 +263,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               ..add(
                 SliverToBoxAdapter(
                   child: _LetterHeader(
+                    key: _letterKeys.putIfAbsent(g.letter, GlobalKey.new),
                     letter: g.letter,
                     count: g.brands.length,
                   ),
@@ -254,7 +289,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
           onRefresh: _refresh,
           child: CustomScrollView(
             controller: _scroll,
-            cacheExtent: 8000,
+            // كل الأقسام مبنية حتى يعمل القفز لأي حرف من الفهرس.
+            cacheExtent: 30000,
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
@@ -661,10 +697,58 @@ class _CategoryBarDelegate extends SliverPersistentHeaderDelegate {
       old.theme != theme;
 }
 
+/// شريط فهرس الحروف: حبّات صغيرة تقفز لقسم الحرف.
+class _LetterIndex extends StatelessWidget {
+  final List<String> letters;
+  final ValueChanged<String> onTap;
+  const _LetterIndex({required this.letters, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return SizedBox(
+      height: 44,
+      child: Directionality(
+        // الفهرس اللاتيني يُقرأ من اليسار لليمين.
+        textDirection: TextDirection.ltr,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+          itemCount: letters.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (_, i) {
+            final l = letters[i];
+            return GestureDetector(
+              onTap: () => onTap(l),
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 32),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: t.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: t.hairline),
+                ),
+                child: Text(
+                  l == 'ا' ? 'أ' : l,
+                  style: AppText.label.copyWith(
+                    color: t.accentDark,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class _LetterHeader extends StatelessWidget {
   final String letter;
   final int count;
-  const _LetterHeader({required this.letter, required this.count});
+  const _LetterHeader({super.key, required this.letter, required this.count});
 
   @override
   Widget build(BuildContext context) {
@@ -681,7 +765,7 @@ class _LetterHeader extends StatelessWidget {
               colors: [Color.lerp(t.accent, Colors.white, 0.2)!, t.accentDark],
             ).createShader(r),
             child: Text(
-              letter,
+              letter == 'ا' ? 'أ' : letter,
               style: AppText.display.copyWith(
                 fontSize: 26,
                 height: 1,
