@@ -147,7 +147,7 @@ class AppStrings {
   String get loyaltyPointsCount => isAr ? 'نقطة ولاء' : 'loyalty points';
   String get version => isAr ? 'الإصدار' : 'Version';
   String get aboutDescription => isAr
-      ? 'متجر ديما الحياة لمستحضرات التجميل والعناية. الدفع عند الاستلام.'
+      ? 'متجر ديما الحياة لمستحضرات التجميل والعناية. الدفع عند الاستلام أو بالبطاقة.'
       : 'Deema Alhayat beauty and care store. Cash on delivery.';
 
   // ─── Categories ───────────────────────────────────────────────────────────
@@ -290,7 +290,7 @@ class AppStrings {
   String shadePosition(int current, int total) =>
       isAr ? '$current من $total' : '$current of $total';
   String get authentic100 => isAr ? 'منتجات\nأصلية 100%' : '100%\nAuthentic';
-  String get securePayment => isAr ? 'دفع\nعند الاستلام' : 'Cash on\nDelivery';
+  String get securePayment => isAr ? 'نقداً\nأو بالبطاقة' : 'Cash\nor card';
   String get thanksForReview => isAr ? 'شكراً على تقييمك!' : 'Thanks for your review!';
   String get ratingsTitle => isAr ? 'التقييمات' : 'Ratings';
   String get addReview => isAr ? 'أضيفي تقييماً' : 'Add a review';
