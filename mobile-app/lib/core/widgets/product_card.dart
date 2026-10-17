@@ -417,6 +417,7 @@ class ProductShadeSwatchRow extends StatelessWidget {
           const SizedBox(width: 3),
           Text(
             '+$extra',
+            textDirection: TextDirection.ltr,
             style: AppText.micro.copyWith(
               fontSize: 10.5,
               color: t.inkSoft,
