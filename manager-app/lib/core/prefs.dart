@@ -42,6 +42,11 @@ class Prefs {
   set vibrate(bool v) => _p.setBool('vibrate', v);
   bool get sound => _p.getBool('sound') ?? true;
   set sound(bool v) => _p.setBool('sound', v);
+
+  /// تنبيه الطلبات الجديدة والتطبيق مغلق (يقرأه الفحص في الخلفية أيضاً).
+  bool get backgroundOrders => _p.getBool('bgOrders') ?? true;
+  set backgroundOrders(bool v) => _p.setBool('bgOrders', v);
+
   bool get continuous => _p.getBool('continuous') ?? false;
   set continuous(bool v) => _p.setBool('continuous', v);
 

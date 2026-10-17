@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/background.dart';
 import '../../core/prefs.dart';
 import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
@@ -57,6 +58,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
       final p = await ref.read(repoProvider).pulse();
       if (!mounted) return;
       ref.read(pendingOrdersProvider.notifier).state = p.pending;
+      BackgroundOrders.markSeen(p.latestId);
       final isNew = !first && p.latestId != null && _lastOrderId != null && p.latestId != _lastOrderId;
       _lastOrderId = p.latestId ?? _lastOrderId;
       if (isNew) {

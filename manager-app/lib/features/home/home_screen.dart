@@ -7,6 +7,8 @@ import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../../data/admin_repo.dart';
+import '../admin/store_admin_screens.dart';
 import '../catalog/create_product_screen.dart';
 import '../catalog/pos_missing_screen.dart';
 import '../drafts/groups_screen.dart';
@@ -52,6 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(statsProvider);
           ref.invalidate(activityProvider);
           ref.invalidate(salesProvider);
+          ref.invalidate(healthProvider);
           setState(() {});
           try {
             await ref.read(statsProvider.future);
@@ -175,6 +178,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  const _HealthBanner(),
                   const SectionTitle('نظرة سريعة'),
                   stats.when(
                     loading: () => const Padding(
@@ -479,4 +484,38 @@ class _Quick extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _HealthBanner extends ConsumerWidget {
+  const _HealthBanner();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final h = ref.watch(healthProvider).valueOrNull;
+    if (h == null || h.issues == 0) return const SizedBox.shrink();
+    final top = h.items.where((i) => i.count > 0 && i.severity == 'high').map((i) => '${i.label} (${i.count})').take(2).join(' · ');
+    return Panel(
+      color: AppColors.warningSoft,
+      padding: const EdgeInsets.all(12),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HealthScreen())),
+      child: Row(
+        children: [
+          const Icon(Icons.health_and_safety_rounded, color: AppColors.warning),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${h.issues} أمور تحتاج انتباهك',
+                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.warning),
+                ),
+                if (top.isNotEmpty) Text(top, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5)),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_left_rounded),
+        ],
+      ),
+    );
+  }
 }

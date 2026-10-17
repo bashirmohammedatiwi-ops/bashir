@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../core/background.dart';
 import '../../core/config.dart';
 import '../../core/prefs.dart';
 import '../../core/scanner_bus.dart';
@@ -82,6 +83,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onChanged: (v) => setState(() => p.sound = v),
                   title: const Text('صوت عند القراءة', style: TextStyle(fontWeight: FontWeight.w700)),
                   secondary: const Icon(Icons.volume_up_rounded),
+                ),
+                const Divider(),
+                SwitchListTile(
+                  value: p.backgroundOrders,
+                  onChanged: (v) {
+                    setState(() => p.backgroundOrders = v);
+                    v ? BackgroundOrders.enable() : BackgroundOrders.disable();
+                  },
+                  title: const Text('تنبيه الطلبات والتطبيق مغلق', style: TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: const Text('إشعار على الهاتف عند وصول طلب جديد (فحص كل ~15 دقيقة)'),
+                  secondary: const Icon(Icons.notifications_active_outlined),
                 ),
                 const Divider(),
                 SwitchListTile(

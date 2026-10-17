@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/background.dart';
+import '../core/prefs.dart';
 import 'models.dart';
 import 'repo.dart';
 
@@ -30,6 +32,7 @@ class SessionNotifier extends StateNotifier<Session> {
     try {
       final me = await ref.read(repoProvider).me();
       state = me.isStaff ? Session(AuthState.signedIn, me) : const Session(AuthState.signedOut);
+      if (me.isStaff && Prefs.instance.backgroundOrders) BackgroundOrders.enable();
     } catch (e) {
       // بلا إنترنت: نبقى داخل التطبيق بالجلسة المحفوظة
       final err = e.toString();
@@ -40,9 +43,11 @@ class SessionNotifier extends StateNotifier<Session> {
   Future<void> login(String login, String password) async {
     final me = await ref.read(repoProvider).login(login, password);
     state = Session(AuthState.signedIn, me);
+    if (Prefs.instance.backgroundOrders) BackgroundOrders.enable();
   }
 
   Future<void> logout() async {
+    await BackgroundOrders.disable();
     await ref.read(repoProvider).logout();
     state = const Session(AuthState.signedOut);
   }

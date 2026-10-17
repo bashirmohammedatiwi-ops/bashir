@@ -15,13 +15,18 @@ import '../scan/lookup_flow.dart';
 
 /// فلتر مبدئي عند الفتح من بطاقات الرئيسية.
 class SearchPreset {
-  const SearchPreset({this.status = 'all', this.filter});
+  const SearchPreset({this.status = 'all', this.filter, this.brandId, this.brandName});
   final String status;
   final String? filter;
+  final String? brandId;
+  final String? brandName;
 }
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key, this.preset, this.autofocus = false, this.embedded = false, this.initialQuery});
+  const SearchScreen({super.key, this.preset, this.autofocus = false, this.embedded = false, this.initialQuery, this.onPick});
+
+  /// وضع الاختيار: الضغط على منتج يرجعه بدل فتحه.
+  final void Function(ProductSummary)? onPick;
   final SearchPreset? preset;
   final String? initialQuery;
   final bool autofocus;
@@ -39,7 +44,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Timer? _debounce;
   late String _status = widget.preset?.status ?? 'all';
   late String? _filter = widget.preset?.filter;
-  NamedRef? _brand;
+  late NamedRef? _brand = widget.preset?.brandId == null ? null : NamedRef(widget.preset!.brandId!, widget.preset!.brandName ?? '');
 
   final _items = <ProductSummary>[];
   int _total = 0;
@@ -220,6 +225,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ('all', 'noImages', 'بلا صور'),
       ('all', 'outOfStock', 'نافد'),
       ('all', 'noBarcode', 'بلا باركود'),
+      ('active', 'lowStock', 'مخزون قليل'),
+      ('inactive', 'ready', 'موقوف وجاهز للعرض'),
+      ('active', 'noCategory', 'بلا قسم'),
+      ('active', 'noDescription', 'بلا وصف'),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -360,7 +369,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     product: p,
                     selected: _sel.isEmpty ? null : _sel.contains(p.id),
                     onLongPress: () => setState(() => _sel.contains(p.id) ? _sel.remove(p.id) : _sel.add(p.id)),
-                    onTap: () => _sel.isEmpty ? _open(p) : setState(() => _sel.contains(p.id) ? _sel.remove(p.id) : _sel.add(p.id)),
+                    onTap: () => widget.onPick != null
+                        ? widget.onPick!(p)
+                        : _sel.isEmpty
+                        ? _open(p)
+                        : setState(() => _sel.contains(p.id) ? _sel.remove(p.id) : _sel.add(p.id)),
                     onToggle: (v) => _toggle(p, v),
                     onShadeTap: (s) => _open(p, shadeId: s.id),
                     onShadeToggle: _toggleShade,

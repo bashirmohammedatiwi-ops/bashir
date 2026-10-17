@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/background.dart';
 import 'core/prefs.dart';
 import 'core/scanner_bus.dart';
 import 'core/theme.dart';
@@ -13,6 +14,7 @@ import 'features/shell/home_shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Prefs.init();
+  await BackgroundOrders.init();
   ScannerBus.instance.attach();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),

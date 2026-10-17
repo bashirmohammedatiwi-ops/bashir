@@ -7,7 +7,13 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../../data/admin_repo.dart';
+import '../admin/coupons_screen.dart';
+import '../admin/notify_screen.dart';
+import '../admin/reviews_screen.dart';
+import '../admin/store_admin_screens.dart';
 import '../catalog/create_product_screen.dart';
+import '../customers/customers_screen.dart';
 import '../catalog/pos_missing_screen.dart';
 import '../drafts/groups_screen.dart';
 import '../product/product_screen.dart';
@@ -23,20 +29,51 @@ class MoreScreen extends ConsumerWidget {
     final me = ref.watch(sessionProvider).me;
     final isAdmin = me == null || me.role != 'STAFF';
     final stats = ref.watch(statsProvider).valueOrNull;
+    final health = ref.watch(healthProvider).valueOrNull;
     void go(Widget w) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
+    Widget grid(List<Widget> tiles) => GridView.count(
+      crossAxisCount: MediaQuery.sizeOf(context).width > 600 ? 4 : 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.45,
+      children: tiles,
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('المزيد')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-        children: [
-          GridView.count(
-            crossAxisCount: MediaQuery.sizeOf(context).width > 600 ? 4 : 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.25,
-            children: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(healthProvider);
+          ref.invalidate(statsProvider);
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+          children: [
+            if (health != null)
+              Panel(
+                color: health.issues == 0 ? AppColors.successSoft : AppColors.warningSoft,
+                onTap: () => go(const HealthScreen()),
+                child: Row(
+                  children: [
+                    Icon(
+                      health.issues == 0 ? Icons.verified_rounded : Icons.health_and_safety_rounded,
+                      color: health.issues == 0 ? AppColors.success : AppColors.warning,
+                      size: 30,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        health.issues == 0 ? 'صحة المتجر: ممتازة' : 'صحة المتجر: ${health.issues} أمور تحتاج انتباهك',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_left_rounded),
+                  ],
+                ),
+              ),
+            const SectionTitle('الإدارة اليومية'),
+            grid([
               if (isAdmin)
                 _Tile(
                   icon: Icons.insights_rounded,
@@ -45,6 +82,38 @@ class MoreScreen extends ConsumerWidget {
                   sub: 'اليوم والشهر والأكثر مبيعاً',
                   onTap: () => go(const SalesScreen()),
                 ),
+              _Tile(
+                icon: Icons.people_alt_rounded,
+                color: AppColors.rose,
+                title: 'الزبونات',
+                sub: 'المشتريات والنقاط',
+                onTap: () => go(const CustomersScreen()),
+              ),
+              _Tile(
+                icon: Icons.reviews_rounded,
+                color: const Color(0xFFF2B01E),
+                title: 'التقييمات',
+                sub: 'موافقة وإخفاء',
+                onTap: () => go(const ReviewsScreen()),
+              ),
+              if (isAdmin)
+                _Tile(
+                  icon: Icons.confirmation_number_rounded,
+                  color: AppColors.primary,
+                  title: 'الكوبونات',
+                  sub: 'إنشاء وتشغيل وأداء',
+                  onTap: () => go(const CouponsScreen()),
+                ),
+              _Tile(
+                icon: Icons.campaign_rounded,
+                color: AppColors.info,
+                title: 'إشعار للزبونات',
+                sub: 'عرض أو منتج جديد',
+                onTap: () => go(const NotifyScreen()),
+              ),
+            ]),
+            const SectionTitle('الكتالوج'),
+            grid([
               _Tile(
                 icon: Icons.add_box_rounded,
                 color: AppColors.primary,
@@ -66,6 +135,50 @@ class MoreScreen extends ConsumerWidget {
                 sub: stats == null ? 'مجموعات' : '${stats.draftsPending} بانتظار',
                 onTap: () => go(const GroupsScreen()),
               ),
+              if (isAdmin)
+                _Tile(
+                  icon: Icons.category_rounded,
+                  color: AppColors.rose,
+                  title: 'البراندات والأقسام',
+                  sub: 'إظهار وإخفاء',
+                  onTap: () => go(const CatalogAdminScreen()),
+                ),
+            ]),
+            const SectionTitle('المتجر'),
+            grid([
+              _Tile(
+                icon: Icons.health_and_safety_rounded,
+                color: AppColors.success,
+                title: 'صحة المتجر',
+                sub: 'ما يحتاج انتباهاً',
+                onTap: () => go(const HealthScreen()),
+              ),
+              _Tile(
+                icon: Icons.sync_rounded,
+                color: AppColors.info,
+                title: 'مزامنة الكاشير',
+                sub: 'آخر تحديث والأخطاء',
+                onTap: () => go(const PosSyncScreen()),
+              ),
+              if (isAdmin)
+                _Tile(
+                  icon: Icons.local_shipping_rounded,
+                  color: AppColors.warning,
+                  title: 'التوصيل',
+                  sub: 'الرسوم لكل محافظة',
+                  onTap: () => go(const ShippingScreen()),
+                ),
+              if (isAdmin)
+                _Tile(
+                  icon: Icons.storefront_rounded,
+                  color: AppColors.primary,
+                  title: 'إعدادات المتجر',
+                  sub: 'الدفع والظهور والنقاط',
+                  onTap: () => go(const StoreSettingsScreen()),
+                ),
+            ]),
+            const SectionTitle('النظام'),
+            grid([
               _Tile(
                 icon: Icons.history_rounded,
                 color: AppColors.rose,
@@ -76,13 +189,13 @@ class MoreScreen extends ConsumerWidget {
               _Tile(
                 icon: Icons.settings_rounded,
                 color: AppColors.muted,
-                title: 'الإعدادات',
+                title: 'إعدادات التطبيق',
                 sub: 'القارئ، الصوت، الحساب',
                 onTap: () => go(const SettingsScreen()),
               ),
-            ],
-          ),
-        ],
+            ]),
+          ],
+        ),
       ),
     );
   }
