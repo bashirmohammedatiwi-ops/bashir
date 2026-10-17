@@ -40,6 +40,7 @@ class ProductShade {
     this.price,
     this.stock = 0,
     this.image,
+    this.listed = false,
   });
 
   factory ProductShade.fromJson(Map<String, dynamic> json) => ProductShade(
@@ -51,9 +52,13 @@ class ProductShade {
         price: json['price'] != null ? asInt(json['price']) : null,
         stock: asInt(json['stock']),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
+        listed: json['hasBarcode'] == true,
       );
 
-  bool get hasBarcode => barcode != null && barcode!.trim().isNotEmpty;
+  /// من بيانات البطاقة الخفيفة: الخادم يرسل «hasBarcode» بدل الباركود نفسه.
+  final bool listed;
+
+  bool get hasBarcode => listed || (barcode != null && barcode!.trim().isNotEmpty);
   bool get inStock => stock > 0;
 }
 

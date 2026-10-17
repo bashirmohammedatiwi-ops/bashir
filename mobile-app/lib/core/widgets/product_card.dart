@@ -308,7 +308,7 @@ class _CardInfo extends ConsumerWidget {
                 ProductShadeSwatchRow(
                   shades: product.shades,
                   shadeCount: product.shadeCount,
-                  max: 3,
+                  max: 5,
                 ),
               ],
             ],
@@ -361,7 +361,7 @@ class ProductShadeSwatchRow extends StatelessWidget {
     super.key,
     required this.shades,
     this.shadeCount = 0,
-    this.max = 4,
+    this.max = 5,
   });
 
   @override
@@ -396,16 +396,17 @@ class ProductShadeSwatchRow extends StatelessWidget {
       children: [
         // نقاط متراكبة قليلاً — شكل أنيق ومساحة أقل.
         SizedBox(
-          width: visible.isEmpty ? 0 : 14 + (visible.length - 1) * 9.0,
-          height: 14,
+          // دوائر صغيرة للدلالة فقط — أول 5 درجات متراكبة قليلاً.
+          width: visible.isEmpty ? 0 : 11 + (visible.length - 1) * 8.0,
+          height: 11,
           child: Stack(
             children: [
               for (var i = 0; i < visible.length; i++)
                 PositionedDirectional(
-                  start: i * 9.0,
+                  start: i * 8.0,
                   child: _ShadeDot(
                     shade: visible[i],
-                    size: 14,
+                    size: 11,
                     ring: t.surface,
                   ),
                 ),

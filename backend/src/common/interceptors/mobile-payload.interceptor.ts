@@ -114,7 +114,10 @@ function keepVariants(media: unknown, sizes: string[]) {
 function slimCardShade(shade: unknown, depth: number): unknown {
   if (!shade || typeof shade !== "object") return shade;
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(shade as Record<string, unknown>)) {
+  const raw = shade as Record<string, unknown>;
+  // البطاقة تحتاج فقط أن تعرف هل الدرجة معروضة للبيع (لها باركود) — لا الباركود نفسه.
+  if ("barcode" in raw) out.hasBarcode = typeof raw.barcode === "string" && raw.barcode.trim().length > 0;
+  for (const [k, v] of Object.entries(raw)) {
     if (SHADE_DROP_FIELDS.includes(k)) continue;
     out[k] = k === "image" ? keepVariants(slim(v, true, depth + 1), ["thumb"]) : slim(v, true, depth + 1);
   }
