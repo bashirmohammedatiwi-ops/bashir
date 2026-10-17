@@ -125,11 +125,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
     }
 
     if (!_continuous) {
-      if (_handling) return;
+      if (_handling) {
+        // القارئ الخارجي والنتيجة مفتوحة: نفتح الجديدة مكانها بدل تجاهل المسح.
+        if (source == ScanSource.hardware && mounted) openCode(context, ref, code, source: source);
+        return;
+      }
       _handling = true;
       await _ctrl.stop();
       if (!mounted) return;
-      await openCode(context, ref, code, source: source);
+      await openCode(context, ref, code, source: source, waitForClose: true);
       _handling = false;
       if (mounted) {
         _lastAt = DateTime.now();
@@ -196,7 +200,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
       title: 'إدخال الباركود يدوياً',
       hint: '6281000000000',
       ok: 'بحث',
-      keyboard: TextInputType.number,
+      keyboard: TextInputType.visiblePassword,
       direction: TextDirection.ltr,
     );
     if (v != null && v.trim().isNotEmpty) {
@@ -217,18 +221,19 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
         ),
       );
     } else if (h.saved != null) {
-      await Navigator.of(context).push(
+      final d = await Navigator.of(context).push<Draft>(
         MaterialPageRoute(
           builder: (_) => SaveDraftScreen(barcode: h.code, draft: h.saved),
         ),
       );
+      if (d != null && mounted) setState(() => h.saved = d);
     } else {
-      final ok = await Navigator.of(context).push<bool>(
+      final d = await Navigator.of(context).push<Draft>(
         MaterialPageRoute(
           builder: (_) => SaveDraftScreen(barcode: h.code, posName: r.pos?.name, groupId: _groupId),
         ),
       );
-      if (ok == true) setState(() => h.saved = Draft.fromJson({'id': '', 'groupId': _groupId, 'barcode': h.code, 'status': 'pending'}));
+      if (d != null && mounted) setState(() => h.saved = d);
     }
     if (mounted) await _ctrl.start();
   }
@@ -483,19 +488,29 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
                 ],
               ),
             ),
-            Switch(
+            AsyncSwitch(
               value: active,
+              confirmOff: () => confirm(
+                context,
+                title: shade != null ? 'إيقاف التدرج ${shade.name}؟' : 'إيقاف المنتج؟',
+                message: 'لن يظهر للزبائن حتى تعيد تشغيله.',
+                ok: 'إيقاف',
+                danger: true,
+              ),
               onChanged: (v) async {
                 final repo = ref.read(repoProvider);
                 try {
                   final next = shade != null
                       ? await repo.patchShade(shade.id, {'isActive': v})
                       : await repo.patchProduct(p.id, {'isActive': v});
+                  if (!mounted) return true;
                   setState(() => h.result = r.withProduct(next));
                   ref.read(dataVersionProvider.notifier).state++;
-                  if (mounted) toast(context, v ? 'تم التشغيل' : 'تم الإيقاف');
+                  toast(context, v ? 'تم التشغيل' : 'تم الإيقاف');
+                  return true;
                 } catch (e) {
                   if (mounted) toastError(context, e);
+                  return false;
                 }
               },
             ),

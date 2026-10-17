@@ -222,6 +222,17 @@ class ErrorView extends StatelessWidget {
 }
 
 void toast(BuildContext context, String msg, {bool error = false, SnackBarAction? action, Duration? duration}) {
+  // داخل نافذة سفلية أو حوار: شريط الصفحة يُرسم تحتها فلا يُرى — نعرض الرسالة فوق كل شيء.
+  if (ModalRoute.of(context) is PopupRoute) {
+    _overlayToast(
+      context,
+      msg,
+      error: error,
+      action: action,
+      duration: duration ?? Duration(seconds: action != null ? 6 : 3),
+    );
+    return;
+  }
   final m = ScaffoldMessenger.of(context);
   m.hideCurrentSnackBar();
   m.showSnackBar(
@@ -362,5 +373,129 @@ class BusyOverlay extends StatelessWidget {
           ),
         ),
     ],
+  );
+}
+
+/// مفتاح يُحفظ على السيرفر: يتحرك فوراً، يُقفل أثناء الحفظ، ويعود لوضعه إن فشل.
+/// [confirmOff] يُسأل قبل الإيقاف (إجراء يراه الزبائن).
+class AsyncSwitch extends StatefulWidget {
+  const AsyncSwitch({super.key, required this.value, required this.onChanged, this.confirmOff});
+  final bool value;
+  final Future<bool> Function(bool value) onChanged;
+  final Future<bool> Function()? confirmOff;
+
+  @override
+  State<AsyncSwitch> createState() => _AsyncSwitchState();
+}
+
+class _AsyncSwitchState extends State<AsyncSwitch> {
+  bool? _local;
+  bool _busy = false;
+
+  @override
+  void didUpdateWidget(AsyncSwitch old) {
+    super.didUpdateWidget(old);
+    if (!_busy && old.value != widget.value) _local = null;
+  }
+
+  Future<void> _set(bool v) async {
+    if (!v && widget.confirmOff != null && !await widget.confirmOff!()) return;
+    if (!mounted) return;
+    setState(() => (_local = v, _busy = true));
+    final ok = await widget.onChanged(v);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (!ok) _local = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Switch(value: _local ?? widget.value, onChanged: _busy ? null : _set);
+}
+
+/// نص لاتيني (هاتف، باركود، رابط) داخل واجهة عربية — يبقى «+964…» بترتيبه الصحيح.
+String ltr(String s) => '\u2066$s\u2069';
+
+OverlayEntry? _overlayEntry;
+
+void _overlayToast(BuildContext context, String msg, {required bool error, SnackBarAction? action, required Duration duration}) {
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (overlay == null) return;
+  _overlayEntry?.remove();
+  late final OverlayEntry entry;
+  void close() {
+    if (entry.mounted) entry.remove();
+    if (identical(_overlayEntry, entry)) _overlayEntry = null;
+  }
+
+  entry = OverlayEntry(
+    // أعلى الشاشة: النافذة السفلية وأزرارها وأي لوحة مفاتيح تبقى ظاهرة.
+    builder: (ctx) => Positioned(
+      left: 12,
+      right: 12,
+      top: MediaQuery.paddingOf(ctx).top + 12,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 180),
+        builder: (_, t, child) => Opacity(
+          opacity: t,
+          child: Transform.translate(offset: Offset(0, -12 * (1 - t)), child: child),
+        ),
+        child: Material(
+          color: AppColors.ink,
+          elevation: 6,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+            child: Row(
+              children: [
+                Icon(
+                  error ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+                  color: error ? const Color(0xFFFF9A9A) : const Color(0xFF8FE3B5),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    msg,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                  ),
+                ),
+                if (action != null)
+                  TextButton(
+                    onPressed: () {
+                      close();
+                      action.onPressed();
+                    },
+                    child: Text(action.label, style: TextStyle(color: action.textColor ?? AppColors.primarySoft)),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  _overlayEntry = entry;
+  overlay.insert(entry);
+  Future.delayed(duration, close);
+}
+
+/// يمنع ضياع ما كُتب: الرجوع مع تعديلات غير محفوظة يسأل أولاً.
+class UnsavedGuard extends StatelessWidget {
+  const UnsavedGuard({super.key, required this.dirty, required this.child});
+  final bool dirty;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !dirty,
+    onPopInvokedWithResult: (didPop, _) async {
+      if (didPop) return;
+      final nav = Navigator.of(context);
+      if (await confirm(context, title: 'تجاهل ما كتبته؟', message: 'لم يُحفظ بعد.', ok: 'تجاهل', danger: true)) nav.pop();
+    },
+    child: child,
   );
 }

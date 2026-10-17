@@ -13,6 +13,9 @@ class Session {
   const Session(this.state, [this.me]);
   final AuthState state;
   final Me? me;
+
+  /// صلاحيات المدير — قبل معرفة الحساب (بلا إنترنت) نعامله كموظف.
+  bool get isAdmin => me?.isAdmin ?? false;
 }
 
 class SessionNotifier extends StateNotifier<Session> {
@@ -38,6 +41,15 @@ class SessionNotifier extends StateNotifier<Session> {
       final err = e.toString();
       state = err.contains('تعذر الاتصال') ? const Session(AuthState.signedIn) : const Session(AuthState.signedOut);
     }
+  }
+
+  /// بعد بداية بلا إنترنت: نجلب الحساب حين يعود الاتصال.
+  Future<void> refreshMe() async {
+    if (state.state != AuthState.signedIn || state.me != null) return;
+    try {
+      final me = await ref.read(repoProvider).me();
+      if (state.state == AuthState.signedIn) state = me.isStaff ? Session(AuthState.signedIn, me) : const Session(AuthState.signedOut);
+    } catch (_) {}
   }
 
   Future<void> login(String login, String password) async {

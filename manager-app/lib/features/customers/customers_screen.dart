@@ -38,6 +38,15 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   bool _hasNext = false, _loading = false;
   Object? _error;
   final _scroll = ScrollController();
+  int _seq = 0;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _q.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -49,10 +58,12 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final seq = ++_seq;
     setState(() => (_loading = true, _error = null));
     try {
       final r = await ref.read(repoProvider).customers(q: _q.text, sort: _sort);
-      if (!mounted) return;
+      if (!mounted || seq != _seq) return;
       setState(() {
         _items
           ..clear()
@@ -62,26 +73,28 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         _hasNext = r.hasNext;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (mounted && seq == _seq) setState(() => _error = e);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && seq == _seq) setState(() => _loading = false);
     }
   }
 
   Future<void> _more() async {
     if (_loading || !_hasNext) return;
+    final seq = _seq;
     setState(() => _loading = true);
     try {
       final r = await ref.read(repoProvider).customers(q: _q.text, sort: _sort, page: _page + 1);
-      if (!mounted) return;
+      if (!mounted || seq != _seq) return;
       setState(() {
         _page += 1;
         _items.addAll(r.items);
         _hasNext = r.hasNext;
       });
-    } catch (_) {
+    } catch (e) {
+      if (mounted) toastError(context, e);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && seq == _seq) setState(() => _loading = false);
     }
   }
 
@@ -99,16 +112,31 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 TextField(
                   controller: _q,
                   onChanged: (_) {
+                    setState(() {});
                     _debounce?.cancel();
                     _debounce = Timer(const Duration(milliseconds: 350), _load);
                   },
-                  decoration: const InputDecoration(hintText: 'الاسم أو رقم الهاتف', prefixIcon: Icon(Icons.search_rounded), isDense: true),
+                  decoration: InputDecoration(
+                    hintText: 'الاسم أو رقم الهاتف',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    isDense: true,
+                    suffixIcon: _q.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'مسح',
+                            onPressed: () {
+                              _q.clear();
+                              _load();
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     Text(
-                      '$_total زبونة',
+                      '${numFmt(_total)} زبونة',
                       style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700),
                     ),
                     const Spacer(),
@@ -151,15 +179,21 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                   return Panel(
                     padding: const EdgeInsets.all(12),
                     onTap: () async {
-                      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CustomerScreen(id: c.id)));
-                      _load();
+                      var changed = false;
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CustomerScreen(id: c.id, onChanged: () => changed = true),
+                        ),
+                      );
+                      // نعيد التحميل فقط إن تغيّر شيء — فيبقى مكانك في القائمة.
+                      if (changed) _load();
                     },
                     child: Row(
                       children: [
                         CircleAvatar(
                           backgroundColor: c.isActive ? AppColors.roseSoft : AppColors.dangerSoft,
                           child: Text(
-                            c.name.characters.first,
+                            c.name.trim().isEmpty ? '؟' : c.name.trim().characters.first,
                             style: TextStyle(color: c.isActive ? AppColors.rose : AppColors.danger, fontWeight: FontWeight.w800),
                           ),
                         ),
@@ -184,8 +218,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                                 ],
                               ),
                               Text(
-                                [c.phone, 'منذ ${timeAgo(c.createdAt).replaceFirst('قبل ', '')}'].whereType<String>().join(' · '),
-                                textDirection: TextDirection.rtl,
+                                [if (c.phone != null) ltr(c.phone!), 'سجّلت ${timeAgo(c.createdAt)}'].join(' · '),
                                 style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
                               ),
                             ],
@@ -212,8 +245,9 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
 }
 
 class CustomerScreen extends ConsumerStatefulWidget {
-  const CustomerScreen({super.key, required this.id});
+  const CustomerScreen({super.key, required this.id, this.onChanged});
   final String id;
+  final VoidCallback? onChanged;
   @override
   ConsumerState<CustomerScreen> createState() => _CustomerScreenState();
 }
@@ -234,7 +268,13 @@ class _CustomerScreenState extends ConsumerState<CustomerScreen> {
       final c = await ref.read(repoProvider).customer(widget.id);
       if (mounted) setState(() => (_c = c, _error = null));
     } catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (!mounted) return;
+      // البيانات القديمة ظاهرة؟ ننبّه بدل أن يفشل التحديث بصمت.
+      if (_c != null) {
+        toastError(context, e);
+      } else {
+        setState(() => _error = e);
+      }
     }
   }
 
@@ -242,6 +282,7 @@ class _CustomerScreenState extends ConsumerState<CustomerScreen> {
     setState(() => _busy = true);
     try {
       final c = await op();
+      widget.onChanged?.call();
       if (!mounted) return;
       setState(() => _c = c);
       toast(context, ok);
@@ -303,7 +344,7 @@ class _CustomerScreenState extends ConsumerState<CustomerScreen> {
   @override
   Widget build(BuildContext context) {
     final c = _c;
-    final isAdmin = ref.watch(sessionProvider).me?.role != 'STAFF';
+    final isAdmin = ref.watch(sessionProvider).isAdmin;
     if (c == null) {
       return Scaffold(
         appBar: AppBar(),

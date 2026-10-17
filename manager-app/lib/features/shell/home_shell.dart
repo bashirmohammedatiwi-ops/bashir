@@ -54,6 +54,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
 
   /// طلب جديد وصل؟ شارة على تبويب الطلبات + تنبيه داخل التطبيق.
   Future<void> _pulse({bool first = false}) async {
+    ref.read(sessionProvider.notifier).refreshMe();
     try {
       final p = await ref.read(repoProvider).pulse();
       if (!mounted) return;
@@ -97,6 +98,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
   bool _onScan(ScanEvent e) {
     if (_busy) return true;
     _busy = true;
+    // openCode يعود فور فتح النتيجة، فالمسح التالي يفتح منتجه مكان السابق.
     openCode(context, ref, e.code, source: e.source).whenComplete(() => _busy = false);
     return true;
   }

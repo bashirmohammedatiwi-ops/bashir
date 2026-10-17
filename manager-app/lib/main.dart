@@ -22,13 +22,22 @@ Future<void> main() async {
   runApp(const ProviderScope(child: ManagerApp()));
 }
 
+final _navKey = GlobalKey<NavigatorState>();
+
 class ManagerApp extends ConsumerWidget {
   const ManagerApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
+    // خروج أو انتهاء الجلسة: نغلق كل الصفحات المفتوحة فوق شاشة الدخول.
+    ref.listen(sessionProvider, (prev, next) {
+      if (prev?.state == AuthState.signedIn && next.state == AuthState.signedOut) {
+        _navKey.currentState?.popUntil((r) => r.isFirst);
+      }
+    });
     return MaterialApp(
+      navigatorKey: _navKey,
       title: 'ديما — المدير',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),

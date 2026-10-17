@@ -23,46 +23,81 @@ class StoreSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(_settingsProvider);
-    Future<void> save(Map<String, dynamic> patch, String ok) async {
+    Future<bool> save(Map<String, dynamic> patch, String ok) async {
       try {
         await ref.read(repoProvider).saveSettings(patch);
         ref.invalidate(_settingsProvider);
         if (context.mounted) toast(context, ok);
+        return true;
       } catch (e) {
         if (context.mounted) toastError(context, e);
+        return false;
       }
     }
 
-    Future<void> editNum(Map<String, dynamic> v, String key, String label, {String? suffix}) async {
+    Future<void> editNum(Map<String, dynamic> v, String key, String label, {String? hint, bool decimal = false, num min = 0}) async {
+      final t = await promptText(
+        context,
+        title: label,
+        hint: hint,
+        initial: '${v[key] ?? ''}',
+        keyboard: TextInputType.numberWithOptions(decimal: decimal),
+        direction: TextDirection.ltr,
+      );
+      if (t == null) return;
+      final clean = normalizeCode(t).replaceAll(',', '');
+      final n = decimal ? num.tryParse(clean) : int.tryParse(clean.replaceAll(RegExp(r'\D'), ''));
+      if (n == null || n < min) {
+        if (context.mounted) toast(context, 'اكتب رقماً صحيحاً${min > 0 ? ' أكبر من $min' : ''}', error: true);
+        return;
+      }
+      if (n == v[key]) return;
+      await save({key: n}, 'تم الحفظ');
+    }
+
+    Future<void> editText(Map<String, dynamic> v, String key, String label, {bool latin = false}) async {
       final t = await promptText(
         context,
         title: label,
         initial: '${v[key] ?? ''}',
-        keyboard: TextInputType.number,
-        direction: TextDirection.ltr,
+        keyboard: latin ? TextInputType.phone : null,
+        direction: latin ? TextDirection.ltr : null,
       );
-      final n = int.tryParse((t ?? '').replaceAll(RegExp(r'\D'), ''));
-      if (n != null) await save({key: n}, 'تم الحفظ');
+      if (t == null) return;
+      final x = latin ? normalizeCode(t) : t.trim();
+      if (x.isEmpty || x == v[key]) return;
+      await save({key: x}, 'تم الحفظ');
     }
 
-    Future<void> editText(Map<String, dynamic> v, String key, String label) async {
-      final t = await promptText(context, title: label, initial: '${v[key] ?? ''}');
-      if (t != null && t.trim().isNotEmpty) await save({key: t.trim()}, 'تم الحفظ');
-    }
-
-    Widget toggle(Map<String, dynamic> v, String key, String title, String sub) => SwitchListTile(
-      value: v[key] == true,
-      onChanged: (x) => save({key: x}, x ? 'شُغّل «$title»' : 'أُوقف «$title»'),
+    Widget toggle(Map<String, dynamic> v, String key, String title, String sub, {String? confirmOff}) => ListTile(
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text(sub),
+      subtitle: sub.isEmpty ? null : Text(sub),
+      trailing: AsyncSwitch(
+        value: v[key] == true,
+        confirmOff: confirmOff == null
+            ? null
+            : () => confirm(context, title: 'إيقاف «$title»؟', message: confirmOff, ok: 'إيقاف', danger: true),
+        onChanged: (x) => save({key: x}, x ? 'شُغّل «$title»' : 'أُوقف «$title»'),
+      ),
     );
-    Widget value(Map<String, dynamic> v, String key, String title, {String? suffix, bool text = false}) => ListTile(
+    Widget value(
+      Map<String, dynamic> v,
+      String key,
+      String title, {
+      String? suffix,
+      bool text = false,
+      bool latin = false,
+      bool decimal = false,
+      num min = 0,
+      String? hint,
+    }) => ListTile(
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: hint == null ? null : Text(hint, style: const TextStyle(fontSize: 12)),
       trailing: Text(
-        text ? '${v[key] ?? '—'}' : '${numFmt(v[key] as num?)}${suffix != null ? ' $suffix' : ''}',
+        text ? (latin ? ltr('${v[key] ?? '—'}') : '${v[key] ?? '—'}') : '${numFmt(v[key] as num?)}${suffix != null ? ' $suffix' : ''}',
         style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
       ),
-      onTap: () => text ? editText(v, key, title) : editNum(v, key, title, suffix: suffix),
+      onTap: () => text ? editText(v, key, title, latin: latin) : editNum(v, key, title, hint: hint, decimal: decimal, min: min),
     );
 
     return Scaffold(
@@ -78,9 +113,21 @@ class StoreSettingsScreen extends ConsumerWidget {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  toggle(v, 'cashOnDelivery', 'الدفع عند الاستلام', 'خيار الدفع نقداً للمندوب'),
+                  toggle(
+                    v,
+                    'cashOnDelivery',
+                    'الدفع عند الاستلام',
+                    'خيار الدفع نقداً للمندوب',
+                    confirmOff: 'لن تستطيع الزبونات الدفع نقداً عند الاستلام.',
+                  ),
                   const Divider(),
-                  toggle(v, 'cardPaymentEnabled', 'الدفع بالبطاقة', 'كي كارد / ماستر / فيزا'),
+                  toggle(
+                    v,
+                    'cardPaymentEnabled',
+                    'الدفع بالبطاقة',
+                    'كي كارد / ماستر / فيزا',
+                    confirmOff: 'لن تظهر الدفع بالبطاقة عند إتمام الطلب.',
+                  ),
                   const Divider(),
                   toggle(v, 'pickupEnabled', 'الاستلام من المتجر', '${v['pickupAddress'] ?? ''}'),
                   const Divider(),
@@ -110,9 +157,18 @@ class StoreSettingsScreen extends ConsumerWidget {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  value(v, 'pointsPer1000Iqd', 'نقاط لكل 1000 د.ع'),
+                  value(
+                    v,
+                    'loyaltyEarnPercent',
+                    'نسبة الكسب',
+                    suffix: '%',
+                    decimal: true,
+                    hint: 'من قيمة الطلب تُضاف نقاطاً — 1% = 10 نقاط لكل 1,000 د.ع',
+                  ),
                   const Divider(),
-                  value(v, 'redeem100PointsValue', 'قيمة كل 100 نقطة', suffix: 'د.ع'),
+                  value(v, 'loyaltyPointValue', 'قيمة النقطة', suffix: 'د.ع', decimal: true, min: 0.01, hint: 'خصم كل نقطة عند الاستخدام'),
+                  const Divider(),
+                  value(v, 'loyaltyRedeemStep', 'خطوة الاستخدام', suffix: 'نقطة', min: 1, hint: 'تُستخدم النقاط بمضاعفاتها (مثلاً 250)'),
                   const Divider(),
                   value(v, 'firstOrderBonusPoints', 'هدية أول طلب', suffix: 'نقطة'),
                   const Divider(),
@@ -127,9 +183,9 @@ class StoreSettingsScreen extends ConsumerWidget {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  value(v, 'whatsapp', 'واتساب المتجر', text: true),
+                  value(v, 'whatsapp', 'واتساب المتجر', text: true, latin: true),
                   const Divider(),
-                  value(v, 'supportPhone', 'هاتف الدعم', text: true),
+                  value(v, 'supportPhone', 'هاتف الدعم', text: true, latin: true),
                   const Divider(),
                   value(v, 'pickupHours', 'أوقات الاستلام', text: true),
                 ],
@@ -152,6 +208,16 @@ class ShippingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final zones = ref.watch(_zonesProvider);
+    Future<void> run(Future<void> Function() f, String ok) async {
+      try {
+        await f();
+        ref.invalidate(_zonesProvider);
+        if (context.mounted) toast(context, ok);
+      } catch (e) {
+        if (context.mounted) toastError(context, e);
+      }
+    }
+
     Future<int?> askFee(String title, int? current) async {
       final t = await promptText(
         context,
@@ -162,7 +228,7 @@ class ShippingScreen extends ConsumerWidget {
         hint: 'فارغ = رسوم المحافظة',
       );
       if (t == null) return null;
-      return int.tryParse(t.replaceAll(RegExp(r'\D'), '')) ?? -1;
+      return int.tryParse(normalizeCode(t).replaceAll(RegExp(r'\D'), '')) ?? -1;
     }
 
     return Scaffold(
@@ -193,14 +259,25 @@ class ShippingScreen extends ConsumerWidget {
                               style: TextStyle(fontWeight: FontWeight.w800, color: z.isActive ? AppColors.ink : AppColors.muted),
                             ),
                             subtitle: Text('${money(z.fee)} · ${z.areas.length} منطقة'),
-                            leading: Switch(
+                            leading: AsyncSwitch(
                               value: z.isActive,
+                              confirmOff: () => confirm(
+                                context,
+                                title: 'إيقاف التوصيل إلى ${z.governorate}؟',
+                                message: 'لن تستطيع زبونات هذه المحافظة إتمام الطلب.',
+                                ok: 'إيقاف',
+                                danger: true,
+                              ),
                               onChanged: (v) async {
                                 try {
                                   await ref.read(repoProvider).saveZone(z, active: v);
                                   ref.invalidate(_zonesProvider);
+                                  final msg = v ? 'شُغّل التوصيل إلى ${z.governorate}' : 'أُوقف التوصيل إلى ${z.governorate}';
+                                  if (context.mounted) toast(context, msg);
+                                  return true;
                                 } catch (e) {
                                   if (context.mounted) toastError(context, e);
+                                  return false;
                                 }
                               },
                             ),
@@ -213,9 +290,8 @@ class ShippingScreen extends ConsumerWidget {
                                 ),
                                 onTap: () async {
                                   final f = await askFee('رسوم ${z.governorate}', z.fee);
-                                  if (f == null || f < 0) return;
-                                  await ref.read(repoProvider).saveZone(z, fee: f);
-                                  ref.invalidate(_zonesProvider);
+                                  if (f == null || f < 0 || f == z.fee) return;
+                                  await run(() => ref.read(repoProvider).saveZone(z, fee: f), 'رسوم ${z.governorate}: ${money(f)}');
                                 },
                               ),
                               for (final a in z.areas)
@@ -230,12 +306,17 @@ class ShippingScreen extends ConsumerWidget {
                                   onTap: () async {
                                     final f = await askFee('رسوم ${a['name']}', (a['fee'] as num?)?.toInt());
                                     if (f == null) return;
-                                    await ref.read(repoProvider).saveArea('${a['id']}', {'fee': f < 0 ? null : f});
-                                    ref.invalidate(_zonesProvider);
+                                    await run(
+                                      () => ref.read(repoProvider).saveArea('${a['id']}', {'fee': f < 0 ? null : f}),
+                                      f < 0 ? '${a['name']}: رسوم المحافظة' : '${a['name']}: ${money(f)}',
+                                    );
                                   },
                                   onLongPress: () async {
-                                    await ref.read(repoProvider).saveArea('${a['id']}', {'isActive': a['isActive'] == false});
-                                    ref.invalidate(_zonesProvider);
+                                    final on = a['isActive'] == false;
+                                    await run(
+                                      () => ref.read(repoProvider).saveArea('${a['id']}', {'isActive': on}),
+                                      on ? 'شُغّلت ${a['name']}' : 'أُوقفت ${a['name']}',
+                                    );
                                   },
                                 ),
                             ],
@@ -269,24 +350,32 @@ class CatalogAdminScreen extends ConsumerStatefulWidget {
 class _CatalogAdminScreenState extends ConsumerState<CatalogAdminScreen> {
   String _q = '';
 
-  Future<void> _patchBrand(String id, Map<String, dynamic> patch) async {
+  Future<bool> _patchBrand(String id, Map<String, dynamic> patch, String ok) async {
     try {
       await ref.read(repoProvider).patchBrand(id, patch);
       ref.invalidate(_brandsAdminProvider);
+      if (mounted) toast(context, ok);
+      return true;
     } catch (e) {
       if (mounted) toastError(context, e);
+      return false;
     }
   }
 
-  Future<void> _patchCategory(CategoryNode c, bool active) async {
+  Future<bool> _patchCategory(CategoryNode c, bool active) async {
     try {
       await ref.read(repoProvider).patchCategory(c.id, {'isActive': active});
       ref.invalidate(categoriesProvider);
       if (mounted) toast(context, active ? 'ظهر «${c.name}»' : 'أُخفي «${c.name}»');
+      return true;
     } catch (e) {
       if (mounted) toastError(context, e);
+      return false;
     }
   }
+
+  Future<bool> _confirmHide(String name, String what) =>
+      confirm(context, title: 'إخفاء «$name»؟', message: 'سيختفي $what من تطبيق الزبائن فوراً.', ok: 'إخفاء', danger: true);
 
   @override
   Widget build(BuildContext context) {
@@ -346,13 +435,20 @@ class _CatalogAdminScreenState extends ConsumerState<CatalogAdminScreen> {
                               children: [
                                 IconButton(
                                   tooltip: 'مميز',
-                                  onPressed: () => _patchBrand('${b['id']}', {'isFeatured': !featured}),
+                                  onPressed: () => _patchBrand('${b['id']}', {
+                                    'isFeatured': !featured,
+                                  }, featured ? 'أُزيل «${b['name']}» من المميزة' : 'صار «${b['name']}» مميزاً'),
                                   icon: Icon(
                                     featured ? Icons.star_rounded : Icons.star_outline_rounded,
                                     color: featured ? const Color(0xFFF2B01E) : AppColors.muted,
                                   ),
                                 ),
-                                Switch(value: active, onChanged: (v) => _patchBrand('${b['id']}', {'isActive': v})),
+                                AsyncSwitch(
+                                  value: active,
+                                  confirmOff: () => _confirmHide('${b['name']}', 'البراند وكل منتجاته'),
+                                  onChanged: (v) =>
+                                      _patchBrand('${b['id']}', {'isActive': v}, v ? 'ظهر «${b['name']}»' : 'أُخفي «${b['name']}»'),
+                                ),
                               ],
                             ),
                           );
@@ -381,13 +477,20 @@ class _CatalogAdminScreenState extends ConsumerState<CatalogAdminScreen> {
                             style: TextStyle(fontWeight: FontWeight.w800, color: r.isActive ? AppColors.ink : AppColors.muted),
                           ),
                           subtitle: Text('${r.children.length} قسم فرعي'),
-                          leading: Switch(value: r.isActive, onChanged: (v) => _patchCategory(r, v)),
+                          leading: AsyncSwitch(
+                            value: r.isActive,
+                            confirmOff: () => _confirmHide(r.name, 'القسم وأقسامه الفرعية'),
+                            onChanged: (v) => _patchCategory(r, v),
+                          ),
                           children: [
                             for (final c in r.children)
-                              SwitchListTile(
+                              ListTile(
                                 dense: true,
-                                value: c.isActive,
-                                onChanged: (v) => _patchCategory(c, v),
+                                trailing: AsyncSwitch(
+                                  value: c.isActive,
+                                  confirmOff: () => _confirmHide(c.name, 'القسم'),
+                                  onChanged: (v) => _patchCategory(c, v),
+                                ),
                                 title: Text(c.name, style: TextStyle(color: c.isActive ? AppColors.ink : AppColors.muted)),
                                 subtitle: c.children.isEmpty
                                     ? null
@@ -557,7 +660,7 @@ class HealthScreen extends ConsumerWidget {
           preset: SearchPreset(status: parts[1], filter: parts.length > 2 ? parts[2] : null),
         );
       } else if (parts[0] == 'orders') {
-        page = const OrdersScreen();
+        page = OrdersScreen(initialStatus: parts.length > 1 ? parts[1] : null);
       } else if (parts[0] == 'reviews') {
         page = const ReviewsScreen();
       }
@@ -588,7 +691,7 @@ class HealthScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          s.issues == 0 ? 'المتجر بحالة ممتازة' : '${s.issues} أمور تحتاج انتباهك',
+                          s.issues == 0 ? 'المتجر بحالة ممتازة' : issuesLabel(s.issues),
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,

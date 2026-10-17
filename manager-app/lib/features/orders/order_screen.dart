@@ -58,7 +58,13 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       final o = await ref.read(repoProvider).order(widget.orderId);
       if (mounted) setState(() => (_o = o, _error = null));
     } catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (!mounted) return;
+      // التحديث فشل والطلب ظاهر؟ ننبّه بدل الصمت.
+      if (_o != null) {
+        toastError(context, e);
+      } else {
+        setState(() => _error = e);
+      }
     }
   }
 
@@ -73,18 +79,22 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final o = _o;
     if (o == null) return;
     final c = normalizeCode(code);
+    // UPC/EAN: «0123…» و«123…» نفس الباركود.
+    bool same(OrderItemLine it) {
+      final b = normalizeCode(it.barcode ?? '');
+      return b.isNotEmpty && (b == c || b.replaceFirst(RegExp(r'^0+'), '') == c.replaceFirst(RegExp(r'^0+'), ''));
+    }
+
     OrderItemLine? hit;
     for (final it in o.items) {
-      final b = normalizeCode(it.barcode ?? '');
-      final match = b.isNotEmpty && (b == c || b.replaceFirst(RegExp(r'^0+'), '') == c.replaceFirst(RegExp(r'^0+'), ''));
-      if (match && (_picked[it.id] ?? 0) < it.quantity) {
+      if (same(it) && (_picked[it.id] ?? 0) < it.quantity) {
         hit = it;
         break;
       }
     }
     if (hit == null) {
       Prefs.instance.feedback(error: true);
-      final already = o.items.any((it) => normalizeCode(it.barcode ?? '') == c);
+      final already = o.items.any(same);
       toast(context, already ? 'هذه القطعة مكتملة العدد' : 'الباركود $c ليس ضمن هذا الطلب', error: true);
       return;
     }

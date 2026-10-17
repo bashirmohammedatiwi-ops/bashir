@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,9 +51,53 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
   bool _saving = false;
   bool _filling = false;
   String? _fillNote;
+  bool _touched = false;
 
-  bool get _hasPos => widget.posPrice != null || widget.draft?.pos != null;
-  int? get _posPrice => widget.posPrice ?? widget.draft?.pos?.price;
+  /// الباركود المكتوب يدوياً: نتحقق منه في الكاشير (السعر) وفي التطبيق (موجود مسبقاً؟).
+  PosInfo? _pos;
+  String? _checkedCode;
+  Timer? _checkTimer;
+
+  bool get _hasPos => widget.posPrice != null || widget.draft?.pos != null || _pos?.price != null;
+  int? get _posPrice => widget.posPrice ?? widget.draft?.pos?.price ?? _pos?.price;
+  int? get _posStock => widget.posStock ?? _pos?.stock;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final t in [_nameAr, _nameEn, _descAr, _price]) {
+      t.addListener(() => _touched = true);
+    }
+    _barcode.addListener(() {
+      _checkTimer?.cancel();
+      _checkTimer = Timer(const Duration(milliseconds: 700), _checkCode);
+    });
+    if (_barcode.text.isNotEmpty && widget.posPrice == null) WidgetsBinding.instance.addPostFrameCallback((_) => _checkCode());
+  }
+
+  @override
+  void dispose() {
+    _checkTimer?.cancel();
+    for (final t in [_barcode, _nameAr, _nameEn, _descAr, _price]) {
+      t.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _checkCode() async {
+    final code = normalizeCode(_barcode.text);
+    if (code.length < 4 || code == _checkedCode || widget.posPrice != null) return;
+    _checkedCode = code;
+    try {
+      final r = await ref.read(repoProvider).lookup(code);
+      if (!mounted || normalizeCode(_barcode.text) != code) return;
+      if (r.found) toast(context, 'هذا الباركود موجود مسبقاً في «${r.product?.name}»', error: true);
+      setState(() {
+        _pos = r.pos;
+        if (_nameAr.text.isEmpty && r.pos?.name != null) _nameAr.text = r.pos!.name!;
+      });
+    } catch (_) {}
+  }
 
   Future<void> _autofill() async {
     final code = normalizeCode(_barcode.text);
@@ -119,12 +165,19 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
     if (choice == null || !mounted) return;
     if (choice == 'web') {
       final picked = await pickWebImages(context, barcode: _barcode.text, name: _nameEn.text.isNotEmpty ? _nameEn.text : _nameAr.text);
-      if (picked != null) setState(() => _pics.addAll(picked.map((w) => _Pic.url(w.url, w.thumb ?? w.url))));
+      if (picked != null) {
+        setState(() {
+          _pics.addAll(picked.map((w) => _Pic.url(w.url, w.thumb ?? w.url)));
+          _touched = true;
+        });
+      }
       return;
     }
     final files = await pickPhotos(choice == 'camera' ? PhotoSource.camera : PhotoSource.gallery);
     for (final f in files) {
       final bytes = await f.readAsBytes();
+      if (!mounted) return;
+      _touched = true;
       final placeholder = _Pic.media(null, null)
         ..uploading = true
         ..bytes = bytes;
@@ -147,7 +200,13 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
     if (_brand == null) return toast(context, 'اختر البراند', error: true);
     if (_pics.any((p) => p.uploading)) return toast(context, 'انتظر اكتمال رفع الصور', error: true);
     final price = int.tryParse(_price.text.replaceAll(RegExp(r'\D'), ''));
-    if (!_hasPos && (price == null || price <= 0)) return toast(context, 'اكتب السعر — الباركود غير موجود في الكاشير', error: true);
+    if (!_hasPos && (price == null || price <= 0)) {
+      return toast(
+        context,
+        normalizeCode(_barcode.text).isEmpty ? 'اكتب السعر' : 'اكتب السعر — لم نجد هذا الباركود في الكاشير',
+        error: true,
+      );
+    }
     setState(() => _saving = true);
     try {
       final r = await ref.read(repoProvider).createProduct({
@@ -170,6 +229,7 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
       ref.invalidate(brandsProvider);
       ref.read(dataVersionProvider.notifier).state++;
       if (!mounted) return;
+      _touched = false;
       toast(context, r.failedImages > 0 ? 'أُضيف المنتج — تعذّر رفع ${r.failedImages} صورة' : 'أُضيف المنتج إلى التطبيق ✓');
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -185,196 +245,202 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('إضافة منتج جديد')),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
-                : const Icon(Icons.add_task_rounded),
-            label: Text(_saving ? 'جارٍ الحفظ ورفع الصور…' : 'حفظ المنتج'),
+    return UnsavedGuard(
+      dirty: (_touched || _pics.any((p) => p.mediaId != null && widget.draft == null)) && !_saving,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('إضافة منتج جديد')),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
+                  : const Icon(Icons.add_task_rounded),
+              label: Text(_saving ? 'جارٍ الحفظ ورفع الصور…' : 'حفظ المنتج'),
+            ),
           ),
         ),
-      ),
-      body: BusyOverlay(
-        busy: _filling,
-        label: 'تعبئة ذكية… قد تأخذ دقيقة',
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
-          children: [
-            TextField(
-              controller: _barcode,
-              textDirection: TextDirection.ltr,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: .5),
-              decoration: const InputDecoration(labelText: 'الباركود', prefixIcon: Icon(Icons.qr_code_rounded)),
-            ),
-            if (_hasPos) ...[
-              const SizedBox(height: 10),
-              Panel(
-                color: AppColors.infoSoft,
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.point_of_sale_rounded, color: AppColors.info),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'السعر والمخزون من الكاشير تلقائياً: ${money(_posPrice)}${widget.posStock != null ? ' · ${widget.posStock} قطعة' : ''}',
-                        style: const TextStyle(color: AppColors.info, fontWeight: FontWeight.w700),
+        body: BusyOverlay(
+          busy: _filling,
+          label: 'تعبئة ذكية… قد تأخذ دقيقة',
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
+            children: [
+              TextField(
+                controller: _barcode,
+                textDirection: TextDirection.ltr,
+                // بعض الباركودات (Code128) والـSKU فيها حروف — لوحة نص لاتينية لا أرقام فقط.
+                keyboardType: TextInputType.visiblePassword,
+                autocorrect: false,
+                onSubmitted: (_) => _checkCode(),
+                style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: .5),
+                decoration: const InputDecoration(labelText: 'الباركود', prefixIcon: Icon(Icons.qr_code_rounded)),
+              ),
+              if (_hasPos) ...[
+                const SizedBox(height: 10),
+                Panel(
+                  color: AppColors.infoSoft,
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.point_of_sale_rounded, color: AppColors.info),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'السعر والمخزون من الكاشير تلقائياً: ${money(_posPrice)}${_posStock != null ? ' · ${numFmt(_posStock)} قطعة' : ''}',
+                          style: const TextStyle(color: AppColors.info, fontWeight: FontWeight.w700),
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _filling ? null : _autofill,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                ),
+                icon: const Icon(Icons.auto_awesome_rounded),
+                label: const Text('تعبئة ذكية من الباركود (اسم، براند، قسم، صور)'),
+              ),
+              if (_fillNote != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    _fillNote!,
+                    style: const TextStyle(color: AppColors.warning, fontWeight: FontWeight.w700, fontSize: 12.5),
+                  ),
+                ),
+              SectionTitle('الصور (${_pics.length})', subtitle: 'الأولى غلاف — اضغط مطولاً لجعل صورة غلافاً'),
+              SizedBox(
+                height: 108,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _AddTile(onTap: _addPhotos),
+                    for (var i = 0; i < _pics.length; i++)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 8),
+                        child: GestureDetector(
+                          onLongPress: () => setState(() => _pics.insert(0, _pics.removeAt(i))),
+                          child: Stack(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: i == 0 ? AppColors.primary : AppColors.line, width: i == 0 ? 2 : 1),
+                                ),
+                                child: _pics[i].bytes != null
+                                    ? Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: Image.memory(_pics[i].bytes!, width: 100, height: 100, fit: BoxFit.cover),
+                                          ),
+                                          if (_pics[i].uploading) const Positioned.fill(child: Center(child: CircularProgressIndicator())),
+                                        ],
+                                      )
+                                    : _pics[i].preview == null
+                                    ? Container(
+                                        width: 100,
+                                        height: 100,
+                                        alignment: Alignment.center,
+                                        child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 32),
+                                      )
+                                    : NetImg(_pics[i].preview, size: 100, radius: 12, fit: BoxFit.contain),
+                              ),
+                              if (i == 0)
+                                const PositionedDirectional(
+                                  top: 4,
+                                  start: 4,
+                                  child: Pill('غلاف', color: Colors.white, bg: AppColors.primary, small: true),
+                                ),
+                              if (_pics[i].url != null)
+                                const PositionedDirectional(
+                                  bottom: 4,
+                                  start: 4,
+                                  child: Pill('ويب', color: Colors.white, bg: Color(0x99000000), small: true),
+                                ),
+                              PositionedDirectional(
+                                top: 4,
+                                end: 4,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _pics.removeAt(i)),
+                                  child: const CircleAvatar(
+                                    radius: 11,
+                                    backgroundColor: Colors.white,
+                                    child: Icon(Icons.close_rounded, size: 15),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-            ],
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _filling ? null : _autofill,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
+              const SectionTitle('المعلومات'),
+              TextField(
+                controller: _nameAr,
+                decoration: const InputDecoration(labelText: 'الاسم بالعربي'),
               ),
-              icon: const Icon(Icons.auto_awesome_rounded),
-              label: const Text('تعبئة ذكية من الباركود (اسم، براند، قسم، صور)'),
-            ),
-            if (_fillNote != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  _fillNote!,
-                  style: const TextStyle(color: AppColors.warning, fontWeight: FontWeight.w700, fontSize: 12.5),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _nameEn,
+                textDirection: TextDirection.ltr,
+                decoration: const InputDecoration(labelText: 'الاسم بالإنجليزي'),
+              ),
+              const SizedBox(height: 10),
+              _PickerField(
+                icon: Icons.sell_outlined,
+                label: 'البراند',
+                value: _brand == null ? null : (_brand!.id.isEmpty ? '${_brand!.name} (جديد)' : _brand!.name),
+                onTap: () async {
+                  final b = await pickBrand(context, suggestion: _brand?.id.isEmpty == true ? _brand!.name : null);
+                  if (b != null) setState(() => _brand = b);
+                },
+              ),
+              const SizedBox(height: 10),
+              _PickerField(
+                icon: Icons.category_outlined,
+                label: 'القسم',
+                value: _cat?.label,
+                onTap: () async {
+                  final c = await pickCategory(context);
+                  if (c != null) setState(() => _cat = c);
+                },
+              ),
+              const SizedBox(height: 10),
+              if (!_hasPos)
+                TextField(
+                  controller: _price,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(labelText: 'السعر (دينار)', suffixText: 'د.ع'),
+                ),
+              if (!_hasPos) const SizedBox(height: 10),
+              TextField(
+                controller: _descAr,
+                minLines: 3,
+                maxLines: 8,
+                decoration: const InputDecoration(labelText: 'الوصف (اختياري)', alignLabelWithHint: true),
+              ),
+              const SizedBox(height: 10),
+              Panel(
+                padding: EdgeInsets.zero,
+                child: SwitchListTile(
+                  value: _active,
+                  onChanged: (v) => setState(() => _active = v),
+                  title: const Text('اعرضه في التطبيق فوراً', style: TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(_pics.isEmpty ? 'بلا صور يبقى مخفياً حتى تضيف صورة' : 'يمكنك إيقافه لاحقاً بمفتاح واحد'),
                 ),
               ),
-            SectionTitle('الصور (${_pics.length})', subtitle: 'الأولى غلاف — اضغط مطولاً لجعل صورة غلافاً'),
-            SizedBox(
-              height: 108,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _AddTile(onTap: _addPhotos),
-                  for (var i = 0; i < _pics.length; i++)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 8),
-                      child: GestureDetector(
-                        onLongPress: () => setState(() => _pics.insert(0, _pics.removeAt(i))),
-                        child: Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: i == 0 ? AppColors.primary : AppColors.line, width: i == 0 ? 2 : 1),
-                              ),
-                              child: _pics[i].bytes != null
-                                  ? Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(12),
-                                          child: Image.memory(_pics[i].bytes!, width: 100, height: 100, fit: BoxFit.cover),
-                                        ),
-                                        if (_pics[i].uploading) const Positioned.fill(child: Center(child: CircularProgressIndicator())),
-                                      ],
-                                    )
-                                  : _pics[i].preview == null
-                                  ? Container(
-                                      width: 100,
-                                      height: 100,
-                                      alignment: Alignment.center,
-                                      child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 32),
-                                    )
-                                  : NetImg(_pics[i].preview, size: 100, radius: 12, fit: BoxFit.contain),
-                            ),
-                            if (i == 0)
-                              const PositionedDirectional(
-                                top: 4,
-                                start: 4,
-                                child: Pill('غلاف', color: Colors.white, bg: AppColors.primary, small: true),
-                              ),
-                            if (_pics[i].url != null)
-                              const PositionedDirectional(
-                                bottom: 4,
-                                start: 4,
-                                child: Pill('ويب', color: Colors.white, bg: Color(0x99000000), small: true),
-                              ),
-                            PositionedDirectional(
-                              top: 4,
-                              end: 4,
-                              child: GestureDetector(
-                                onTap: () => setState(() => _pics.removeAt(i)),
-                                child: const CircleAvatar(
-                                  radius: 11,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(Icons.close_rounded, size: 15),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SectionTitle('المعلومات'),
-            TextField(
-              controller: _nameAr,
-              decoration: const InputDecoration(labelText: 'الاسم بالعربي'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _nameEn,
-              textDirection: TextDirection.ltr,
-              decoration: const InputDecoration(labelText: 'الاسم بالإنجليزي'),
-            ),
-            const SizedBox(height: 10),
-            _PickerField(
-              icon: Icons.sell_outlined,
-              label: 'البراند',
-              value: _brand == null ? null : (_brand!.id.isEmpty ? '${_brand!.name} (جديد)' : _brand!.name),
-              onTap: () async {
-                final b = await pickBrand(context, suggestion: _brand?.id.isEmpty == true ? _brand!.name : null);
-                if (b != null) setState(() => _brand = b);
-              },
-            ),
-            const SizedBox(height: 10),
-            _PickerField(
-              icon: Icons.category_outlined,
-              label: 'القسم',
-              value: _cat?.label,
-              onTap: () async {
-                final c = await pickCategory(context);
-                if (c != null) setState(() => _cat = c);
-              },
-            ),
-            const SizedBox(height: 10),
-            if (!_hasPos)
-              TextField(
-                controller: _price,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'السعر (دينار)', suffixText: 'د.ع'),
-              ),
-            if (!_hasPos) const SizedBox(height: 10),
-            TextField(
-              controller: _descAr,
-              minLines: 3,
-              maxLines: 8,
-              decoration: const InputDecoration(labelText: 'الوصف (اختياري)', alignLabelWithHint: true),
-            ),
-            const SizedBox(height: 10),
-            Panel(
-              padding: EdgeInsets.zero,
-              child: SwitchListTile(
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
-                title: const Text('اعرضه في التطبيق فوراً', style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text(_pics.isEmpty ? 'بلا صور يبقى مخفياً حتى تضيف صورة' : 'يمكنك إيقافه لاحقاً بمفتاح واحد'),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

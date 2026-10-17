@@ -157,7 +157,14 @@ class Api {
       }
       final status = e.response?.statusCode;
       if (status == 401) msg ??= 'انتهت الجلسة — سجّل الدخول مجدداً';
-      if (status == 403) msg = 'هذا الحساب لا يملك صلاحية الإدارة';
+      // رسائل السيرفر العربية تُعرض كما هي؛ الإنجليزية الافتراضية نترجمها.
+      final arabic = msg != null && RegExp(r'[\u0600-\u06FF]').hasMatch(msg);
+      if (status == 403 && !arabic) msg = 'لا تملك صلاحية لهذا الإجراء — اطلبه من المدير';
+      if (status == 404 && !arabic) msg = 'غير موجود — ربما حُذف';
+      if (status == 413) msg = 'الملف كبير جداً';
+      if (status == 429) msg = 'طلبات كثيرة — انتظر لحظة وحاول مجدداً';
+      if (status != null && status >= 500 && !arabic) msg = 'خطأ في السيرفر — حاول بعد قليل';
+      if (status == 400 && msg != null && !arabic) msg = 'بيانات غير مقبولة: $msg';
       return ApiError(msg ?? 'خطأ من السيرفر ($status)', status: status);
     }
     return ApiError(e.toString());

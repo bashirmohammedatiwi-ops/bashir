@@ -203,11 +203,13 @@ export class ControlOrdersService {
 
   /** مبيعات للمدير: اليوم، أمس، 7 و30 يوماً، رسم 14 يوماً، الأكثر مبيعاً فعلياً، والحالات. */
   async sales() {
+    // منتصف ليل بغداد (UTC+3 بلا توقيت صيفي) — مهما كانت منطقة السيرفر.
+    const BAGHDAD = 3 * 3_600_000;
     const startOf = (daysAgo: number) => {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      d.setDate(d.getDate() - daysAgo);
-      return d;
+      const local = new Date(Date.now() + BAGHDAD);
+      local.setUTCHours(0, 0, 0, 0);
+      local.setUTCDate(local.getUTCDate() - daysAgo);
+      return new Date(local.getTime() - BAGHDAD);
     };
     const sum = async (from: Date, to?: Date) => {
       const r = await this.prisma.order.aggregate({
@@ -225,7 +227,7 @@ export class ControlOrdersService {
       sum(startOf(6)),
       sum(since30),
       this.prisma.$queryRaw<Array<{ day: string; amount: number; n: number }>>`
-        SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day,
+        SELECT to_char(date_trunc('day', "createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baghdad'), 'YYYY-MM-DD') AS day,
                COALESCE(SUM(total), 0)::int AS amount, COUNT(*)::int AS n
         FROM "Order"
         WHERE "createdAt" >= ${since14} AND status::text IN (${Prisma.join(SOLD)})
@@ -245,8 +247,7 @@ export class ControlOrdersService {
     const dayMap = new Map(byDay.map((r) => [r.day, r]));
     const days: { day: string; revenue: number; orders: number }[] = [];
     for (let i = 13; i >= 0; i--) {
-      const d = startOf(i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const key = new Date(startOf(i).getTime() + BAGHDAD).toISOString().slice(0, 10);
       const r = dayMap.get(key);
       days.push({ day: key, revenue: Number(r?.amount ?? 0), orders: Number(r?.n ?? 0) });
     }

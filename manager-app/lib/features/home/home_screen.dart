@@ -29,6 +29,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _code = TextEditingController();
   int _seen = 0;
 
+  void _onRecent() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Prefs.instance.recentVersion.addListener(_onRecent);
+  }
+
+  @override
+  void dispose() {
+    Prefs.instance.recentVersion.removeListener(_onRecent);
+    _code.dispose();
+    super.dispose();
+  }
+
   void _search(SearchPreset preset) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SearchScreen(preset: preset)));
 
   @override
@@ -245,7 +262,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (recent.isNotEmpty) ...[
                     SectionTitle(
                       'آخر ما مسحته',
-                      trailing: TextButton(onPressed: () => setState(Prefs.instance.clearRecent), child: const Text('مسح السجل')),
+                      trailing: TextButton(onPressed: Prefs.instance.clearRecent, child: const Text('مسح السجل')),
                     ),
                     SizedBox(
                       height: 132,
@@ -407,8 +424,7 @@ class _TodayRow extends ConsumerWidget {
   final VoidCallback onOpenOrders;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final me = ref.watch(sessionProvider).me;
-    final isAdmin = me == null || me.role != 'STAFF';
+    final isAdmin = ref.watch(sessionProvider).isAdmin;
     final pending = ref.watch(pendingOrdersProvider);
     final sales = isAdmin ? ref.watch(salesProvider).valueOrNull : null;
     final ordersCard = Material(
@@ -506,7 +522,7 @@ class _HealthBanner extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${h.issues} أمور تحتاج انتباهك',
+                  issuesLabel(h.issues),
                   style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.warning),
                 ),
                 if (top.isNotEmpty) Text(top, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5)),

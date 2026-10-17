@@ -14,11 +14,43 @@ import '../catalog/create_product_screen.dart';
 import '../drafts/save_draft_screen.dart';
 import '../product/product_screen.dart';
 
+/// آخر نتيجة مسح مفتوحة — المسح التالي يحلّ محلها بدل أن تتكدس الصفحات.
+Route<void>? _resultRoute;
+
+void _showResult(NavigatorState nav, Route<void> route) {
+  final prev = _resultRoute;
+  _resultRoute = route;
+  if (prev != null && prev.isCurrent) {
+    nav.pushReplacement(route);
+  } else {
+    nav.push(route);
+  }
+}
+
 /// يفتح نتيجة باركود: المنتج مباشرة، أو نافذة «غير موجود» مع الحفظ في مجموعة.
-Future<void> openCode(BuildContext context, WidgetRef ref, String raw, {ScanSource source = ScanSource.typed}) async {
+/// يعود فور فتح النتيجة (ليبقى القارئ جاهزاً)؛ [waitForClose] ينتظر حتى تُغلق.
+Future<void> openCode(
+  BuildContext context,
+  WidgetRef ref,
+  String raw, {
+  ScanSource source = ScanSource.typed,
+  bool waitForClose = false,
+}) async {
   final code = normalizeCode(raw);
   if (code.isEmpty) return;
   final nav = Navigator.of(context);
+  await _openCode(context, ref, nav, code);
+  if (!waitForClose) return;
+  // نتيجة حلّت محلها نتيجة أحدث؟ ننتظر الأحدث.
+  while (true) {
+    final r = _resultRoute;
+    if (r == null || !r.isActive) break;
+    await r.popped;
+    if (identical(_resultRoute, r)) break;
+  }
+}
+
+Future<void> _openCode(BuildContext context, WidgetRef ref, NavigatorState nav, String code) async {
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -79,19 +111,25 @@ Future<void> openCode(BuildContext context, WidgetRef ref, String raw, {ScanSour
         thumb: shade?.image?.thumb ?? p.cover,
       ),
     );
-    await nav.push(
+    final r = res;
+    _showResult(
+      nav,
       MaterialPageRoute(
-        builder: (_) => ProductScreen(productId: p.id, initial: p, highlightShadeId: res!.matchedShadeId),
+        builder: (_) => ProductScreen(productId: p.id, initial: p, highlightShadeId: r.matchedShadeId),
       ),
     );
     return;
   }
   Prefs.instance.feedback(error: true);
   Prefs.instance.addRecent(RecentScan(code: code, at: DateTime.now(), name: res.pos?.name, found: false));
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => NotFoundSheet(result: res!),
+  final r = res;
+  _showResult(
+    nav,
+    ModalBottomSheetRoute<void>(
+      isScrollControlled: true,
+      barrierLabel: MaterialLocalizations.of(context).scrimLabel,
+      builder: (_) => NotFoundSheet(result: r),
+    ),
   );
 }
 
@@ -216,12 +254,12 @@ class NotFoundSheet extends ConsumerWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final saved = await Navigator.of(context).push<bool>(
+                      final saved = await Navigator.of(context).push<Object>(
                         MaterialPageRoute(
                           builder: (_) => SaveDraftScreen(barcode: result.code, posName: pos?.name),
                         ),
                       );
-                      if (saved == true && context.mounted) Navigator.pop(context);
+                      if (saved != null && context.mounted) Navigator.pop(context);
                     },
                     icon: const Icon(Icons.bookmark_add_rounded),
                     label: const Text('احفظه لاحقاً'),

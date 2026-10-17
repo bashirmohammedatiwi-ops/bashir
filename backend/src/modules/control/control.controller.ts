@@ -69,7 +69,7 @@ export class ControlController {
 
   @Post("counts")
   createCount(@Body() dto: StockCountCreateDto, @CurrentUser() user: Actor) {
-    return this.insights.createCount(dto.name ?? "", dto.note, actorId(user));
+    return this.insights.createCount(dto, actorId(user));
   }
 
   @Get("counts/:id")

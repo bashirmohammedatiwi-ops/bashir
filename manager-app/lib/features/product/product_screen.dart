@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/api.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/photos.dart';
@@ -57,12 +58,18 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       final p = await ref.read(repoProvider).product(widget.productId);
       if (mounted) setState(() => (_p = p, _error = null));
     } catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (!mounted) return;
+      if (_p != null) {
+        toastError(context, e);
+      } else {
+        setState(() => _error = e);
+      }
     }
   }
 
   /// تنفيذ عملية على السيرفر ثم تحديث الشاشة بالنسخة الراجعة.
   Future<ProductDetail?> _run(Future<ProductDetail> Function() op, {String? label, String? success}) async {
+    if (!mounted) return null;
     setState(() {
       _busy = true;
       _busyLabel = label;
@@ -83,6 +90,37 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   }
 
   Repo get _repo => ref.read(repoProvider);
+
+  /// زر «تراجع» يبقى ظاهراً ثوانٍ حتى بعد الرجوع للصفحة السابقة — فيعمل بلا الشاشة.
+  VoidCallback _undo(Future<void> Function(Repo repo, String productId) op, String success) {
+    final repo = _repo;
+    final id = _p!.id;
+    final version = ref.read(dataVersionProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+    return () async {
+      if (mounted) {
+        setState(() => _busy = true);
+        try {
+          await op(repo, id);
+          await _load();
+          version.state++;
+          if (mounted) toast(context, success);
+        } catch (e) {
+          if (mounted) toastError(context, e);
+        } finally {
+          if (mounted) setState(() => _busy = false);
+        }
+        return;
+      }
+      try {
+        await op(repo, id);
+        version.state++;
+        messenger.showSnackBar(SnackBar(content: Text(success)));
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(content: Text(Api.toError(e).message)));
+      }
+    };
+  }
 
   // ------------------------------------------------------------------ actions
 
@@ -263,7 +301,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       action: SnackBarAction(
         label: 'تراجع',
         textColor: const Color(0xFFC9B2F2),
-        onPressed: () => _run(() => _repo.replaceImage(_p!.id, now, before), success: 'تم التراجع'),
+        onPressed: _undo((repo, id) => repo.replaceImage(id, now, before), 'تم التراجع'),
       ),
     );
   }
@@ -326,7 +364,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         action: SnackBarAction(
           label: 'تراجع',
           textColor: const Color(0xFFC9B2F2),
-          onPressed: () => _run(() => _repo.setImages(_p!.id, before), success: 'أُعيدت الصورة'),
+          onPressed: _undo((repo, id) => repo.setImages(id, before), 'أُعيدت الصورة'),
         ),
       );
     }
@@ -391,11 +429,11 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
             : SnackBarAction(
                 label: 'تراجع',
                 textColor: const Color(0xFFC9B2F2),
-                onPressed: () async {
+                onPressed: _undo((repo, id) async {
                   for (final s in r.swaps.reversed) {
-                    await _run(() => _repo.replaceImage(p.id, '${s['to']}', '${s['from']}'));
+                    await repo.replaceImage(id, '${s['to']}', '${s['from']}');
                   }
-                },
+                }, 'أُعيدت الصور كما كانت'),
               ),
       );
     } catch (e) {

@@ -45,8 +45,21 @@ class _SaveDraftScreenState extends ConsumerState<SaveDraftScreen> {
   late final List<MediaImage> _existing = [...?widget.draft?.images];
   final _shots = <_Shot>[];
   bool _saving = false;
+  bool _touched = false;
+
+  /// حد السيرفر لصور الباركود المحفوظ.
+  static const _maxImages = 12;
 
   bool get _editing => widget.draft != null;
+  int get _imageCount => _existing.length + _shots.length;
+
+  @override
+  void dispose() {
+    _barcode.dispose();
+    _name.dispose();
+    _note.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -58,37 +71,61 @@ class _SaveDraftScreenState extends ConsumerState<SaveDraftScreen> {
   }
 
   Future<void> _add([PhotoSource? src]) async {
+    if (_imageCount >= _maxImages) return toast(context, 'الحد $_maxImages صورة — احذف صورة لإضافة أخرى', error: true);
     src ??= await askPhotoSource(context, title: 'صورة المنتج');
     if (src == null) return;
-    final files = await pickPhotos(src);
+    var files = await pickPhotos(src);
     if (files.isEmpty || !mounted) return;
-    final repo = ref.read(repoProvider);
+    final room = _maxImages - _imageCount;
+    if (files.length > room) {
+      files = files.take(room).toList();
+      toast(context, 'أُضيفت $room فقط — الحد $_maxImages صورة', error: true);
+    }
     for (final f in files) {
       final shot = _Shot(f);
-      setState(() => _shots.add(shot));
+      setState(() {
+        _shots.add(shot);
+        _touched = true;
+      });
       shot.bytes = await f.readAsBytes();
       if (mounted) setState(() {});
-      uploadPhoto(
-            repo,
-            f,
-            purpose: 'GENERAL',
-            onProgress: (p) {
-              if (mounted) setState(() => shot.progress = p);
-            },
-          )
-          .then((id) {
-            if (mounted) setState(() => shot.mediaId = id);
-          })
-          .catchError((Object e) {
-            if (mounted) setState(() => shot.error = e.toString());
-          });
+      _upload(shot);
     }
+  }
+
+  void _upload(_Shot shot) {
+    setState(() => (shot.error = null, shot.progress = 0));
+    uploadPhoto(
+          ref.read(repoProvider),
+          shot.file,
+          purpose: 'GENERAL',
+          onProgress: (p) {
+            if (mounted) setState(() => shot.progress = p);
+          },
+        )
+        .then((id) {
+          if (mounted) setState(() => shot.mediaId = id);
+        })
+        .catchError((Object e) {
+          if (mounted) setState(() => shot.error = e.toString());
+        });
   }
 
   Future<void> _save() async {
     final code = normalizeCode(_barcode.text);
     if (code.isEmpty) return toast(context, 'الباركود فارغ', error: true);
     if (_shots.any((s) => s.uploading)) return toast(context, 'انتظر اكتمال رفع الصور', error: true);
+    final failed = _shots.where((s) => s.error != null).length;
+    if (failed > 0 &&
+        !await confirm(
+          context,
+          title: 'فشل رفع $failed ${failed == 1 ? 'صورة' : 'صور'}',
+          message: 'اضغط على الصورة الحمراء لإعادة رفعها، أو احفظ بدونها.',
+          ok: 'احفظ بدونها',
+        )) {
+      return;
+    }
+    if (!mounted) return;
     setState(() => _saving = true);
     final repo = ref.read(repoProvider);
     try {
@@ -120,7 +157,8 @@ class _SaveDraftScreenState extends ConsumerState<SaveDraftScreen> {
       ref.invalidate(statsProvider);
       if (!mounted) return;
       toast(context, _editing ? 'تم الحفظ' : 'حُفظ في «${d.groupName}»');
-      Navigator.pop(context, true);
+      _touched = false;
+      Navigator.pop(context, d);
     } catch (e) {
       if (mounted) toastError(context, e);
     } finally {
@@ -130,93 +168,99 @@ class _SaveDraftScreenState extends ConsumerState<SaveDraftScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_editing ? 'تعديل الباركود المحفوظ' : 'حفظ باركود غير موجود')),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
-                : const Icon(Icons.bookmark_added_rounded),
-            label: const Text('حفظ'),
+    return UnsavedGuard(
+      dirty: _touched && !_saving,
+      child: Scaffold(
+        appBar: AppBar(title: Text(_editing ? 'تعديل الباركود المحفوظ' : 'حفظ باركود غير موجود')),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
+                  : const Icon(Icons.bookmark_added_rounded),
+              label: const Text('حفظ'),
+            ),
           ),
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-        children: [
-          TextField(
-            controller: _barcode,
-            textDirection: TextDirection.ltr,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: .6),
-            decoration: const InputDecoration(labelText: 'الباركود', prefixIcon: Icon(Icons.qr_code_rounded)),
-          ),
-          const SectionTitle('الصور', subtitle: 'صوّر المنتج من أكثر من جهة'),
-          SizedBox(
-            height: 112,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _AddTile(onTap: () => _add()),
-                for (final e in _existing) _Thumb(child: NetImg(e.thumb, size: 104), onRemove: () => setState(() => _existing.remove(e))),
-                for (final s in _shots)
-                  _Thumb(
-                    progress: s.uploading ? s.progress : null,
-                    error: s.error != null,
-                    onRemove: () => setState(() => _shots.remove(s)),
-                    child: s.bytes == null
-                        ? const SizedBox(width: 104, height: 104)
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.memory(s.bytes!, width: 104, height: 104, fit: BoxFit.cover),
-                          ),
-                  ),
-              ],
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: [
+            TextField(
+              controller: _barcode,
+              textDirection: TextDirection.ltr,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: .6),
+              decoration: const InputDecoration(labelText: 'الباركود', prefixIcon: Icon(Icons.qr_code_rounded)),
             ),
-          ),
-          const SectionTitle('المجموعة', subtitle: 'إن لم تختر يُحفظ في مجموعة «عام»'),
-          GroupPicker(selected: _groupId, onChanged: (id) => setState(() => _groupId = id)),
-          const SectionTitle('معلومات (اختياري)'),
-          TextField(
-            controller: _name,
-            decoration: const InputDecoration(labelText: 'اسم المنتج', prefixIcon: Icon(Icons.label_outline_rounded)),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _note,
-            maxLines: 3,
-            minLines: 2,
-            decoration: const InputDecoration(labelText: 'ملاحظة (مكانه، المورد، السعر...)', alignLabelWithHint: true),
-          ),
-          const SizedBox(height: 12),
-          Panel(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              children: [
-                const Icon(Icons.inventory_2_outlined, color: AppColors.muted),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text('الكمية', style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
-                IconButton(
-                  onPressed: () => setState(() => _qty = (_qty ?? 0) > 0 ? _qty! - 1 : null),
-                  icon: const Icon(Icons.remove_circle_outline_rounded),
-                ),
-                SizedBox(
-                  width: 40,
-                  child: Text(
-                    _qty?.toString() ?? '—',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                IconButton(onPressed: () => setState(() => _qty = (_qty ?? 0) + 1), icon: const Icon(Icons.add_circle_outline_rounded)),
-              ],
+            const SectionTitle('الصور', subtitle: 'صوّر المنتج من أكثر من جهة'),
+            SizedBox(
+              height: 112,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _AddTile(onTap: () => _add()),
+                  for (final e in _existing) _Thumb(child: NetImg(e.thumb, size: 104), onRemove: () => setState(() => _existing.remove(e))),
+                  for (final s in _shots)
+                    _Thumb(
+                      progress: s.uploading ? s.progress : null,
+                      error: s.error != null,
+                      onRetry: s.error != null ? () => _upload(s) : null,
+                      onRemove: () => setState(() => _shots.remove(s)),
+                      child: s.bytes == null
+                          ? const SizedBox(width: 104, height: 104)
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.memory(s.bytes!, width: 104, height: 104, fit: BoxFit.cover),
+                            ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SectionTitle('المجموعة', subtitle: 'أين يظهر في لوحة التحكم'),
+            GroupPicker(selected: _groupId, onChanged: (id) => setState(() => _groupId = id)),
+            const SectionTitle('معلومات (اختياري)'),
+            TextField(
+              controller: _name,
+              onChanged: (_) => _touched = true,
+              decoration: const InputDecoration(labelText: 'اسم المنتج', prefixIcon: Icon(Icons.label_outline_rounded)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _note,
+              onChanged: (_) => _touched = true,
+              maxLines: 3,
+              minLines: 2,
+              decoration: const InputDecoration(labelText: 'ملاحظة (مكانه، المورد، السعر...)', alignLabelWithHint: true),
+            ),
+            const SizedBox(height: 12),
+            Panel(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.inventory_2_outlined, color: AppColors.muted),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text('الكمية', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                  IconButton(
+                    onPressed: () => setState(() => _qty = (_qty ?? 0) > 0 ? _qty! - 1 : null),
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                  ),
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      _qty?.toString() ?? '—',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  IconButton(onPressed: () => setState(() => _qty = (_qty ?? 0) + 1), icon: const Icon(Icons.add_circle_outline_rounded)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -259,9 +303,10 @@ class _AddTile extends StatelessWidget {
 }
 
 class _Thumb extends StatelessWidget {
-  const _Thumb({required this.child, required this.onRemove, this.progress, this.error = false});
+  const _Thumb({required this.child, required this.onRemove, this.progress, this.error = false, this.onRetry});
   final Widget child;
   final VoidCallback onRemove;
+  final VoidCallback? onRetry;
   final double? progress;
   final bool error;
   @override
@@ -284,12 +329,21 @@ class _Thumb extends StatelessWidget {
           ),
         if (error)
           Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(color: const Color(0xAAD64545), borderRadius: BorderRadius.circular(12)),
-              alignment: Alignment.center,
-              child: const Text(
-                'فشل الرفع',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+            child: GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                decoration: BoxDecoration(color: const Color(0xAAD64545), borderRadius: BorderRadius.circular(12)),
+                alignment: Alignment.center,
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.refresh_rounded, color: Colors.white),
+                    Text(
+                      'فشل — أعد',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

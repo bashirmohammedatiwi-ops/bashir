@@ -15,10 +15,11 @@ class CountSummary {
       createdAt = parseDate(j['createdAt']),
       closedAt = parseDate(j['closedAt']),
       lines = _i(j['lines']),
-      units = _i(j['units']);
+      units = _i(j['units']),
+      scoped = j['scoped'] == true;
   final String id, name;
   final String? note;
-  final bool open;
+  final bool open, scoped;
   final DateTime? createdAt, closedAt;
   final int lines, units;
 }
@@ -46,14 +47,38 @@ class CountDetail {
       name = '${j['name']}',
       open = j['status'] == 'OPEN',
       createdAt = parseDate(j['createdAt']),
+      closedAt = parseDate(j['closedAt']),
+      scopeLabel = j['scope'] is Map ? _s((j['scope'] as Map)['label']) : null,
+      scopeItems = j['scope'] is Map ? _i((j['scope'] as Map)['items']) : 0,
       lines = _l(j['lines']).map(CountLine.fromJson).toList(),
+      missing = _l(j['missing']).map(MissingItem.fromJson).toList(),
       summary = Map<String, dynamic>.from(j['summary'] as Map? ?? const {});
   final String id, name;
   final bool open;
-  final DateTime? createdAt;
+  final DateTime? createdAt, closedAt;
+
+  /// براند أو قسم الجرد — عندها يظهر ما لم يُمسح.
+  final String? scopeLabel;
+  final int scopeItems;
   final List<CountLine> lines;
+  final List<MissingItem> missing;
   final Map<String, dynamic> summary;
+  bool get scoped => scopeLabel != null || scopeItems > 0;
   int s(String k) => _i(summary[k]);
+}
+
+/// صنف في نطاق الجرد متوقع على الرف ولم يُمسح بعد.
+class MissingItem {
+  MissingItem.fromJson(Map<String, dynamic> j)
+    : barcode = '${j['barcode']}',
+      name = '${j['name']}',
+      productId = _s(j['productId']),
+      expected = _i(j['expected']),
+      source = _s(j['source']),
+      thumb = _s(j['thumb']);
+  final String barcode, name;
+  final String? productId, source, thumb;
+  final int expected;
 }
 
 class Staff {
@@ -82,8 +107,11 @@ class Staff {
 /// الجرد، طلب الزبائن، التقارير، الموظفون، البنرات.
 extension InsightsRepo on Repo {
   Future<List<CountSummary>> counts() => api.get('/control/counts', map: (b) => _l(b).map(CountSummary.fromJson).toList());
-  Future<CountDetail> createCount(String name, {String? note}) =>
-      api.post('/control/counts', data: {'name': name, 'note': ?note}, map: (b) => CountDetail.fromJson(Map<String, dynamic>.from(b)));
+  Future<CountDetail> createCount(String name, {String? note, String? brandId, String? categoryId}) => api.post(
+    '/control/counts',
+    data: {'name': name, 'note': ?note, 'brandId': ?brandId, 'categoryId': ?categoryId},
+    map: (b) => CountDetail.fromJson(Map<String, dynamic>.from(b)),
+  );
   Future<CountDetail> count(String id) => api.get('/control/counts/$id', map: (b) => CountDetail.fromJson(Map<String, dynamic>.from(b)));
   Future<({CountLine line, Map<String, dynamic> summary})> countScan(String id, String code, {int qty = 1}) => api.post(
     '/control/counts/$id/scan',

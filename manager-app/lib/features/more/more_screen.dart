@@ -28,8 +28,7 @@ class MoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final me = ref.watch(sessionProvider).me;
-    final isAdmin = me == null || me.role != 'STAFF';
+    final isAdmin = ref.watch(sessionProvider).isAdmin;
     final stats = ref.watch(statsProvider).valueOrNull;
     final health = ref.watch(healthProvider).valueOrNull;
     void go(Widget w) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
@@ -66,7 +65,7 @@ class MoreScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        health.issues == 0 ? 'صحة المتجر: ممتازة' : 'صحة المتجر: ${health.issues} أمور تحتاج انتباهك',
+                        health.issues == 0 ? 'صحة المتجر: ممتازة' : 'صحة المتجر: ${issuesLabel(health.issues)}',
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),

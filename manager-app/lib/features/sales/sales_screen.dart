@@ -166,15 +166,25 @@ class SalesTodayCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(color: Colors.white.withValues(alpha: .18), borderRadius: BorderRadius.circular(14)),
-                  child: Row(
+                  // الإشارة صريحة (+/−) والسهم لا ينعكس في الواجهة العربية — كي لا يُقرأ الهبوط صعوداً.
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(diff >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded, color: Colors.white, size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${diff.abs().round()}%',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(diff >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, color: Colors.white, size: 16),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${diff >= 0 ? '+' : '−'}${diff.abs().round()}%',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
                       ),
+                      const Text('عن أمس', style: TextStyle(color: Color(0xFFD7F5E6), fontSize: 10.5)),
                     ],
                   ),
                 ),

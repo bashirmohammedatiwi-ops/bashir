@@ -1216,6 +1216,9 @@ model StockCount {
   /// OPEN | CLOSED
   status      String           @default("OPEN")
   createdById String?
+  /// نطاق اختياري: ما في البراند/القسم ولم يُمسح يظهر كنقص
+  brandId     String?
+  categoryId  String?
   closedAt    DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt

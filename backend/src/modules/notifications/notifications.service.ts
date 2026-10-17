@@ -494,11 +494,14 @@ export class NotificationsService {
     }
   }
 
-  async adminList(page = 1, limit = 20) {
+  /** [broadcastOnly]: الإشعارات العامة فقط (بلا إشعارات الطلبات والدفع الخاصة بكل زبونة). */
+  async adminList(page = 1, limit = 20, broadcastOnly = false) {
     const skip = (page - 1) * limit;
+    const where = broadcastOnly ? { targetType: NotificationTargetType.ALL, userId: null } : undefined;
     const [total, items] = await this.prisma.$transaction([
-      this.prisma.notification.count(),
+      this.prisma.notification.count({ where }),
       this.prisma.notification.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,

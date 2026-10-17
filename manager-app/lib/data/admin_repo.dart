@@ -185,7 +185,7 @@ extension AdminRepo on Repo {
 
   // ---------------- notifications
   Future<List<Map<String, dynamic>>> sentNotifications() =>
-      api.get('/notifications', query: {'admin': '1', 'limit': 40}, map: (b) => _l(b is Map ? b['data'] : b));
+      api.get('/notifications', query: {'admin': '1', 'broadcast': '1', 'limit': 40}, map: (b) => _l(b is Map ? b['data'] : b));
   Future<Map<String, dynamic>> notificationStats() => api.get('/notifications/stats', map: (b) => Map<String, dynamic>.from(b));
   Future<void> sendNotification(Map<String, dynamic> body) => api.post('/notifications/send', data: body);
 

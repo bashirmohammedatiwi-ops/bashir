@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,12 +69,19 @@ class Prefs {
         .toList();
   }
 
+  /// يتغير مع كل مسح جديد أو مسح للسجل — الرئيسية تعيد الرسم.
+  final recentVersion = ValueNotifier<int>(0);
+
   void addRecent(RecentScan s) {
     final list = recent.where((r) => r.code != s.code).toList()..insert(0, s);
     _p.setStringList('recentScans', list.take(40).map((r) => jsonEncode(r.toJson())).toList());
+    recentVersion.value++;
   }
 
-  void clearRecent() => _p.remove('recentScans');
+  void clearRecent() {
+    _p.remove('recentScans');
+    recentVersion.value++;
+  }
 
   /// صوت + اهتزاز عند كل قراءة ناجحة.
   void feedback({bool error = false}) {

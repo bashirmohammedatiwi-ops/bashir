@@ -213,6 +213,8 @@ export class CustomerActiveDto {
 export class StockCountCreateDto {
   @IsOptional() @IsString() @MaxLength(80) name?: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;
+  @IsOptional() @IsString() @MaxLength(64) brandId?: string;
+  @IsOptional() @IsString() @MaxLength(64) categoryId?: string;
 }
 
 export class StockCountScanDto {

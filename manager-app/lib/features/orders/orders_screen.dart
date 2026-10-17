@@ -34,14 +34,17 @@ class OrderStatusPill extends StatelessWidget {
 
 /// الطلبات: تبويبات حسب الحالة مع العدد، بحث برقم الطلب أو اسم/هاتف الزبونة.
 class OrdersScreen extends ConsumerStatefulWidget {
-  const OrdersScreen({super.key, this.embedded = false});
+  const OrdersScreen({super.key, this.embedded = false, this.initialStatus});
   final bool embedded;
+
+  /// يفتح على تبويب معيّن (مثلاً «جديدة» من صحة المتجر).
+  final String? initialStatus;
   @override
   ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
-  String _status = 'open';
+  late String _status = widget.initialStatus ?? 'open';
   final _q = TextEditingController();
   Timer? _debounce;
   final _scroll = ScrollController();
@@ -260,15 +263,17 @@ class OrderTile extends StatelessWidget {
                         style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
                       ),
                     const SizedBox(height: 6),
-                    Row(
+                    // Wrap: على الشاشات الضيقة تنزل شارة البطاقة لسطر ثانٍ بدل أن يفيض السطر.
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           money(o.total),
                           style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary),
                         ),
-                        const SizedBox(width: 8),
                         Text('${o.quantity} قطعة', style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
-                        const SizedBox(width: 8),
                         if (o.paymentMethod == 'CARD')
                           Pill(
                             o.paymentStatus == 'PAID' ? 'مدفوع بالبطاقة' : 'بطاقة',

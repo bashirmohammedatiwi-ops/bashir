@@ -14,6 +14,7 @@ class Me {
   final String? email;
   final String role;
   bool get isStaff => const {'SUPER_ADMIN', 'ADMIN', 'STAFF'}.contains(role);
+  bool get isAdmin => role == 'SUPER_ADMIN' || role == 'ADMIN';
 }
 
 /// كل نداءات السيرفر في مكان واحد.

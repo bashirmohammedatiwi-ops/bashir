@@ -41,20 +41,82 @@ export class ControlInsightsService {
       closedAt: r.closedAt,
       lines: r._count.lines,
       units: units.get(r.id) ?? 0,
+      scoped: !!(r.brandId || r.categoryId),
     }));
   }
 
-  async createCount(name: string, note: string | undefined, actorId?: string) {
-    const n = name.trim() || `جرد ${new Date().toLocaleDateString("en-GB")}`;
-    const c = await this.prisma.stockCount.create({ data: { name: n, note: note?.trim() || null, createdById: actorId ?? null } });
+  async createCount(dto: { name?: string; note?: string; brandId?: string; categoryId?: string }, actorId?: string) {
+    const [brand, category] = await Promise.all([
+      dto.brandId ? this.prisma.brand.findUnique({ where: { id: dto.brandId }, select: { id: true, name: true } }) : null,
+      dto.categoryId ? this.prisma.category.findUnique({ where: { id: dto.categoryId }, select: { id: true, name: true, nameAr: true } }) : null,
+    ]);
+    if (dto.brandId && !brand) throw new BadRequestException("البراند غير موجود");
+    if (dto.categoryId && !category) throw new BadRequestException("القسم غير موجود");
+    const scopeName = brand?.name ?? (category ? category.nameAr || category.name : null);
+    const n = dto.name?.trim() || (scopeName ? `جرد ${scopeName}` : `جرد ${new Date().toLocaleDateString("en-GB")}`);
+    const c = await this.prisma.stockCount.create({
+      data: { name: n, note: dto.note?.trim() || null, createdById: actorId ?? null, brandId: brand?.id ?? null, categoryId: category?.id ?? null },
+    });
     return this.count(c.id);
+  }
+
+  /** كل ما يُفترض أن يكون على الرف ضمن نطاق الجرد: تدرجات بباركود، أو المنتج نفسه إن لم تكن له تدرجات. */
+  private async scopeItems(c: { brandId: string | null; categoryId: string | null }) {
+    if (!c.brandId && !c.categoryId) return null;
+    const where: Prisma.ProductWhereInput = c.brandId
+      ? { brandId: c.brandId }
+      : {
+          OR: [
+            { categoryId: c.categoryId },
+            { subcategoryId: c.categoryId },
+            { tertiaryCategoryId: c.categoryId },
+            { subcategories: { some: { id: c.categoryId! } } },
+            { tertiaryCategories: { some: { id: c.categoryId! } } },
+          ],
+        };
+    const products = await this.prisma.product.findMany({
+      where,
+      take: 2000,
+      select: {
+        id: true,
+        name: true,
+        nameAr: true,
+        barcode: true,
+        stock: true,
+        images: { take: 1, orderBy: { position: "asc" }, include: { media: true } },
+        shades: { select: { id: true, name: true, barcode: true, stock: true, isActive: true, image: true } },
+      },
+    });
+    const items: Array<{ barcode: string; name: string; productId: string; shadeId: string | null; appStock: number; thumb: string | null }> = [];
+    for (const p of products) {
+      const pname = p.nameAr || p.name;
+      const coded = p.shades.filter((s) => s.barcode);
+      if (coded.length) {
+        for (const s of coded) {
+          items.push({
+            barcode: s.barcode!,
+            name: `${pname} — ${s.name}`,
+            productId: p.id,
+            shadeId: s.id,
+            appStock: s.stock,
+            thumb: (s.image ? thumbOf(s.image) : null) ?? thumbOf(p.images[0]?.media),
+          });
+        }
+      } else if (p.barcode) {
+        items.push({ barcode: p.barcode, name: pname, productId: p.id, shadeId: null, appStock: p.stock, thumb: thumbOf(p.images[0]?.media) });
+      }
+    }
+    return items;
   }
 
   /** الجلسة مع كل سطر: المعدود، المتوقع من الكاشير (أو التطبيق)، والفرق. */
   async count(id: string) {
     const c = await this.prisma.stockCount.findUnique({ where: { id }, include: { lines: { orderBy: { updatedAt: "desc" } } } });
     if (!c) throw new NotFoundException("الجرد غير موجود");
-    const snaps = await this.inventory.getSnapshotsMapForBarcodes(c.lines.map((l) => l.barcode)).catch(() => new Map());
+    const scope = await this.scopeItems(c);
+    const snaps = await this.inventory
+      .getSnapshotsMapForBarcodes([...c.lines.map((l) => l.barcode), ...(scope ?? []).map((i) => i.barcode)])
+      .catch(() => new Map());
     const productIds = [...new Set(c.lines.map((l) => l.productId).filter((x): x is string => !!x))];
     const shadeIds = [...new Set(c.lines.map((l) => l.shadeId).filter((x): x is string => !!x))];
     const [products, shades] = await Promise.all([
@@ -85,6 +147,21 @@ export class ControlInsightsService {
         updatedAt: l.updatedAt,
       };
     });
+    // ما في النطاق ومتوقع وجوده ولم يُمسح بعد.
+    const scanned = new Set(c.lines.flatMap((l) => barcodeLookupCandidates(l.barcode)));
+    const expectedInScope = (scope ?? [])
+      .map(({ appStock, ...i }) => {
+        const snap = barcodeLookupCandidates(i.barcode).map((k) => snaps.get(k)).find(Boolean) as { stock: number } | undefined;
+        return { ...i, expected: snap?.stock ?? appStock, source: snap ? "pos" : "app" };
+      })
+      .filter((i) => i.expected > 0);
+    const missing = expectedInScope
+      .filter((i) => !barcodeLookupCandidates(i.barcode).some((k) => scanned.has(k)))
+      .sort((a, b) => b.expected - a.expected);
+    const [brand, category] = await Promise.all([
+      c.brandId ? this.prisma.brand.findUnique({ where: { id: c.brandId }, select: { name: true } }) : null,
+      c.categoryId ? this.prisma.category.findUnique({ where: { id: c.categoryId }, select: { name: true, nameAr: true } }) : null,
+    ]);
     return {
       id: c.id,
       name: c.name,
@@ -92,8 +169,15 @@ export class ControlInsightsService {
       status: c.status,
       createdAt: c.createdAt,
       closedAt: c.closedAt,
+      scope: scope
+        ? { brandId: c.brandId, categoryId: c.categoryId, label: brand?.name ?? category?.nameAr ?? category?.name ?? null, items: scope.length }
+        : null,
       lines,
+      missing: missing.slice(0, 400),
       summary: {
+        scopeExpected: expectedInScope.length,
+        missing: missing.length,
+        missingUnits: missing.reduce((n, i) => n + i.expected, 0),
         lines: lines.length,
         units: lines.reduce((n, l) => n + l.counted, 0),
         matched: lines.filter((l) => l.diff === 0).length,
@@ -114,8 +198,8 @@ export class ControlInsightsService {
     const existing = await this.prisma.stockCountLine.findFirst({ where: { countId: c.id, barcode: { in: codes } } });
     let lineId: string;
     if (existing) {
-      const counted = Math.max(0, existing.counted + qty);
-      await this.prisma.stockCountLine.update({ where: { id: existing.id }, data: { counted } });
+      // زيادة ذرّية: جهازان يجردان معاً لا يضيّع أحدهما قطعة الآخر.
+      await this.prisma.$executeRaw`UPDATE "StockCountLine" SET counted = GREATEST(0, counted + ${qty}), "updatedAt" = now() WHERE id = ${existing.id}`;
       lineId = existing.id;
     } else {
       const shade = await this.prisma.productShade.findFirst({
@@ -127,9 +211,18 @@ export class ControlInsightsService {
         : await this.prisma.product.findFirst({ where: { OR: [{ barcode: { in: codes } }, { sku: { in: codes } }] }, select: { id: true, name: true, nameAr: true } });
       const pos = shade || product ? null : await this.inventory.getSnapshotForBarcodes([barcode]).catch(() => null);
       const name = shade ? `${shade.product.nameAr || shade.product.name} — ${shade.name}` : product ? product.nameAr || product.name : pos?.name ?? null;
-      const line = await this.prisma.stockCountLine.create({
-        data: { countId: c.id, barcode, productId: shade?.product.id ?? product?.id ?? null, shadeId: shade?.id ?? null, name, counted: Math.max(0, qty) },
-      });
+      // مسحتان سريعتان لنفس الباركود: الثانية تجد السطر الذي أنشأته الأولى فتزيده بدل الفشل.
+      const line = await this.prisma.stockCountLine
+        .create({
+          data: { countId: c.id, barcode, productId: shade?.product.id ?? product?.id ?? null, shadeId: shade?.id ?? null, name, counted: Math.max(0, qty) },
+        })
+        .catch(async (e: unknown) => {
+          if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== "P2002") throw e;
+          return this.prisma.stockCountLine.update({
+            where: { countId_barcode: { countId: c.id, barcode } },
+            data: { counted: { increment: Math.max(0, qty) } },
+          });
+        });
       lineId = line.id;
     }
     await this.prisma.stockCount.update({ where: { id: c.id }, data: { updatedAt: new Date() } });

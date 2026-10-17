@@ -37,6 +37,14 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   final _selected = <String>{};
 
   bool get _selecting => _selected.isNotEmpty;
+  int _seq = 0;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _q.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -45,19 +53,21 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final seq = ++_seq;
     setState(() => _loading = true);
     try {
       final r = await ref.read(repoProvider).drafts(groupId: widget.group?.id, status: _status, q: _q.text, limit: 200);
-      if (!mounted) return;
+      if (!mounted || seq != _seq) return;
       setState(() {
         _items = r.items;
         _total = r.total;
         _error = null;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (mounted && seq == _seq) setState(() => _error = e);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && seq == _seq) setState(() => _loading = false);
     }
   }
 
@@ -106,12 +116,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
     } else if (a == 'shade') {
       if (await attachAsShade(context, ref, d.barcode, hint: d.name)) _refreshAll();
     } else {
-      final ok = await Navigator.of(context).push<bool>(
+      final saved = await Navigator.of(context).push<Draft>(
         MaterialPageRoute(
           builder: (_) => SaveDraftScreen(barcode: d.barcode, draft: d),
         ),
       );
-      if (ok == true) _refreshAll();
+      if (saved != null) _refreshAll();
     }
   }
 
@@ -287,25 +297,33 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                     ? ListView(children: [ErrorView(_error!, onRetry: _load)])
                     : !_loading && _items.isEmpty
                     ? ListView(
-                        children: const [
-                          EmptyState(
-                            icon: Icons.qr_code_2_rounded,
-                            title: 'لا توجد باركودات هنا',
-                            message: 'امسح منتجاً غير موجود في التطبيق واحفظه في هذه المجموعة.',
-                          ),
+                        children: [
+                          _q.text.trim().isNotEmpty
+                              ? EmptyState(icon: Icons.search_off_rounded, title: 'لا نتائج لـ «${_q.text.trim()}»')
+                              : const EmptyState(
+                                  icon: Icons.qr_code_2_rounded,
+                                  title: 'لا توجد باركودات هنا',
+                                  message: 'امسح منتجاً غير موجود في التطبيق واحفظه في هذه المجموعة.',
+                                ),
                         ],
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                        itemCount: _items.length,
+                        itemCount: _items.length + (_total > _items.length ? 1 : 0),
                         separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _DraftTile(
-                          draft: _items[i],
-                          showGroup: g == null,
-                          selected: _selected.contains(_items[i].id),
-                          onTap: () => _open(_items[i]),
-                          onLongPress: () => _toggleSel(_items[i]),
-                        ),
+                        itemBuilder: (_, i) => i >= _items.length
+                            ? Text(
+                                'يظهر أول ${_items.length} من ${numFmt(_total)} — ابحث أو اختر حالة لتضييق القائمة',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
+                              )
+                            : _DraftTile(
+                                draft: _items[i],
+                                showGroup: g == null,
+                                selected: _selected.contains(_items[i].id),
+                                onTap: () => _open(_items[i]),
+                                onLongPress: () => _toggleSel(_items[i]),
+                              ),
                       ),
               ),
             ),

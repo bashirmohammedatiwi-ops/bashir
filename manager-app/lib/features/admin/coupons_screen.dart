@@ -76,14 +76,17 @@ class CouponsScreen extends ConsumerWidget {
                               const SizedBox(width: 8),
                               Text(c.valueLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
                               const Spacer(),
-                              Switch(
+                              AsyncSwitch(
                                 value: c.isActive,
                                 onChanged: (v) async {
                                   try {
                                     await ref.read(repoProvider).saveCoupon(c.id, {'isActive': v});
                                     ref.invalidate(_couponsProvider);
+                                    if (context.mounted) toast(context, v ? 'شُغّل ${c.code}' : 'أُوقف ${c.code}');
+                                    return true;
                                   } catch (e) {
                                     if (context.mounted) toastError(context, e);
+                                    return false;
                                   }
                                 },
                               ),
@@ -173,13 +176,49 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
   late bool _home = c?.showOnHome ?? false;
   late DateTime? _ends = c?.endsAt?.toLocal();
   bool _saving = false;
+  bool _dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final t in [_code, _value, _title, _subtitle, _min, _maxDisc, _maxUses, _perUser]) {
+      t.addListener(_markDirty);
+    }
+  }
+
+  void _markDirty() {
+    if (!_dirty && mounted) setState(() => _dirty = true);
+  }
+
+  @override
+  void dispose() {
+    for (final t in [_code, _value, _title, _subtitle, _min, _maxDisc, _maxUses, _perUser]) {
+      t.dispose();
+    }
+    super.dispose();
+  }
 
   Future<void> _save() async {
+    int? n(TextEditingController t) => int.tryParse(normalizeCode(t.text).replaceAll(RegExp(r'\D'), ''));
+    final code = normalizeCode(_code.text).toUpperCase();
+    String? problem;
+    if (code.length < 3) {
+      problem = 'اكتب كوداً من 3 أحرف إنجليزية أو أرقام على الأقل';
+    } else if (!RegExp(r'^[A-Z0-9_-]+$').hasMatch(code)) {
+      problem = 'الكود: أحرف إنجليزية وأرقام فقط بلا فراغ';
+    } else if (_type != 'FREE_SHIPPING' && (n(_value) ?? 0) <= 0) {
+      problem = 'اكتب قيمة الخصم';
+    } else if ((_type == 'PERCENT' || _type == 'FIRST_ORDER') && (n(_value) ?? 0) > 100) {
+      problem = 'النسبة لا تتجاوز 100%';
+    }
+    if (problem != null) {
+      toast(context, problem, error: true);
+      return;
+    }
     setState(() => _saving = true);
-    int? n(TextEditingController t) => int.tryParse(t.text.replaceAll(RegExp(r'\D'), ''));
     try {
       await ref.read(repoProvider).saveCoupon(c?.id, {
-        'code': _code.text.trim(),
+        'code': code,
         'type': _type,
         'value': _type == 'FREE_SHIPPING' ? 0 : (n(_value) ?? 0),
         'title': _title.text.trim(),
@@ -192,7 +231,9 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
         'endsAt': _ends?.toUtc().toIso8601String(),
         if (c == null) 'isActive': true,
       });
-      if (mounted) Navigator.pop(context, true);
+      if (!mounted) return;
+      _dirty = false;
+      Navigator.pop(context, true);
     } catch (e) {
       if (mounted) toastError(context, e);
     } finally {
@@ -209,118 +250,130 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(c == null ? 'كوبون جديد' : 'تعديل ${c!.code}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _code,
-              textDirection: TextDirection.ltr,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'الكود (إنجليزي بلا فراغ)', hintText: 'EID20', isDense: true),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final e in _typeLabels.entries)
-                  ChoiceChip(
-                    label: Text(e.value),
-                    selected: _type == e.key,
-                    onSelected: (_) => setState(() => _type = e.key),
-                    showCheckmark: false,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            if (_type != 'FREE_SHIPPING')
-              _num(_value, _type == 'AMOUNT' ? 'قيمة الخصم' : 'نسبة الخصم', suffix: _type == 'AMOUNT' ? 'د.ع' : '%'),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _num(_min, 'حد أدنى للطلب', suffix: 'د.ع')),
-                const SizedBox(width: 8),
-                if (_type == 'PERCENT' || _type == 'FIRST_ORDER') Expanded(child: _num(_maxDisc, 'سقف الخصم', suffix: 'د.ع')),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _num(_maxUses, 'عدد الاستخدام الكلي')),
-                const SizedBox(width: 8),
-                Expanded(child: _num(_perUser, 'لكل زبونة')),
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _title,
-              decoration: const InputDecoration(labelText: 'العنوان في التطبيق', hintText: 'خصم الجمعة', isDense: true),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _subtitle,
-              decoration: const InputDecoration(labelText: 'سطر ثانٍ (اختياري)', isDense: true),
-            ),
-            const SizedBox(height: 6),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _home,
-              onChanged: (v) => setState(() => _home = v),
-              title: const Text('أظهره كبطاقة في الصفحة الرئيسية', style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event_rounded),
-              title: Text(_ends == null ? 'بلا تاريخ انتهاء' : 'ينتهي ${DateFormat('d/M/yyyy').format(_ends!)}'),
-              trailing: _ends == null
-                  ? null
-                  : IconButton(onPressed: () => setState(() => _ends = null), icon: const Icon(Icons.close_rounded)),
-              onTap: () async {
-                final d = await showDatePicker(
-                  context: context,
-                  initialDate: _ends ?? DateTime.now().add(const Duration(days: 7)),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 730)),
-                );
-                if (d != null) setState(() => _ends = DateTime(d.year, d.month, d.day, 23, 59));
-              },
-            ),
-            const SizedBox(height: 10),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
-                  : const Text('حفظ'),
-            ),
-            if (c != null)
-              TextButton(
-                style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-                onPressed: () async {
-                  if (!await confirm(
-                    context,
-                    title: 'حذف ${c!.code}؟',
-                    message: 'إن استُخدم في طلبات يُوقف بدل الحذف.',
-                    ok: 'حذف',
-                    danger: true,
-                  )) {
-                    return;
-                  }
-                  try {
-                    final archived = await ref.read(repoProvider).deleteCoupon(c!.id);
-                    if (!context.mounted) return;
-                    toast(context, archived ? 'أُوقف (مستخدم في طلبات)' : 'حُذف الكوبون');
-                    Navigator.pop(context, true);
-                  } catch (e) {
-                    if (context.mounted) toastError(context, e);
-                  }
-                },
-                child: const Text('حذف الكوبون'),
+    return UnsavedGuard(
+      dirty: _dirty,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(c == null ? 'كوبون جديد' : 'تعديل ${c!.code}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _code,
+                textDirection: TextDirection.ltr,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(labelText: 'الكود (إنجليزي بلا فراغ)', hintText: 'EID20', isDense: true),
               ),
-          ],
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final e in _typeLabels.entries)
+                    ChoiceChip(
+                      label: Text(e.value),
+                      selected: _type == e.key,
+                      onSelected: (_) => setState(() => (_type = e.key, _dirty = true)),
+                      showCheckmark: false,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (_type != 'FREE_SHIPPING')
+                _num(_value, _type == 'AMOUNT' ? 'قيمة الخصم' : 'نسبة الخصم', suffix: _type == 'AMOUNT' ? 'د.ع' : '%'),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: _num(_min, 'حد أدنى للطلب', suffix: 'د.ع')),
+                  const SizedBox(width: 8),
+                  if (_type == 'PERCENT' || _type == 'FIRST_ORDER') Expanded(child: _num(_maxDisc, 'سقف الخصم', suffix: 'د.ع')),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: _num(_maxUses, 'مرات الاستخدام')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _num(_perUser, 'لكل زبونة')),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _title,
+                decoration: const InputDecoration(labelText: 'العنوان في التطبيق', hintText: 'خصم الجمعة', isDense: true),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _subtitle,
+                decoration: const InputDecoration(labelText: 'سطر ثانٍ (اختياري)', isDense: true),
+              ),
+              const SizedBox(height: 6),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _home,
+                onChanged: (v) => setState(() => (_home = v, _dirty = true)),
+                title: const Text('أظهره كبطاقة في الصفحة الرئيسية', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.event_rounded),
+                title: Text(_ends == null ? 'بلا تاريخ انتهاء' : 'ينتهي ${DateFormat('d/M/yyyy').format(_ends!)}'),
+                subtitle: _ends != null && _ends!.isBefore(DateTime.now())
+                    ? const Text('انتهى — اختر تاريخاً جديداً لتشغيله', style: TextStyle(color: AppColors.danger))
+                    : null,
+                trailing: _ends == null
+                    ? null
+                    : IconButton(
+                        tooltip: 'بلا تاريخ انتهاء',
+                        onPressed: () => setState(() => (_ends = null, _dirty = true)),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                onTap: () async {
+                  final today = DateUtils.dateOnly(DateTime.now());
+                  final initial = _ends == null || _ends!.isBefore(today) ? today.add(const Duration(days: 7)) : _ends!;
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: initial,
+                    firstDate: today,
+                    lastDate: today.add(const Duration(days: 730)),
+                  );
+                  if (d != null) setState(() => (_ends = DateTime(d.year, d.month, d.day, 23, 59), _dirty = true));
+                },
+              ),
+              const SizedBox(height: 10),
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
+                    : const Text('حفظ'),
+              ),
+              if (c != null)
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                  onPressed: () async {
+                    if (!await confirm(
+                      context,
+                      title: 'حذف ${c!.code}؟',
+                      message: 'إن استُخدم في طلبات يُوقف بدل الحذف.',
+                      ok: 'حذف',
+                      danger: true,
+                    )) {
+                      return;
+                    }
+                    try {
+                      final archived = await ref.read(repoProvider).deleteCoupon(c!.id);
+                      if (!context.mounted) return;
+                      toast(context, archived ? 'أُوقف (مستخدم في طلبات)' : 'حُذف الكوبون');
+                      Navigator.pop(context, true);
+                    } catch (e) {
+                      if (context.mounted) toastError(context, e);
+                    }
+                  },
+                  child: const Text('حذف الكوبون'),
+                ),
+            ],
+          ),
         ),
       ),
     );

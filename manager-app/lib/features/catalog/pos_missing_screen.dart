@@ -29,6 +29,15 @@ class _PosMissingScreenState extends ConsumerState<PosMissingScreen> {
   bool _hasNext = false, _loading = false;
   Object? _error;
   final _scroll = ScrollController();
+  int _seq = 0;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _q.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -40,10 +49,12 @@ class _PosMissingScreenState extends ConsumerState<PosMissingScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final seq = ++_seq;
     setState(() => (_loading = true, _error = null));
     try {
       final r = await ref.read(repoProvider).posMissing(q: _q.text, unsavedOnly: _unsaved);
-      if (!mounted) return;
+      if (!mounted || seq != _seq) return;
       setState(() {
         _items
           ..clear()
@@ -54,26 +65,50 @@ class _PosMissingScreenState extends ConsumerState<PosMissingScreen> {
         _hasNext = r.hasNext;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (mounted && seq == _seq) setState(() => _error = e);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && seq == _seq) setState(() => _loading = false);
+    }
+  }
+
+  /// بعد إجراء على صنف: نحدّثه وحده (أو نزيله إن أُضيف) فيبقى مكانك في القائمة.
+  Future<void> _refreshItem(PosItem it) async {
+    try {
+      final r = await ref.read(repoProvider).posMissing(q: it.barcode);
+      if (!mounted) return;
+      final fresh = r.items.where((x) => x.barcode == it.barcode).firstOrNull;
+      setState(() {
+        final i = _items.indexWhere((x) => x.barcode == it.barcode);
+        if (i < 0) return;
+        if (fresh == null || (_unsaved && fresh.drafts.isNotEmpty)) {
+          _items.removeAt(i);
+          _total = (_total - 1).clamp(0, _total);
+          _units = (_units - it.stock).clamp(0, _units);
+        } else {
+          _items[i] = fresh;
+        }
+      });
+    } catch (_) {
+      _load();
     }
   }
 
   Future<void> _more() async {
     if (_loading || !_hasNext) return;
+    final seq = _seq;
     setState(() => _loading = true);
     try {
       final r = await ref.read(repoProvider).posMissing(q: _q.text, unsavedOnly: _unsaved, page: _page + 1);
-      if (!mounted) return;
+      if (!mounted || seq != _seq) return;
       setState(() {
         _page += 1;
         _items.addAll(r.items);
         _hasNext = r.hasNext;
       });
-    } catch (_) {
+    } catch (e) {
+      if (mounted) toastError(context, e);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && seq == _seq) setState(() => _loading = false);
     }
   }
 
@@ -130,16 +165,16 @@ class _PosMissingScreenState extends ConsumerState<PosMissingScreen> {
             builder: (_) => CreateProductScreen(barcode: it.barcode, posName: it.name, posPrice: it.price, posStock: it.stock),
           ),
         );
-        _load();
+        _refreshItem(it);
       case 'shade':
-        if (await attachAsShade(context, ref, it.barcode)) _load();
+        if (await attachAsShade(context, ref, it.barcode)) _refreshItem(it);
       case 'draft':
-        final ok = await Navigator.of(context).push<bool>(
+        final saved = await Navigator.of(context).push<Object>(
           MaterialPageRoute(
             builder: (_) => SaveDraftScreen(barcode: it.barcode, posName: it.name),
           ),
         );
-        if (ok == true) _load();
+        if (saved != null) _refreshItem(it);
       case 'copy':
         Clipboard.setData(ClipboardData(text: it.barcode));
         toast(context, 'نُسخ الباركود');
@@ -160,13 +195,24 @@ class _PosMissingScreenState extends ConsumerState<PosMissingScreen> {
                 TextField(
                   controller: _q,
                   onChanged: (_) {
+                    setState(() {});
                     _debounce?.cancel();
                     _debounce = Timer(const Duration(milliseconds: 350), _load);
                   },
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'بحث بالاسم أو الباركود',
-                    prefixIcon: Icon(Icons.search_rounded),
+                    prefixIcon: const Icon(Icons.search_rounded),
                     isDense: true,
+                    suffixIcon: _q.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'مسح',
+                            onPressed: () {
+                              _q.clear();
+                              _load();
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -174,7 +220,7 @@ class _PosMissingScreenState extends ConsumerState<PosMissingScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        '$_total صنف · ${numFmt(_units)} قطعة في الكاشير غير معروضة',
+                        '${numFmt(_total)} صنف · ${numFmt(_units)} قطعة في الكاشير غير معروضة',
                         style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5),
                       ),
                     ),
@@ -200,12 +246,20 @@ class _PosMissingScreenState extends ConsumerState<PosMissingScreen> {
             ? ListView(children: [ErrorView(_error!, onRetry: _load)])
             : !_loading && _items.isEmpty
             ? ListView(
-                children: const [
-                  EmptyState(
-                    icon: Icons.verified_rounded,
-                    title: 'كل ما في الكاشير موجود في التطبيق',
-                    message: 'لا أصناف بمخزون غير معروضة.',
-                  ),
+                children: [
+                  _q.text.trim().isNotEmpty
+                      ? EmptyState(icon: Icons.search_off_rounded, title: 'لا نتائج لـ «${_q.text.trim()}»')
+                      : _unsaved
+                      ? const EmptyState(
+                          icon: Icons.bookmark_added_rounded,
+                          title: 'كل النواقص محفوظة',
+                          message: 'أطفئ «غير المحفوظ فقط» لرؤيتها.',
+                        )
+                      : const EmptyState(
+                          icon: Icons.verified_rounded,
+                          title: 'كل ما في الكاشير موجود في التطبيق',
+                          message: 'لا أصناف بمخزون غير معروضة.',
+                        ),
                 ],
               )
             : ListView.separated(

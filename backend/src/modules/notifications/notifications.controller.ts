@@ -28,9 +28,10 @@ export class NotificationsController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("admin") admin?: string,
+    @Query("broadcast") broadcast?: string,
   ) {
     if ([Role.ADMIN, Role.SUPER_ADMIN, Role.STAFF].includes(user.role) && admin === "1") {
-      return this.notifications.adminList(Number(page ?? 1), Number(limit ?? 20));
+      return this.notifications.adminList(Number(page ?? 1), Number(limit ?? 20), broadcast === "1");
     }
     return this.notifications.listForUser(
       user.id,

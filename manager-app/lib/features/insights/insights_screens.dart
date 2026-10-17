@@ -170,7 +170,7 @@ class ReportsScreen extends ConsumerWidget {
 
   String _csv(Map<String, dynamic> r) {
     final t = Map<String, dynamic>.from(r['totals'] as Map);
-    final b = StringBuffer('تقرير مبيعات ديما الحياة — آخر ${r['days']} يوم\n')
+    final b = StringBuffer('تقرير مبيعات ديما الحياة — آخر ${daysLabel(_n(r['days']))}\n')
       ..writeln('الإيرادات,${t['revenue']}')
       ..writeln('الطلبات,${t['orders']}')
       ..writeln('القطع,${t['units']}')
@@ -217,7 +217,7 @@ class ReportsScreen extends ConsumerWidget {
             SegmentedButton<int>(
               segments: const [
                 ButtonSegment(value: 7, label: Text('7 أيام')),
-                ButtonSegment(value: 30, label: Text('30 يوم')),
+                ButtonSegment(value: 30, label: Text('30 يوماً')),
                 ButtonSegment(value: 90, label: Text('3 أشهر')),
                 ButtonSegment(value: 365, label: Text('سنة')),
               ],
@@ -465,7 +465,7 @@ class StaffScreen extends ConsumerWidget {
                     CircleAvatar(
                       backgroundColor: s.isActive ? AppColors.primarySoft : AppColors.dangerSoft,
                       child: Text(
-                        s.name.characters.first,
+                        s.name.trim().isEmpty ? '؟' : s.name.trim().characters.first,
                         style: TextStyle(fontWeight: FontWeight.w800, color: s.isActive ? AppColors.primary : AppColors.danger),
                       ),
                     ),
@@ -503,24 +503,24 @@ class StaffScreen extends ConsumerWidget {
                       ),
                     ),
                     if (editable)
-                      Switch(
+                      AsyncSwitch(
                         value: s.isActive,
+                        confirmOff: () => confirm(
+                          context,
+                          title: 'إيقاف حساب ${s.name}؟',
+                          message: 'سيُسجَّل خروجه من كل الأجهزة ولن يستطيع الدخول حتى تعيد تشغيله.',
+                          ok: 'إيقاف',
+                          danger: true,
+                        ),
                         onChanged: (v) async {
-                          if (!v &&
-                              !await confirm(
-                                context,
-                                title: 'إيقاف حساب ${s.name}؟',
-                                message: 'سيُسجَّل خروجه من كل الأجهزة ولن يستطيع الدخول حتى تعيد تشغيله.',
-                                ok: 'إيقاف',
-                                danger: true,
-                              )) {
-                            return;
-                          }
                           try {
                             await ref.read(repoProvider).setStaffActive(s.id, v);
                             ref.invalidate(_staffProvider);
+                            if (context.mounted) toast(context, v ? 'شُغّل حساب ${s.name}' : 'أُوقف حساب ${s.name}');
+                            return true;
                           } catch (e) {
                             if (context.mounted) toastError(context, e);
+                            return false;
                           }
                         },
                       )
@@ -633,15 +633,18 @@ class _BannersScreenState extends ConsumerState<BannersScreen> {
     }
   }
 
-  Future<void> _run(Future<void> Function() f) async {
+  Future<bool> _run(Future<void> Function() f) async {
     setState(() => _busy = true);
+    var ok = true;
     try {
       await f();
     } catch (e) {
+      ok = false;
       if (mounted) toastError(context, e);
     }
     await _load();
     if (mounted) setState(() => _busy = false);
+    return ok;
   }
 
   Future<void> _reorder(int from, int to) async {
@@ -649,13 +652,13 @@ class _BannersScreenState extends ConsumerState<BannersScreen> {
     if (to > from) to--;
     list.insert(to, list.removeAt(from));
     setState(() => _items = list);
-    await _run(() async {
+    final ok = await _run(() async {
       final repo = ref.read(repoProvider);
       for (var i = 0; i < list.length; i++) {
         if (_n(list[i]['position']) != i) await repo.patchBanner(list[i], {'position': i});
       }
     });
-    if (mounted) toast(context, 'تم حفظ الترتيب');
+    if (ok && mounted) toast(context, 'تم حفظ الترتيب');
   }
 
   @override

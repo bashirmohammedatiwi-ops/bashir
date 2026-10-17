@@ -300,6 +300,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           onPressed: _pickBrand,
                         ),
                       ),
+                      // فلتر جاء من الرئيسية أو صحة المتجر وليس ضمن الأزرار: نُظهره محدداً مع زر إزالة.
+                      if (!filters.any((f) => f.$1 == _status && f.$2 == _filter))
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8),
+                          child: InputChip(
+                            selected: true,
+                            showCheckmark: false,
+                            selectedColor: AppColors.primarySoft,
+                            label: Text(
+                              [
+                                if (_status == 'active') 'ظاهر',
+                                if (_status == 'inactive') 'موقوف',
+                                if (_filter != null) filters.firstWhere((f) => f.$2 == _filter, orElse: () => ('', _filter, _filter!)).$3,
+                              ].join(' · '),
+                            ),
+                            onDeleted: () {
+                              setState(() => (_status = 'all', _filter = null));
+                              _reload();
+                            },
+                          ),
+                        ),
                       for (final f in filters)
                         Padding(
                           padding: const EdgeInsetsDirectional.only(end: 8),
