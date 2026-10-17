@@ -18,13 +18,15 @@ import '../../data/models/category.dart';
 import '../catalog/catalog_providers.dart';
 import '../home/home_category_filter.dart';
 import '../worlds/world_theme.dart';
-import '../search/smart_query.dart';
+import 'brand_search.dart';
 
 class BrandsScreen extends ConsumerStatefulWidget {
   /// داخل تبويب الشريط السفلي: بلا زر رجوع.
   final bool embedded;
+  /// بحث جاهز عند الفتح (/brands?q=…).
+  final String? initialQuery;
 
-  const BrandsScreen({super.key, this.embedded = false});
+  const BrandsScreen({super.key, this.embedded = false, this.initialQuery});
 
   @override
   ConsumerState<BrandsScreen> createState() => _BrandsScreenState();
@@ -39,6 +41,33 @@ class _LetterGroup {
 
 class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   String _query = '';
+  final _searchCtrl = TextEditingController();
+  // فهرس البحث يُبنى مرة لكل قائمة براندات.
+  BrandSearchIndex? _index;
+  List<Brand>? _indexed;
+
+  @override
+  void initState() {
+    super.initState();
+    final q = widget.initialQuery?.trim() ?? '';
+    if (q.isNotEmpty) {
+      _searchCtrl.text = q;
+      _query = q;
+    }
+  }
+
+  BrandSearchIndex _indexFor(List<Brand> list) {
+    if (!identical(list, _indexed)) {
+      _indexed = list;
+      _index = BrandSearchIndex(list);
+    }
+    return _index!;
+  }
+
+  void _setQuery(String v) {
+    _searchCtrl.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
+    setState(() => _query = v.trim());
+  }
   String? _selectedCategoryId;
   final _scroll = ScrollController();
   /// مفاتيح عناوين الحروف — للقفز من شريط الفهرس.
@@ -68,28 +97,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   @override
   void dispose() {
     _scroll.dispose();
+    _searchCtrl.dispose();
     super.dispose();
-  }
-
-  List<Brand> _filterBrands(List<Brand> list, String lang) {
-    if (_query.trim().isEmpty) return list;
-    final matched = list
-        .where(
-          (b) => textMatchesQuery(_query, [
-            b.name,
-            b.nameAr,
-            b.nameEn,
-            b.slug,
-            b.localizedName(lang),
-          ]),
-        )
-        .toList(growable: false);
-    matched.sort((a, b) {
-      final scoreA = matchScore(_query, [a.name, a.nameAr, a.nameEn, a.slug]);
-      final scoreB = matchScore(_query, [b.name, b.nameAr, b.nameEn, b.slug]);
-      return scoreB.compareTo(scoreA);
-    });
-    return matched;
   }
 
   /// الحرف الأول موحّداً: أ/إ/آ → ا، اللاتيني كبير، وغير ذلك "#".
@@ -179,7 +188,10 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         ? const <Category>[]
         : storefrontParentCategories(cats);
     final allBrands = ref.watch(brandsProvider).valueOrNull;
-    final brandsAsync = _selectedCategoryId == null
+    // البحث في كل البراندات دائماً — شريط الأقسام يختفي أثناء البحث،
+    // فلا يصح أن يبقى القسم المختار يقيّد النتائج بصمت.
+    final searching = _query.isNotEmpty;
+    final brandsAsync = _selectedCategoryId == null || searching
         ? ref.watch(brandsProvider)
         : ref.watch(categoryBrandsProvider(_selectedCategoryId!));
 
@@ -198,16 +210,83 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         ),
       ),
       data: (list) {
-        final filtered = _filterBrands(list, lang);
+        if (searching) {
+          final index = _indexFor(list);
+          final results = index.search(_query);
+          if (results.isEmpty) {
+            final suggestions = index.suggest(_query);
+            content.add(
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  children: [
+                    EmptyState(
+                      icon: Icons.storefront_outlined,
+                      title: s.isAr ? 'لا يوجد براند بهذا الاسم' : s.noSearchResults,
+                      subtitle: s.isAr ? 'جربي كتابته بالإنجليزي أو بجزء من الاسم' : s.tryAnotherSearch,
+                    ),
+                    // ربما كتبت اسم منتج لا براند («سيروم»): بحث المنتجات بلمسة.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push('/search?q=${Uri.encodeComponent(_query)}'),
+                        icon: const Icon(Icons.search_rounded, size: 18),
+                        label: Text(s.isAr ? 'ابحثي عن «$_query» في المنتجات' : 'Search products for “$_query”'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: t.accentDark,
+                          side: BorderSide(color: t.accent.withValues(alpha: 0.5)),
+                          shape: const StadiumBorder(),
+                        ),
+                      ),
+                    ),
+                    if (suggestions.isNotEmpty) ...[
+                      Text(s.isAr ? 'هل تقصدين؟' : 'Did you mean?', style: AppText.label.copyWith(color: t.inkSoft)),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          for (final b in suggestions)
+                            ActionChip(
+                              label: Text(b.localizedName(lang)),
+                              onPressed: () => _openBrand(b, b.localizedName(lang)),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+            return;
+          }
+          content
+            ..add(
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
+                  child: Text(
+                    s.isAr ? '${results.length} براند' : '${results.length} brands',
+                    style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            )
+            ..add(
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                sliver: _grid(results, lang, s),
+              ),
+            );
+          return;
+        }
+        final filtered = list;
         if (filtered.isEmpty) {
           content.add(
             SliverFillRemaining(
               hasScrollBody: false,
-              child: EmptyState(
-                icon: Icons.storefront_outlined,
-                title: _query.isEmpty ? s.noBrands : s.noSearchResults,
-                subtitle: _query.isEmpty ? null : s.tryAnotherSearch,
-              ),
+              child: EmptyState(icon: Icons.storefront_outlined, title: s.noBrands),
             ),
           );
           return;
@@ -326,7 +405,9 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                         : (s.isAr
                               ? 'ابحثي بين ${allBrands.length} براند…'
                               : 'Search ${allBrands.length} brands…'),
+                    controller: _searchCtrl,
                     onChanged: (v) => setState(() => _query = v.trim()),
+                    onClear: () => _setQuery(''),
                   ),
                 ),
               ),
@@ -410,22 +491,42 @@ class _PageHeader extends StatelessWidget {
 /// حقل البحث بنفس حبّة الرئيسية.
 class _SearchField extends StatelessWidget {
   final String hint;
+  final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
 
-  const _SearchField({required this.hint, required this.onChanged});
+  const _SearchField({
+    required this.hint,
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final r = BorderRadius.circular(20);
     return TextField(
+      controller: controller,
       onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (_) => FocusScope.of(context).unfocus(),
       style: AppText.body.copyWith(color: t.ink, height: 1.2),
       cursorColor: t.accent,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: AppText.bodySmall.copyWith(color: t.inkMuted, fontSize: 14),
         prefixIcon: Icon(Icons.search_rounded, color: t.ink, size: 23),
+        suffixIcon: ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (_, v, __) => v.text.isEmpty
+              ? const SizedBox.shrink()
+              : IconButton(
+                  tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                  icon: Icon(Icons.close_rounded, color: t.inkMuted, size: 20),
+                  onPressed: onClear,
+                ),
+        ),
         filled: true,
         fillColor: Color.alphaBlend(t.ink.withValues(alpha: 0.045), t.surface),
         contentPadding: const EdgeInsets.symmetric(vertical: 15),
