@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/json.dart';
@@ -44,9 +45,9 @@ class DeliveryWindow {
     final from = _addWorkDays(now, minDays);
     final to = _addWorkDays(now, maxDays);
     final place = withPlace && (governorate?.isNotEmpty ?? false) ? ' إلى $governorate' : '';
-    final a = _dayName(from, now), b = _dayName(to, now);
-    if (a == b) return 'يصلكِ$place $a';
-    return 'يصلكِ$place بين $a و$b';
+    // يوم واحد: «غداً»/«اليوم»؛ مدى: بأسماء الأيام («بين الاثنين والثلاثاء»).
+    if (DateUtils.isSameDay(from, to)) return 'يصلكِ$place ${_dayName(from, now)}';
+    return 'يصلكِ$place بين ${_days[from.weekday - 1]} و${_days[to.weekday - 1]}';
   }
 }
 
