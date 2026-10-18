@@ -102,7 +102,7 @@ type AdvisorState = {
   comparing: AdvProduct[];
   pending: { message?: string; action?: string } | null;
   setOpen: (v: boolean) => void;
-  start: (o?: { productId?: string; ask?: string; q?: string }) => Promise<void>;
+  start: (o?: { productId?: string; ask?: string; q?: string; action?: string; label?: string }) => Promise<void>;
   send: (text: string) => Promise<void>;
   tap: (c: Chip) => Promise<void>;
   act: (label: string | null, action: string) => Promise<void>;
@@ -185,7 +185,8 @@ export const useAdvisor = create<AdvisorState>()(
           if (o.productId) {
             const label = o.ask ? ASK_LABELS[o.ask] : null;
             await turn(label, { action: `set:focus=${o.productId};act:${o.ask && label ? o.ask : "focus"}` });
-          } else if (o.q?.trim()) await turn(o.q.trim(), { message: o.q.trim() });
+          } else if (o.action) await turn(o.label ?? null, { action: o.action });
+          else if (o.q?.trim()) await turn(o.q.trim(), { message: o.q.trim() });
         },
         send: async (text) => {
           const t = text.trim();

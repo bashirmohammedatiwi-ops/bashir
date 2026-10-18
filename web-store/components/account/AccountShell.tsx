@@ -13,6 +13,7 @@ const NAV: [string, string, IconName][] = [
   ["/account", "نظرة عامة", "user"],
   ["/account/orders", "طلباتي", "box"],
   ["/wishlist", "المفضلة", "heart"],
+  ["/account/beauty", "ملف بشرتي", "spa"],
   ["/account/points", "نقاط الولاء", "sparkle"],
   ["/account/alerts", "تنبيهات التوفّر", "bell"],
   ["/account/addresses", "عناويني", "location"],

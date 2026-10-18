@@ -23,7 +23,9 @@ function Stars({ value, size = 16 }: { value: number; size?: number }) {
 export function Reviews({ product }: { product: Product }) {
   const user = useAuth((s) => s.user);
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["reviews", product.id], queryFn: () => api<Paged<Review>>(`/reviews/product/${product.id}`, { auth: false }) });
+  const { data } = useQuery({ queryKey: ["reviews", product.id], queryFn: () => api<Paged<Review>>(`/reviews/product/${product.id}`, { auth: false, query: { limit: 100 } }) });
+  const [sort, setSort] = useState<"new" | "high" | "low">("new");
+  const [shown, setShown] = useState(6);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const send = useMutation({
@@ -35,7 +37,9 @@ export function Reviews({ product }: { product: Product }) {
     },
     onError: (e) => toast({ text: (e as Error).message, tone: "error" }),
   });
-  const list = data?.data ?? [];
+  const all = data?.data ?? [];
+  const dist = [5, 4, 3, 2, 1].map((n) => ({ n, c: all.filter((r) => Math.round(r.rating) === n).length }));
+  const list = [...all].sort((a, b) => (sort === "high" ? b.rating - a.rating : sort === "low" ? a.rating - b.rating : +new Date(b.createdAt) - +new Date(a.createdAt)));
   return (
     <section id="reviews" className="grid gap-6 lg:grid-cols-[320px_1fr]">
       <div className="card h-max p-6 text-center">
@@ -44,6 +48,19 @@ export function Reviews({ product }: { product: Product }) {
           <Stars value={product.rating} size={20} />
         </div>
         <p className="mt-1 text-sm text-ink-muted">{product.reviewCount > 0 ? `من ${product.reviewCount} تقييم` : "كوني أول من يقيّم"}</p>
+        {all.length > 0 && (
+          <div className="mt-4 space-y-1.5">
+            {dist.map(({ n, c }) => (
+              <div key={n} className="flex items-center gap-2 text-xs">
+                <span className="w-6 font-bold tabular-nums">{n}★</span>
+                <span className="h-2 flex-1 overflow-hidden rounded-full bg-canvas">
+                  <span className="block h-full rounded-full bg-star" style={{ width: `${(c / all.length) * 100}%` }} />
+                </span>
+                <span className="w-6 text-ink-muted tabular-nums">{c}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {user ? (
           <form
             onSubmit={(e) => {
@@ -72,10 +89,20 @@ export function Reviews({ product }: { product: Product }) {
         )}
       </div>
       <div className="space-y-3">
+        {list.length > 1 && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-ink-muted">{list.length} رأي</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value as "new")} className="chip bg-surface font-semibold outline-none">
+              <option value="new">الأحدث</option>
+              <option value="high">الأعلى تقييماً</option>
+              <option value="low">الأقل تقييماً</option>
+            </select>
+          </div>
+        )}
         {list.length === 0 ? (
           <div className="card p-10 text-center text-ink-muted">لا توجد تقييمات بعد</div>
         ) : (
-          list.map((r) => (
+          list.slice(0, shown).map((r) => (
             <article key={r.id} className="card p-5">
               <div className="mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-2 font-bold">
@@ -88,6 +115,11 @@ export function Reviews({ product }: { product: Product }) {
               {r.comment && <p className="mt-2 leading-7 text-ink-soft">{r.comment}</p>}
             </article>
           ))
+        )}
+        {list.length > shown && (
+          <button onClick={() => setShown(shown + 10)} className="btn-ghost w-full">
+            عرض المزيد ({list.length - shown})
+          </button>
         )}
       </div>
     </section>

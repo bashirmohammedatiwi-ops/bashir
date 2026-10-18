@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { BrandLogo } from "../ui/BrandLogo";
 import { PLAY_STORE_URL, APP_STORE_URL } from "@/lib/config";
 import { categoryHref } from "@/lib/links";
 import type { Category, HomeFeed } from "@/lib/types";
@@ -31,13 +32,7 @@ export function SiteFooter({ settings, categories }: { settings: HomeFeed["setti
       <div className="border-t border-hairline">
         <div className="container grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
-            <div className="mb-4 flex items-center gap-3">
-              <img src="/logo.png" alt="" className="h-12 w-12 rounded-2xl" />
-              <div>
-                <div className="text-xl font-extrabold">ديما الحياة</div>
-                <div className="text-xs text-ink-muted">deema alhayat</div>
-              </div>
-            </div>
+            <BrandLogo className="mb-4 h-16 w-auto" />
             <p className="max-w-sm text-sm leading-7 text-ink-soft">
               متجركِ لمستحضرات التجميل والعناية والعطور الأصلية في العراق — اختيارات مدروسة، أسعار واضحة، وتوصيل لكل المحافظات.
             </p>
@@ -71,6 +66,7 @@ export function SiteFooter({ settings, categories }: { settings: HomeFeed["setti
                 ["/skin-guide", "دليل البشرة"],
                 ["/skin-quiz", "اختبار البشرة"],
                 ["/packages", "الباقات والروتين"],
+                ["/gifts", "دليل الهدايا"],
                 ["/account/orders", "تتبّع طلبي"],
                 ["/about", "من نحن"],
                 ["/help", "المساعدة والتوصيل"],

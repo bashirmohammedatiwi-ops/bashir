@@ -15,6 +15,7 @@ import { worldVars } from "@/lib/theme";
 import type { Category, World } from "@/lib/types";
 import { Icon } from "../ui/Icon";
 import { SearchBox } from "./SearchBox";
+import { BrandLogo } from "../ui/BrandLogo";
 import { HeaderBadges } from "./HeaderBadges";
 
 /** اختيار العالم: يُحفظ في كوكي ليرسمه السيرفر، والألوان تتبدل فوراً. */
@@ -88,11 +89,7 @@ export function SiteHeader({
             <Icon name="menu" />
           </button>
           <Link href="/" className="flex flex-none items-center gap-2" aria-label="ديما الحياة — الرئيسية">
-            <img src="/logo.png" alt="" className="h-10 w-10 rounded-2xl object-contain md:h-11 md:w-11" />
-            <span className="hidden leading-tight sm:block">
-              <span className="block text-lg font-extrabold tracking-tight text-ink">ديما الحياة</span>
-              <span className="block text-[11px] font-semibold text-ink-muted">deema alhayat</span>
-            </span>
+            <BrandLogo className="h-12 w-auto md:h-14" />
           </Link>
 
           <SearchBox className="hidden flex-1 md:block md:max-w-2xl" />
@@ -154,6 +151,7 @@ export function SiteHeader({
               <Link href="/brands" className="rounded-full px-3 py-2 text-ink-soft hover:bg-accent-light hover:text-ink">البراندات</Link>
               <Link href="/skin-guide" className="rounded-full px-3 py-2 text-ink-soft hover:bg-accent-light hover:text-ink">دليل البشرة</Link>
               <Link href="/packages" className="rounded-full px-3 py-2 text-ink-soft hover:bg-accent-light hover:text-ink">الباقات</Link>
+              <Link href="/gifts" className="rounded-full px-3 py-2 text-ink-soft hover:bg-accent-light hover:text-ink">الهدايا 🎁</Link>
               <Link href="/advisor" className="rounded-full bg-gradient-to-l from-accent-light to-accent-soft px-3 py-2 font-bold text-accent-dark hover:brightness-95">✨ اسألي ديما</Link>
             </div>
           </div>
@@ -302,6 +300,7 @@ function MobileMenu({ worlds, current, categories, onWorld }: { worlds: World[];
               ["/skin-guide", "دليل البشرة", "spa"],
               ["/packages", "الباقات والروتين", "gift"],
               ["/advisor", "اسألي ديما ✨", "chat"],
+              ["/gifts", "دليل الهدايا", "gift"],
               ["/wishlist", "المفضلة", "heart"],
             ].map(([href, label, icon]) => (
               <Link key={href} href={href} onClick={close} className="flex items-center gap-3 rounded-2xl px-3 py-3 hover:bg-canvas">

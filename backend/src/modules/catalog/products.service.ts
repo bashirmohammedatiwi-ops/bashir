@@ -145,14 +145,27 @@ export class ProductsService {
    */
   async facets(q: QueryProductsDto) {
     const key = `products:facets:${JSON.stringify(q)}`;
-    const hit = getCached<{ brands: { id: string; name: string; slug: string; count: number }[]; price: { min: number; max: number } | null }>(key);
+    const hit = getCached<{ brands: { id: string; name: string; slug: string; count: number }[]; categories: { id: string; name: string; slug: string; count: number }[]; price: { min: number; max: number } | null }>(key);
     if (hit) return hit;
-    const { andFilters } = await this.baseFilters({ ...q, brandId: undefined, minPrice: undefined, maxPrice: undefined } as QueryProductsDto, true);
-    const where: Prisma.ProductWhereInput = { AND: andFilters };
-    const [groups, agg] = await Promise.all([
-      this.prisma.product.groupBy({ by: ["brandId"], where, _count: { _all: true } }),
-      this.prisma.product.aggregate({ where, _min: { price: true }, _max: { price: true } }),
+    // عدّاد البراندات بلا فلتر البراند؛ الأقسام ومدى السعر ضمن البراند المختار.
+    const [{ andFilters }, scoped] = await Promise.all([
+      this.baseFilters({ ...q, brandId: undefined, minPrice: undefined, maxPrice: undefined } as QueryProductsDto, true),
+      this.baseFilters({ ...q, minPrice: undefined, maxPrice: undefined } as QueryProductsDto, true),
     ]);
+    const where: Prisma.ProductWhereInput = { AND: andFilters };
+    const scopedWhere: Prisma.ProductWhereInput = { AND: scoped.andFilters };
+    // أقسام البراند: فقط حين لا يوجد فلتر قسم (صفحة البراند).
+    const byCategory = !q.categoryId && !q.subcategoryId && !q.tertiaryCategoryId;
+    const [groups, agg, cats] = await Promise.all([
+      this.prisma.product.groupBy({ by: ["brandId"], where, _count: { _all: true } }),
+      this.prisma.product.aggregate({ where: scopedWhere, _min: { price: true }, _max: { price: true } }),
+      byCategory ? this.prisma.product.groupBy({ by: ["subcategoryId"], where: scopedWhere, _count: { _all: true } }) : Promise.resolve([]),
+    ]);
+    const catCounted = cats.filter((g) => g.subcategoryId).sort((a, b) => b._count._all - a._count._all).slice(0, 30);
+    const catRows = catCounted.length
+      ? await this.prisma.category.findMany({ where: { id: { in: catCounted.map((g) => g.subcategoryId!) }, isActive: true }, select: { id: true, name: true, slug: true } })
+      : [];
+    const catById = new Map(catRows.map((c) => [c.id, c]));
     const counted = groups.filter((g) => g.brandId).sort((a, b) => b._count._all - a._count._all).slice(0, 80);
     const rows = counted.length
       ? await this.prisma.brand.findMany({ where: { id: { in: counted.map((g) => g.brandId!) } }, select: { id: true, name: true, slug: true } })
@@ -162,6 +175,10 @@ export class ProductsService {
       brands: counted.flatMap((g) => {
         const b = byId.get(g.brandId!);
         return b ? [{ ...b, count: g._count._all }] : [];
+      }),
+      categories: catCounted.flatMap((g) => {
+        const c = catById.get(g.subcategoryId!);
+        return c ? [{ ...c, count: g._count._all }] : [];
       }),
       price: agg._min.price != null && agg._max.price != null ? { min: agg._min.price, max: agg._max.price } : null,
     };

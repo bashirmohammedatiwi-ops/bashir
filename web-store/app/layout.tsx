@@ -26,8 +26,9 @@ export const metadata: Metadata = {
   title: { default: `${STORE_NAME} — ${STORE_TAGLINE}`, template: `%s | ${STORE_NAME}` },
   description: "تسوّقي مستحضرات التجميل والعناية والعطور الأصلية من أشهر الماركات العالمية، مع توصيل لكل محافظات العراق والدفع عند الاستلام أو بالبطاقة.",
   applicationName: STORE_NAME,
-  openGraph: { type: "website", locale: "ar_IQ", siteName: STORE_NAME, images: ["/logo.png"] },
-  icons: { icon: [{ url: "/icon-192.png", sizes: "192x192" }, { url: "/logo.png" }], apple: "/apple-touch-icon.png" },
+  openGraph: { type: "website", locale: "ar_IQ", siteName: STORE_NAME, images: [{ url: "/og.png", width: 1200, height: 630 }] },
+  twitter: { card: "summary_large_image", images: ["/og.png"] },
+  icons: { icon: [{ url: "/favicon.ico", sizes: "any" }, { url: "/favicon-48.png", sizes: "48x48", type: "image/png" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: STORE_NAME, statusBarStyle: "default" },
   alternates: { canonical: "/" },
 };
@@ -36,7 +37,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#9B6BD8",
+  themeColor: "#8A55C9",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

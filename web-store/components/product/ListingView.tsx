@@ -98,7 +98,7 @@ export function ListingView({
           })
         : api<SearchResp>("/products", {
             auth: false,
-            query: { ...base, page: pageParam, limit: 24, sort, minPrice, maxPrice, inStock: inStock ? 1 : undefined, isPromo: deals ? 1 : base?.isPromo, brandId: brand ?? base?.brandId },
+            query: { ...base, page: pageParam, limit: 24, sort, minPrice, maxPrice, inStock: inStock ? 1 : undefined, isPromo: deals ? 1 : base?.isPromo, brandId: brand ?? base?.brandId, subcategoryId: category ?? base?.subcategoryId },
           }),
     getNextPageParam: (last) => (last.meta?.hasNext ? last.meta.page + 1 : undefined),
   });
@@ -109,7 +109,7 @@ export function ListingView({
   // صفحات الأقسام: عدّادات البراندات ومدى السعر من /products/facets (البحث يعيدها مع النتائج).
   const productFacets = useQuery({
     queryKey: ["facets", base, inStock, deals],
-    enabled: mode === "products" && !base?.brandId,
+    enabled: mode === "products",
     staleTime: 60_000,
     queryFn: () => api<Facets>("/products/facets", { auth: false, query: { ...base, inStock: inStock ? 1 : undefined, isPromo: deals ? 1 : base?.isPromo } }),
   });
@@ -179,6 +179,18 @@ export function ListingView({
         <div className="card sticky top-36 max-h-[calc(100vh-10rem)] overflow-y-auto p-5">{Filters}</div>
       </aside>
       <div>
+        {mode === "products" && base?.brandId && (facets?.categories?.length ?? 0) > 1 && (
+          <div className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+            <button onClick={() => setParam({ category: undefined })} className={clsx("chip flex-none", !category && "chip-on")}>
+              الكل
+            </button>
+            {facets!.categories!.map((c) => (
+              <button key={c.id} onClick={() => setParam({ category: category === c.id ? undefined : c.id })} className={clsx("chip flex-none", category === c.id && "chip-on")}>
+                {c.name} <span className="text-xs opacity-60">{c.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="me-auto text-sm font-bold text-ink-muted">{query.isLoading ? "…" : total ? arProducts(total) : "لا نتائج"}</span>
           <button onClick={() => setFiltersOpen(true)} className="chip lg:hidden">

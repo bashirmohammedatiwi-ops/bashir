@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CartSummary, type SummaryRow } from "@/components/cart/CartSummary";
 import { CouponBox } from "@/components/cart/CouponBox";
 import { Breadcrumbs } from "@/components/catalog/PageHero";
-import { useHydrated, useLoyaltyRules } from "@/components/Providers";
+import { useHydrated, useLoyaltyRules, useSettings } from "@/components/Providers";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
@@ -76,6 +76,8 @@ export default function CheckoutPage() {
   const [useLoyalty, setUseLoyalty] = useState(false);
   const [notes, setNotes] = useState("");
   const [method, setMethod] = useState<"COD" | "CARD">("COD");
+  const settings = useSettings();
+  const [pickup, setPickup] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [booted, setBooted] = useState(false);
 
@@ -113,7 +115,7 @@ export default function CheckoutPage() {
     enabled: !!form.governorate,
     queryFn: () => api<Quote>("/shipping/quote", { auth: false, query: { governorate: form.governorate, area: form.area || undefined, subtotal: m.subtotal } }),
   });
-  const shipping = m.freeShippingCoupon ? 0 : quote.data?.fee ?? 0;
+  const shipping = pickup || m.freeShippingCoupon ? 0 : quote.data?.fee ?? 0;
   const discounts = m.packSaving + m.couponDiscount;
   const beforeLoyalty = Math.max(0, m.subtotal - discounts + shipping);
   const balance = user?.points ?? 0;
@@ -131,7 +133,7 @@ export default function CheckoutPage() {
     if (form.street.trim().length < 3) e.street = "اكتبي المنطقة / الشارع / أقرب نقطة دالة";
     return e;
   }, [form]);
-  const valid = Object.keys(errors).length === 0;
+  const valid = pickup || Object.keys(errors).length === 0;
 
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value, ...(k === "governorate" ? { area: "" } : {}) }));
   const err = (k: keyof Form) => touched && errors[k] && <span className="mt-1 block text-xs font-bold text-sale">{errors[k]}</span>;
@@ -155,14 +157,14 @@ export default function CheckoutPage() {
         house: form.house.trim() || undefined,
         isDefault: true,
       };
-      const address = addressId ? await api<Address>(`/addresses/${addressId}`, { method: "PATCH", body: payload }) : await api<Address>("/addresses", { method: "POST", body: payload });
+      const address = pickup ? null : addressId ? await api<Address>(`/addresses/${addressId}`, { method: "PATCH", body: payload }) : await api<Address>("/addresses", { method: "POST", body: payload });
       const packs = m.status.filter((s) => s.sets > 0).map((s) => ({ packageId: s.pack.id, quantity: s.sets }));
       const order = await api<Order>("/orders", {
         method: "POST",
         body: {
           items: m.lines.map((l) => ({ productId: l.productId, quantity: l.quantity, ...(l.shadeId ? { shadeId: l.shadeId } : {}) })),
           ...(packs.length ? { packages: packs } : {}),
-          addressId: address.id,
+          addressId: address?.id,
           couponCode: m.coupon && m.couponEligible ? m.coupon.code : undefined,
           notes: notes.trim() || undefined,
           isGift,
@@ -170,7 +172,7 @@ export default function CheckoutPage() {
           giftHidePrices: isGift && hidePrices,
           loyaltySpent: loyaltyPoints,
           paymentMethod: method,
-          deliveryOption: "STANDARD",
+          deliveryOption: pickup ? "PICKUP" : "STANDARD",
         },
       });
       clear();
@@ -217,7 +219,9 @@ export default function CheckoutPage() {
     { label: `المنتجات (${arProducts(m.count)})`, value: m.subtotal },
     ...(m.packSaving ? [{ label: "توفير الباقات", value: m.packSaving, tone: "saving" as const }] : []),
     ...(m.couponDiscount ? [{ label: `كود ${m.coupon?.code}`, value: m.couponDiscount, tone: "saving" as const }] : []),
-    form.governorate
+    pickup
+      ? { label: "استلام من الفرع", value: 0, free: true }
+      : form.governorate
       ? { label: "التوصيل", value: shipping, free: !quote.isLoading && shipping === 0, hint: quote.isLoading ? "…" : undefined }
       : { label: "التوصيل", value: 0, tone: "muted" as const, hint: "اختاري المحافظة" },
     ...(loyaltyValue ? [{ label: `نقاط الولاء (${formatNumber(loyaltyPoints)})`, value: loyaltyValue, tone: "saving" as const }] : []),
@@ -231,7 +235,40 @@ export default function CheckoutPage() {
       <div className="mt-5 grid items-start gap-6 lg:grid-cols-[1fr_400px]">
         <div className="space-y-5">
           <div id="address" className="scroll-mt-40">
-            <Section n={1} title="عنوان التوصيل">
+            <Section n={1} title={pickup ? "الاستلام من الفرع" : "عنوان التوصيل"}>
+              {settings.pickupEnabled && (
+                <div className="mb-5 grid grid-cols-2 gap-2">
+                  {[
+                    [false, "truck", "توصيل للبيت", "لكل المحافظات"],
+                    [true, "location", "استلام من الفرع", "مجاناً — بدون توصيل"],
+                  ].map(([v, icon, t, sub]) => (
+                    <button
+                      key={String(v)}
+                      type="button"
+                      onClick={() => setPickup(v as boolean)}
+                      className={clsx("flex items-center gap-3 rounded-2xl border-2 p-3 text-start transition", pickup === v ? "border-accent-dark bg-accent-light/60" : "border-hairline hover:border-accent/50")}
+                    >
+                      <span className={clsx("grid h-10 w-10 flex-none place-items-center rounded-xl", pickup === v ? "bg-accent-dark text-white" : "bg-canvas text-ink-soft")}>
+                        <Icon name={icon as "truck"} size={20} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-extrabold">{t as string}</span>
+                        <span className="block text-xs text-ink-muted">{sub as string}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {pickup ? (
+                <div className="rounded-2xl bg-canvas p-4">
+                  <p className="flex items-center gap-2 font-extrabold">
+                    <Icon name="location" size={18} className="text-accent-dark" /> {settings.pickupAddress || "فرع ديما الحياة"}
+                  </p>
+                  {settings.pickupHours && <p className="mt-1 text-sm text-ink-muted">🕙 {settings.pickupHours}</p>}
+                  <p className="mt-2 text-sm text-ink-soft">نجهّز طلبكِ ونرسل لكِ إشعاراً حين يصير جاهزاً للاستلام — احضري رقم الطلب.</p>
+                </div>
+              ) : (
+              <>
               {!!addresses.data?.length && (
                 <div className="mb-5 grid gap-2 sm:grid-cols-2">
                   {addresses.data.map((a) => (
@@ -317,6 +354,8 @@ export default function CheckoutPage() {
                 <p className="mt-4 flex items-center gap-2 rounded-2xl bg-accent-light/70 px-4 py-3 text-sm font-bold text-accent-dark">
                   <Icon name="truck" size={18} /> {deliveryLabel(zone)}
                 </p>
+              )}
+              </>
               )}
             </Section>
           </div>
