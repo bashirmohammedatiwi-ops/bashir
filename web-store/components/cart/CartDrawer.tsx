@@ -90,7 +90,7 @@ export function CartDrawer() {
   if (!hydrated) return null;
   return (
     <div className={clsx("fixed inset-0 z-[65]", open ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={!open}>
-      <div onClick={() => openCart(false)} className={clsx("absolute inset-0 bg-ink/40 backdrop-blur-[2px] transition-opacity duration-300", open ? "opacity-100" : "opacity-0")} />
+      <div onClick={() => openCart(false)} className={clsx("absolute inset-0 bg-night/40 backdrop-blur-[2px] transition-opacity duration-300", open ? "opacity-100" : "opacity-0")} />
       <aside
         role="dialog"
         aria-label="سلة التسوق"

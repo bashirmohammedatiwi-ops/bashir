@@ -4,6 +4,7 @@ import type { Config } from "tailwindcss";
 const v = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
 export default {
+  darkMode: ["selector", '[data-theme="dark"]'],
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     container: { center: true, padding: { DEFAULT: "1rem", md: "1.5rem", xl: "2rem" }, screens: { "2xl": "1360px" } },
@@ -14,6 +15,7 @@ export default {
         ink: { DEFAULT: v("ink"), soft: v("ink-soft"), muted: v("ink-muted") },
         surface: v("surface"),
         hairline: v("hairline"),
+        night: "#1A1426",
         sale: "#E0457B",
         success: "#0F8A4F",
         star: "#F5B942",

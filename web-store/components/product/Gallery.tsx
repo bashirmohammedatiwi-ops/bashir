@@ -71,7 +71,7 @@ export function Gallery({ images, alt, discount, focusMedia }: { images: Media[]
           )}
           {!!discount && <DiscountBadge percent={discount} className="absolute right-5 top-5 px-3 py-1 text-sm" />}
           {n > 1 && (
-            <span className="absolute bottom-4 left-4 rounded-full bg-ink/70 px-2.5 py-1 text-xs font-bold text-white" dir="ltr">
+            <span className="absolute bottom-4 left-4 rounded-full bg-night/70 px-2.5 py-1 text-xs font-bold text-white" dir="ltr">
               {i + 1} / {n}
             </span>
           )}

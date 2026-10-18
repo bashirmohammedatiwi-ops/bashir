@@ -35,7 +35,7 @@ export function QuickView() {
 
   if (!slug) return null;
   return (
-    <div className="fixed inset-0 z-[75] grid place-items-center bg-ink/40 p-6 backdrop-blur-[2px]" onClick={() => close(null)}>
+    <div className="fixed inset-0 z-[75] grid place-items-center bg-night/40 p-6 backdrop-blur-[2px]" onClick={() => close(null)}>
       <div className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[32px] bg-canvas p-6 shadow-float animate-fade-up" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => close(null)} className="absolute left-4 top-4 z-10 rounded-full bg-surface p-2 shadow-card" aria-label="إغلاق">
           <Icon name="close" />

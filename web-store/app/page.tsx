@@ -7,6 +7,7 @@ import { RecentlyViewed } from "@/components/product/RecentlyViewed";
 import { BuyAgain } from "@/components/account/BuyAgain";
 import { ForYourSkin } from "@/components/home/ForYourSkin";
 import { FlashSaleBand } from "@/components/home/FlashSaleBand";
+import { TrendingSearches } from "@/components/home/TrendingSearches";
 import { Icon } from "@/components/ui/Icon";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { currentWorld, getHome, getWorlds } from "@/lib/data";
@@ -50,6 +51,8 @@ export default async function HomePage({ searchParams }: { searchParams: { world
           </aside>
         </div>
       </section>
+
+      <TrendingSearches />
 
       <section className="container pt-5 md:pt-8">
         <WorldStrip worlds={worlds} current={world} />

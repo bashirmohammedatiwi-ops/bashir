@@ -1,6 +1,10 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useWishlist } from "@/lib/hooks/wishlist";
+import { useAuth } from "@/lib/stores/auth";
+import { toast } from "@/lib/stores/ui";
 import clsx from "clsx";
 import Link from "next/link";
 import { CartLineRow, FreeShippingBar } from "@/components/cart/CartDrawer";
@@ -26,6 +30,25 @@ export default function CartPage() {
   const remove = useCart((s) => s.remove);
   const removePackage = useCart((s) => s.removePackage);
   const rules = useLoyaltyRules();
+  const user = useAuth((st) => st.user);
+  const router = useRouter();
+  const qc = useQueryClient();
+  const wish = useWishlist();
+  /** «حفظ لوقت لاحق»: ينقل المنتج للمفضلة ويزيله من السلة. */
+  const saveForLater = async (key: string, productId: string) => {
+    if (!user) {
+      toast({ text: "سجّلي الدخول لحفظ المنتج في المفضلة" });
+      return router.push("/signin?next=/cart");
+    }
+    try {
+      if (!wish.data?.some((x) => x.id === productId)) await api(`/wishlist/${productId}/toggle`, { method: "POST" });
+      remove(key);
+      qc.invalidateQueries({ queryKey: ["wishlist"] });
+      toast({ text: "نقلناه للمفضلة 💜", action: { label: "المفضلة", href: "/wishlist" } });
+    } catch (e) {
+      toast({ text: (e as Error).message, tone: "error" });
+    }
+  };
   const first = m.lines[0]?.slug;
   const inCart = new Set(m.lines.map((l) => l.productId));
   const recs = useQuery({
@@ -104,9 +127,14 @@ export default function CartPage() {
                 <div className="flex-1">
                   <CartLineRow line={l} />
                 </div>
-                <button onClick={() => remove(l.key)} className="rounded-full p-2 text-ink-muted hover:bg-rose-soft hover:text-sale" aria-label="حذف">
-                  <Icon name="trash" size={18} />
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button onClick={() => remove(l.key)} className="rounded-full p-2 text-ink-muted hover:bg-rose-soft hover:text-sale" aria-label="حذف" title="حذف">
+                    <Icon name="trash" size={18} />
+                  </button>
+                  <button onClick={() => saveForLater(l.key, l.productId)} className="rounded-full p-2 text-ink-muted hover:bg-accent-light hover:text-accent-dark" aria-label="حفظ لوقت لاحق" title="انقليه للمفضلة">
+                    <Icon name="heart" size={18} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

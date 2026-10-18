@@ -8,11 +8,16 @@ import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { AdvisorLauncher } from "@/components/advisor/AdvisorLauncher";
 import { QuickView } from "@/components/product/QuickView";
+import { CompareTray } from "@/components/product/CompareTray";
 import { AppBanner } from "@/components/layout/AppBanner";
+import { NavProgress } from "@/components/layout/NavProgress";
 import { Toaster } from "@/components/ui/Toaster";
 import { currentWorld, getCategories, getHome, getWorlds } from "@/lib/data";
-import { worldVars } from "@/lib/theme";
+import { themeCss } from "@/lib/theme";
 import { SITE_URL, STORE_NAME, STORE_TAGLINE } from "@/lib/config";
+
+/** قبل الرسم: الوضع المحفوظ (فاتح/ليلي) أو وضع الجهاز — بلا وميض. */
+const THEME_BOOT = `(function(){try{var t=localStorage.getItem("dh-theme")||"system";var d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")}catch(e){}})()`;
 
 const plex = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
@@ -44,8 +49,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [worlds, world, categories] = await Promise.all([getWorlds(), currentWorld(), getCategories()]);
   const feed = world ? await getHome(world.slug).catch(() => null) : null;
   return (
-    <html lang="ar" dir="rtl" className={plex.variable}>
-      <body style={worldVars(world)} className="min-h-screen font-sans">
+    <html lang="ar" dir="rtl" className={plex.variable} suppressHydrationWarning>
+      <head>
+        <style id="world-theme" dangerouslySetInnerHTML={{ __html: themeCss(world) }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+      </head>
+      <body className="min-h-screen font-sans">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -55,10 +64,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             ]),
           }}
         />
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:right-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-white">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:right-3 focus:top-3 focus:z-[100] focus:rounded-full focus:bg-night focus:px-4 focus:py-2 focus:text-white">
           تخطي إلى المحتوى
         </a>
         <Providers settings={feed?.settings ?? {}}>
+          <NavProgress />
           <SiteHeader worlds={worlds} current={world} categories={categories} freeShipping={feed?.settings?.freeShippingThreshold ?? 0} />
           <main id="main" className="min-h-[60vh] pb-24 md:pb-0">{children}</main>
           <SiteFooter settings={feed?.settings ?? {}} categories={categories} />
@@ -66,6 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <CartDrawer />
           <AdvisorLauncher />
           <QuickView />
+          <CompareTray />
           <AppBanner />
           <Toaster />
         </Providers>

@@ -16,7 +16,7 @@ export default function PointsPage() {
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-extrabold">نقاط الولاء</h1>
-      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-accent via-accent-dark to-ink p-6 text-white shadow-lift md:p-8">
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-accent via-accent-dark to-night p-6 text-white shadow-lift md:p-8">
         <span className="absolute -left-8 -top-8 text-[140px] opacity-20">✨</span>
         <p className="text-sm font-bold opacity-80">رصيدكِ</p>
         <p className="mt-1 text-5xl font-extrabold tabular-nums">{formatNumber(s.points)}</p>

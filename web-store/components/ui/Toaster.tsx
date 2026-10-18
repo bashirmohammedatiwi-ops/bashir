@@ -14,7 +14,7 @@ export function Toaster() {
           key={t.id}
           className={clsx(
             "pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-float animate-fade-up",
-            t.tone === "error" ? "bg-sale" : "bg-ink",
+            t.tone === "error" ? "bg-sale" : "bg-night",
           )}
           role="status"
         >

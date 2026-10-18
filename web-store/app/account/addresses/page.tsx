@@ -54,7 +54,7 @@ function AddressModal({ initial, onClose }: { initial: Draft; onClose: () => voi
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 md:items-center md:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-night/40 md:items-center md:p-4" onClick={onClose}>
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[32px] bg-surface p-6 animate-fade-up md:rounded-[32px]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-extrabold">{d.id ? "تعديل العنوان" : "عنوان جديد"}</h3>

@@ -234,7 +234,7 @@ export function ListingView({
 
       {filtersOpen && (
         <div className="fixed inset-0 z-[66] lg:hidden">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => setFiltersOpen(false)} />
+          <div className="absolute inset-0 bg-night/40" onClick={() => setFiltersOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[32px] bg-surface p-5 pb-8 animate-fade-up">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-extrabold">تصفية المنتجات</h3>
@@ -299,7 +299,7 @@ function PriceRange({ min, max, bounds, onApply }: { min?: string; max?: string;
       <input value={a} onChange={(e) => setA(clean(e.target.value))} inputMode="numeric" placeholder={bounds ? `من ${formatNumber(bounds.min)}` : "من"} className="field h-10 min-w-0 px-3 text-sm" aria-label="أقل سعر" />
       <span className="text-ink-muted">–</span>
       <input value={b} onChange={(e) => setB(clean(e.target.value))} inputMode="numeric" placeholder={bounds ? `إلى ${formatNumber(bounds.max)}` : "إلى"} className="field h-10 min-w-0 px-3 text-sm" aria-label="أعلى سعر" />
-      <button className="btn h-10 flex-none bg-ink px-3 text-xs text-white">تطبيق</button>
+      <button className="btn h-10 flex-none bg-night px-3 text-xs text-white">تطبيق</button>
     </form>
   );
 }

@@ -63,3 +63,23 @@
   main { padding: 0 !important; }
   .card { box-shadow: none !important; border: 1px solid #e5e0ec; }
 }
+
+/* ── الوضع الليلي: ألوان ثابتة تحتاج نسخة داكنة ── */
+[data-theme="dark"] body { background-color: rgb(var(--canvas)); }
+[data-theme="dark"] { --logo-ink-a: #F4EFFA; --logo-ink-b: #DCCFEA; }
+[data-theme="dark"] .bg-emerald-50 { background-color: rgb(34 160 100 / 0.16); }
+[data-theme="dark"] .bg-rose-soft { background-color: rgb(224 69 123 / 0.16); }
+[data-theme="dark"] .bg-amber-50 { background-color: rgb(245 185 66 / 0.14); }
+[data-theme="dark"] .bg-sky-50 { background-color: rgb(56 160 230 / 0.15); }
+[data-theme="dark"] .bg-indigo-50, [data-theme="dark"] .bg-violet-50 { background-color: rgb(140 120 240 / 0.16); }
+[data-theme="dark"] .text-success { color: #47D08F; }
+[data-theme="dark"] .text-amber-700, [data-theme="dark"] .text-amber-600 { color: #F5C86B; }
+[data-theme="dark"] .text-sky-700 { color: #8CCBF5; }
+[data-theme="dark"] .text-indigo-700, [data-theme="dark"] .text-violet-700 { color: #BCB0FF; }
+[data-theme="dark"] .from-emerald-50 { --tw-gradient-from: rgb(34 160 100 / 0.16) var(--tw-gradient-from-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+[data-theme="dark"] .from-amber-50 { --tw-gradient-from: rgb(245 185 66 / 0.14) var(--tw-gradient-from-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+[data-theme="dark"] .to-indigo-50 { --tw-gradient-to: rgb(140 120 240 / 0.12) var(--tw-gradient-to-position); }
+[data-theme="dark"] .bg-white\/80, [data-theme="dark"] .bg-white\/85, [data-theme="dark"] .bg-white\/90, [data-theme="dark"] .bg-white\/95 { background-color: rgb(var(--surface) / 0.9); }
+[data-theme="dark"] .skeleton::after { opacity: 0.12; }
+[data-theme="dark"] .shadow-card { box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 28px -14px rgb(0 0 0 / 0.6); }
+[data-theme="dark"] img { color-scheme: light; }

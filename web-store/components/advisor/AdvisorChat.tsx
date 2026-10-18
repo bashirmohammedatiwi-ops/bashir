@@ -29,7 +29,7 @@ function ProfileSheet({ profile, onClose }: { profile: Profile; onClose: () => v
   ];
   const any = rows.some(([, v]) => v);
   return (
-    <div className="absolute inset-0 z-30 flex items-end bg-ink/30 md:items-center md:justify-center" onClick={onClose}>
+    <div className="absolute inset-0 z-30 flex items-end bg-night/30 md:items-center md:justify-center" onClick={onClose}>
       <div className="w-full rounded-t-[28px] bg-surface p-5 animate-fade-up md:max-w-md md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
         <p className="text-lg font-extrabold">ملفكِ الجمالي 🌸</p>
         <p className="mb-4 text-xs text-ink-muted">تتعلّمه ديما من محادثتكِ ويبقى على جهازكِ فقط — حتى تكون ترشيحاتها أدق.</p>
@@ -242,7 +242,7 @@ export function AdvisorChat({ variant, onClose }: { variant: "page" | "panel"; o
               </button>
             ))}
           </div>
-          <button onClick={compareNow} disabled={comparing.length < 2} className="btn h-8 flex-none bg-ink px-3 text-xs text-white">
+          <button onClick={compareNow} disabled={comparing.length < 2} className="btn h-8 flex-none bg-night px-3 text-xs text-white">
             قارني ({comparing.length})
           </button>
         </div>
@@ -272,7 +272,7 @@ export function AdvisorChat({ variant, onClose }: { variant: "page" | "panel"; o
         <p className="mt-1.5 text-center text-[10.5px] text-ink-muted">ديما تتعلّم من محادثاتكِ — ترشيحاتها من منتجات المتجر الأصلية فقط</p>
       </div>
 
-      {noticeShown && <p className="absolute inset-x-0 top-[72px] mx-auto w-fit rounded-full bg-ink px-4 py-2 text-xs font-bold text-white shadow-float animate-fade-up">✓ {noticeShown}</p>}
+      {noticeShown && <p className="absolute inset-x-0 top-[72px] mx-auto w-fit rounded-full bg-night px-4 py-2 text-xs font-bold text-white shadow-float animate-fade-up">✓ {noticeShown}</p>}
       {showProfile && <ProfileSheet profile={profile} onClose={() => setShowProfile(false)} />}
     </div>
   );

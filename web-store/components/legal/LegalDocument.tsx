@@ -53,7 +53,7 @@ export function LegalDocument({ lang, variant, sections }: { lang: LegalLang; va
               )}
             </section>
           ))}
-          <div className="card bg-ink p-6 text-white md:p-8">
+          <div className="card bg-night p-6 text-white md:p-8">
             <h2 className="text-xl font-extrabold">{c.contactTitle}</h2>
             <p className="mt-2 opacity-80">{c.contactBody}</p>
             <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-4 inline-block rounded-full bg-white px-5 py-2.5 font-bold text-ink" dir="ltr">

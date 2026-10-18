@@ -85,7 +85,7 @@ export function CouponBox() {
             aria-label="كود الخصم"
           />
         </div>
-        <button onClick={apply} disabled={!text.trim() || busy} className="btn h-11 bg-ink px-5 text-sm text-white">
+        <button onClick={apply} disabled={!text.trim() || busy} className="btn h-11 bg-night px-5 text-sm text-white">
           {busy ? "…" : "تطبيق"}
         </button>
       </div>

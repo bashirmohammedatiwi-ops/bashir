@@ -438,7 +438,7 @@ export default function CheckoutPage() {
               <div key={l.key} className="flex items-center gap-3">
                 <span className="relative h-14 w-14 flex-none rounded-xl border border-hairline bg-white p-1">
                   {l.image && <img src={l.image} alt="" className="h-full w-full object-contain" />}
-                  <span className="absolute -left-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-[10px] font-bold text-white">{l.quantity}</span>
+                  <span className="absolute -left-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-night px-1 text-[10px] font-bold text-white">{l.quantity}</span>
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="line-clamp-1 text-sm font-semibold">{l.name}</span>

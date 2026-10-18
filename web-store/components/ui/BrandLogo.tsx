@@ -6,7 +6,9 @@ const RO = ["#E7A6C4", "#C2508A"];
 const INK = ["#3B2650", "#22162F"];
 
 function Grad({ id, colors, rect }: { id: string; colors: string[]; rect?: [number, number, number, number] }) {
-  const stops = colors.map((c, i) => <stop key={c} offset={i / (colors.length - 1)} stopColor={c} />);
+  // الحبر الداكن يصير فاتحاً في الوضع الليلي (متغيرات --logo-ink-*).
+  const vars = colors === INK ? ["var(--logo-ink-a, #3B2650)", "var(--logo-ink-b, #22162F)"] : null;
+  const stops = colors.map((c, i) => <stop key={c} offset={i / (colors.length - 1)} style={{ stopColor: vars ? vars[i] : c }} />);
   return rect ? (
     <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={rect[0]} y1={rect[1]} x2={rect[2]} y2={rect[3]}>
       {stops}

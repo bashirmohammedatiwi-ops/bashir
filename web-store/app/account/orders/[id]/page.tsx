@@ -35,7 +35,12 @@ export default function OrderPage() {
   const openCart = useUi((s) => s.openCart);
   const [busy, setBusy] = useState<"" | "cancel" | "pay">("");
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const q = useQuery({ queryKey: ["order", id], queryFn: () => api<Order>(`/orders/${id}`) });
+  // حالة الطلب تتحدّث وحدها كل دقيقة ما دام في الطريق.
+  const q = useQuery({
+    queryKey: ["order", id],
+    queryFn: () => api<Order>(`/orders/${id}`),
+    refetchInterval: (query) => (["DELIVERED", "CANCELLED", "REFUNDED"].includes(query.state.data?.status ?? "") ? false : 60_000),
+  });
   const o = q.data;
 
   if (q.isLoading) return <Skeleton className="h-[560px]" />;
@@ -270,7 +275,7 @@ export default function OrderPage() {
       </div>
 
       {confirmCancel && (
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-ink/40 p-4" onClick={() => setConfirmCancel(false)}>
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-night/40 p-4" onClick={() => setConfirmCancel(false)}>
           <div className="card w-full max-w-sm p-6 text-center animate-fade-up" onClick={(e) => e.stopPropagation()}>
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-rose-soft text-sale">
               <Icon name="close" size={26} />

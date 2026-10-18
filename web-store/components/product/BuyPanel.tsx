@@ -14,6 +14,7 @@ import { brandHref } from "@/lib/links";
 import { listedShades } from "@/lib/media";
 import { useAuth } from "@/lib/stores/auth";
 import { useCart } from "@/lib/stores/cart";
+import { useCompare } from "@/lib/stores/compare";
 import { toast, useUi } from "@/lib/stores/ui";
 import type { Product, Shade } from "@/lib/types";
 import { Icon } from "../ui/Icon";
@@ -36,6 +37,10 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
   const toggleWish = useWishToggle();
   const liked = !!wish.data?.some((x) => x.id === p.id);
   const user = useAuth((s) => s.user);
+  const toggleCompare = useCompare((s) => s.toggle);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const comparing = useCompare((s) => s.items.some((x) => x.id === p.id)) && mounted;
   const alerts = useRestockAlerts();
   const toggleAlert = useRestockToggle();
   const watching = alerts.ids.includes(p.id);
@@ -144,7 +149,7 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
                     aria-label={s.name}
                   >
                     {on && <Icon name="check" size={16} className="absolute inset-0 m-auto text-white drop-shadow" stroke={3} />}
-                    {soldOut && <span className="absolute inset-0 m-auto h-px w-full rotate-45 bg-ink/60" />}
+                    {soldOut && <span className="absolute inset-0 m-auto h-px w-full rotate-45 bg-night/60" />}
                   </button>
                 );
               })}
@@ -224,9 +229,14 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
           </div>
         ))}
       </div>
-      <button onClick={share} className="flex items-center gap-2 text-sm font-bold text-ink-soft hover:text-accent-dark">
-        <Icon name="copy" size={16} /> مشاركة المنتج
-      </button>
+      <div className="flex flex-wrap items-center gap-5">
+        <button onClick={share} className="flex items-center gap-2 text-sm font-bold text-ink-soft hover:text-accent-dark">
+          <Icon name="copy" size={16} /> مشاركة المنتج
+        </button>
+        <button onClick={() => toggleCompare(p)} className={clsx("flex items-center gap-2 text-sm font-bold hover:text-accent-dark", comparing ? "text-accent-dark" : "text-ink-soft")}>
+          ⚖️ {comparing ? "في المقارنة ✓" : "قارني مع منتج آخر"}
+        </button>
+      </div>
     </div>
   );
 }

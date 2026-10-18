@@ -77,7 +77,7 @@ export function AdvProductCard({ p, wide }: { p: AdvProduct; wide?: boolean }) {
             <MatchRing value={p.match} />
           </span>
         )}
-        {!p.inStock && <span className="absolute inset-x-0 bottom-0 bg-ink/70 py-1 text-center text-xs font-bold text-white">نفد حالياً</span>}
+        {!p.inStock && <span className="absolute inset-x-0 bottom-0 bg-night/70 py-1 text-center text-xs font-bold text-white">نفد حالياً</span>}
       </Link>
       <div className="flex flex-1 flex-col p-3">
         <p className="truncate text-[11px] font-bold uppercase text-accent-dark">{brandLabel(p.brand)}</p>
@@ -153,7 +153,7 @@ export function AdvProductCard({ p, wide }: { p: AdvProduct; wide?: boolean }) {
           </div>
         </div>
       </div>
-      {comparing && <span className="absolute right-2 top-10 rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold text-white">⚖️ للمقارنة</span>}
+      {comparing && <span className="absolute right-2 top-10 rounded-full bg-night px-2 py-0.5 text-[10px] font-bold text-white">⚖️ للمقارنة</span>}
     </div>
   );
 }

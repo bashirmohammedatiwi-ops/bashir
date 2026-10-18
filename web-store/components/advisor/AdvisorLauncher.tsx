@@ -67,7 +67,7 @@ export function AdvisorLauncher() {
         </div>
       )}
       <div className={clsx("fixed inset-0 z-[70] transition", open ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={!open}>
-        <div onClick={() => setOpen(false)} className={clsx("absolute inset-0 bg-ink/30 transition-opacity md:bg-ink/10", open ? "opacity-100" : "opacity-0")} />
+        <div onClick={() => setOpen(false)} className={clsx("absolute inset-0 bg-night/30 transition-opacity md:bg-night/10", open ? "opacity-100" : "opacity-0")} />
         <aside
           role="dialog"
           aria-label="ديما — مستشارتكِ الجمالية"

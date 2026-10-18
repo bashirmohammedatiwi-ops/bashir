@@ -11,20 +11,21 @@ import { mediaUrl } from "@/lib/media";
 import { useAuth } from "@/lib/stores/auth";
 import { cartCount, useCart } from "@/lib/stores/cart";
 import { useUi } from "@/lib/stores/ui";
-import { worldVars } from "@/lib/theme";
+import { themeCss } from "@/lib/theme";
 import type { Category, World } from "@/lib/types";
 import { Icon } from "../ui/Icon";
 import { SearchBox } from "./SearchBox";
 import { BrandLogo } from "../ui/BrandLogo";
 import { HeaderBadges } from "./HeaderBadges";
+import { ThemePicker, ThemeToggle } from "./ThemeToggle";
 
 /** اختيار العالم: يُحفظ في كوكي ليرسمه السيرفر، والألوان تتبدل فوراً. */
 export function useSwitchWorld() {
   const router = useRouter();
   return (w: World) => {
     document.cookie = `world=${w.slug}; path=/; max-age=31536000; samesite=lax`;
-    const vars = worldVars(w);
-    for (const [k, v] of Object.entries(vars)) document.body.style.setProperty(k, v);
+    const tag = document.getElementById("world-theme");
+    if (tag) tag.textContent = themeCss(w);
     router.refresh();
   };
 }
@@ -105,6 +106,7 @@ export function SiteHeader({
               <Icon name="user" />
               <span className="max-w-[9rem] truncate">{hydrated && user ? user.name?.split(" ")[0] || "حسابي" : "دخول"}</span>
             </Link>
+            <ThemeToggle className="hidden md:block" />
             <HeaderBadges />
             <button onClick={() => openCart(true)} className="relative rounded-full p-2.5 text-ink hover:bg-accent-light" aria-label="السلة">
               <Icon name="bag" />
@@ -138,7 +140,7 @@ export function SiteHeader({
                   onClick={() => switchWorld(w)}
                   className={clsx(
                     "flex flex-none items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition",
-                    current?.id === w.id ? "bg-ink text-white" : "text-ink-soft hover:bg-accent-light hover:text-ink",
+                    current?.id === w.id ? "bg-night text-white" : "text-ink-soft hover:bg-accent-light hover:text-ink",
                   )}
                 >
                   <span className="h-2.5 w-2.5 rounded-full ring-2 ring-white/70" style={{ background: w.accentColor }} />
@@ -233,7 +235,7 @@ function MobileMenu({ worlds, current, categories, onWorld }: { worlds: World[];
   const user = useAuth((s) => s.user);
   return (
     <div className={clsx("fixed inset-0 z-[55] lg:hidden", open ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={!open}>
-      <div onClick={close} className={clsx("absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity", open ? "opacity-100" : "opacity-0")} />
+      <div onClick={close} className={clsx("absolute inset-0 bg-night/40 backdrop-blur-sm transition-opacity", open ? "opacity-100" : "opacity-0")} />
       <aside
         className={clsx(
           "absolute inset-y-0 right-0 flex w-[86%] max-w-sm flex-col bg-surface shadow-float transition-transform duration-300",
@@ -264,7 +266,7 @@ function MobileMenu({ worlds, current, categories, onWorld }: { worlds: World[];
                   onWorld(w);
                   close();
                 }}
-                className={clsx("flex items-center gap-2 rounded-2xl border px-3 py-3 text-sm font-bold", current?.id === w.id ? "border-transparent bg-ink text-white" : "border-hairline")}
+                className={clsx("flex items-center gap-2 rounded-2xl border px-3 py-3 text-sm font-bold", current?.id === w.id ? "border-transparent bg-night text-white" : "border-hairline")}
               >
                 <span className="h-3 w-3 rounded-full" style={{ background: w.accentColor }} /> {w.nameAr}
               </button>
@@ -307,6 +309,10 @@ function MobileMenu({ worlds, current, categories, onWorld }: { worlds: World[];
                 <Icon name={icon as never} size={20} className="text-accent-dark" /> {label}
               </Link>
             ))}
+          </div>
+          <div className="mt-5">
+            <p className="mb-2 px-1 text-xs font-bold text-ink-muted">المظهر</p>
+            <ThemePicker />
           </div>
         </div>
       </aside>

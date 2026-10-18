@@ -33,7 +33,7 @@ export function AddPackage({ pack, compact }: { pack: BeautyPackage; compact?: b
         {pack.inStock ? `أضيفي ${pack.isRoutine ? "الروتين" : "الباقة"} • ${formatPrice(pack.price)}` : "غير متوفرة حالياً"}
       </button>
       {open && (
-        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 md:items-center md:p-4" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-night/40 md:items-center md:p-4" onClick={() => setOpen(false)}>
           <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-[32px] bg-surface p-6 animate-fade-up md:rounded-[32px]" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-extrabold">اختاري التدرّجات</h3>
             <p className="text-sm text-ink-muted">بعض منتجات الباقة لها ألوان — اختاري المناسب لكِ</p>

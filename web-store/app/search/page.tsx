@@ -3,11 +3,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { PageHero } from "@/components/catalog/PageHero";
 import { CategoryCircles } from "@/components/home/Sections";
+import { DeemaButton } from "@/components/advisor/DeemaButton";
 import { ListingView } from "@/components/product/ListingView";
 import { Icon } from "@/components/ui/Icon";
 import { serverTry } from "@/lib/api";
 import { getCategories } from "@/lib/data";
 import { POPULAR_SEARCHES } from "@/lib/popular";
+import { brandLabel } from "@/lib/format";
+import { brandHref, categoryHref } from "@/lib/links";
 import type { Paged, Product } from "@/lib/types";
 
 type Resp = Paged<Product> & { corrected?: string | null; understood?: string[] };
@@ -45,7 +48,12 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
       </div>
     );
   }
-  const initial = await serverTry<Resp>(`/search?q=${encodeURIComponent(q)}&page=1&limit=24&sort=relevance`, { revalidate: 30 });
+  const [initial, instant] = await Promise.all([
+    serverTry<Resp>(`/search?q=${encodeURIComponent(q)}&page=1&limit=24&sort=relevance`, { revalidate: 30 }),
+    serverTry<{ brands?: { id: string; name: string; slug: string; count: number }[]; categories?: { id: string; name: string; slug: string; count: number }[] }>(`/search/instant?q=${encodeURIComponent(q)}`, { revalidate: 60 }),
+  ]);
+  const brands = (instant?.brands ?? []).slice(0, 4);
+  const cats = (instant?.categories ?? []).slice(0, 6);
   const total = initial?.meta?.total ?? 0;
   return (
     <div className="animate-fade-up">
@@ -72,6 +80,26 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
           )}
         </div>
       </PageHero>
+      {(brands.length > 0 || cats.length > 0) && (
+        <section className="container pt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {brands.map((b) => (
+              <Link key={b.id} href={brandHref(b.slug)} className="flex items-center gap-2 rounded-2xl bg-gradient-to-l from-accent-light to-surface px-4 py-2.5 shadow-card ring-1 ring-accent/20 hover:ring-accent/50">
+                <Icon name="sparkle" size={16} className="text-accent-dark" />
+                <span className="text-sm">
+                  كل منتجات <b>{brandLabel(b.name)}</b>
+                </span>
+                <span className="text-xs text-ink-muted">{b.count}</span>
+              </Link>
+            ))}
+            {cats.map((c) => (
+              <Link key={c.id} href={categoryHref(c.slug)} className="chip">
+                {c.name} <span className="text-xs opacity-60">{c.count}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="container py-5 md:py-6">
         {total === 0 ? (
           <div className="card mx-auto max-w-2xl p-8 text-center md:p-12">
@@ -82,6 +110,11 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
             <p className="mt-2 text-ink-muted">جربي كلمة أبسط أو اسم البراند — أو اختاري من عمليات البحث الشائعة:</p>
             <div className="mt-5 flex justify-center">
               <Popular />
+            </div>
+            <div className="mt-6 flex justify-center">
+              <DeemaButton q={q} className="flex h-11 items-center gap-2 rounded-full bg-accent-light px-5 text-sm font-bold text-accent-dark">
+                اسألي ديما عن «{q}» — تفهم الوصف وتقترح بدائل
+              </DeemaButton>
             </div>
           </div>
         ) : (

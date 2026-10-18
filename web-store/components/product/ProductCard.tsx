@@ -9,6 +9,8 @@ import { useWishlist, useWishToggle } from "@/lib/hooks/wishlist";
 import { productHref } from "@/lib/links";
 import { listedShades, mediaUrl, productCover } from "@/lib/media";
 import { useCart } from "@/lib/stores/cart";
+import { useCompare } from "@/lib/stores/compare";
+import { useHydrated } from "../Providers";
 import { toast, useUi } from "@/lib/stores/ui";
 import type { Product } from "@/lib/types";
 import { Icon } from "../ui/Icon";
@@ -21,6 +23,9 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
   const add = useCart((s) => s.add);
   const openCart = useUi((s) => s.openCart);
   const openQuickView = useUi((s) => s.openQuickView);
+  const toggleCompare = useCompare((s) => s.toggle);
+  const hydrated = useHydrated();
+  const comparing = useCompare((s) => s.items.some((x) => x.id === p.id)) && hydrated;
   const wish = useWishlist();
   const toggleWish = useWishToggle();
   const liked = !!wish.data?.some((x) => x.id === p.id);
@@ -58,9 +63,9 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
         {second && <img src={second} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-contain p-4 opacity-0 transition duration-500 group-hover:opacity-100" />}
         <div className="absolute right-3 top-3 flex flex-col items-start gap-1">
           <DiscountBadge percent={p.discountPercent} />
-          {p.isNew && <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-white">جديد</span>}
+          {p.isNew && <span className="rounded-full bg-night px-2 py-0.5 text-[11px] font-bold text-white">جديد</span>}
         </div>
-        {out && <span className="absolute inset-x-3 bottom-3 rounded-full bg-ink/80 py-1.5 text-center text-xs font-bold text-white backdrop-blur">نفدت الكمية</span>}
+        {out && <span className="absolute inset-x-3 bottom-3 rounded-full bg-night/80 py-1.5 text-center text-xs font-bold text-white backdrop-blur">نفدت الكمية</span>}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -73,6 +78,20 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
           aria-label="المفضلة"
         >
           <Icon name="heart" size={18} fill={liked ? "currentColor" : "none"} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            toggleCompare(p);
+          }}
+          className={clsx(
+            "absolute left-3 top-14 hidden h-9 w-9 place-items-center rounded-full shadow-sm backdrop-blur transition hover:scale-110 md:grid",
+            comparing ? "bg-accent-dark text-white" : "bg-white/90 text-ink-soft opacity-0 group-hover:opacity-100",
+          )}
+          aria-label={comparing ? "إزالة من المقارنة" : "أضيفي للمقارنة"}
+          title={comparing ? "في المقارنة" : "قارني"}
+        >
+          <span className="text-sm">⚖️</span>
         </button>
         <button
           onClick={(e) => {
