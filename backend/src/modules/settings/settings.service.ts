@@ -26,6 +26,15 @@ export const DEFAULT_STORE_SETTINGS = {
   pickupEnabled: true,
   pickupAddress: "فرع الكرادة — شارع أبو نؤاس، بغداد",
   pickupHours: "10:00 – 22:00 يومياً",
+  // تحديث التطبيق: أحدث إصدار في المتجر وأقل إصدار مسموح (أقدم منه = تحديث إجباري).
+  appUpdateEnabled: true,
+  appLatestAndroid: "1.0.0",
+  appMinAndroid: "1.0.0",
+  appStoreUrlAndroid: "https://play.google.com/store/apps/details?id=com.deemaalhayat.app",
+  appLatestIos: "1.0.0",
+  appMinIos: "1.0.0",
+  appStoreUrlIos: "",
+  appUpdateMessage: "نسخة جديدة من ديما الحياة بمزايا وتحسينات — حدّثيها للحصول على أفضل تجربة.",
   // إعدادات ظهور واجهة المتجر (تطبيق الهاتف)
   hideEmptyBrands: false,
   hideEmptyCategories: false,

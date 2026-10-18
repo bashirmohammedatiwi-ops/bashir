@@ -1,3 +1,4 @@
+import 'features/update/app_update.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,7 +135,10 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
           builder: (context, child) => ResponsiveApp(
             child: Directionality(
               textDirection: direction,
-              child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+              // فحص تحديث التطبيق (إجباري/اختياري) من إعدادات لوحة التحكم.
+              child: AppUpdateGate(
+                child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+              ),
             ),
           ),
         ),

@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Form, Input, InputNumber, Space, Switch, Tabs, message } from "antd";
+import { Alert, Button, Card, Divider, Form, Input, InputNumber, Space, Switch, Tabs, message } from "antd";
 import { useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { mutations, queries } from "@/lib/queries";
@@ -245,6 +245,71 @@ export default function SettingsPage() {
                       </Form.Item>
                       <Form.Item name="flashSaleEndsAt" label="انتهاء العرض السريع (ISO)">
                         <Input placeholder="2026-12-31T23:59:59.000Z" />
+                      </Form.Item>
+                    </>
+                  ),
+                },
+                {
+                  key: "app-update",
+                  label: "تحديث التطبيق",
+                  children: (
+                    <>
+                      <Alert
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                        message="كيف يعمل؟"
+                        description={
+                          <div style={{ lineHeight: 1.9 }}>
+                            <div>
+                              <b>آخر إصدار</b>: حين ترفعين نسخة جديدة للمتجر وتُنشر، اكتبي رقمها هنا — تظهر للزبونات
+                              بطاقة «يوجد تحديث جديد» يمكنهن تأجيلها.
+                            </div>
+                            <div>
+                              <b>أقل إصدار مسموح</b>: كل نسخة أقدم منه تتوقف عن العمل وتعرض شاشة «التحديث مطلوب»
+                              بزر يفتح المتجر — استخدميه فقط عند تغيير مهم (دفع، أمان).
+                            </div>
+                            <div>⚠️ لا ترفعي الأرقام قبل أن تظهر النسخة فعلاً في المتجر، وإلا لن تجد الزبونة ما تحدّثه.</div>
+                          </div>
+                        }
+                      />
+                      <Form.Item name="appUpdateEnabled" label="تفعيل تنبيه التحديث" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item name="appUpdateMessage" label="رسالة التحديث">
+                        <Input.TextArea rows={2} maxLength={200} showCount />
+                      </Form.Item>
+                      <Divider titlePlacement="start">🤖 أندرويد (Google Play)</Divider>
+                      <Space.Compact block>
+                        <Form.Item name="appLatestAndroid" label="آخر إصدار في المتجر" style={{ flex: 1 }} extra="مثال: 1.0.1">
+                          <Input placeholder="1.0.1" dir="ltr" />
+                        </Form.Item>
+                        <Form.Item
+                          name="appMinAndroid"
+                          label="أقل إصدار مسموح (إجباري)"
+                          style={{ flex: 1, marginInlineStart: 8 }}
+                        >
+                          <Input placeholder="1.0.0" dir="ltr" />
+                        </Form.Item>
+                      </Space.Compact>
+                      <Form.Item name="appStoreUrlAndroid" label="رابط التطبيق في Google Play">
+                        <Input dir="ltr" placeholder="https://play.google.com/store/apps/details?id=com.deemaalhayat.app" />
+                      </Form.Item>
+                      <Divider titlePlacement="start">🍎 آيفون (App Store)</Divider>
+                      <Space.Compact block>
+                        <Form.Item name="appLatestIos" label="آخر إصدار في المتجر" style={{ flex: 1 }}>
+                          <Input placeholder="1.0.1" dir="ltr" />
+                        </Form.Item>
+                        <Form.Item name="appMinIos" label="أقل إصدار مسموح (إجباري)" style={{ flex: 1, marginInlineStart: 8 }}>
+                          <Input placeholder="1.0.0" dir="ltr" />
+                        </Form.Item>
+                      </Space.Compact>
+                      <Form.Item
+                        name="appStoreUrlIos"
+                        label="رابط التطبيق في App Store"
+                        extra="يظهر في App Store Connect بعد نشر التطبيق — مثل https://apps.apple.com/app/id1234567890. فارغ = لا تنبيه للآيفون."
+                      >
+                        <Input dir="ltr" placeholder="https://apps.apple.com/app/id..." />
                       </Form.Item>
                     </>
                   ),

@@ -639,6 +639,17 @@ class ApiService {
   }
 
   // ---- PACKAGES ----
+  /// هل يوجد تحديث للتطبيق؟ mode: none | soft | force (من إعدادات لوحة التحكم).
+  Future<Map<String, dynamic>> checkAppUpdate({required String platform, required String version}) async {
+    try {
+      final r = await _dio.get('/app/update',
+          queryParameters: {'platform': platform, 'version': version}, options: Options(extra: {'auth': false}));
+      return asMap(_data(r));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   // ---- الباقات والروتين ودليل البشرة ----
   /// صفحة باقة/روتين: المنتجات والخطوات والتوفير، وباقات مشابهة.
   Future<BeautyPackage> getPackage(String idOrSlug) async {

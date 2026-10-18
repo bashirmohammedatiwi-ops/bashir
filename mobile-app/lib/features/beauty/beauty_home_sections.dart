@@ -423,3 +423,57 @@ class PackagesShowcaseSection extends StatelessWidget {
     );
   }
 }
+
+// ─── روتينكِ اليوم (بعد اختبار البشرة) ────────────────────────────────────────
+
+/// لمن أجرت اختبار البشرة: روتين الوقت الحالي (صباحاً/مساءً) المقترح لبشرتها.
+class HomeMyRoutineCard extends ConsumerWidget {
+  const HomeMyRoutineCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(skinProfileProvider);
+    if (profile == null) return const SizedBox.shrink();
+    final match = ref.watch(skinMatchProvider).valueOrNull;
+    if (match == null) return const SizedBox.shrink();
+    final evening = DateTime.now().hour >= 15;
+    final pick = (evening ? match.evening : match.morning) ?? match.morning ?? match.evening;
+    if (pick == null) return const SizedBox.shrink();
+    final t = context.worldTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pick.isEvening ? 'روتينكِ الليلة 🌙' : 'روتينكِ اليوم ☀️',
+                      style: AppText.title2.copyWith(color: t.ink),
+                    ),
+                    Text(
+                      'مختار لبشرتكِ ${profile.skinType.labelAr} ${profile.skinType.emoji}',
+                      style: AppText.caption.copyWith(color: t.inkMuted),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/skin-quiz?result=1'),
+                child: Text('روتيني كامل', style: AppText.label.copyWith(color: t.accentDark)),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: LayoutBuilder(builder: (context, c) => RoutineCard(pack: pick, width: c.maxWidth, height: 214)),
+        ),
+      ],
+    );
+  }
+}

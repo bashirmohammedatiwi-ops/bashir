@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+import '../../beauty/beauty_home_sections.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
@@ -159,6 +160,7 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                           ),
                         const HomeCartReminder(),
                         const HomeCouponsShelf(),
+                        const HomeMyRoutineCard(),
                         const HomePromiseStrip(),
                         const HomeBuyAgainShelf(),
                         const HomeContinueShopping(),

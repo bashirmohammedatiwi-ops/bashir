@@ -1,3 +1,5 @@
+import '../../data/models/beauty.dart';
+import '../beauty/beauty_providers.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/utils/friendly_error.dart';
 import '../catalog/catalog_providers.dart';
@@ -208,6 +210,20 @@ class AccountScreen extends ConsumerWidget {
             title: s.isAr ? 'دليل البشرة' : 'Skin guide',
             subtitle: s.isAr ? 'اختبار البشرة، المشاكل وحلولها' : 'Skin quiz, concerns and fixes',
             onTap: () => context.push('/skin-guide'),
+          ),
+          // نتيجة اختبار البشرة المحفوظة — أو دعوة لإجرائه.
+          Consumer(
+            builder: (context, ref, _) {
+              final p = ref.watch(skinProfileProvider);
+              return ProfileMenuTile(
+                icon: Icons.face_retouching_natural_outlined,
+                title: s.isAr ? 'ملف بشرتي' : 'My skin profile',
+                subtitle: p == null
+                    ? (s.isAr ? 'اختبار سريع يحدد نوع بشرتكِ وروتينها' : 'A quick quiz for your skin type')
+                    : (s.isAr ? 'بشرة ${p.skinType.labelAr} ${p.skinType.emoji} — روتينكِ جاهز' : '${p.skinType.labelEn} skin — your routine is ready'),
+                onTap: () => context.push(p == null ? '/skin-quiz' : '/skin-quiz?result=1'),
+              );
+            },
           ),
           ProfileMenuTile(
             icon: Icons.card_giftcard_rounded,
