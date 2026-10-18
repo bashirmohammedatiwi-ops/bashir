@@ -18,7 +18,7 @@ export function WorldStrip({ worlds, current }: { worlds: World[]; current: Worl
             key={w.id}
             onClick={() => switchWorld(w)}
             className={clsx(
-              "group relative flex w-[38%] flex-none snap-start items-center gap-3 overflow-hidden rounded-3xl p-3 text-start transition md:w-auto",
+              "group relative flex w-[60%] flex-none snap-start sm:w-[36%] items-center gap-3 overflow-hidden rounded-3xl p-3 text-start transition md:w-auto",
               on ? "text-white shadow-lift" : "bg-surface text-ink shadow-card hover:-translate-y-0.5",
             )}
             style={on ? { background: `linear-gradient(135deg, ${w.accentColor}, ${w.accentColor}cc)` } : undefined}
