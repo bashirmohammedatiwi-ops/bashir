@@ -4,6 +4,9 @@ import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { BrandStrip, CategoryCircles, HomeSections } from "@/components/home/Sections";
 import { WorldStrip } from "@/components/home/WorldStrip";
 import { RecentlyViewed } from "@/components/product/RecentlyViewed";
+import { BuyAgain } from "@/components/account/BuyAgain";
+import { ForYourSkin } from "@/components/home/ForYourSkin";
+import { FlashSaleBand } from "@/components/home/FlashSaleBand";
 import { Icon } from "@/components/ui/Icon";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { currentWorld, getHome, getWorlds } from "@/lib/data";
@@ -58,6 +61,12 @@ export default async function HomePage({ searchParams }: { searchParams: { world
           <CategoryCircles categories={feed.categories} />
         </section>
       )}
+
+      {feed.flashSale?.endsAt && !feed.sections.some((x) => x.type === "FLASH_SALE") && <FlashSaleBand endsAt={feed.flashSale.endsAt} products={feed.flashSale.products ?? []} />}
+
+      <BuyAgain />
+
+      <ForYourSkin />
 
       <CouponsShelf world={world?.slug} />
 

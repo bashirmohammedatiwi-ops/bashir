@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { useSpeech } from "@/lib/hooks/speech";
+import { BarcodeScanner } from "../search/BarcodeScanner";
 import { formatNumber } from "@/lib/format";
 import { brandHref, categoryHref, productHref } from "@/lib/links";
 import { Icon } from "../ui/Icon";
@@ -45,6 +47,11 @@ export function SearchBox({ autoFocus, onDone, className }: { autoFocus?: boolea
   const [recent, setRecent] = useState<string[]>([]);
   const [active, setActive] = useState(-1);
   const box = useRef<HTMLDivElement>(null);
+  const [scan, setScan] = useState(false);
+  const speech = useSpeech((t) => {
+    setQ(t);
+    go(t);
+  });
   const seq = useRef(0);
 
   useEffect(() => setRecent(readRecent()), [open]);
@@ -86,6 +93,7 @@ export function SearchBox({ autoFocus, onDone, className }: { autoFocus?: boolea
 
   return (
     <div ref={box} className={clsx("relative", className)}>
+      {scan && <BarcodeScanner onClose={() => setScan(false)} />}
       <form
         role="search"
         onSubmit={(e) => {
@@ -112,14 +120,24 @@ export function SearchBox({ autoFocus, onDone, className }: { autoFocus?: boolea
           type="search"
           enterKeyHint="search"
           placeholder="ابحثي عن منتج، براند، أو قسم…"
-          className="h-12 w-full rounded-full border border-transparent bg-accent-light/80 pe-24 ps-12 text-[15px] outline-none transition placeholder:text-ink-muted focus:border-accent/40 focus:bg-surface focus:shadow-card"
+          className="h-12 w-full rounded-full border border-transparent bg-accent-light/80 pe-[150px] ps-12 text-[15px] outline-none transition placeholder:text-ink-muted focus:border-accent/40 focus:bg-surface focus:shadow-card"
           aria-label="بحث"
         />
-        {q && (
-          <button type="button" onClick={() => setQ("")} className="absolute left-14 top-1/2 -translate-y-1/2 rounded-full p-1 text-ink-muted hover:text-ink" aria-label="مسح">
-            <Icon name="close" size={16} />
+        <span className="absolute left-[72px] top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+          {q && (
+            <button type="button" onClick={() => setQ("")} className="rounded-full p-1.5 text-ink-muted hover:text-ink" aria-label="مسح">
+              <Icon name="close" size={16} />
+            </button>
+          )}
+          {speech.supported && (
+            <button type="button" onClick={speech.toggle} className={clsx("rounded-full p-1.5 transition", speech.listening ? "animate-pulse bg-sale text-white" : "text-ink-soft hover:text-accent-dark")} aria-label="البحث بالصوت" title="البحث بالصوت">
+              <Icon name="mic" size={18} />
+            </button>
+          )}
+          <button type="button" onClick={() => setScan(true)} className="rounded-full p-1.5 text-ink-soft hover:text-accent-dark md:hidden" aria-label="مسح باركود" title="مسح باركود">
+            <Icon name="scan" size={18} />
           </button>
-        )}
+        </span>
         <button
           type="submit"
           className="absolute left-1.5 top-1/2 h-9 -translate-y-1/2 rounded-full bg-accent-dark px-4 text-sm font-bold text-white transition hover:brightness-110"

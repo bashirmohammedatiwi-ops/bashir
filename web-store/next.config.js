@@ -23,7 +23,6 @@ const nextConfig = {
       { source: "/notifications", destination: "/account/notifications", permanent: false },
       { source: "/loyalty", destination: "/account/points", permanent: false },
       { source: "/categories-tab", destination: "/categories", permanent: false },
-      { source: "/advisor", destination: "/search", permanent: false },
       { source: "/register", destination: "/signup", permanent: false },
     ];
   },

@@ -30,7 +30,7 @@ export function Reviews({ product }: { product: Product }) {
     mutationFn: () => api("/reviews", { method: "POST", body: { productId: product.id, rating, comment } }),
     onSuccess: () => {
       setComment("");
-      toast({ text: "شكراً لتقييمكِ 💜 — يظهر بعد المراجعة" });
+      toast({ text: "شكراً لتقييمكِ 💜 — نُشر رأيكِ", tone: "success" });
       qc.invalidateQueries({ queryKey: ["reviews", product.id] });
     },
     onError: (e) => toast({ text: (e as Error).message, tone: "error" }),

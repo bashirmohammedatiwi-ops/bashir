@@ -2,11 +2,12 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLoyaltyRules } from "../Providers";
 import { FreeShippingBar, QtyStepper } from "../cart/CartDrawer";
 import { api } from "@/lib/api";
 import { arPoints, brandLabel, cartSubtotalSafe, formatPrice, productName } from "./buyHelpers";
+import { useRestockAlerts, useRestockToggle } from "@/lib/hooks/alerts";
 import { useDeliveryHint } from "@/lib/hooks/delivery";
 import { useWishlist, useWishToggle } from "@/lib/hooks/wishlist";
 import { brandHref } from "@/lib/links";
@@ -18,6 +19,7 @@ import type { Product, Shade } from "@/lib/types";
 import { Icon } from "../ui/Icon";
 import { Price } from "../ui/Price";
 import { rememberProduct } from "./RecentlyViewed";
+import { AskDeema } from "../advisor/AskDeema";
 
 export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: (s: Shade | null) => void }) {
   const router = useRouter();
@@ -34,9 +36,22 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
   const toggleWish = useWishToggle();
   const liked = !!wish.data?.some((x) => x.id === p.id);
   const user = useAuth((s) => s.user);
-  const [watching, setWatching] = useState(false);
+  const alerts = useRestockAlerts();
+  const toggleAlert = useRestockToggle();
+  const watching = alerts.ids.includes(p.id);
 
   useEffect(() => rememberProduct(p), [p]);
+
+  // شريط شراء ثابت على الهاتف حين يختفي زر الإضافة عن الشاشة.
+  const buyRow = useRef<HTMLDivElement>(null);
+  const [sticky, setSticky] = useState(false);
+  useEffect(() => {
+    const el = buyRow.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setSticky(!e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const price = shade?.price ?? p.price;
   const stock = shade ? shade.stock : p.stock;
@@ -141,25 +156,18 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
           <div className="space-y-3">
             <p className="rounded-2xl bg-canvas p-3 text-center font-bold text-ink-soft">نفدت الكمية حالياً</p>
             <button
-              onClick={async () => {
+              onClick={() => {
                 if (!user) return router.push(`/signin?next=${encodeURIComponent(location.pathname)}`);
-                try {
-                  await api(`/alerts/restock/${p.id}`, { method: "POST" });
-                  setWatching(true);
-                  toast({ text: "سنعلمكِ فور توفّره 🔔" });
-                } catch (e) {
-                  toast({ text: (e as Error).message, tone: "error" });
-                }
+                toggleAlert.mutate({ id: p.id, on: !watching });
               }}
-              className="btn-soft w-full"
-              disabled={watching}
+              className={clsx("w-full", watching ? "btn-ghost" : "btn-soft")}
             >
-              <Icon name="bell" size={18} /> {watching ? "سننبّهكِ عند التوفّر" : "أعلميني عند التوفّر"}
+              <Icon name="bell" size={18} /> {watching ? "سننبّهكِ عند التوفّر — إلغاء التنبيه" : "أعلميني عند التوفّر"}
             </button>
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-3">
+            <div ref={buyRow} className="flex items-center gap-3">
               <QtyStepper value={qty} min={1} max={stock > 0 ? stock : 99} onChange={setQty} />
               <button onClick={() => doAdd()} className="btn-primary flex-1">
                 <Icon name="bag" size={19} /> {needShade ? "اختاري اللون" : "أضيفي للسلة"}
@@ -189,6 +197,20 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
           <FreeShippingBar subtotal={cartSubtotalSafe(lines, p.id, price * qty)} />
         </div>
       </div>
+
+      <AskDeema productId={p.id} />
+
+      {sticky && !out && (
+        <div className="fixed inset-x-3 bottom-[88px] z-[44] flex items-center gap-3 rounded-[24px] border border-hairline bg-surface/95 p-2.5 shadow-float backdrop-blur animate-fade-up lg:hidden">
+          <div className="min-w-0 flex-1 ps-2">
+            <p className="line-clamp-1 text-xs text-ink-muted">{shade ? shade.name : productName(p)}</p>
+            <p className="font-extrabold tabular-nums">{formatPrice(price * qty)}</p>
+          </div>
+          <button onClick={() => doAdd()} className="btn-primary h-11 px-5 text-sm">
+            <Icon name="bag" size={17} /> {needShade ? "اختاري اللون" : "أضيفي للسلة"}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold text-ink-soft">
         {[

@@ -151,7 +151,7 @@ export default function OrderPage() {
           <p className="mt-4 rounded-2xl bg-rose-soft px-4 py-3 text-sm font-bold text-sale">تم إلغاء هذا الطلب. يمكنكِ إعادة طلب المنتجات بضغطة واحدة.</p>
         )}
 
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="no-print mt-6 flex flex-wrap gap-2">
           {unpaidCard && (
             <button onClick={pay} disabled={!!busy} className="btn-primary h-11">
               <Icon name="shield" size={18} /> {busy === "pay" ? "…" : `ادفعي الآن ${formatPrice(o.total)}`}
@@ -165,6 +165,9 @@ export default function OrderPage() {
               <Icon name="chat" size={18} /> تواصلي معنا
             </a>
           )}
+          <button onClick={() => window.print()} className="btn-ghost">
+            <Icon name="copy" size={18} /> طباعة الفاتورة
+          </button>
           {canCancel(o.status) && (
             <button onClick={() => setConfirmCancel(true)} className="btn-ghost text-sale">
               إلغاء الطلب
@@ -172,6 +175,26 @@ export default function OrderPage() {
           )}
         </div>
       </div>
+
+      {o.status === "DELIVERED" && o.items.some((it) => it.product) && (
+        <div className="card flex flex-wrap items-center gap-3 bg-gradient-to-l from-amber-50 to-surface p-4">
+          <span className="text-3xl">⭐</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-extrabold">وصلكِ الطلب — شنو رأيكِ؟</p>
+            <p className="text-xs text-ink-muted">تقييمكِ يساعد غيركِ يختار، ويساعدنا نحسّن</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {o.items
+              .filter((it) => it.product)
+              .slice(0, 3)
+              .map((it) => (
+                <Link key={it.id} href={`${productHref(it.product!.slug)}#reviews`} className="flex items-center gap-2 rounded-full bg-surface py-1 pe-3 ps-1 text-xs font-bold shadow-card hover:text-accent-dark">
+                  <img src={productCover(it.product!, "thumb")} alt="" className="h-7 w-7 rounded-full object-contain" /> قيّميه
+                </Link>
+              ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[1fr_340px]">
         <div className="card p-5 md:p-6">

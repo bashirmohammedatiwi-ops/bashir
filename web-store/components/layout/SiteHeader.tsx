@@ -15,6 +15,7 @@ import { worldVars } from "@/lib/theme";
 import type { Category, World } from "@/lib/types";
 import { Icon } from "../ui/Icon";
 import { SearchBox } from "./SearchBox";
+import { HeaderBadges } from "./HeaderBadges";
 
 /** اختيار العالم: يُحفظ في كوكي ليرسمه السيرفر، والألوان تتبدل فوراً. */
 export function useSwitchWorld() {
@@ -107,9 +108,7 @@ export function SiteHeader({
               <Icon name="user" />
               <span className="max-w-[9rem] truncate">{hydrated && user ? user.name?.split(" ")[0] || "حسابي" : "دخول"}</span>
             </Link>
-            <Link href="/wishlist" className="hidden rounded-full p-2.5 text-ink hover:bg-accent-light md:block" aria-label="المفضلة">
-              <Icon name="heart" />
-            </Link>
+            <HeaderBadges />
             <button onClick={() => openCart(true)} className="relative rounded-full p-2.5 text-ink hover:bg-accent-light" aria-label="السلة">
               <Icon name="bag" />
               {count > 0 && (
@@ -155,6 +154,7 @@ export function SiteHeader({
               <Link href="/brands" className="rounded-full px-3 py-2 text-ink-soft hover:bg-accent-light hover:text-ink">البراندات</Link>
               <Link href="/skin-guide" className="rounded-full px-3 py-2 text-ink-soft hover:bg-accent-light hover:text-ink">دليل البشرة</Link>
               <Link href="/packages" className="rounded-full px-3 py-2 text-ink-soft hover:bg-accent-light hover:text-ink">الباقات</Link>
+              <Link href="/advisor" className="rounded-full bg-gradient-to-l from-accent-light to-accent-soft px-3 py-2 font-bold text-accent-dark hover:brightness-95">✨ اسألي ديما</Link>
             </div>
           </div>
           {mega && <MegaMenu categories={categories} onClose={() => setMega(false)} />}
@@ -301,6 +301,7 @@ function MobileMenu({ worlds, current, categories, onWorld }: { worlds: World[];
               ["/brands", "البراندات", "sparkle"],
               ["/skin-guide", "دليل البشرة", "spa"],
               ["/packages", "الباقات والروتين", "gift"],
+              ["/advisor", "اسألي ديما ✨", "chat"],
               ["/wishlist", "المفضلة", "heart"],
             ].map(([href, label, icon]) => (
               <Link key={href} href={href} onClick={close} className="flex items-center gap-3 rounded-2xl px-3 py-3 hover:bg-canvas">

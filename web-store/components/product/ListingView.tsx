@@ -1,5 +1,5 @@
 "use client";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -98,7 +98,7 @@ export function ListingView({
           })
         : api<SearchResp>("/products", {
             auth: false,
-            query: { ...base, page: pageParam, limit: 24, sort, minPrice, maxPrice, inStock: inStock ? 1 : undefined, isPromo: deals ? 1 : base?.isPromo },
+            query: { ...base, page: pageParam, limit: 24, sort, minPrice, maxPrice, inStock: inStock ? 1 : undefined, isPromo: deals ? 1 : base?.isPromo, brandId: brand ?? base?.brandId },
           }),
     getNextPageParam: (last) => (last.meta?.hasNext ? last.meta.page + 1 : undefined),
   });
@@ -106,7 +106,14 @@ export function ListingView({
   const pages = query.data?.pages ?? [];
   const items = pages.flatMap((p) => p.data ?? []);
   const total = pages[0]?.meta?.total ?? 0;
-  const facets = (pages[0] as SearchResp | undefined)?.facets;
+  // صفحات الأقسام: عدّادات البراندات ومدى السعر من /products/facets (البحث يعيدها مع النتائج).
+  const productFacets = useQuery({
+    queryKey: ["facets", base, inStock, deals],
+    enabled: mode === "products" && !base?.brandId,
+    staleTime: 60_000,
+    queryFn: () => api<Facets>("/products/facets", { auth: false, query: { ...base, inStock: inStock ? 1 : undefined, isPromo: deals ? 1 : base?.isPromo } }),
+  });
+  const facets = mode === "search" ? (pages[0] as SearchResp | undefined)?.facets : productFacets.data;
 
   // تحميل الصفحة التالية عند الاقتراب من الأسفل.
   const sentinel = useRef<HTMLDivElement>(null);
@@ -125,7 +132,7 @@ export function ListingView({
       <div>
         <h4 className="mb-3 font-extrabold">السعر</h4>
         <div className="flex flex-wrap gap-2">
-          {PRICE_RANGES.map(([label, min, max]) => {
+          {PRICE_RANGES.filter(([, min, max]) => !facets?.price || ((min ?? 0) <= facets.price.max && (max ?? Infinity) >= facets.price.min)).map(([label, min, max]) => {
             const on = String(min ?? "") === (minPrice ?? "") && String(max ?? "") === (maxPrice ?? "");
             return (
               <button key={label} onClick={() => setParam(on ? { minPrice: undefined, maxPrice: undefined } : { minPrice: min ? String(min) : undefined, maxPrice: max ? String(max) : undefined })} className={clsx("chip", on && "chip-on")}>
@@ -134,6 +141,7 @@ export function ListingView({
             );
           })}
         </div>
+        <PriceRange key={`${minPrice}-${maxPrice}`} min={minPrice} max={maxPrice} bounds={facets?.price ?? undefined} onApply={(a, b) => setParam({ minPrice: a, maxPrice: b })} />
       </div>
       <div className="space-y-2">
         <label className="flex cursor-pointer items-center justify-between rounded-2xl bg-canvas px-4 py-3 font-semibold">
@@ -261,5 +269,25 @@ function FacetList({ title, items, value, onPick }: { title: string; items: { id
         </button>
       )}
     </div>
+  );
+}
+
+function PriceRange({ min, max, bounds, onApply }: { min?: string; max?: string; bounds?: { min: number; max: number }; onApply: (a?: string, b?: string) => void }) {
+  const [a, setA] = useState(min ?? "");
+  const [b, setB] = useState(max ?? "");
+  const clean = (v: string) => v.replace(/[^\d]/g, "");
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onApply(clean(a) || undefined, clean(b) || undefined);
+      }}
+      className="mt-3 flex items-center gap-2"
+    >
+      <input value={a} onChange={(e) => setA(clean(e.target.value))} inputMode="numeric" placeholder={bounds ? `من ${formatNumber(bounds.min)}` : "من"} className="field h-10 min-w-0 px-3 text-sm" aria-label="أقل سعر" />
+      <span className="text-ink-muted">–</span>
+      <input value={b} onChange={(e) => setB(clean(e.target.value))} inputMode="numeric" placeholder={bounds ? `إلى ${formatNumber(bounds.max)}` : "إلى"} className="field h-10 min-w-0 px-3 text-sm" aria-label="أعلى سعر" />
+      <button className="btn h-10 flex-none bg-ink px-3 text-xs text-white">تطبيق</button>
+    </form>
   );
 }

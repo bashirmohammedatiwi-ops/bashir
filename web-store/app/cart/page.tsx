@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CartLineRow, FreeShippingBar } from "@/components/cart/CartDrawer";
 import { CartSummary, type SummaryRow } from "@/components/cart/CartSummary";
 import { CouponBox } from "@/components/cart/CouponBox";
+import { ShippingFillers } from "@/components/cart/ShippingFillers";
 import { Breadcrumbs } from "@/components/catalog/PageHero";
 import { useHydrated, useLoyaltyRules } from "@/components/Providers";
 import { ProductRow } from "@/components/product/ProductRow";
@@ -142,6 +143,8 @@ export default function CartPage() {
           </div>
         </aside>
       </div>
+
+      <ShippingFillers subtotal={m.subtotal} exclude={[...inCart]} />
 
       {!!recs.data?.filter((p) => !inCart.has(p.id)).length && (
         <section className="py-10">

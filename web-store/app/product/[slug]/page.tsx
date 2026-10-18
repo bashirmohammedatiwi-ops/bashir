@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ProductView } from "@/components/product/ProductView";
 import { ProductRow } from "@/components/product/ProductRow";
 import { RecentlyViewed } from "@/components/product/RecentlyViewed";
+import { BoughtTogether } from "@/components/product/BoughtTogether";
 import { Reviews } from "@/components/product/Reviews";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ApiError, serverTry } from "@/lib/api";
@@ -68,7 +69,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const [together, sameCat] = await Promise.all([
     serverTry<{ items: Product[] }>(`/products/${p.id}/bought-together`, { revalidate: 300 }),
     p.subcategory || p.category
-      ? serverTry<Paged<Product>>(`/products?${p.subcategory ? `subcategoryId=${p.subcategory.id}` : `categoryId=${p.category!.id}`}&limit=14&sort=bestseller`, { revalidate: 300 })
+      ? serverTry<Paged<Product>>(`/products?${p.subcategory ? `subcategoryId=${p.subcategory.id}` : `categoryId=${p.category!.id}`}&limit=14&sort=popular`, { revalidate: 300 })
       : null,
   ]);
   const related = (sameCat?.data ?? []).filter((x) => x.id !== p.id);
@@ -95,6 +96,23 @@ export default async function ProductPage({ params }: { params: { slug: string }
   return (
     <div className="animate-fade-up">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { name: "الرئيسية", url: SITE_URL },
+              p.category && { name: p.category.name, url: `${SITE_URL}${categoryHref(p.category.slug)}` },
+              p.subcategory && { name: p.subcategory.name, url: `${SITE_URL}${categoryHref(p.subcategory.slug)}` },
+              { name: productName(p), url: `${SITE_URL}${productHref(p.slug)}` },
+            ]
+              .filter(Boolean)
+              .map((x, i) => ({ "@type": "ListItem", position: i + 1, name: (x as { name: string }).name, item: (x as { url: string }).url })),
+          }),
+        }}
+      />
       <nav className="container flex flex-wrap items-center gap-1.5 py-4 text-sm text-ink-muted" aria-label="مسار التنقل">
         <Link href="/" className="hover:text-ink">الرئيسية</Link>
         {p.category && (
@@ -124,8 +142,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
       </section>
       {pairs.length > 0 && (
         <section className="container mt-10 md:mt-14">
-          <SectionHeader title="يكمّله لكِ" subtitle="يُشترى عادةً مع هذا المنتج" />
-          <ProductRow products={pairs} />
+          <BoughtTogether product={p} pairs={pairs} />
+          {pairs.length > 2 && (
+            <div className="mt-8">
+              <SectionHeader title="يكمّله لكِ" subtitle="يُشترى عادةً مع هذا المنتج" />
+              <ProductRow products={pairs} />
+            </div>
+          )}
         </section>
       )}
       {related.length > 0 && (

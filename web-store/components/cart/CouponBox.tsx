@@ -1,5 +1,8 @@
 "use client";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { api } from "@/lib/api";
+import type { Coupon } from "@/lib/types";
 import { couponValue } from "../home/CouponsShelf";
 import { formatPrice } from "@/lib/format";
 import { checkCoupon, useCartMath } from "@/lib/hooks/cartMath";
@@ -15,6 +18,8 @@ export function CouponBox() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const world = typeof document === "undefined" ? undefined : document.cookie.match(/(?:^|; )world=([^;]+)/)?.[1];
+  const featured = useQuery({ queryKey: ["coupons", world], queryFn: () => api<Coupon[]>("/coupons/featured", { query: { world } }), staleTime: 300_000 });
 
   const apply = async () => {
     const t = text.trim();
@@ -84,6 +89,34 @@ export function CouponBox() {
           {busy ? "…" : "تطبيق"}
         </button>
       </div>
+      {!!featured.data?.length && (
+        <div className="mt-3 space-y-1.5">
+          <p className="text-xs font-bold text-ink-muted">كوبونات متاحة لكِ:</p>
+          {featured.data.slice(0, 3).map((c) => {
+            const [big, small] = couponValue(c);
+            const short = c.minOrder > m.couponBase ? c.minOrder - m.couponBase : 0;
+            return (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setCoupon(c.code);
+                  toast({ text: `فعّلنا ${c.code} ✓`, tone: "success" });
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-accent/40 bg-accent-light/40 px-3 py-2 text-start transition hover:bg-accent-light"
+              >
+                <span className="text-sm font-extrabold text-accent-dark" dir="ltr">
+                  {big} <span className="text-[10px]">{small}</span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-bold">{c.title || c.code}</span>
+                  <span className="block text-[11px] text-ink-muted">{short ? `ينقصكِ ${formatPrice(short)}` : c.minOrder ? `فوق ${formatPrice(c.minOrder)}` : "بدون حد أدنى"}</span>
+                </span>
+                <span className="rounded-full bg-accent-dark px-2.5 py-1 text-[11px] font-bold text-white">تطبيق</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {(error || (code && m.couponReason)) && (
         <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-sale">
           <Icon name="close" size={14} /> {error ?? m.couponReason}

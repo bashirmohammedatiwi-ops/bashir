@@ -7,6 +7,8 @@ type UiState = {
   cartOpen: boolean;
   menuOpen: boolean;
   toasts: Toast[];
+  quickView: string | null;
+  openQuickView: (slug: string | null) => void;
   openCart: (v: boolean) => void;
   openMenu: (v: boolean) => void;
   toast: (t: Omit<Toast, "id">) => void;
@@ -17,6 +19,8 @@ export const useUi = create<UiState>()((set, get) => ({
   cartOpen: false,
   menuOpen: false,
   toasts: [],
+  quickView: null,
+  openQuickView: (slug) => set({ quickView: slug }),
   openCart: (v) => set({ cartOpen: v }),
   openMenu: (v) => set({ menuOpen: v }),
   toast: (t) => {

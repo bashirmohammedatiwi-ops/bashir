@@ -55,3 +55,11 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* طباعة الفاتورة من صفحة الطلب: المحتوى فقط */
+@media print {
+  header, footer, .no-print { display: none !important; }
+  body { background: #fff !important; }
+  main { padding: 0 !important; }
+  .card { box-shadow: none !important; border: 1px solid #e5e0ec; }
+}

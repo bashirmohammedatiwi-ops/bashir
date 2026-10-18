@@ -32,6 +32,13 @@ export class ProductsController {
     return this.products.list(q, !isAdminViewRequest(req));
   }
 
+  /** عدّادات الفلاتر (البراندات ومدى السعر) لنفس فلاتر القائمة. */
+  @Public()
+  @Get("facets")
+  facets(@Query() q: QueryProductsDto) {
+    return this.products.facets(q);
+  }
+
   @Public()
   @Get("search")
   search(@Req() req: any, @Query("q") q: string, @Query("limit") limit?: string) {

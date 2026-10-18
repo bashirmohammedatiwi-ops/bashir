@@ -20,6 +20,7 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
   const router = useRouter();
   const add = useCart((s) => s.add);
   const openCart = useUi((s) => s.openCart);
+  const openQuickView = useUi((s) => s.openQuickView);
   const wish = useWishlist();
   const toggleWish = useWishToggle();
   const liked = !!wish.data?.some((x) => x.id === p.id);
@@ -31,7 +32,9 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
   const quickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     if (shadeCount > 1) {
-      router.push(productHref(p.slug));
+      // الحاسوب: نافذة سريعة لاختيار اللون؛ الهاتف: صفحة المنتج.
+      if (window.matchMedia("(min-width: 768px)").matches) openQuickView(p.slug);
+      else router.push(productHref(p.slug));
       return;
     }
     if (add(p, 1, shades[0] ?? null)) {
@@ -70,6 +73,16 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
           aria-label="المفضلة"
         >
           <Icon name="heart" size={18} fill={liked ? "currentColor" : "none"} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            openQuickView(p.slug);
+          }}
+          className="absolute bottom-3 right-3 hidden h-10 items-center gap-1.5 rounded-full bg-white/95 px-3 text-xs font-bold text-ink shadow-lift opacity-0 transition hover:bg-white md:flex md:group-hover:opacity-100"
+          aria-label="نظرة سريعة"
+        >
+          <Icon name="eye" size={16} /> نظرة سريعة
         </button>
         {!out && (
           <button

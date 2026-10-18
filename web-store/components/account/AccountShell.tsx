@@ -14,6 +14,7 @@ const NAV: [string, string, IconName][] = [
   ["/account/orders", "طلباتي", "box"],
   ["/wishlist", "المفضلة", "heart"],
   ["/account/points", "نقاط الولاء", "sparkle"],
+  ["/account/alerts", "تنبيهات التوفّر", "bell"],
   ["/account/addresses", "عناويني", "location"],
   ["/account/notifications", "الإشعارات", "bell"],
   ["/account/profile", "الحساب والأمان", "shield"],
@@ -42,7 +43,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="container animate-fade-up py-4 md:py-8">
       <div className="grid items-start gap-6 md:grid-cols-[260px_1fr]">
-        <aside className="card overflow-hidden md:sticky md:top-36">
+        <aside className="no-print card overflow-hidden md:sticky md:top-36">
           <div className="hidden bg-gradient-to-br from-accent to-accent-dark p-5 text-white md:block">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-white/20 text-2xl font-extrabold">{user.name?.slice(0, 1) ?? "؟"}</span>
             <p className="mt-3 text-lg font-extrabold">{user.name}</p>

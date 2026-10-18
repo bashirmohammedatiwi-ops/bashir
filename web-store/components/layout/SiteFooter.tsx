@@ -73,6 +73,7 @@ export function SiteFooter({ settings, categories }: { settings: HomeFeed["setti
                 ["/packages", "الباقات والروتين"],
                 ["/account/orders", "تتبّع طلبي"],
                 ["/about", "من نحن"],
+                ["/help", "المساعدة والتوصيل"],
               ].map(([h, l]) => (
                 <li key={h}>
                   <Link href={h} className="hover:text-accent-dark">{l}</Link>

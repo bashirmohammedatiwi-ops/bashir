@@ -23,7 +23,7 @@ export function MobileTabBar() {
   const openCart = useUi((s) => s.openCart);
   if (path.startsWith("/checkout")) return null;
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-40 rounded-[28px] border border-hairline bg-surface/90 px-2 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 shadow-float backdrop-blur-xl md:hidden">
+    <nav className="no-print fixed inset-x-3 bottom-3 z-40 rounded-[28px] border border-hairline bg-surface/90 px-2 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 shadow-float backdrop-blur-xl md:hidden">
       <ul className="grid grid-cols-5">
         {TABS.slice(0, 2).map((t) => (
           <Tab key={t.href} {...t} on={t.match(path)} />

@@ -1,6 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { BuyAgain } from "@/components/account/BuyAgain";
 import { OrderCard } from "@/components/account/OrderCard";
 import { useLoyaltyRules } from "@/components/Providers";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -79,6 +80,7 @@ export default function AccountHome() {
           </div>
         )}
       </section>
+      <BuyAgain boxed />
       <div className="grid gap-3 sm:grid-cols-2">
         {(
           [
