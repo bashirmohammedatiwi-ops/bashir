@@ -187,6 +187,8 @@ export class OrdersService {
     const itemsData = dto.items.map((it) => {
       const p = products.find((x) => x.id === it.productId);
       if (!p) throw new BadRequestException(`Product ${it.productId} not found`);
+      // منتج أوقفه المدير بعد إضافته للسلة — لا يُطلب.
+      if (!p.isActive) throw new BadRequestException(`«${p.name}» غير متوفر حالياً — احذفيه من السلة`);
       if (p.stock < it.quantity) throw new BadRequestException(`Out of stock: ${p.name}`);
       const unit = p.price;
       const total = unit * it.quantity;
