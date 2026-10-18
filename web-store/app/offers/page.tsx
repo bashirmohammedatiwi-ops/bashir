@@ -1,52 +1,22 @@
-"use client";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PageHero } from "@/components/catalog/PageHero";
+import { ListingView } from "@/components/product/ListingView";
+import { getProducts } from "@/lib/data";
 
-import { useQuery } from "@tanstack/react-query";
+export const metadata: Metadata = { title: "العروض والخصومات", description: "خصومات حقيقية على مستحضرات تجميل أصلية — تسوّقي قبل نفاد الكمية.", alternates: { canonical: "/offers" } };
 
-import { HomeCmsSections } from "@/components/home/HomeCmsSections";
-import { FlashSaleSection, TrustBar } from "@/components/home/HomeSections";
-import { LoadingState } from "@/components/ui/LoadingState";
-import { fetchOffers } from "@/lib/api";
-
-export default function OffersPage() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["offers"],
-    queryFn: fetchOffers,
-  });
-
-  if (isLoading) return <LoadingState />;
-  if (isError || !data) {
-    return <p className="empty-state container">تعذّر تحميل صفحة العروض.</p>;
-  }
-
-  const promoProducts = data.flashSale?.products?.length
-    ? data.flashSale.products
-    : data.promoProducts ?? [];
-
+export default async function OffersPage() {
+  const base = { isPromo: "1" };
+  const initial = await getProducts({ ...base, page: 1, limit: 24, sort: "popular" }).catch(() => null);
   return (
-    <>
-      <div className="page-banner offers-banner">
-        <div className="container">
-          <h1>العروض والتخفيضات</h1>
-          <p>أفضل العروض الحصرية من ديما الحياة.</p>
-        </div>
-      </div>
-      <div className="home-content">
-        {data.sections?.length ? (
-          <HomeCmsSections sections={data.sections} />
-        ) : (
-          <div className="container">
-            <FlashSaleSection
-              title="عروض اليوم"
-              products={promoProducts}
-              endsAt={data.flashSale?.endsAt}
-              moreHref="/products/?isPromo=1"
-            />
-          </div>
-        )}
-        <div className="container">
-          <TrustBar />
-        </div>
-      </div>
-    </>
+    <div className="animate-fade-up">
+      <PageHero tone="rose" title="العروض والخصومات 🏷️" subtitle="خصومات حقيقية على ماركات أصلية — الكميات محدودة" crumbs={[{ label: "العروض" }]} />
+      <section className="container py-6 md:py-8">
+        <Suspense>
+          <ListingView mode="products" base={base} initial={initial} />
+        </Suspense>
+      </section>
+    </div>
   );
 }

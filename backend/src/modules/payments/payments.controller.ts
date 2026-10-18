@@ -12,7 +12,7 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, MaxLength, Min } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from "class-validator";
 import type { FastifyReply } from "fastify";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Public } from "../../common/decorators/public.decorator";
@@ -20,6 +20,10 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { PaymentsService } from "./payments.service";
+
+class StartDto {
+  @IsOptional() @IsIn(["app", "web"]) channel?: "app" | "web";
+}
 
 class AbandonDto {
   @IsOptional() @IsString() transactionId?: string;
@@ -65,8 +69,8 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN, Role.STAFF)
   @Post("orders/:orderId/start")
-  start(@Param("orderId") orderId: string, @CurrentUser() user: any) {
-    return this.payments.startForOrder(user.id, orderId);
+  start(@Param("orderId") orderId: string, @Body() dto: StartDto, @CurrentUser() user: any) {
+    return this.payments.startForOrder(user.id, orderId, dto?.channel ?? "app");
   }
 
   @ApiBearerAuth()

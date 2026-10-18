@@ -150,6 +150,33 @@ services:
       retries: 5
       start_period: 30s
 
+  # متجر الويب: Next.js يرسم الصفحات على السيرفر ويطلب الـ API داخل الشبكة مباشرة.
+  store:
+    build:
+      context: ../web-store
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: https://${DOMAIN:-deemaalhayat.com}
+        NEXT_PUBLIC_APP_STORE_URL: ${APP_STORE_URL_IOS:-}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_INTERNAL_URL: http://api:3000/api/v1
+    expose:
+      - "3001"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/robots.txt"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped

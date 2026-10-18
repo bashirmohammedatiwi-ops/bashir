@@ -253,5 +253,5 @@ export const termsSections: Record<LegalLang, LegalSection[]> = {
 
 export function legalPath(variant: "privacy" | "terms", lang: LegalLang): string {
   const base = variant === "privacy" ? "/privacy" : "/terms";
-  return lang === "en" ? `/en${base}/` : `${base}/`;
+  return lang === "en" ? `/en${base}` : base;
 }

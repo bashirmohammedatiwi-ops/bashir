@@ -182,13 +182,43 @@ server {
         return 301 /admin/;
     }
 
+    # متجر الويب (Next.js داخل حاوية store) — صفحات تُرسم على السيرفر.
+    # ملفات البناء ثابتة ومُبصَمة: تُخزَّن سنة.
+    location /_next/static/ {
+        set $store_backend store:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_pass http://$store_backend;
+        access_log off;
+        expires 365d;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
     location / {
-        root /var/www/alhayaa/store;
-        index index.html;
-        try_files $uri $uri/ $uri/index.html /index.html =404;
+        set $store_backend store:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 60s;
+        proxy_pass http://$store_backend;
+
+        # إن توقفت حاوية المتجر: النسخة الثابتة القديمة بدل صفحة خطأ.
+        proxy_intercept_errors on;
+        error_page 502 503 504 = @store_fallback;
 
         add_header X-Frame-Options "SAMEORIGIN" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+
+    location @store_fallback {
+        root /var/www/alhayaa/store;
+        index index.html;
+        try_files $uri $uri/ $uri/index.html /index.html =503;
     }
 }

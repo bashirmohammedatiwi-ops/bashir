@@ -1,50 +1,19 @@
-"use client";
+import type { Metadata } from "next";
+import { BrandsDirectory } from "@/components/catalog/BrandsDirectory";
+import { PageHero } from "@/components/catalog/PageHero";
+import { getBrands } from "@/lib/data";
 
-import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
+export const metadata: Metadata = { title: "كل البراندات", description: "مئات الماركات العالمية الأصلية للمكياج والعناية والعطور.", alternates: { canonical: "/brands" } };
 
-import { LoadingState } from "@/components/ui/LoadingState";
-import { fetchBrands } from "@/lib/api";
-import { localizedName } from "@/lib/format";
-import { brandLogoUrl } from "@/lib/mediaUrl";
-import { brandHref } from "@/lib/storePaths";
-
-export default function BrandsPage() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["brands"],
-    queryFn: fetchBrands,
-  });
-
-  if (isLoading) return <LoadingState />;
-  if (isError) return <p className="empty-state container">تعذّر تحميل البراندات.</p>;
-
+export default async function BrandsPage() {
+  const brands = await getBrands();
+  const n = brands.filter((b) => (b.productCount ?? 0) > 0).length;
   return (
-    <>
-      <div className="page-banner">
-        <div className="container">
-          <h1>البراندات</h1>
-          <p>تسوّقي حسب العلامة التجارية المفضّلة لديكِ.</p>
-        </div>
+    <div className="animate-fade-up">
+      <PageHero title="كل البراندات" subtitle={`${n} ماركة عالمية أصلية — ابحثي بالاسم أو تصفّحي حسب الحرف`} crumbs={[{ label: "البراندات" }]} />
+      <div className="container py-6 md:py-8">
+        <BrandsDirectory brands={brands} />
       </div>
-      <div className="container">
-        <div className="brand-showcase-row page-grid">
-          {(data ?? []).map((b) => {
-            const img = brandLogoUrl(b);
-            return (
-              <Link key={b.id} href={brandHref(b.slug)} className="brand-showcase-card">
-                <div className="brand-showcase-logo">
-                  {img ? (
-                    <img src={img} alt={localizedName(b)} loading="lazy" />
-                  ) : (
-                    <span>{localizedName(b).slice(0, 2)}</span>
-                  )}
-                </div>
-                <span>{localizedName(b)}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

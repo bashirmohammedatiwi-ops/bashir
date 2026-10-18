@@ -128,6 +128,11 @@ export class QiGatewayService {
     return `${this.callbackBase}/api/v1/payments/qi/finish`;
   }
 
+  /** عودة متجر الويب بعد صفحة الدفع: يتحقق من النتيجة عبر confirm. */
+  webReturnUrl(orderId: string) {
+    return `${this.callbackBase}/pay/return?order=${encodeURIComponent(orderId)}`;
+  }
+
   newRequestId() {
     return randomUUID();
   }
@@ -138,15 +143,19 @@ export class QiGatewayService {
     locale?: string;
     customer?: { firstName?: string; phone?: string; email?: string; accountId?: string; city?: string; address?: string };
     additionalInfo?: Record<string, string>;
+    /** web: صفحة الدفع المستضافة (formUrl) ثم العودة لمتجر الويب بدل حزمة التطبيق. */
+    channel?: "app" | "web";
+    finishUrl?: string;
   }) {
+    const web = input.channel === "web";
     return this.request<QiPayment>("POST", "/payment", {
       requestId: input.requestId,
       amount: input.amount,
       currency: "IQD",
       locale: input.locale ?? "ar_IQ",
-      finishPaymentUrl: this.finishUrl,
+      finishPaymentUrl: web && input.finishUrl ? input.finishUrl : this.finishUrl,
       notificationUrl: this.notificationUrl,
-      appChannel: true,
+      appChannel: !web,
       ...(input.customer ? { customerInfo: stripEmpty(input.customer) } : {}),
       ...(input.additionalInfo ? { additionalInfo: input.additionalInfo } : {}),
     });

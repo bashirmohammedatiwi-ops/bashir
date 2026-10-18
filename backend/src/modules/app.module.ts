@@ -2,7 +2,8 @@ import { DynamicModule, Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { ThrottlerModule } from "@nestjs/throttler";
+import { AppThrottlerGuard } from "../common/guards/app-throttler.guard";
 import { TransformInterceptor } from "../common/interceptors/transform.interceptor";
 import { MobilePayloadInterceptor } from "../common/interceptors/mobile-payload.interceptor";
 import { StorefrontShadesInterceptor } from "../common/interceptors/storefront-shades.interceptor";
@@ -91,7 +92,7 @@ const conditionalImports: DynamicModule[] = redisEnabled
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_INTERCEPTOR, useClass: MobilePayloadInterceptor },
     { provide: APP_INTERCEPTOR, useClass: StorefrontShadesInterceptor },
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: AppThrottlerGuard },
   ],
 })
 export class AppModule {}

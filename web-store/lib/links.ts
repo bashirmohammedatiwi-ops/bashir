@@ -1,86 +1,47 @@
-import { packageHref, productHref } from "./storePaths";
+export const productHref = (slug: string) => `/product/${encodeURIComponent(slug)}`;
+export const categoryHref = (slug: string) => `/category/${encodeURIComponent(slug)}`;
+export const brandHref = (slug: string) => `/brand/${encodeURIComponent(slug)}`;
+export const packageHref = (slug: string) => `/package/${encodeURIComponent(slug)}`;
+export const concernHref = (slug: string) => `/skin-guide/${encodeURIComponent(slug)}`;
+export const worldHref = (slug: string) => `/?world=${encodeURIComponent(slug)}`;
 
-/** يحوّل مسارات التطبيق/الـ CMS إلى روابط متجر الويب الثابت. */
-export function webPathFromAppLink(link?: string | null): string | undefined {
-  const raw = String(link ?? "").trim();
-  if (!raw) return undefined;
-
-  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  if (raw.startsWith("mailto:") || raw.startsWith("tel:")) return raw;
-
-  if (raw === "/categories" || raw === "/categories-tab" || raw === "/categories/") {
-    return "/categories/";
+export function productsHref(params: Record<string, string | number | boolean | undefined | null> = {}) {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "" || v === false) continue;
+    qs.set(k, v === true ? "1" : String(v));
   }
-  if (raw === "/brands" || raw === "/brands/") return "/brands/";
-  if (raw === "/offers" || raw.startsWith("/offers")) return "/offers/";
-  if (raw === "/" || raw === "/home") return "/";
-
-  const productMatch = raw.match(/^\/product\/([^/?#]+)/);
-  if (productMatch) return productHref(decodeURIComponent(productMatch[1]));
-
-  const packageMatch = raw.match(/^\/package\/([^/?#]+)/);
-  if (packageMatch) return packageHref(decodeURIComponent(packageMatch[1]));
-
-  if (raw.startsWith("/products?")) {
-    return `/products/${raw.slice("/products".length)}`;
-  }
-  if (raw.startsWith("/products/")) return raw;
-
-  if (raw.startsWith("/")) {
-    return raw.endsWith("/") ? raw : `${raw}/`;
-  }
-
-  return `/products/?${raw}`;
+  const q = qs.toString();
+  return q ? `/products?${q}` : "/products";
 }
 
-export function viewAllHref(query?: string | null, fallback = "/products/"): string {
-  const raw = String(query ?? "").trim();
-  if (!raw) return fallback;
-  return webPathFromAppLink(raw) ?? fallback;
+/**
+ * روابط لوحة التحكم (نفس أنواع التطبيق) ← مسارات الويب.
+ * linkType: product | category | brand | package | skinConcern | search | offers | products | url | categoriesTab
+ */
+export function resolveLink(linkType?: string | null, linkValue?: string | null, link?: string | null): string | null {
+  const type = (linkType ?? "").trim();
+  const value = (linkValue ?? "").trim();
+  if (type === "product" && value) return productHref(value);
+  if (type === "category" && value) return categoryHref(value);
+  if ((type === "subcategory" || type === "tertiary") && value) return productsHref({ subcategoryId: value });
+  if (type === "brand" && value) return /^[0-9a-f-]{36}$/i.test(value) ? productsHref({ brandId: value }) : brandHref(value);
+  if (type === "package" && value) return packageHref(value);
+  if (type === "skinConcern" && value) return concernHref(value);
+  if (type === "skinGuide") return "/skin-guide";
+  if (type === "packages") return "/packages";
+  if (type === "search" && value) return `/search?q=${encodeURIComponent(value)}`;
+  if (type === "offers") return "/offers";
+  if (type === "categoriesTab") return "/categories";
+  if (type === "products" && value) return value.startsWith("/") ? value : `/products?${value}`;
+  if (type === "url" && value) return value;
+  return link ? appPathToWeb(link) : null;
 }
 
-export function sectionLinkHref(item: {
-  link?: string | null;
-  linkType?: string | null;
-  linkValue?: string | null;
-}): string | undefined {
-  if (item.link) return webPathFromAppLink(item.link);
-  const type = String(item.linkType ?? "").trim();
-  const value = String(item.linkValue ?? "").trim();
-  if (!type || !value) return undefined;
-
-  switch (type) {
-    case "product":
-      return productHref(value);
-    case "category":
-      return `/products/?categoryId=${encodeURIComponent(value)}`;
-    case "brand":
-      return `/products/?brandId=${encodeURIComponent(value)}`;
-    case "package":
-      return packageHref(value);
-    case "skinConcern":
-      return `/products/?concernSlug=${encodeURIComponent(value)}`;
-    case "search":
-      return `/products/?search=${encodeURIComponent(value)}`;
-    case "offers":
-      return "/offers/";
-    case "categoriesTab":
-      return "/categories/";
-    case "products":
-      return webPathFromAppLink(value.startsWith("/") ? value : `/products?${value}`);
-    case "url":
-      return value;
-    default:
-      return webPathFromAppLink(value);
-  }
-}
-
-export function bannerLinkHref(banner: {
-  linkUrl?: string | null;
-  link?: string | null;
-  linkType?: string | null;
-  linkValue?: string | null;
-}): string | undefined {
-  if (banner.linkUrl) return webPathFromAppLink(banner.linkUrl);
-  return sectionLinkHref(banner);
+/** مسارات التطبيق (/product/x، /products?…، /categories-tab) ← الويب. */
+export function appPathToWeb(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
+  if (path.startsWith("/categories-tab")) return "/categories";
+  if (path.startsWith("/offers")) return "/offers";
+  return path;
 }

@@ -1,88 +1,117 @@
-import axios from "axios";
+import { API_INTERNAL, API_PUBLIC } from "./config";
 
-import { API_BASE } from "./config";
-import type { Brand, Category, HomeFeed, Paginated, Product, StorePackage } from "./types";
-
-function apiBaseForContext(): string {
-  if (typeof window !== "undefined") return API_BASE;
-  return (
-    process.env.STORE_BUILD_API_BASE ||
-    process.env.NEXT_PUBLIC_API_BASE ||
-    "http://127.0.0.1:3000/api/v1"
-  );
-}
-
-function client() {
-  return axios.create({
-    baseURL: apiBaseForContext(),
-    timeout: 30000,
-    headers: { Accept: "application/json" },
-  });
-}
-
-/** يفكّ غلاف Nest `{ data: T }` — نفس منطق تطبيق الهاتف ولوحة التحكم. */
-function unwrap<T>(body: T | { data?: T }): T {
-  if (body != null && typeof body === "object" && "data" in body) {
-    const inner = (body as { data?: T }).data;
-    if (inner !== undefined) return inner;
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
   }
-  return body as T;
 }
 
-export async function fetchHome(): Promise<HomeFeed> {
-  const { data } = await client().get("/home");
-  return unwrap<HomeFeed>(data);
+function unwrap<T>(json: unknown): T {
+  if (json && typeof json === "object" && "data" in (json as Record<string, unknown>)) {
+    const j = json as Record<string, unknown>;
+    // قوائم مقسّمة: نُبقي meta مع البيانات.
+    if ("meta" in j) return j as T;
+    return j.data as T;
+  }
+  return json as T;
 }
 
-export async function fetchProducts(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-  categoryId?: string;
-  brandId?: string;
-  subcategoryId?: string;
-  tertiaryCategoryId?: string;
-  concernSlug?: string;
-  isNew?: boolean;
-  isFeatured?: boolean;
-  isBestSeller?: boolean;
-  isPromo?: boolean;
-}): Promise<Paginated<Product>> {
-  const { data } = await client().get("/products", { params });
-  return unwrap<Paginated<Product>>(data);
+function errorMessage(json: unknown, status: number) {
+  const j = json as { error?: { message?: string | string[] }; message?: string | string[] } | null;
+  const m = j?.error?.message ?? j?.message;
+  const text = Array.isArray(m) ? m[0] : m;
+  if (text && /[؀-ۿ]/.test(text)) return text;
+  if (status === 401) return "انتهت الجلسة — سجّلي الدخول من جديد";
+  if (status === 404) return "غير موجود";
+  if (status >= 500) return "تعذّر الاتصال بالمتجر — حاولي بعد لحظات";
+  return text || "حدث خطأ — حاولي مرة أخرى";
 }
 
-export async function fetchOffers(): Promise<HomeFeed> {
-  const { data } = await client().get("/offers");
-  return unwrap<HomeFeed>(data);
+/** طلب من السيرفر (Server Components) — مع تخزين مؤقت قصير. */
+export async function serverGet<T>(path: string, opts: { revalidate?: number; tags?: string[] } = {}): Promise<T> {
+  const res = await fetch(`${API_INTERNAL}${path}`, {
+    headers: { "X-Client": "deema-app", "X-SSR": "deema-web", Accept: "application/json" },
+    next: { revalidate: opts.revalidate ?? 60, tags: opts.tags },
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(errorMessage(json, res.status), res.status);
+  return unwrap<T>(json);
 }
 
-export async function fetchPackage(slugOrId: string): Promise<StorePackage> {
-  const { data } = await client().get(`/packages/slug/${encodeURIComponent(slugOrId)}`);
-  return unwrap<StorePackage>(data);
+/** نسخة لا ترمي خطأ: null عند الفشل (للأقسام الاختيارية). */
+export async function serverTry<T>(path: string, opts?: { revalidate?: number }): Promise<T | null> {
+  try {
+    return await serverGet<T>(path, opts);
+  } catch {
+    return null;
+  }
 }
 
-export async function fetchProduct(slugOrId: string): Promise<Product> {
-  const { data } = await client().get(`/products/${encodeURIComponent(slugOrId)}`);
-  return unwrap<Product>(data);
+// ---- المتصفح ----
+type TokenGetter = () => { access?: string | null; refresh?: string | null };
+type TokenSetter = (t: { accessToken: string; refreshToken?: string } | null) => void;
+let getTokens: TokenGetter = () => ({});
+let setTokens: TokenSetter = () => {};
+export function bindAuth(get: TokenGetter, set: TokenSetter) {
+  getTokens = get;
+  setTokens = set;
 }
 
-export async function fetchCategories(): Promise<Category[]> {
-  const { data } = await client().get("/categories");
-  return unwrap<Category[]>(data);
+let refreshing: Promise<boolean> | null = null;
+async function refreshToken(): Promise<boolean> {
+  const { refresh } = getTokens();
+  if (!refresh) return false;
+  refreshing ??= (async () => {
+    try {
+      const res = await fetch(`${API_PUBLIC}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: refresh }),
+      });
+      if (!res.ok) return false;
+      const t = unwrap<{ accessToken: string; refreshToken?: string }>(await res.json());
+      setTokens(t);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setTimeout(() => (refreshing = null), 0);
+    }
+  })();
+  return refreshing;
 }
 
-export async function fetchCategory(slug: string): Promise<Category> {
-  const { data } = await client().get(`/categories/${encodeURIComponent(slug)}`);
-  return unwrap<Category>(data);
-}
-
-export async function fetchBrands(): Promise<Brand[]> {
-  const { data } = await client().get("/brands");
-  return unwrap<Brand[]>(data);
-}
-
-export async function fetchBrand(slug: string): Promise<Brand> {
-  const { data } = await client().get(`/brands/${encodeURIComponent(slug)}`);
-  return unwrap<Brand>(data);
+export async function api<T>(
+  path: string,
+  opts: { method?: string; body?: unknown; auth?: boolean; query?: Record<string, unknown> } = {},
+): Promise<T> {
+  const qs = opts.query
+    ? "?" +
+      new URLSearchParams(
+        Object.entries(opts.query)
+          .filter(([, v]) => v !== undefined && v !== null && v !== "")
+          .map(([k, v]) => [k, String(v)]),
+      ).toString()
+    : "";
+  const send = async () => {
+    const headers: Record<string, string> = { Accept: "application/json", "X-Client": "deema-app" };
+    if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+    const access = getTokens().access;
+    if (access && opts.auth !== false) headers.Authorization = `Bearer ${access}`;
+    return fetch(`${API_PUBLIC}${path}${qs === "?" ? "" : qs}`, {
+      method: opts.method ?? "GET",
+      headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    });
+  };
+  let res = await send();
+  if (res.status === 401 && opts.auth !== false && getTokens().refresh) {
+    if (await refreshToken()) res = await send();
+    else setTokens(null);
+  }
+  const json = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(errorMessage(json, res.status), res.status);
+  return unwrap<T>(json);
 }

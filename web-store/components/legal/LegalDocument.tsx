@@ -1,75 +1,66 @@
 import Link from "next/link";
+import { LEGAL_UPDATED, SUPPORT_EMAIL, legalPageCopy, legalPath, type LegalLang, type LegalSection } from "@/lib/legal";
 
-import { APP_ORIGIN, displayStoreName } from "@/lib/config";
-import type { LegalLang, LegalSection } from "@/lib/legal";
-import { SUPPORT_EMAIL, legalPageCopy, legalPath } from "@/lib/legal";
-
-type LegalDocumentProps = {
-  lang: LegalLang;
-  sections: LegalSection[];
-  variant: "privacy" | "terms";
-};
-
-export function LegalDocument({ lang, sections, variant }: LegalDocumentProps) {
-  const copy = legalPageCopy[variant][lang];
-  const otherLang: LegalLang = lang === "ar" ? "en" : "ar";
-  const dir = lang === "ar" ? "rtl" : "ltr";
-
+/** صفحة قانونية (الخصوصية / الشروط) بالعربي أو الإنجليزي، مع فهرس جانبي. */
+export function LegalDocument({ lang, variant, sections }: { lang: LegalLang; variant: "privacy" | "terms"; sections: LegalSection[] }) {
+  const c = legalPageCopy[variant][lang];
+  const other: LegalLang = lang === "ar" ? "en" : "ar";
+  const sibling = variant === "privacy" ? "terms" : "privacy";
   return (
-    <div className="legal-doc" dir={dir} lang={lang}>
-      <section className="legal-hero">
-        <div className="container legal-hero-inner">
-          <div className="legal-hero-icon" aria-hidden>
-            {variant === "privacy" ? "🛡️" : "📋"}
-          </div>
-          <div>
-            <p className="legal-hero-kicker">{displayStoreName(lang)}</p>
-            <h1>{copy.title}</h1>
-            <p className="legal-hero-meta">
-              {copy.updatedLabel}: {lang === "ar" ? "يوليو 2026" : "July 2026"}
-            </p>
-            <p className="legal-lang-switch">
-              <Link href={legalPath(variant, otherLang)}>{copy.switchLang}</Link>
-            </p>
-          </div>
+    <div dir={lang === "ar" ? "rtl" : "ltr"} lang={lang} className="container animate-fade-up py-6 md:py-12">
+      <div className="rounded-[28px] bg-gradient-to-l from-accent-light via-accent-soft to-accent-light px-6 py-8 md:px-10 md:py-12">
+        <p className="text-sm font-bold text-accent-dark">
+          {c.updatedLabel}: {LEGAL_UPDATED[lang]}
+        </p>
+        <h1 className="mt-2 text-3xl font-extrabold md:text-4xl">{c.title}</h1>
+        <p className="mt-2 max-w-2xl text-ink-soft">{c.description}</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link href={legalPath(variant, other)} className="chip bg-white/80">
+            🌐 {c.switchLang}
+          </Link>
+          <Link href={legalPath(sibling, lang)} className="chip bg-white/80">
+            {legalPageCopy[sibling][lang].title}
+          </Link>
         </div>
-      </section>
-
-      <div className="container legal-body">
-        <div className="legal-grid">
-          {sections.map((section, index) => (
-            <article key={section.id} className="legal-card">
-              <div className="legal-card-head">
-                <span className="legal-card-num">{index + 1}</span>
-                <h2>{section.title}</h2>
-              </div>
-              {section.intro ? <p className="legal-card-intro">{section.intro}</p> : null}
-              {section.bullets?.length ? (
-                <ul className="legal-bullets">
-                  {section.bullets.map((item) => (
-                    <li key={item}>{item}</li>
+      </div>
+      <div className="mt-8 grid items-start gap-8 lg:grid-cols-[240px_1fr]">
+        <nav className="card hidden p-4 lg:sticky lg:top-36 lg:block">
+          <ol className="space-y-1 text-sm">
+            {sections.map((s, i) => (
+              <li key={s.id}>
+                <a href={`#${s.id}`} className="block rounded-xl px-3 py-2 text-ink-soft hover:bg-canvas hover:text-accent-dark">
+                  {i + 1}. {s.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <div className="space-y-5">
+          {sections.map((s, i) => (
+            <section key={s.id} id={s.id} className="card scroll-mt-40 p-6 md:p-8">
+              <h2 className="text-xl font-extrabold">
+                <span className="text-accent-dark">{i + 1}.</span> {s.title}
+              </h2>
+              {s.intro && <p className="mt-3 leading-8 text-ink-soft">{s.intro}</p>}
+              {s.bullets && (
+                <ul className="mt-3 space-y-2 leading-7 text-ink-soft">
+                  {s.bullets.map((b) => (
+                    <li key={b} className="flex gap-2.5">
+                      <span className="mt-3 h-1.5 w-1.5 flex-none rounded-full bg-accent" /> {b}
+                    </li>
                   ))}
                 </ul>
-              ) : null}
-            </article>
+              )}
+            </section>
           ))}
-        </div>
-
-        <aside className="legal-contact">
-          <h3>{copy.contactTitle}</h3>
-          <p>{copy.contactBody}</p>
-          <div className="legal-contact-actions">
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="btn btn-primary">
+          <div className="card bg-ink p-6 text-white md:p-8">
+            <h2 className="text-xl font-extrabold">{c.contactTitle}</h2>
+            <p className="mt-2 opacity-80">{c.contactBody}</p>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-4 inline-block rounded-full bg-white px-5 py-2.5 font-bold text-ink" dir="ltr">
               {SUPPORT_EMAIL}
             </a>
-            <Link href="/" className="btn btn-outline">
-              {copy.backToStore}
-            </Link>
           </div>
-          <p className="legal-contact-url">
-            <a href={APP_ORIGIN}>{APP_ORIGIN.replace("https://", "")}</a>
-          </p>
-        </aside>
+        </div>
       </div>
     </div>
   );

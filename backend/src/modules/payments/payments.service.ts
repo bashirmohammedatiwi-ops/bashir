@@ -97,7 +97,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
   // ---------------------------------------------------------------- الزبونة
 
   /** يبدأ (أو يعيد) محاولة دفع لطلب بالبطاقة ويعيد ما تحتاجه واجهة الدفع. */
-  async startForOrder(userId: string, orderId: string) {
+  async startForOrder(userId: string, orderId: string, channel: "app" | "web" = "app") {
     if (!this.qi.isConfigured) {
       throw new ServiceUnavailableException("الدفع الإلكتروني غير متاح حالياً");
     }
@@ -130,6 +130,8 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
           accountId: userId,
         },
         additionalInfo: { orderNumber: fresh.orderNumber, orderId: fresh.id },
+        channel,
+        finishUrl: channel === "web" ? this.qi.webReturnUrl(fresh.id) : undefined,
       });
     } catch (e) {
       throw this.asHttp(e);
@@ -164,6 +166,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       amount: fresh.total,
       currency: tx.currency,
       accountId: userId,
+      ...(channel === "web" ? { formUrl: payment.formUrl ?? null } : {}),
     };
   }
 
