@@ -15,6 +15,7 @@ import '../../../core/widgets/quick_shade_sheet.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/cart_item.dart';
 import '../../../data/models/product.dart';
+import '../../../data/services/api_service.dart';
 import '../../auth/auth_provider.dart';
 import '../../wishlist/wishlist_provider.dart';
 import '../../worlds/world_theme.dart';
@@ -116,6 +117,22 @@ class CartItemCard extends ConsumerWidget {
     }
   }
 
+  /// يختار لوناً لسطر بلا لون: ورقة الألوان بكمية السطر، ثم يحل السطر الملوّن محل القديم.
+  Future<void> _chooseShade(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.selectionClick();
+    final Product product;
+    try {
+      product = await ref.read(apiServiceProvider).getProduct(item.productId);
+    } catch (e) {
+      if (context.mounted) AppSnackbar.error(context, friendlyError(e, lang: ref.read(stringsProvider).lang));
+      return;
+    }
+    if (!context.mounted) return;
+    final notifier = ref.read(cartProvider.notifier);
+    final added = await showQuickShadeSheet(context, ref, product, quantity: item.quantity);
+    if (added) notifier.remove(item.key);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
@@ -125,7 +142,9 @@ class CartItemCard extends ConsumerWidget {
     final imageSize = Responsive.cartItemImageSize(context);
     // التحقق مع السيرفر: حُذف أو أُوقف أو نفد — يبقى ظاهراً ليعرف سبب غيابه، والإجراء الحذف.
     final unavailable = ref.watch(cartProvider.select((c) => c.isUnavailable(item.key)));
-    final lowStock = !unavailable && item.stock > 0 && item.stock <= 5;
+    // صار للمنتج عدة ألوان بعد إضافته بلا لون: الإجراء اختيار اللون.
+    final needsShade = !unavailable && ref.watch(cartProvider.select((c) => c.needsShade(item.key)));
+    final lowStock = !unavailable && !needsShade && item.stock > 0 && item.stock <= 5;
 
     return Dismissible(
       key: ValueKey('cart-${item.key}'),
@@ -212,7 +231,7 @@ class CartItemCard extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        if (item.shadeName != null || lowStock || unavailable) ...[
+                        if (item.shadeName != null || lowStock || unavailable || needsShade) ...[
                           const SizedBox(height: 2),
                           Wrap(
                             spacing: 6,
@@ -223,6 +242,12 @@ class CartItemCard extends ConsumerWidget {
                                   icon: Icons.remove_shopping_cart_outlined,
                                   label: s.cartUnavailableLabel,
                                   color: AppColors.sale,
+                                ),
+                              if (needsShade)
+                                _MetaChip(
+                                  icon: Icons.palette_outlined,
+                                  label: s.cartNeedsShadeLabel,
+                                  color: AppColors.warning,
                                 ),
                               if (item.shadeName != null) _ShadeChip(label: item.shadeName!, hex: item.shadeHex),
                               if (lowStock)
@@ -250,6 +275,20 @@ class CartItemCard extends ConsumerWidget {
                                     ),
                                     icon: const Icon(Icons.delete_outline_rounded, size: 18),
                                     label: Text(s.removeItem),
+                                  ),
+                                );
+                              }
+                              if (needsShade) {
+                                return Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: TextButton.icon(
+                                    onPressed: () => _chooseShade(context, ref),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: t.accentDark,
+                                      minimumSize: const Size(0, kMinTapTarget),
+                                    ),
+                                    icon: const Icon(Icons.palette_outlined, size: 18),
+                                    label: Text(s.cartChooseShadeAction),
                                   ),
                                 );
                               }

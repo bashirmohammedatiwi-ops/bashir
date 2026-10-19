@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/category.dart';
 import '../../worlds/world_theme.dart';
@@ -69,7 +70,7 @@ class _CategoryRailState extends ConsumerState<CategoryRail> {
     final lang = ref.watch(languageCodeProvider);
     return ListView.builder(
       controller: _scroll,
-      padding: const EdgeInsets.only(top: 2, bottom: 24),
+      padding: EdgeInsets.only(top: 2, bottom: 24 + ShellFloatingReserve.of(context)),
       itemExtent: _itemExtent,
       itemCount: widget.entries.length,
       itemBuilder: (context, i) {

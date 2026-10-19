@@ -9,6 +9,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/shimmer_box.dart';
 import '../../../core/widgets/ui/ui.dart';
@@ -233,7 +234,8 @@ class _CategoryPaneState extends ConsumerState<CategoryPane> {
       SliverToBoxAdapter(
         child: _TopProducts(target: target, title: s.catBestSellers),
       ),
-      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+      // شريط المقارنة العائم لا يغطّي آخر المنتجات.
+      SliverToBoxAdapter(child: SizedBox(height: 28 + ShellFloatingReserve.of(context))),
     ];
 
     return RefreshIndicator(

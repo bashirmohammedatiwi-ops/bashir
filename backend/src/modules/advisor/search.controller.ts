@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Query, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { Public } from "../../common/decorators/public.decorator";
@@ -62,6 +62,7 @@ export class SearchController {
     @Query("exact") exact?: string,
     @Query("lang") lang?: string,
     @Query("world") world?: string,
+    @Req() req?: { ip?: string },
   ) {
     return this.search.results(
       q ?? "",
@@ -78,7 +79,8 @@ export class SearchController {
       },
       num(page) ?? 1,
       num(limit) ?? 24,
-      { lang: langOf(lang), world: worldOf(world), exact: flag(exact) },
+      // العنوان يُستعمل لعدّ الباحثات المختلفات في «الأكثر بحثاً» فقط (بصمة مملّحة، لا يُحفظ).
+      { lang: langOf(lang), world: worldOf(world), exact: flag(exact), client: req?.ip },
     );
   }
 }

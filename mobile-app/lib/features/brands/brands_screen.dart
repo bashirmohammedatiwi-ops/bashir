@@ -11,6 +11,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -517,7 +518,9 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               ),
               ...content,
               SliverToBoxAdapter(
-                child: SizedBox(height: widget.embedded ? 24 : 32),
+                child: SizedBox(
+                  height: (widget.embedded ? 24 : 32) + ShellFloatingReserve.of(context),
+                ),
               ),
             ],
           ),

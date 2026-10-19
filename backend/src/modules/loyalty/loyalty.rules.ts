@@ -10,6 +10,11 @@ export const LOYALTY_DEFAULTS = {
   firstOrderBonus: 500,
 };
 
+/** عناوين سجل النقاط — يُستدل بها على ما خُصم أو أضيف فعلاً لكل طلب (لا تُغيَّر: سجلات قديمة بها). */
+export const LOYALTY_REDEEM_TITLE = "استخدام نقاط في الطلب";
+export const LOYALTY_EARN_TITLE = "نقاط من الطلب";
+export const LOYALTY_BONUS_TITLE = "مكافأة أول طلب";
+
 export type LoyaltyRules = typeof LOYALTY_DEFAULTS;
 
 const num = (v: unknown, d: number, min = 0) => {

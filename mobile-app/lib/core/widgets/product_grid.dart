@@ -72,41 +72,47 @@ class ProductGrid extends StatelessWidget {
     );
   }
 
-  int? _indexForKey(Key key) {
-    if (key is! ValueKey<String>) return null;
-    final id = key.value;
-    final index = products.indexWhere((p) => p.id == id);
-    return index >= 0 ? index : null;
+  /// أول موضع لكل منتج — مفتاح البطاقة له وحده (منتج مكرر بين صفحتين لا يكرر المفتاح بين الإخوة).
+  Map<String, int> _firstIndexById() {
+    final out = <String, int>{};
+    for (var i = 0; i < products.length; i++) {
+      out.putIfAbsent(products[i].id, () => i);
+    }
+    return out;
   }
 
-  Widget _itemBuilder(BuildContext context, String scope, int i) {
+  /// المفتاح على الودجت المُعادة نفسها: بها يطابق الـ sliver البطاقة بمنتجها حين تتغير القائمة
+  /// (ترتيب، فلتر، حذف) فتبقى حالتها معها بدل إعادة بنائها حسب الموضع. حدّ الرسم يضيفه
+  /// الـ delegate نفسه (addRepaintBoundaries).
+  Widget _itemBuilder(String scope, int i, Map<String, int> firstIndex) {
     if (i >= products.length) return const ProductCardSkeleton();
     final product = products[i];
-    return RepaintBoundary(
-      child: ProductCard(
-        key: ValueKey(product.id),
-        product: product,
-        heroTag: productHeroTag(scope, product),
-        showPromoBadge: showPromoBadge,
-        showRating: showRating,
-        lite: !listingStyle,
-        style: listingStyle ? ProductCardStyle.listing : ProductCardStyle.standard,
-      ),
+    return ProductCard(
+      key: firstIndex[product.id] == i ? ValueKey<String>(product.id) : null,
+      product: product,
+      heroTag: productHeroTag(scope, product),
+      showPromoBadge: showPromoBadge,
+      showRating: showRating,
+      lite: !listingStyle,
+      style: listingStyle ? ProductCardStyle.listing : ProductCardStyle.standard,
     );
   }
 
+  ChildIndexGetter _indexForKey(Map<String, int> firstIndex) =>
+      (key) => key is ValueKey<String> ? firstIndex[key.value] : null;
+
   /// الشبكة وتذييلها كقائمة slivers.
-  List<Widget> _slivers(BuildContext context, String scope) => [
+  List<Widget> _slivers(BuildContext context, String scope, Map<String, int> firstIndex) => [
         SliverPadding(
           padding: padding,
           sliver: SliverGrid(
             gridDelegate: delegateFor(context, listing: listingStyle),
             delegate: SliverChildBuilderDelegate(
-              (context, i) => _itemBuilder(context, scope, i),
+              (context, i) => _itemBuilder(scope, i, firstIndex),
               childCount: products.length + extraSlots,
               addAutomaticKeepAlives: false,
               addRepaintBoundaries: true,
-              findChildIndexCallback: _indexForKey,
+              findChildIndexCallback: _indexForKey(firstIndex),
             ),
           ),
         ),
@@ -116,7 +122,8 @@ class ProductGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = productHeroScope(context, 'grid', heroScope);
-    if (_sliver) return SliverMainAxisGroup(slivers: _slivers(context, scope));
+    final firstIndex = _firstIndexById();
+    if (_sliver) return SliverMainAxisGroup(slivers: _slivers(context, scope, firstIndex));
 
     if (header != null || footer != null) {
       return CustomScrollView(
@@ -125,7 +132,7 @@ class ProductGrid extends StatelessWidget {
         cacheExtent: AppScrollPerf.gridCacheExtent,
         slivers: [
           if (header != null) SliverToBoxAdapter(child: header!),
-          ..._slivers(context, scope),
+          ..._slivers(context, scope, firstIndex),
         ],
       );
     }
@@ -139,8 +146,8 @@ class ProductGrid extends StatelessWidget {
       addRepaintBoundaries: true,
       gridDelegate: delegateFor(context, listing: listingStyle),
       itemCount: products.length + extraSlots,
-      findChildIndexCallback: _indexForKey,
-      itemBuilder: (context, i) => _itemBuilder(context, scope, i),
+      findChildIndexCallback: _indexForKey(firstIndex),
+      itemBuilder: (context, i) => _itemBuilder(scope, i, firstIndex),
     );
   }
 }

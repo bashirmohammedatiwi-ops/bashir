@@ -685,6 +685,9 @@ class AppStrings {
       isAr ? 'نقاط مستخدمة ($points)' : 'Points used ($points)';
   String loyaltyPointsEarned(int points) =>
       isAr ? 'نقاط مكتسبة (+$points)' : 'Points earned (+$points)';
+  /// طلب لم يُسلَّم بعد: نقاطه تُضاف عند التسليم.
+  String loyaltyPointsOnDelivery(int points) =>
+      isAr ? 'نقاط تُضاف عند التسليم (+$points)' : 'Points added on delivery (+$points)';
   String get orderPlacedSuccess => isAr ? 'تم استلام طلبك بنجاح!' : 'Your order was placed successfully!';
   String orderNumberLabel(String num) => isAr ? 'رقم الطلب: $num' : 'Order #$num';
   String get orderPlacedCodNote => isAr

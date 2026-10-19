@@ -310,7 +310,9 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
                       _InfoLine(
                         icon: Icons.stars_rounded,
                         iconColor: AppColors.star,
-                        text: s.loyaltyPointsEarned(order.loyaltyEarned),
+                        text: order.status == 'DELIVERED'
+                            ? s.loyaltyPointsEarned(order.loyaltyEarned)
+                            : s.loyaltyPointsOnDelivery(order.loyaltyEarned),
                         strong: true,
                       ),
                     ],

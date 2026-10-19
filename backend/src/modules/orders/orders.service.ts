@@ -10,7 +10,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { LoyaltyService } from "../loyalty/loyalty.service";
-import { loyaltyRules, pointsForAmount, redeemablePoints } from "../loyalty/loyalty.rules";
+import { LOYALTY_REDEEM_TITLE, loyaltyRules, pointsForAmount, redeemablePoints } from "../loyalty/loyalty.rules";
 import { paginate } from "../../common/dto/pagination.dto";
 import { OrderEvents } from "./order-events";
 import { QiGatewayService } from "../payments/qi-gateway.service";
@@ -479,6 +479,25 @@ export class OrdersService {
           });
         }
 
+        // النقاط تُخصم داخل المعاملة نفسها وبشرط الرصيد: طلبان متزامنان (التطبيق والموقع) لا ينالان
+        // الخصم نفسه برصيد واحد، ولا يُثبت طلب «مدفوع بالنقاط» لم تُخصم نقاطه.
+        if (loyaltyPointsUsed > 0) {
+          const { count } = await tx.user.updateMany({
+            where: { id: userId, loyaltyPoints: { gte: loyaltyPointsUsed } },
+            data: { loyaltyPoints: { decrement: loyaltyPointsUsed } },
+          });
+          if (count === 0) throw new BadRequestException("رصيد نقاط الولاء غير كافٍ");
+          await tx.loyaltyHistory.create({
+            data: {
+              userId,
+              title: LOYALTY_REDEEM_TITLE,
+              points: -loyaltyPointsUsed,
+              isEarned: false,
+              orderId: created.id,
+            },
+          });
+        }
+
         return created;
       });
     } catch (e) {
@@ -490,34 +509,41 @@ export class OrdersService {
       throw e;
     }
 
-    if (loyaltyPointsUsed > 0) {
-      await this.loyalty.redeemPoints(userId, loyaltyPointsUsed, "استخدام نقاط في الطلب", order.id);
-    }
-    if (loyaltyEarned > 0) {
-      await this.loyalty.addPoints(userId, loyaltyEarned, "نقاط من الطلب", order.id);
-    }
-    const prevOrders = await this.prisma.order.count({
-      where: { userId, id: { not: order.id }, status: { not: OrderStatus.CANCELLED } },
-    });
-    if (prevOrders === 0) {
-      const bonus = loyaltyRules((await this.settings.getAll()) as Record<string, unknown>).firstOrderBonus;
-      if (bonus > 0) await this.loyalty.addPoints(userId, bonus, "مكافأة أول طلب", order.id);
-    }
-
+    // النقاط المكتسبة (ومكافأة أول طلب) لا تُضاف هنا: تُضاف عند التسليم (updateStatus)،
+    // فلا تُصرف على طلب ثانٍ ثم يُلغى الأول فيبقى خصمها على المتجر.
     return order;
   }
 
   async updateStatus(id: string, dto: UpdateOrderStatusDto, actorId?: string) {
     const order = await this.findOne(id);
+    // طلب ملغى أعاد مخزونه وكوبونه ونقاطه — إعادته لحالة نشطة بلا حجزها من جديد تضخم المخزون،
+    // وإلغاؤه ثانيةً يعيدها مرتين. يُنشأ طلب جديد بدلاً من ذلك.
+    if (order.status === OrderStatus.CANCELLED && dto.status !== OrderStatus.CANCELLED) {
+      throw new BadRequestException("لا يمكن إعادة تفعيل طلب ملغى — أنشئي طلباً جديداً");
+    }
+    // التسليم يثبت الطلب: الآن تُضاف نقاطه المكتسبة ومكافأة أول طلب، مع تغيير الحالة في معاملة واحدة
+    // مشروطة بالحالة — فنقرتا «سُلّم» متزامنتان لا تضيفان النقاط مرتين، وتعذّر الإضافة يُبقي الطلب كما هو.
+    if (dto.status === OrderStatus.DELIVERED && order.status !== OrderStatus.DELIVERED) {
+      await this.prisma.$transaction(async (tx) => {
+        const { count } = await tx.order.updateMany({
+          where: { id, status: { notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED] } },
+          data: { status: OrderStatus.DELIVERED },
+        });
+        if (count > 0) await this.loyalty.creditDeliveredOrder(tx, order);
+      });
+    }
     // الإلغاء من لوحة التحكم يمر بنفس مسار الإلغاء: إعادة المخزون والنقاط والكوبون،
     // وعكس الدفعة الإلكترونية (عبر الحدث).
     if (dto.status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
       await this.cancel(id, { id: actorId, staff: true });
     }
-    const updated = await this.prisma.order.update({
-      where: { id },
+    // مشروط أيضاً: طلب أُلغي (مهلة الدفع، الزبونة) بين القراءة والكتابة لا يعود نشطاً.
+    const { count } = await this.prisma.order.updateMany({
+      where: dto.status === OrderStatus.CANCELLED ? { id } : { id, status: { not: OrderStatus.CANCELLED } },
       data: { status: dto.status, paymentStatus: dto.paymentStatus },
     });
+    if (count === 0) throw new BadRequestException("لا يمكن إعادة تفعيل طلب ملغى — أنشئي طلباً جديداً");
+    const updated = await this.prisma.order.findUniqueOrThrow({ where: { id } });
     if (actorId) {
       await this.prisma.auditLog.create({
         data: {
@@ -582,12 +608,7 @@ export class OrdersService {
       throw new BadRequestException("لا يمكن إلغاء الطلب بعد بدء تجهيزه — تواصلي معنا");
     }
 
-    await this.loyalty.reverseForCancelledOrder(
-      order.userId,
-      order.id,
-      order.loyaltySpent,
-      order.loyaltyEarned,
-    );
+    await this.loyalty.reverseForCancelledOrder(order.userId, order.id);
     this.events.emitCancelled({ orderId: order.id, actorId: actor.id });
     return updated;
   }

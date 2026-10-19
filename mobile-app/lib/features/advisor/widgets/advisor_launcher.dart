@@ -106,7 +106,8 @@ class _AdvisorLauncherState extends ConsumerState<AdvisorLauncher> {
                             )
                           : const SizedBox.shrink(),
                     ),
-                    const AdvisorOrb(size: 50),
+                    // أنفاس قليلة ثم سكون: الزر ظاهر طوال البقاء في الرئيسية.
+                    const AdvisorOrb(size: 50, breaths: 3),
                   ],
                 ),
               ),

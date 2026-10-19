@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { createHash } from "crypto";
 import { PrismaService } from "../../common/prisma.service";
 import { paginate } from "../../common/dto/pagination.dto";
 import { getCached, setCached } from "../../common/memory-cache.util";
@@ -18,7 +19,14 @@ export interface SearchRequestOptions {
   world?: string;
   /** بلا تصحيح إملائي: «ابحثي عن الكلمة الأصلية بدلاً من ذلك». */
   exact?: boolean;
+  /** هوية الباحثة (الحساب أو العنوان) — تُحوَّل لبصمة مملّحة لعدّ الباحثات المختلفات فقط، ولا تُحفظ. */
+  client?: string;
 }
+
+/** باحثات مختلفات لازمات لنشر عبارة في «الأكثر بحثاً» — عبارة يكررها جهاز واحد لا تظهر لغيره. */
+const TRENDING_MIN_CLIENTS = 5;
+/** بصمات أقدم من هذا تُحذف (نافذة الأكثر بحثاً 14 يوماً). */
+const CLIENT_TTL_MS = 30 * 24 * 60 * 60_000;
 
 /**
  * بحث المتجر الجديد: الترتيب كله في الذاكرة (فهرس «ديما»)، وقاعدة البيانات تُسأل
@@ -76,7 +84,8 @@ export class SearchService {
     const order = new Map(ids.map((id, i) => [id, i]));
     rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
     // البحث الأول فقط (لا تغيير فلتر ولا صفحة تالية) — وإلا تُعدّ العبارة مرات لبحث واحد.
-    if (pg === 1 && !hasFilters(f)) void this.recordQuery(q, lang, out.hits.length);
+    // والعبارة المصحّحة إملائياً لا تُسجَّل: التصحيح المرن يجد نتائج لعبارات دخيلة أو مسيئة.
+    if (pg === 1 && !hasFilters(f) && !out.corrected) void this.recordQuery(q, lang, out.hits.length, opts.client);
     return {
       ...paginate(rows.map((p) => withPlaceholderImages(rewriteProductMediaUrls(p))), out.hits.length, pg, take),
       facets: { ...out.facets, categories: await this.localizeCategories(out.facets.categories, lang) },
@@ -90,7 +99,8 @@ export class SearchService {
 
   /**
    * الأكثر بحثاً فعلاً — لاقتراحات شاشة البحث: عبارات وجدت نتائج في آخر بحث، بُحث عنها
-   * خلال 14 يوماً، و3 مرات على الأقل (عبارة نادرة قد تكون شخصية فلا تُعرض لغير صاحبتها).
+   * خلال 14 يوماً، من 5 باحثات مختلفات على الأقل — عبارة نادرة قد تكون شخصية، وتكرار جهاز واحد
+   * لعبارة لا يكفي لنشرها لكل الزبونات.
    * تُحفظ 10 دقائق.
    */
   async trending(lang: SearchLang, limit = 12) {
@@ -100,7 +110,12 @@ export class SearchService {
     const since = new Date(Date.now() - 14 * 24 * 60 * 60_000);
     const rows = await this.prisma.searchQueryStat
       .findMany({
-        where: { lang, lastTotal: { gt: 0 }, count: { gte: 3 }, lastAt: { gte: since } },
+        where: {
+          lang,
+          lastTotal: { gt: 0 },
+          clients: { gte: TRENDING_MIN_CLIENTS },
+          lastAt: { gte: since },
+        },
         orderBy: [{ count: "desc" }, { lastAt: "desc" }],
         take: Math.min(Math.max(limit, 1), 20),
         select: { q: true, count: true },
@@ -111,20 +126,40 @@ export class SearchService {
     return out;
   }
 
-  /** يسجّل العبارة بلا هوية صاحبتها (عدد مرات البحث، ومرات «لا نتائج»). الفشل لا يمس البحث. */
-  private async recordQuery(raw: string, lang: SearchLang, total: number) {
+  /**
+   * يسجّل العبارة بلا هوية صاحبتها (عدد مرات البحث، ومرات «لا نتائج»)، ويعدّ الباحثة مرة واحدة
+   * لكل عبارة عبر بصمة مملّحة مقتطعة. الفشل لا يمس البحث.
+   */
+  private async recordQuery(raw: string, lang: SearchLang, total: number, client?: string) {
     const q = normalizeStatQuery(raw);
     if (!q) return;
     try {
+      // باحثة جديدة لهذه العبارة؟ (البصمة موجودة = بحثت عنها من قبل).
+      const fp = clientFingerprint(client);
+      const fresh = fp
+        ? (
+            await this.prisma.searchQueryClient.createMany({
+              data: [{ q, lang, client: fp }],
+              skipDuplicates: true,
+            })
+          ).count > 0
+        : false;
       await this.prisma.searchQueryStat.upsert({
         where: { q_lang: { q, lang } },
-        create: { q, lang, count: 1, zeroCount: total > 0 ? 0 : 1, lastTotal: total },
+        create: { q, lang, count: 1, zeroCount: total > 0 ? 0 : 1, lastTotal: total, clients: fresh ? 1 : 0 },
         update: {
           count: { increment: 1 },
           ...(total > 0 ? {} : { zeroCount: { increment: 1 } }),
+          ...(fresh ? { clients: { increment: 1 } } : {}),
           lastTotal: total,
         },
       });
+      // تنظيف عرضي للبصمات القديمة (نحو مرة لكل 200 بحث) — لا تتراكم بلا حد.
+      if (Math.random() < 0.005) {
+        await this.prisma.searchQueryClient.deleteMany({
+          where: { createdAt: { lt: new Date(Date.now() - CLIENT_TTL_MS) } },
+        });
+      }
     } catch {
       // بحثان متزامنان لعبارة جديدة (P2002) أو جدول لم يُنشأ بعد — لا يهم.
     }
@@ -175,4 +210,12 @@ export function normalizeStatQuery(raw: string): string | null {
   if (q.length < 2 || q.length > 60) return null;
   if (/[0-9٠-٩۰-۹]{5,}/.test(q)) return null;
   return q;
+}
+
+/** بصمة غير قابلة للعكس للباحثة: مملّحة بسر الخادم ومقتطعة — تكفي للتمييز ولا تدل على صاحبتها. */
+function clientFingerprint(client?: string): string | null {
+  const id = client?.trim();
+  if (!id) return null;
+  const salt = process.env.SEARCH_STATS_SALT || process.env.JWT_SECRET || "deema-search";
+  return createHash("sha256").update(`${salt}|search-client|${id}`).digest("hex").slice(0, 24);
 }

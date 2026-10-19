@@ -53,14 +53,27 @@ extension WorldStringsX on AppStrings {
   String get worldOurBrands => isAr ? 'برانداتنا' : 'Our brands';
   String get worldGiftPromise => isAr ? 'تغليف هدية • بطاقة برسالتكِ' : 'Gift wrap • A card with your message';
 
-  /// شريحة ميزانية الهدية: «أقل من 10 ألف»، «10–25 ألف»، «+50 ألف».
+  /// شريحة ميزانية الهدية: «أقل من 10 آلاف»، «10–25 ألف»، «+50 ألف» — العدد بتمييزه الصحيح
+  /// (arThousands)، والوحدة بعد الحد الأعلى في المدى.
   String worldBudgetChip(int? min, int? max) {
     final thousands = (min ?? 0) % 1000 == 0 && (max ?? 0) % 1000 == 0;
-    String n(int v) => thousands ? formatNumber(v ~/ 1000) : formatNumber(v);
-    final unit = thousands ? (isAr ? ' ألف' : 'K') : (isAr ? ' د.ع' : ' IQD');
-    if (min == null) return isAr ? 'أقل من ${n(max!)}$unit' : 'Under ${n(max!)}$unit';
-    if (max == null) return isAr ? '+${n(min)}$unit' : '${n(min)}$unit+';
-    return '${n(min)}–${n(max)}$unit';
+    if (!thousands) {
+      String n(int v) => formatNumber(v);
+      final unit = isAr ? ' د.ع' : ' IQD';
+      if (min == null) return isAr ? 'أقل من ${n(max!)}$unit' : 'Under ${n(max!)}$unit';
+      if (max == null) return isAr ? '+${n(min)}$unit' : '${n(min)}$unit+';
+      return '${n(min)}–${n(max)}$unit';
+    }
+    if (!isAr) {
+      if (min == null) return 'Under ${formatNumber(max! ~/ 1000)}K';
+      if (max == null) return '${formatNumber(min ~/ 1000)}K+';
+      return '${formatNumber(min ~/ 1000)}–${formatNumber(max ~/ 1000)}K';
+    }
+    if (min == null) return 'أقل من ${arThousands(max! ~/ 1000)}';
+    // «ألف»/«ألفين» بلا رقم لا تناسب طرف مدى أو «+»: الرقم ظاهر دائماً هناك.
+    String withUnit(int k) => k >= 3 ? arThousands(k) : '${formatNumber(k)} ألف';
+    if (max == null) return '+${withUnit(min ~/ 1000)}';
+    return '${formatNumber(min ~/ 1000)}–${withUnit(max ~/ 1000)}';
   }
 
   /// عنوان صفحة المنتجات للشريحة: «هدايا أقل من 10,000 د.ع».

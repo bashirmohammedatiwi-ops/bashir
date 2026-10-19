@@ -28,8 +28,10 @@ extension CheckoutStringsX on AppStrings {
       isAr ? 'في سلتكِ منتج لم يعد متوفراً — أزيليه من السلة أولاً' : 'An item in your bag is no longer available — remove it first';
   String get pickupReadyNotice =>
       isAr ? 'استلام من الفرع — نبلغكِ حين يجهز طلبكِ' : "Branch pickup — we'll let you know when it's ready";
-  String pointsAddedToBalance(int n) =>
-      isAr ? 'أُضيفت ${arPoints(n)} لرصيدكِ ✨' : '${enCount(n, 'point', 'points')} added to your balance ✨';
+  /// النقاط المكتسبة تُضاف للرصيد عند تسليم الطلب (لا عند إنشائه).
+  String pointsAddedToBalance(int n) => isAr
+      ? 'تُضاف ${arPoints(n)} لرصيدكِ عند استلام طلبكِ ✨'
+      : "${enCount(n, 'point', 'points')} will be added to your balance on delivery ✨";
   String giftWrapNotice({required bool withMessage}) => isAr
       ? 'نغلّفه كهدية${withMessage ? ' مع رسالتكِ' : ''} 🎁'
       : 'Gift-wrapped${withMessage ? ' with your message' : ''} 🎁';

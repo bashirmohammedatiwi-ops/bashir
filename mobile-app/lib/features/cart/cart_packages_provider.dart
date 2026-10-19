@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -155,11 +156,12 @@ class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
     _persist();
   }
 
-  /// يُستدعى مع تحقق السلة: يجدّد سعر كل باقة وصلاحيتها من السيرفر، ويزيل ما انتهى أو
-  /// أُوقف (السيرفر يعيد 404 لهما). يعيد أسماء الباقات المُزالة، ولا يرمي خطأً أبداً:
+  /// يُستدعى مع تحقق السلة: يجدّد سعر كل باقة وصلاحيتها ومحتواها (منتجاتها وكمياتها — السيرفر
+  /// يحسب التوفير من محتواها الحالي) ويزيل ما انتهى أو أُوقف أو فرغ (السيرفر يعيد 404 للأولين).
+  /// يعيد أسماء الباقات المُزالة والتي تغيّر محتواها، ولا يرمي خطأً أبداً:
   /// ما تعذّر الوصول إليه يبقى كما هو إلا إن انتهى وقته على الجهاز.
-  Future<List<String>> revalidate() async {
-    if (state.isEmpty) return const [];
+  Future<({List<String> dropped, List<String> changed})> revalidate() async {
+    if (state.isEmpty) return (dropped: const <String>[], changed: const <String>[]);
     final api = _ref.read(apiServiceProvider);
     // null = لم تعد متاحة؛ غياب المفتاح = تعذّر الوصول.
     final fresh = <String, BeautyPackage?>{};
@@ -170,8 +172,9 @@ class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
         if (e.status == 404) fresh[p.id] = null;
       } catch (_) {}
     }));
-    if (!mounted) return const [];
+    if (!mounted) return (dropped: const <String>[], changed: const <String>[]);
     final dropped = <String>[];
+    final changed = <String>[];
     final next = <CartPackage>[];
     for (final p in state) {
       final CartPackage current;
@@ -179,7 +182,8 @@ class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
         current = p;
       } else {
         final live = fresh[p.id];
-        current = live == null
+        final items = live == null ? p.items : {for (final i in live.items) i.product.id: i.quantity};
+        current = live == null || items.isEmpty
             ? p.copyWith(isActive: false)
             : CartPackage(
                 id: p.id,
@@ -188,10 +192,11 @@ class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
                 price: live.price,
                 isRoutine: p.isRoutine,
                 coverUrl: p.coverUrl,
-                items: p.items,
+                items: items,
                 sets: p.sets,
                 endsAt: live.endsAt,
               );
+        if (current.isLive && !mapEquals(items, p.items)) changed.add(current.name);
       }
       if (current.isLive) {
         next.add(current);
@@ -203,7 +208,7 @@ class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
       state = next;
       _persist();
     }
-    return dropped;
+    return (dropped: dropped, changed: changed);
   }
 }
 

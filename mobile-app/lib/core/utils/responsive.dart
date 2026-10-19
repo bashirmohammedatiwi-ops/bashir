@@ -166,10 +166,26 @@ abstract final class Responsive {
   }
 
   /// حشوة أسفل المحتوى القابل للتمرير داخل الـ shell.
-  /// الشريط خارج الـ body — لا نحجز ارتفاعه مرتين.
+  /// الشريط خارج الـ body — لا نحجز ارتفاعه مرتين، لكن نضيف ما يحجزه
+  /// [ShellFloatingReserve] لعنصر عائم فوقه (شريط المقارنة).
   static double shellBottomReserve(BuildContext context, {double base = 68}) {
-    return 20;
+    return 20 + ShellFloatingReserve.of(context);
   }
+}
+
+/// ارتفاع عنصر عائم فوق شريط التنقل (شريط المقارنة) — تضيفه التبويبات أسفل
+/// محتواها القابل للتمرير كي لا يختفي آخره تحته. صفر خارج الـ shell أو حين يختفي.
+class ShellFloatingReserve extends InheritedWidget {
+  final double extra;
+
+  const ShellFloatingReserve({super.key, required this.extra, required super.child});
+
+  /// يُنشئ اعتماداً: تُعاد بناء التبويبة حين يظهر الشريط أو يختفي.
+  static double of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ShellFloatingReserve>()?.extra ?? 0;
+
+  @override
+  bool updateShouldNotify(ShellFloatingReserve oldWidget) => oldWidget.extra != extra;
 }
 
 extension ResponsiveContext on BuildContext {

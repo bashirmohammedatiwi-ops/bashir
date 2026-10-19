@@ -31,6 +31,7 @@ import '../home/home_section_renderer.dart';
 import '../home/widgets/home_features.dart';
 import '../shell/main_shell.dart' show navIndexProvider;
 import '../shell/nav_tabs.dart';
+import '../worlds/world_theme.dart';
 import 'offers_strings.dart';
 import 'widgets/offers_cms_banner.dart';
 import 'widgets/offers_error_banner.dart';
@@ -338,7 +339,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> with WidgetsBinding
     final showInitialSkeleton = _initialLoad && _items.isEmpty && _gridError == null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: context.worldTheme.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: OffersCanvas(

@@ -202,9 +202,10 @@ class _CardImage extends ConsumerWidget {
             child: DiscountBadge(percent: product.discountPercent, small: true),
           )
         : product.isNew
-        ? LabelBadge(label: s.newBadge, color: t.ink, small: true)
+        ? LabelBadge(label: s.newBadge, color: t.scrim, small: true)
         : (showPromoBadge && product.isPromo)
-        ? LabelBadge(label: s.offerBadge, color: t.accent, small: true)
+        // الأبيض فوق accent الليلي المرفوع ضعيف التباين — buttonFill المعتّم بدلاً منه.
+        ? LabelBadge(label: s.offerBadge, color: t.isDark ? t.buttonFill : t.accent, small: true)
         : null;
 
     return Padding(
@@ -212,12 +213,13 @@ class _CardImage extends ConsumerWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // إطار الصورة: خلفية دافئة خفيفة تجعل صور المنتجات البيضاء تبدو أنيقة.
+          // إطار الصورة: أبيض مثل خلفيات صور المنتجات — لا مربعات ظاهرة حول الصورة.
+          // يبقى أبيض في الوضع الليلي، مع خط رفيع يفصله عن البطاقة الداكنة.
           DecoratedBox(
             decoration: BoxDecoration(
-              // أبيض مثل خلفيات صور المنتجات — لا مربعات ظاهرة حول الصورة.
-              color: Colors.white,
+              color: ProductCoverImage.wellColor,
               borderRadius: BorderRadius.circular(ProductCard.radius - 5),
+              border: t.isDark ? Border.all(color: t.hairline) : null,
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
@@ -259,7 +261,7 @@ class _CardImage extends ConsumerWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: t.ink.withValues(alpha: 0.82),
+                    color: t.scrim.withValues(alpha: 0.82),
                     borderRadius: BorderRadius.circular(AppCorners.pill),
                   ),
                   child: Text(
@@ -331,6 +333,10 @@ class _RestockBellButton extends ConsumerWidget {
     final watching = ref.watch(
       restockWatchProvider.select((w) => w.contains(product.id)),
     );
+    // مفعّل: لون العالم بأيقونة بيضاء؛ في الليلي تعبئة الأزرار ولونها (اللون المرفوع
+    // لا يحمل الأبيض بتباين كافٍ).
+    final onFill = t.isDark ? t.buttonFill : t.accent;
+    final onIcon = t.isDark ? t.onAccent : Colors.white;
 
     return Semantics(
       container: true,
@@ -350,9 +356,9 @@ class _RestockBellButton extends ConsumerWidget {
               height: _side,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: watching ? t.accent : t.surface,
+                color: watching ? onFill : t.surface,
                 border: Border.all(
-                  color: watching ? t.accent : t.hairline.withValues(alpha: 0.9),
+                  color: watching ? onFill : t.hairline.withValues(alpha: 0.9),
                 ),
                 boxShadow: watching ? AppShadows.floating(t) : AppShadows.raised(t),
               ),
@@ -370,7 +376,7 @@ class _RestockBellButton extends ConsumerWidget {
                       : Icons.notifications_none_rounded,
                   key: ValueKey(watching),
                   size: _side * 0.5,
-                  color: watching ? Colors.white : t.accentDark,
+                  color: watching ? onIcon : t.accentDark,
                 ),
               ),
             ),

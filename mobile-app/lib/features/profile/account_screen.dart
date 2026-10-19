@@ -587,7 +587,11 @@ class _GuestHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    final soft = Colors.white.withValues(alpha: 0.85);
+    // البطاقة على تدرّج العالم (أعمق في الليلي): نص وأيقونات بيضاء في الوضعين،
+    // وزر الدخول أبيض بلون العالم المقروء فوق الأبيض.
+    const onHero = Colors.white;
+    final soft = onHero.withValues(alpha: 0.85);
+    final loginInk = t.accentOnWhite;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
       decoration: AccountTheme.heroDecoration(context),
@@ -600,17 +604,17 @@ class _GuestHero extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: onHero.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: onHero.withValues(alpha: 0.4),
                     width: 1.5,
                   ),
                 ),
                 child: const Icon(
                   Icons.person_outline_rounded,
                   size: 28,
-                  color: Colors.white,
+                  color: onHero,
                 ),
               ),
               const SizedBox(width: 14),
@@ -619,7 +623,7 @@ class _GuestHero extends StatelessWidget {
                   s.guestWelcome,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.title2.copyWith(color: Colors.white),
+                  style: AppText.title2.copyWith(color: onHero),
                 ),
               ),
             ],
@@ -655,8 +659,8 @@ class _GuestHero extends StatelessWidget {
               },
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(ProfileUi.buttonHeight),
-                backgroundColor: Colors.white,
-                foregroundColor: t.accentDark,
+                backgroundColor: onHero,
+                foregroundColor: loginInk,
                 shape: const StadiumBorder(),
                 elevation: 0,
               ),
@@ -665,7 +669,7 @@ class _GuestHero extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.title3.copyWith(
-                  color: t.accentDark,
+                  color: loginInk,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -681,9 +685,9 @@ class _GuestHero extends StatelessWidget {
               },
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(ProfileUi.buttonHeight),
-                foregroundColor: Colors.white,
+                foregroundColor: onHero,
                 side: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: onHero.withValues(alpha: 0.7),
                   width: 1.2,
                 ),
                 shape: const StadiumBorder(),
@@ -693,7 +697,7 @@ class _GuestHero extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.title3.copyWith(
-                  color: Colors.white,
+                  color: onHero,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -710,20 +714,23 @@ class _GuestPerk extends StatelessWidget {
   final String label;
   const _GuestPerk({required this.icon, required this.label});
 
+  /// فوق تدرّج بطاقة الضيفة — أبيض في الوضعين.
+  static const _onHero = Colors.white;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(8, 5, 10, 5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
+        color: _onHero.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AppCorners.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: Colors.white),
+          Icon(icon, size: 15, color: _onHero),
           const SizedBox(width: 5),
-          Text(label, style: AppText.micro.copyWith(color: Colors.white)),
+          Text(label, style: AppText.micro.copyWith(color: _onHero)),
         ],
       ),
     );

@@ -225,14 +225,27 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
 
   void _leave() => context.canPop() ? context.pop() : context.go('/');
 
+  /// خروج واحد مجدول بسبب اللغة — إعادة البناء لا تجدول رجوعاً ثانياً.
+  bool _leavingForLanguage = false;
+
   @override
   Widget build(BuildContext context) {
     final s = ref.s;
     if (!s.isAr) {
-      // دخلت برابط والواجهة إنجليزية: نعود فوراً بدل عرض واجهة لا تخصها.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _leave();
-      });
+      // دخلت برابط أو بُدّلت اللغة والواجهة إنجليزية: نعود بدل عرض واجهة لا تخصها — لكن فقط
+      // حين تكون «ديما» الصفحة الظاهرة؛ وإلا كان الرجوع سيغلق ما فوقها (صفحة الدخول مثلاً).
+      // اعتماد ModalRoute.of يعيد البناء حين تعود الصفحة للواجهة، فنخرج حينها.
+      final current = ModalRoute.of(context)?.isCurrent ?? true;
+      if (current && !_leavingForLanguage) {
+        _leavingForLanguage = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && (ModalRoute.of(context)?.isCurrent ?? true)) {
+            _leave();
+          } else {
+            _leavingForLanguage = false;
+          }
+        });
+      }
       return const Scaffold(backgroundColor: AdvisorStyle.bg);
     }
     final session = ref.watch(advisorProvider);

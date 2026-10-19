@@ -190,7 +190,7 @@ class ListingFiltersSection extends ConsumerWidget {
                 return _BrandChip(
                   brand: b,
                   name: b.localizedName(lang),
-                  countLabel: b.productCount > 0 ? s.lfBrandItems(formatNumber(b.productCount)) : null,
+                  countLabel: b.productCount > 0 ? s.lfBrandItems(b.productCount) : null,
                   selected: selected,
                   onTap: () => openBrand(selected ? null : b.id),
                 );
@@ -597,7 +597,7 @@ class _BrandChip extends StatelessWidget {
                       ? AppNetworkImage(url: brand.logoUrl, fit: BoxFit.contain, backgroundColor: Colors.white)
                       : Center(
                           child: Text(
-                            (brand.initial ?? name).characters.first.toUpperCase(),
+                            _brandInitial(brand.initial, name),
                             style: AppText.title3.copyWith(color: t.accent),
                           ),
                         ),
@@ -797,7 +797,7 @@ class _BrandPickerSheetState extends ConsumerState<_BrandPickerSheet> {
                             ? AppNetworkImage(url: b.logoUrl, fit: BoxFit.contain, backgroundColor: Colors.white)
                             : Center(
                                 child: Text(
-                                  (b.initial ?? b.localizedName(lang)).characters.first.toUpperCase(),
+                                  _brandInitial(b.initial, b.localizedName(lang)),
                                   style: AppText.title3.copyWith(color: t.accent),
                                 ),
                               ),
@@ -813,7 +813,7 @@ class _BrandPickerSheetState extends ConsumerState<_BrandPickerSheet> {
                       ),
                       subtitle: b.productCount > 0
                           ? Text(
-                              s.lfBrandItems(formatNumber(b.productCount)),
+                              s.lfBrandItems(b.productCount),
                               style: AppText.caption.copyWith(color: t.inkMuted),
                             )
                           : null,
@@ -835,5 +835,13 @@ class _BrandPickerSheetState extends ConsumerState<_BrandPickerSheet> {
 extension ListingFiltersLabels on AppStrings {
   String lfAllBrandsCount(String n) => isAr ? 'كل البراندات ($n)' : 'All brands ($n)';
 
-  String lfBrandItems(String n) => isAr ? '$n منتج' : '$n items';
+  /// عدد منتجات البراند بصيغة العدد الصحيحة («منتجان»، «3 منتجات»، «1 item»).
+  String lfBrandItems(int n) => isAr ? arProducts(n) : enCount(n, 'item', 'items');
+}
+
+/// حرف البراند بلا شعار — لا يرمي أبداً: «initial» قد يُحفظ فارغاً من لوحة التحكم، والاسم قد يفرغ.
+String _brandInitial(String? initial, String name) {
+  final saved = initial?.trim() ?? '';
+  final src = saved.isNotEmpty ? saved : name.trim();
+  return src.isEmpty ? '·' : src.characters.first.toUpperCase();
 }

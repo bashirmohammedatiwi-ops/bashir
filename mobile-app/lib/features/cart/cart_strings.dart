@@ -33,7 +33,18 @@ extension CartStringsX on AppStrings {
             ? 'An item in your bag is no longer available'
             : '${enCount(n, 'item', 'items')} in your bag are no longer available');
   String cartPackagesEnded(String names) => isAr ? 'انتهى عرض الباقة: $names' : 'Bundle offer ended: $names';
+  String cartPackagesChanged(String names) =>
+      isAr ? 'تغيّرت محتويات الباقة: $names' : 'Bundle contents changed: $names';
   String get cartUnavailableLabel => isAr ? 'غير متوفر الآن' : 'Not available now';
+
+  /// سطر بلا لون لمنتج صار له أكثر من لون — يُختار اللون قبل الطلب.
+  String get cartNeedsShadeLabel => isAr ? 'اختاري اللون' : 'Pick a shade';
+  String get cartChooseShadeAction => isAr ? 'اختاري لونكِ' : 'Choose your shade';
+  String cartNeedsShadeCount(int n) => isAr
+      ? (n == 1 ? 'منتج في سلتكِ صار بعدة ألوان — اختاري لونكِ لإتمام الطلب' : 'في سلتكِ ${arProducts(n)} بعدة ألوان — اختاري ألوانكِ لإتمام الطلب')
+      : (n == 1
+            ? 'An item in your bag now comes in several shades — pick yours to check out'
+            : 'Pick a shade for ${enCount(n, 'item', 'items')} to check out');
   String get cartRemoveUnavailable => isAr ? 'أزيلي غير المتوفر لإتمام الطلب' : 'Remove unavailable items to check out';
   String get cartCompleteFreeShipping => isAr ? 'أكملي للتوصيل المجاني' : 'Top up for free delivery';
   String cartCompleteFreeShippingHint(String amount) =>

@@ -12,6 +12,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
+import '../../core/motion/app_motion.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/navigation/product_nav.dart';
 import '../../core/push/push_service.dart';
@@ -40,6 +41,8 @@ import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/recently_viewed_provider.dart';
+import '../compare/compare_provider.dart';
+import '../compare/compare_strings.dart';
 import '../wishlist/wishlist_provider.dart';
 import '../worlds/world_theme.dart';
 import 'widgets/added_to_cart_sheet.dart';
@@ -112,7 +115,9 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
-  int _imageIndex = 0;
+  /// الصورة الظاهرة في المعرض — مُبلِّغ لا setState: السحب بين الصور يعيد بناء العدّاد
+  /// والمصغّرات فقط، لا الصفحة كلها.
+  final _imageIndex = ValueNotifier<int>(0);
   int _quantity = 1;
 
   /// معرّف الدرجة المختارة فقط — الكائن نفسه يُشتق من نسخة المنتج الحالية في كل بناء،
@@ -137,6 +142,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   void dispose() {
     _pageCtrl.dispose();
     _collapsed.dispose();
+    _imageIndex.dispose();
     super.dispose();
   }
 
@@ -310,8 +316,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     setState(() {
       _shadeId = shade.id;
       _quantity = _quantity.clamp(1, _maxQtyFor(product, shade));
-      _imageIndex = 0;
     });
+    _imageIndex.value = 0;
     // صورة الدرجة أول المعرض: نعود إليها لترى اللون فوراً.
     if (_pageCtrl.hasClients) {
       if (MediaQuery.disableAnimationsOf(context)) {
@@ -336,7 +342,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (_quantity > maxQty) _quantity = maxQty;
     _precacheGallery(context, product);
     final gallery = _galleryUrls(product, shade);
-    if (_imageIndex >= gallery.length) _imageIndex = gallery.length - 1;
+    // معرض قصُر (لون بصور أقل): العرض يقصّ الرقم فوراً، والمُبلِّغ يُصحَّح بعد الإطار (لا تغيير أثناء البناء).
+    if (_imageIndex.value >= gallery.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _imageIndex.value >= gallery.length) _imageIndex.value = math.max(0, gallery.length - 1);
+      });
+    }
     final zoomableUrls = gallery.where((u) => u.trim().isNotEmpty).toList();
 
     final collapseAt = Responsive.galleryExpandedHeight(context, hasThumbs: gallery.length > 1) -
@@ -358,7 +369,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           imageIndex: _imageIndex,
           pageCtrl: _pageCtrl,
           selectedShade: shade,
-          onPageChanged: (i) => setState(() => _imageIndex = i),
+          onPageChanged: (i) => _imageIndex.value = i,
         ),
         SliverToBoxAdapter(
           child: Transform.translate(
@@ -567,7 +578,7 @@ class _GalleryAppBar extends ConsumerWidget {
   final Product product;
   final List<String> gallery;
   final List<String> zoomableUrls;
-  final int imageIndex;
+  final ValueListenable<int> imageIndex;
   final PageController pageCtrl;
   final ProductShade? selectedShade;
   final ValueChanged<int> onPageChanged;
@@ -644,7 +655,13 @@ class _GalleryAppBar extends ConsumerWidget {
     final url = product.coverUrl.isNotEmpty ? product.coverUrl : gallery.first;
     return ColoredBox(
       color: Colors.white,
-      child: ProductCoverImage(url: url, fit: BoxFit.contain),
+      // عرض فكّ ثابت = عرض صورة المعرض: لا فكّ جديد مع كل حجم تمر به أثناء الطيران،
+      // والهبوط يستعمل الصورة المفكوكة نفسها.
+      child: ProductCoverImage(
+        url: url,
+        fit: BoxFit.contain,
+        decodeWidth: cachePixelWidth(flightContext, MediaQuery.sizeOf(flightContext).width),
+      ),
     );
   }
 
@@ -695,6 +712,7 @@ class _GalleryAppBar extends ConsumerWidget {
         ),
       ),
       actions: [
+        _CompareChip(product: product),
         Builder(
           builder: (buttonContext) => _CircleAction(
             icon: Icons.ios_share_rounded,
@@ -787,9 +805,12 @@ class _GalleryAppBar extends ConsumerWidget {
                             child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                '${imageIndex + 1}',
-                                style: AppText.micro.copyWith(color: Colors.white, height: 1),
+                              ValueListenableBuilder<int>(
+                                valueListenable: imageIndex,
+                                builder: (context, index, _) => Text(
+                                  '${math.min(index, gallery.length - 1) + 1}',
+                                  style: AppText.micro.copyWith(color: Colors.white, height: 1),
+                                ),
                               ),
                               Text(
                                 ' / ${gallery.length}',
@@ -830,8 +851,10 @@ class _GalleryAppBar extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: gallery.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final active = i == imageIndex;
+                    itemBuilder: (_, i) => ValueListenableBuilder<int>(
+                      valueListenable: imageIndex,
+                      builder: (context, index, _) {
+                      final active = i == math.min(index, gallery.length - 1);
                       return Semantics(
                         button: true,
                         selected: active,
@@ -868,7 +891,8 @@ class _GalleryAppBar extends ConsumerWidget {
                         ),
                         ),
                       );
-                    },
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -876,14 +900,17 @@ class _GalleryAppBar extends ConsumerWidget {
                   if (selectedShade != null) _GalleryShadeAccent(shade: selectedShade!),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8, top: 4),
-                    child: AnimatedSmoothIndicator(
-                    activeIndex: imageIndex,
-                      count: gallery.length,
-                      effect: WormEffect(
-                        dotHeight: 7,
-                        dotWidth: 7,
-                        activeDotColor: context.worldTheme.accent,
-                        dotColor: context.worldTheme.hairline,
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: imageIndex,
+                      builder: (context, index, _) => AnimatedSmoothIndicator(
+                        activeIndex: math.min(index, gallery.length - 1),
+                        count: gallery.length,
+                        effect: WormEffect(
+                          dotHeight: 7,
+                          dotWidth: 7,
+                          activeDotColor: context.worldTheme.accent,
+                          dotColor: context.worldTheme.hairline,
+                        ),
                       ),
                     ),
                   ),
@@ -892,6 +919,75 @@ class _GalleryAppBar extends ConsumerWidget {
                 const SizedBox(height: 8),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «قارني» بجانب المشاركة: شريحة محدّدة تضيف المنتج للمقارنة أو تزيله، وعلامة
+/// صح تنبثق لحظة الإضافة (فورية مع «تقليل الحركة»).
+class _CompareChip extends ConsumerWidget {
+  final Product product;
+  const _CompareChip({required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final selected = ref.watch(compareProvider.select((c) => c.contains(product.id)));
+    final still = MediaQuery.disableAnimationsOf(context);
+    final color = selected ? t.accentDark : t.ink;
+    return Center(
+      child: Semantics(
+        button: true,
+        toggled: selected,
+        label: selected ? s.compareRemove : s.compareAdd,
+        excludeSemantics: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          excludeFromSemantics: true,
+          onTap: () => toggleCompare(context, ref, product),
+          // الشريحة 34 والمساحة القابلة للمس 44.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: kMinTapTarget, minWidth: kMinTapTarget),
+            child: Center(
+              child: AnimatedContainer(
+                duration: still ? Duration.zero : MotionDurations.fast,
+                curve: MotionCurves.standard,
+                height: 34,
+                padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 12, 0),
+                decoration: BoxDecoration(
+                  color: selected ? t.accentLight : t.surface,
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
+                  border: Border.all(
+                    color: selected ? t.accentSoft : t.hairline.withValues(alpha: 0.9),
+                    width: selected ? 1.2 : 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: still ? Duration.zero : MotionDurations.bump,
+                      transitionBuilder: (child, a) => ScaleTransition(
+                        scale: Tween(begin: 0.4, end: 1.0).animate(CurvedAnimation(parent: a, curve: MotionCurves.pop)),
+                        child: FadeTransition(opacity: a, child: child),
+                      ),
+                      child: Icon(
+                        selected ? Icons.check_rounded : Icons.compare_arrows_rounded,
+                        key: ValueKey(selected),
+                        size: 17,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(s.compareAction, style: AppText.label.copyWith(color: color, height: 1)),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

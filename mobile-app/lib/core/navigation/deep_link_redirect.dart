@@ -75,9 +75,11 @@ String? resolveDeepLink(Uri uri) {
       return '/register';
     case '/help':
       return '/help';
+    // المقارنة: قائمة الجهاز نفسه (الموقع يحفظها محلياً أيضاً، فلا معاملات تُنقل).
+    case '/compare':
+      return '/compare';
     // صفحات ويب بلا مقابل في التطبيق — الرئيسية بدل «الصفحة غير موجودة».
     case '/gifts':
-    case '/compare':
       return '/';
     case '/privacy':
     case '/en/privacy':

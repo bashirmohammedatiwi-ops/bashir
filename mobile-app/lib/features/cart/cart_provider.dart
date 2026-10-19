@@ -18,13 +18,22 @@ class CartState {
   /// أو أُلغي تدرجه. تبقى ظاهرة حتى تقرر الزبونة (لا نحذف من سلتها شيئاً بصمت).
   final Set<String> unavailableKeys;
 
-  const CartState(this.items, {this.unavailableKeys = const {}});
+  /// أسطر بلا تدرج لمنتج صار له أكثر من تدرج معروض: السيرفر يرفض الطلب حتى تختار الزبونة
+  /// لوناً. منفصلة عن [unavailableKeys] لأن الحل اختيار اللون لا الحذف.
+  final Set<String> needsShadeKeys;
+
+  const CartState(this.items, {this.unavailableKeys = const {}, this.needsShadeKeys = const {}});
 
   int get count => items.fold(0, (s, e) => s + e.quantity);
   int get subtotal => items.fold(0, (s, e) => s + e.lineTotal);
   bool get isEmpty => items.isEmpty;
   bool get hasUnavailable => unavailableKeys.isNotEmpty;
   bool isUnavailable(String key) => unavailableKeys.contains(key);
+  bool needsShade(String key) => needsShadeKeys.contains(key);
+
+  /// سطر يمنع إتمام الطلب: غير متوفر، أو ينتظر اختيار اللون.
+  bool isBlocked(String key) => isUnavailable(key) || needsShade(key);
+  bool get blocksCheckout => hasUnavailable || needsShadeKeys.isNotEmpty;
 }
 
 /// ما وجده التحقق من السلة مع السيرفر. كل تغيير يُبلَّغ مرة واحدة فقط.
@@ -35,17 +44,25 @@ class CartRevalidation {
   /// كل الأسطر غير المتاحة الآن (مثل [CartState.unavailableKeys]).
   final Set<String> unavailableKeys;
 
+  /// كل الأسطر التي تنتظر اختيار اللون الآن (مثل [CartState.needsShadeKeys]).
+  final Set<String> needsShadeKeys;
+
   /// أسطر خُفّضت كميتها إلى المتوفر.
   final Set<String> clampedKeys;
 
   /// باقات انتهت أو أُوقفت فأُزيلت من السلة (منتجاتها باقية بسعرها العادي).
   final List<String> droppedPackageNames;
 
+  /// باقات تغيّرت منتجاتها أو كمياتها (التوفير يُحسب الآن بمحتواها الجديد).
+  final List<String> changedPackageNames;
+
   const CartRevalidation({
     this.changedPriceKeys = const {},
     this.unavailableKeys = const {},
+    this.needsShadeKeys = const {},
     this.clampedKeys = const {},
     this.droppedPackageNames = const [],
+    this.changedPackageNames = const [],
   });
 
   static const none = CartRevalidation();
@@ -53,8 +70,10 @@ class CartRevalidation {
   bool get hasChanges =>
       changedPriceKeys.isNotEmpty ||
       unavailableKeys.isNotEmpty ||
+      needsShadeKeys.isNotEmpty ||
       clampedKeys.isNotEmpty ||
-      droppedPackageNames.isNotEmpty;
+      droppedPackageNames.isNotEmpty ||
+      changedPackageNames.isNotEmpty;
 }
 
 class CartNotifier extends StateNotifier<CartState> {
@@ -81,6 +100,7 @@ class CartNotifier extends StateNotifier<CartState> {
   final _unreportedPrice = <String>{};
   final _unreportedClamped = <String>{};
   final _unreportedPackages = <String>[];
+  final _unreportedChangedPackages = <String>[];
 
   int _maxQty(CartItem item) => item.stock > 0 ? item.stock : 999;
 
@@ -109,11 +129,16 @@ class CartNotifier extends StateNotifier<CartState> {
     await prefs.setString(_key, jsonEncode(state.items.map((e) => e.toJson()).toList()));
   }
 
-  /// كل تعديل يمر من هنا: علامة «غير متوفر» تبقى فقط لأسطر ما زالت في السلة.
-  void _emit(List<CartItem> items, {Set<String>? unavailable}) {
+  /// كل تعديل يمر من هنا: علامتا «غير متوفر» و«اختاري اللون» تبقيان فقط لأسطر ما زالت في السلة.
+  void _emit(List<CartItem> items, {Set<String>? unavailable, Set<String>? needsShade}) {
     final keys = {for (final e in items) e.key};
     final flags = (unavailable ?? state.unavailableKeys).where(keys.contains).toSet();
-    state = CartState(items, unavailableKeys: Set.unmodifiable(flags));
+    final shadeFlags = (needsShade ?? state.needsShadeKeys).where(keys.contains).toSet();
+    state = CartState(
+      items,
+      unavailableKeys: Set.unmodifiable(flags),
+      needsShadeKeys: Set.unmodifiable(shadeFlags),
+    );
   }
 
   /// يضيف ويعيد عدد القطع المضافة فعلاً (قد يكون أقل من [quantity] عند حد المخزون، و0 إن
@@ -147,8 +172,8 @@ class CartNotifier extends StateNotifier<CartState> {
       remove(key);
       return;
     }
-    // سطر غير متوفر يمكن إنقاصه أو حذفه فقط.
-    final blocked = state.unavailableKeys.contains(key);
+    // سطر غير متوفر (أو ينتظر لونه) يمكن إنقاصه أو حذفه فقط.
+    final blocked = state.isBlocked(key);
     final items = [
       for (final e in state.items)
         if (e.key == key)
@@ -163,7 +188,7 @@ class CartNotifier extends StateNotifier<CartState> {
   /// يعيد false عند الوصول لحد المخزون (أو إن لم يعد السطر متاحاً).
   bool increment(String key) {
     final item = state.items.firstWhere((e) => e.key == key);
-    if (state.unavailableKeys.contains(key) || item.quantity >= _maxQty(item)) return false;
+    if (state.isBlocked(key) || item.quantity >= _maxQty(item)) return false;
     setQuantity(key, item.quantity + 1);
     return true;
   }
@@ -226,6 +251,7 @@ class CartNotifier extends StateNotifier<CartState> {
     _unreportedPrice.clear();
     _unreportedClamped.clear();
     _unreportedPackages.clear();
+    _unreportedChangedPackages.clear();
     _persist();
   }
 
@@ -279,9 +305,12 @@ class CartNotifier extends StateNotifier<CartState> {
       }));
       if (!mounted) return;
     }
-    final dropped = await packages;
+    final packs = await packages;
     if (!mounted) return;
-    _unreportedPackages.addAll(dropped);
+    _unreportedPackages.addAll(packs.dropped);
+    for (final name in packs.changed) {
+      if (!_unreportedChangedPackages.contains(name)) _unreportedChangedPackages.add(name);
+    }
     if (fresh.isEmpty) return; // بلا اتصال: نعيد المحاولة في المرة القادمة.
     _lastRevalidated = DateTime.now();
     _apply(fresh);
@@ -290,6 +319,7 @@ class CartNotifier extends StateNotifier<CartState> {
   /// يطبّق نتيجة التحقق على السلة كما هي الآن (قد تكون تغيّرت أثناء الانتظار).
   void _apply(Map<String, Product?> fresh) {
     final unavailable = {...state.unavailableKeys};
+    final needsShade = {...state.needsShadeKeys};
     var changed = false;
     final items = <CartItem>[];
     for (final line in state.items) {
@@ -301,31 +331,72 @@ class CartNotifier extends StateNotifier<CartState> {
       ProductShade? shade;
       if (line.shadeId != null) {
         shade = product?.shades.where((s) => s.id == line.shadeId).firstOrNull;
+      } else if (product != null) {
+        // سطر بلا تدرج (إصدار أقدم، أو منتج أضيفت له تدرجات بعد إضافته): السيرفر يأخذ التدرج
+        // الوحيد إن وُجد — فنأخذه هنا أيضاً ليطابق السعر والمخزون ما سيُحسب.
+        shade = product.soleDisplayableShade;
       }
       // حُذف المنتج أو أُوقف، أو أُلغي تدرجه (الواجهة العامة لا ترسل غير الفعّال).
       if (product == null || (line.shadeId != null && shade == null)) {
         unavailable.add(line.key);
+        needsShade.remove(line.key);
         items.add(line);
         continue;
       }
+      // صار للمنتج أكثر من لون ولم يُختر واحد: السيرفر يرفض السطر — تختار الزبونة لونها.
+      if (line.shadeId == null && product.hasMultipleDisplayableShades) {
+        unavailable.remove(line.key);
+        needsShade.add(line.key);
+        items.add(line);
+        continue;
+      }
+      needsShade.remove(line.key);
       final rebuilt = CartItem.fromProduct(product, quantity: line.quantity, shade: shade);
+      // تبنّي التدرج الوحيد يغيّر مفتاح السطر: العلامات القديمة لا تبقى عليه.
+      if (rebuilt.key != line.key) unavailable.remove(line.key);
       final CartItem next;
       if (rebuilt.stock <= 0) {
-        unavailable.add(line.key);
+        unavailable.add(rebuilt.key);
         next = rebuilt;
       } else {
-        unavailable.remove(line.key);
+        unavailable.remove(rebuilt.key);
         final qty = line.quantity.clamp(1, rebuilt.stock);
-        if (qty != line.quantity) _unreportedClamped.add(line.key);
-        if (rebuilt.price != line.price) _unreportedPrice.add(line.key);
+        if (qty != line.quantity) _unreportedClamped.add(rebuilt.key);
+        if (rebuilt.price != line.price) _unreportedPrice.add(rebuilt.key);
         next = rebuilt.copyWith(quantity: qty);
       }
       if (jsonEncode(next.toJson()) != jsonEncode(line.toJson())) changed = true;
       items.add(next);
     }
-    if (!changed && setEquals(unavailable, state.unavailableKeys)) return;
-    _emit(items, unavailable: unavailable);
+    final merged = _mergeSameKey(items);
+    if (merged.length != items.length) changed = true;
+    if (!changed &&
+        setEquals(unavailable, state.unavailableKeys) &&
+        setEquals(needsShade, state.needsShadeKeys)) {
+      return;
+    }
+    _emit(merged, unavailable: unavailable, needsShade: needsShade);
     if (changed) _persist();
+  }
+
+  /// سطران صارا بالمفتاح نفسه (سطر بلا تدرج أخذ التدرج الوحيد وكان مضافاً به أيضاً) — يُدمجان
+  /// في موضع الأول، والكمية لا تتجاوز المتوفر.
+  List<CartItem> _mergeSameKey(List<CartItem> items) {
+    final byKey = <String, int>{};
+    final out = <CartItem>[];
+    for (final item in items) {
+      final at = byKey[item.key];
+      if (at == null) {
+        byKey[item.key] = out.length;
+        out.add(item);
+        continue;
+      }
+      final first = out[at];
+      final qty = (first.quantity + item.quantity).clamp(1, _maxQty(first));
+      if (qty < first.quantity + item.quantity) _unreportedClamped.add(first.key);
+      out[at] = first.copyWith(quantity: qty);
+    }
+    return out;
   }
 
   CartRevalidation _takeReport() {
@@ -333,12 +404,15 @@ class CartNotifier extends StateNotifier<CartState> {
     final report = CartRevalidation(
       changedPriceKeys: _unreportedPrice.where(keys.contains).toSet(),
       unavailableKeys: {...state.unavailableKeys},
+      needsShadeKeys: {...state.needsShadeKeys},
       clampedKeys: _unreportedClamped.where(keys.contains).toSet(),
       droppedPackageNames: List.unmodifiable(_unreportedPackages),
+      changedPackageNames: List.unmodifiable(_unreportedChangedPackages),
     );
     _unreportedPrice.clear();
     _unreportedClamped.clear();
     _unreportedPackages.clear();
+    _unreportedChangedPackages.clear();
     return report;
   }
 }

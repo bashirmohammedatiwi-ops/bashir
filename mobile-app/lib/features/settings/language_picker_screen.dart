@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
+import '../../core/l10n/localized_text.dart';
+import '../../core/theme/theme_mode_provider.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../catalog/catalog_providers.dart';
 import '../profile/widgets/account_strings.dart';
@@ -123,6 +125,11 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
               ),
               const SizedBox(height: 24),
               options,
+              // المظهر: يظهر حين يُفعَّل الوضع الليلي فقط.
+              if (AppConfig.darkModeEnabled) ...[
+                const SizedBox(height: 32),
+                _AppearanceSection(lang: previewLang),
+              ],
             ],
           ),
         ),
@@ -156,7 +163,7 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const SizedBox(height: 48),
-                            Center(child: const BrandWordmark(width: 200)),
+                            const Center(child: BrandWordmark(width: 200)),
                             const SizedBox(height: 20),
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 200),
@@ -241,6 +248,9 @@ class _LangOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final radius = BorderRadius.circular(AppCorners.lg);
+    // في الليلي اللون المرفوع لا يحمل الأبيض: تعبئة الأزرار ولونها بدلاً منه.
+    final fill = t.isDark ? t.buttonFill : t.accent;
+    final onFill = t.isDark ? t.onAccent : Colors.white;
     return Semantics(
       button: true,
       selected: selected,
@@ -271,13 +281,13 @@ class _LangOption extends StatelessWidget {
                   height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: selected ? t.accent : t.accentLight,
+                    color: selected ? fill : t.accentLight,
                     borderRadius: BorderRadius.circular(AppCorners.sm),
                   ),
                   child: Text(
                     glyph,
                     style: AppText.title3.copyWith(
-                      color: selected ? Colors.white : t.accentDark,
+                      color: selected ? onFill : t.accentDark,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -313,19 +323,147 @@ class _LangOption extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: selected ? t.accent : Colors.transparent,
+                    color: selected ? fill : Colors.transparent,
                     border: Border.all(
-                      color: selected ? t.accent : t.hairline,
+                      color: selected ? fill : t.hairline,
                       width: 2,
                     ),
                   ),
                   child: selected
-                      ? const Icon(
+                      ? Icon(
                           Icons.check_rounded,
                           size: 15,
-                          color: Colors.white,
+                          color: onFill,
                         )
                       : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «المظهر»: يتبع النظام، فاتح، أو ليلي — يُطبَّق فوراً ويُحفظ.
+class _AppearanceSection extends ConsumerWidget {
+  final String lang;
+  const _AppearanceSection({required this.lang});
+
+  String _t(String ar, String en) =>
+      localizedText(languageCode: lang, ar: ar, en: en);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    final mode = ref.watch(themeModeProvider);
+    final options = [
+      (ThemeMode.system, Icons.brightness_auto_rounded, _t('النظام', 'System')),
+      (ThemeMode.light, Icons.light_mode_rounded, _t('فاتح', 'Light')),
+      (ThemeMode.dark, Icons.dark_mode_rounded, _t('ليلي', 'Dark')),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          _t('المظهر', 'Appearance'),
+          style: AppText.title2.copyWith(color: t.ink),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _t(
+            '«النظام» يتبع إعداد هاتفكِ تلقائياً.',
+            '“System” follows your phone setting automatically.',
+          ),
+          style: AppText.bodySmall.copyWith(color: t.inkSoft),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            for (var i = 0; i < options.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(
+                child: _ModeOption(
+                  icon: options[i].$2,
+                  label: options[i].$3,
+                  selected: mode == options[i].$1,
+                  onTap: () {
+                    if (mode == options[i].$1) return;
+                    HapticFeedback.selectionClick();
+                    ref.read(themeModeProvider.notifier).setMode(options[i].$1);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ModeOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ModeOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final radius = BorderRadius.circular(AppCorners.lg);
+    final still = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: AnimatedContainer(
+            duration: still ? Duration.zero : const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            constraints: const BoxConstraints(minHeight: 76),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              color: selected ? t.accentLight : t.surface,
+              border: Border.all(
+                color: selected ? t.accent : t.hairline,
+                width: selected ? 1.6 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 24,
+                  color: selected ? t.accentDark : t.inkMuted,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppText.label.copyWith(
+                    color: selected ? t.accentDark : t.ink,
+                  ),
                 ),
               ],
             ),

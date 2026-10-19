@@ -1173,9 +1173,23 @@ model SearchQueryStat {
   /// مرات انتهى فيها البحث بلا نتائج
   zeroCount Int      @default(0)
   lastTotal Int      @default(0)
+  /// باحثات مختلفات (بصمات SearchQueryClient) — شرط النشر في «الأكثر بحثاً»
+  clients   Int      @default(0)
   lastAt    DateTime @updatedAt
 
   @@unique([q, lang])
+}
+
+/// بصمة مملّحة ومقتطعة لمن بحثت عن العبارة — لعدّها مرة واحدة، بلا عنوان أو حساب
+model SearchQueryClient {
+  id        String   @id @default(cuid())
+  q         String
+  lang      String
+  client    String
+  createdAt DateTime @default(now())
+
+  @@unique([q, lang, client])
+  @@index([createdAt])
 }
 
 // حالة التدريب وإعداداته (صف واحد).

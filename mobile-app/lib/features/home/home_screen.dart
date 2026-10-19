@@ -272,9 +272,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: _pastHero,
       builder: (context, past, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-        // فوق الكتلة الملوّنة: أيقونات بيضاء؛ بعد تجاوزها أو فوق صفحة فاتحة: داكنة.
+        // فوق الكتلة الملوّنة أو في الليلي: أيقونات بيضاء؛ بعد تجاوزها فوق صفحة فاتحة: داكنة.
         value:
-            (showsBand && !past
+            ((showsBand && !past) || context.worldTheme.isDark
                     ? SystemUiOverlayStyle.light
                     : SystemUiOverlayStyle.dark)
                 .copyWith(statusBarColor: Colors.transparent),

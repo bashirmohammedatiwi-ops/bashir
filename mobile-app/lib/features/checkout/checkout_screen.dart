@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -42,6 +43,10 @@ import 'widgets/checkout_header.dart';
 import 'widgets/checkout_sections.dart';
 import '../cart/widgets/pill_buttons.dart';
 import '../worlds/world_theme.dart';
+
+/// مفتاح محاولة الإتمام الأخيرة مع توقيع ما أُرسل بها — خارج الشاشة، فإعادة فتح الدفع بالطلب
+/// نفسه (بعد خروج أو إغلاق أثناء الإرسال) ترسل المفتاح نفسه فيعيد السيرفر الطلب الأول لا طلباً ثانياً.
+final _checkoutAttemptProvider = StateProvider<({String signature, String ref})?>((ref) => null);
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -112,11 +117,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String? _couponError;
   bool _couponLoading = false;
 
-  /// مفتاح محاولة الإتمام: ثابت ما دامت السلة كما هي، فإعادة الإرسال بعد انقطاع (أو ضغطة
-  /// ثانية بعد رد لم يصل) تُرجع الطلب نفسه من السيرفر بدل طلب مكرر. يتجدد إن تغيّرت السلة.
-  late String _checkoutRef = _newCheckoutRef();
-  String? _checkoutRefCart;
-
   /// رسوم التوصيل من عرض السعر — null حتى يصل (لا «مجاني» قبل أن يقولها السيرفر).
   int? _shippingFee;
   bool _shippingLoading = false;
@@ -176,9 +176,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final s = ref.s;
     final parts = <String>[
       if (report.unavailableKeys.isNotEmpty) s.cartUnavailableCount(report.unavailableKeys.length),
+      if (report.needsShadeKeys.isNotEmpty) s.cartNeedsShadeCount(report.needsShadeKeys.length),
       if (report.changedPriceKeys.isNotEmpty) s.cartPricesUpdated(report.changedPriceKeys.length),
       if (report.clampedKeys.isNotEmpty) s.cartQuantitiesClamped,
       if (report.droppedPackageNames.isNotEmpty) s.cartPackagesEnded(report.droppedPackageNames.join(s.isAr ? '، ' : ', ')),
+      if (report.changedPackageNames.isNotEmpty) s.cartPackagesChanged(report.changedPackageNames.join(s.isAr ? '، ' : ', ')),
     ];
     if (parts.isNotEmpty) AppSnackbar.show(context, parts.join(' · '), duration: const Duration(seconds: 4));
   }
@@ -488,17 +490,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  /// مفتاح المحاولة للسلة الحالية: يتجدد فقط إن تغيّرت المنتجات أو الكميات أو الباقات.
-  String _refForCart(List<Map<String, dynamic>> items, List<Map<String, dynamic>> packs) {
-    final signature = [
-      for (final i in items) '${i['productId']}:${i['shadeId'] ?? ''}x${i['quantity']}',
-      for (final p in packs) 'p${p['packageId']}x${p['quantity']}',
-    ].join('|');
-    if (_checkoutRefCart != signature) {
-      if (_checkoutRefCart != null) _checkoutRef = _newCheckoutRef();
-      _checkoutRefCart = signature;
-    }
-    return _checkoutRef;
+  /// مفتاح محاولة الإتمام: ثابت ما دام الطلب المرسَل كما هو، فإعادة الإرسال بعد انقطاع (أو ضغطة
+  /// ثانية بعد رد لم يصل) تُرجع الطلب نفسه من السيرفر بدل طلب مكرر. يتجدد إن تغيّر أي شيء
+  /// يُرسل — السلة، التوصيل والعنوان، الدفع، الكوبون، النقاط، الهدية — فلا يعود طلب سابق بخيارات أخرى.
+  String _refFor(Map<String, Object?> request) {
+    final signature = jsonEncode(request);
+    final notifier = ref.read(_checkoutAttemptProvider.notifier);
+    final last = notifier.state;
+    if (last != null && last.signature == signature) return last.ref;
+    final next = _newCheckoutRef();
+    notifier.state = (signature: signature, ref: next);
+    return next;
   }
 
   /// إرسال الطلب، ومرة ثانية بنفس المفتاح إن انقطع الاتصال قبل وصول الرد —
@@ -556,22 +558,48 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final coupon = ref.read(appliedCouponProvider);
       final saved = ref.read(addressesProvider).valueOrNull ?? const <Address>[];
       final addressId = pickup ? null : await _resolveAddressId(saved);
+      // أُغلقت الشاشة أثناء حفظ العنوان: لم يُرسل طلب بعد — لا شيء يُتابع.
+      if (!mounted) return;
       final api = ref.read(apiServiceProvider);
       final items = cart.items.map((e) => e.toOrderItem()).toList();
-      final clientRef = _refForCart(items, packs);
       final notes = _orderNotes(pickup: pickup);
+      final deliveryOption = pickup ? 'PICKUP' : 'STANDARD';
+      // الكود يُرسل فقط إن بلغت السلة حدّه الأدنى (وإلا يرفض السيرفر الطلب).
+      final couponCode = coupon != null && coupon.eligibleFor(amounts.couponBase) ? coupon.code : null;
+      final giftMessage = _isGift ? _giftMsgCtrl.text.trim() : null;
+      final giftHidePrices = _isGift && _giftHidePrices;
+      final clientRef = _refFor({
+        'items': items,
+        'packages': packs,
+        'addressId': addressId,
+        'deliveryOption': deliveryOption,
+        'couponCode': couponCode,
+        'notes': notes,
+        'isGift': _isGift,
+        'giftMessage': giftMessage,
+        'giftHidePrices': giftHidePrices,
+        'loyaltySpent': amounts.loyaltyPoints,
+        'paymentMethod': method,
+      });
+      // ما يلي الإنشاء يتم ولو أُغلقت الشاشة أثناء الإرسال (إشعار يفتح صفحة أخرى…):
+      // الطلب أُنشئ على السيرفر، فالسلة والكوبون يُفرغان والقوائم تتجدد على أي حال.
+      final cartNotifier = ref.read(cartProvider.notifier);
+      final packagesNotifier = ref.read(cartPackagesProvider.notifier);
+      final couponNotifier = ref.read(appliedCouponProvider.notifier);
+      final attemptNotifier = ref.read(_checkoutAttemptProvider.notifier);
+      final authNotifier = ref.read(authProvider.notifier);
+      final container = ProviderScope.containerOf(context, listen: false);
       final order = await _submitOrder(
         () => api.createOrder(
           items: items,
           addressId: addressId,
-          deliveryOption: pickup ? 'PICKUP' : 'STANDARD',
-          // الكود يُرسل فقط إن بلغت السلة حدّه الأدنى (وإلا يرفض السيرفر الطلب).
-          couponCode: coupon != null && coupon.eligibleFor(amounts.couponBase) ? coupon.code : null,
+          deliveryOption: deliveryOption,
+          couponCode: couponCode,
           packages: packs,
           notes: notes,
           isGift: _isGift,
-          giftMessage: _isGift ? _giftMsgCtrl.text.trim() : null,
-          giftHidePrices: _isGift && _giftHidePrices,
+          giftMessage: giftMessage,
+          giftHidePrices: giftHidePrices,
           loyaltySpent: amounts.loyaltyPoints,
           paymentMethod: method,
           clientRef: clientRef,
@@ -580,16 +608,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // السيرفر يحفظ الطلب المغطّى بالكامل (نقاط/كوبون) نقداً ومدفوعاً — بلا بطاقة.
       final needsCard = order.paymentMethod == 'CARD' && order.paymentStatus != 'PAID' && order.total > 0;
       // قبل إفراغ السلة: الشاشة تتحول لـ«تم إنشاء طلبكِ» بدل «سلتكِ فارغة».
-      setState(() {
-        _placedOrderId = order.id;
-        _placedByCard = needsCard;
-      });
-      ref.read(cartProvider.notifier).clear();
-      ref.read(cartPackagesProvider.notifier).clear();
-      ref.read(appliedCouponProvider.notifier).clear();
-      ref.invalidate(ordersProvider);
-      ref.invalidate(loyaltyProvider);
-      unawaited(ref.read(authProvider.notifier).refreshUser());
+      if (mounted) {
+        setState(() {
+          _placedOrderId = order.id;
+          _placedByCard = needsCard;
+        });
+      }
+      cartNotifier.clear();
+      packagesNotifier.clear();
+      couponNotifier.clear();
+      attemptNotifier.state = null;
+      container.invalidate(ordersProvider);
+      container.invalidate(loyaltyProvider);
+      unawaited(authNotifier.refreshUser());
+      if (!mounted) return;
       // ما احتسبه السيرفر يختلف عما عرضناه (سعر تغيّر لحظة التأكيد…): لا يمر بصمت.
       final adjusted = shownTotal != null && order.total != shownTotal;
       if (needsCard) {
@@ -694,8 +726,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (mounted) context.pushReplacement('/orders/$orderId');
   }
 
-  /// فُتحت من رابط بلا صفحة تحتها: للسلة بدل رجوع مستحيل.
+  /// فُتحت من رابط بلا صفحة تحتها: للسلة بدل رجوع مستحيل. لا رجوع أثناء إرسال الطلب.
   void _back() {
+    if (_placing) return;
     if (context.canPop()) {
       context.pop();
       return;
@@ -708,8 +741,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final s = ref.s;
     return PopScope(
-      // أثناء الدفع بالبطاقة لطلب أُنشئ: الرجوع كان سيترك صفحة دفع فارغة.
-      canPop: _placedOrderId == null || !_placing,
+      // أثناء إرسال الطلب أو الدفع بالبطاقة لطلب أُنشئ: الرجوع كان سيترك الطلب بلا متابعة
+      // (السلة لا تُفرغ، أو صفحة دفع فارغة).
+      canPop: !_placing,
       child: AuthGate(title: s.checkout, emptyTitle: s.loginToCheckout, child: _buildCheckout(s)),
     );
   }
@@ -775,12 +809,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final addressesFailed = addressesAsync.hasError && !addressesAsync.hasValue;
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final offline = ref.watch(connectivityProvider).valueOrNull == false;
-    final unavailable = cart.hasUnavailable;
+    final unavailable = cart.blocksCheckout;
     final blockedReason = offline
         ? s.checkoutOffline
-        : unavailable
+        : cart.hasUnavailable
             ? s.checkoutUnavailableItems
-            : null;
+            : cart.needsShadeKeys.isNotEmpty
+                ? s.cartNeedsShadeCount(cart.needsShadeKeys.length)
+                : null;
     final method = _effectiveMethod(amounts.total, payMethods);
     final covered = amounts.total == 0;
 

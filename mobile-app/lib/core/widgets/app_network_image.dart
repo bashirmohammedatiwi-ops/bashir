@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../../features/worlds/world_theme.dart';
 import '../brand/brand_logo.dart';
 import '../cache/image_cache.dart';
-import '../theme/app_colors.dart';
 import '../utils/media_url.dart';
 
 const _fallbackAsset = 'assets/images/app_icon_brand_foreground.png';
@@ -63,7 +62,7 @@ class AppNetworkImage extends StatelessWidget {
     final resolvedUrl = resolveMediaUrl(url);
     Widget child;
     if (resolvedUrl.isEmpty) {
-      child = _fallback();
+      child = _fallback(context.worldTheme);
     } else if (decodeWidth != null || (width != null && width!.isFinite)) {
       child = _image(context, resolvedUrl, width, height);
     } else {
@@ -86,6 +85,7 @@ class AppNetworkImage extends StatelessWidget {
 
   Widget _image(BuildContext context, String resolvedUrl, double? layoutWidth, double? layoutHeight) {
     final pixelW = decodeWidth ?? cachePixelWidth(context, _decodeLogicalWidth(fit, layoutWidth, layoutHeight));
+    final t = context.worldTheme;
 
     final image = CachedNetworkImage(
       imageUrl: resolvedUrl,
@@ -102,8 +102,8 @@ class AppNetworkImage extends StatelessWidget {
       // مع خلفية مخصّصة تظهر الخلفية نفسها أثناء التحميل — لا أشرطة رمادية.
       placeholder: (_, __) =>
           placeholder ??
-          (backgroundColor != null ? const SizedBox.expand() : _solid(placeholderColor ?? AppColors.shimmerBase)),
-      errorWidget: (_, __, ___) => _fallback(),
+          (backgroundColor != null ? const SizedBox.expand() : _solid(placeholderColor ?? t.placeholder)),
+      errorWidget: (_, __, ___) => _fallback(t),
     );
 
     if (backgroundColor == null) return image;
@@ -125,12 +125,12 @@ class AppNetworkImage extends StatelessWidget {
     );
   }
 
-  Widget _fallback() {
+  Widget _fallback(WorldThemePalette t) {
     final asset = fallbackAsset ?? _fallbackAsset;
     return Container(
       width: width,
       height: height,
-      color: fallbackColor ?? const Color(0xFFF7F7F7),
+      color: fallbackColor ?? t.fallbackFill,
       alignment: Alignment.center,
       child: Image.asset(
         asset,
@@ -143,7 +143,8 @@ class AppNetworkImage extends StatelessWidget {
   }
 }
 
-/// غلاف المنتج — خلفية بيضاء دائماً (مناسبة لصور PNG الشفافة).
+/// غلاف المنتج — خلفية بيضاء دائماً، حتى في الوضع الليلي (صور المنتجات وPNG الشفافة
+/// مصمّمة على الأبيض؛ البطاقات تحيطها بخط رفيع هناك).
 class ProductCoverImage extends StatelessWidget {
   final String url;
   final double? width;
@@ -154,7 +155,13 @@ class ProductCoverImage extends StatelessWidget {
   /// عرض الفكّ بالبكسل الفعلي — يتجاوز الحساب التلقائي.
   final int? decodeWidth;
 
+  /// لون إطار الصورة — ثابت لا يتبع العالم ولا السطوع.
   static const Color wellColor = Colors.white;
+
+  /// علامة التحميل فوق [wellColor]: خط العالم الفاصل في الفاتح، ورمادي فاتح في الليلي
+  /// (الخط الفاصل الليلي داكن فيظهر بقعة على الأبيض).
+  static Color markColor(WorldThemePalette t) =>
+      t.isDark ? Color.lerp(wellColor, t.canvas, 0.12)! : t.hairline;
 
   const ProductCoverImage({
     super.key,
@@ -200,7 +207,7 @@ class ProductCoverImage extends StatelessWidget {
         final resolvedUrl = resolveMediaUrl(url);
         final pixelW = decodeWidth ?? cachePixelWidth(context, _decodeLogicalWidth(fit, w, h));
         // علامة ثابتة بلون الخط الفاصل — لا مؤشرات دوّارة في كل بطاقة أثناء التمرير.
-        final mark = Center(child: BrandMark(height: 26, color: context.worldTheme.hairline));
+        final mark = Center(child: BrandMark(height: 26, color: markColor(context.worldTheme)));
 
         return SizedBox(
           width: w,

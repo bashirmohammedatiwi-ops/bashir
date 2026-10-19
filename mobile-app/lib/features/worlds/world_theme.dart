@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_mode_provider.dart';
 import '../../data/models/store_world.dart';
 import 'worlds_provider.dart';
 
@@ -37,6 +38,43 @@ const double _minTextContrast = 4.5;
   return (onAccent: Colors.white, buttonFill: Colors.black);
 }
 
+/// نسخة الوضع الليلي: الأبيض فوق اللون إن قُرئ، وإلا نغمّق التعبئة قليلاً (حتى 25%)
+/// ويبقى النص أبيض، وإلا نكتب بلون الخلفية الداكنة [canvas] فوق اللون نفسه
+/// (ذهبي الهدايا: تغميقه حتى يُقرأ الأبيض يحوّله بنياً باهتاً).
+({Color onAccent, Color buttonFill}) _accessibleAccentDark(Color accent, Color canvas) {
+  for (var step = 0; step <= 5; step++) {
+    final fill = step == 0 ? accent : Color.lerp(accent, Colors.black, step * 0.05)!;
+    if (contrastRatio(Colors.white, fill) >= _minTextContrast) {
+      return (onAccent: Colors.white, buttonFill: fill);
+    }
+  }
+  if (contrastRatio(canvas, accent) >= _minTextContrast) {
+    return (onAccent: canvas, buttonFill: accent);
+  }
+  return _accessibleAccent(accent, canvas);
+}
+
+/// يقرّب [color] من [toward] بخطوات 4% حتى يبلغ تباينه مع [background] النسبة
+/// [minRatio] — أو حتى [maxT] فلا يذوب اللون في الأبيض.
+Color _liftForContrast(
+  Color color,
+  Color toward,
+  Color background, {
+  double minRatio = _minTextContrast,
+  double maxT = 0.7,
+}) {
+  var out = color;
+  for (var t = 0.04; t <= maxT && contrastRatio(out, background) < minRatio; t += 0.04) {
+    out = Color.lerp(color, toward, t)!;
+  }
+  return out;
+}
+
+/// خلفيتا الوضع الليلي قبل لمسة العالم — نفس قيم المتجر الإلكتروني (lib/theme.ts).
+const _darkCanvasBase = Color(0xFF110D18);
+const _darkSurfaceBase = Color(0xFF1C1626);
+const _darkInk = Color(0xFFF4EFFA);
+
 /// ألوان الواجهة المرتبطة بالعالم النشط — مع fallback لهوية ديما الحياة.
 class WorldThemePalette {
   final Color accent;
@@ -53,6 +91,9 @@ class WorldThemePalette {
   final Color divider;
   final LinearGradient signatureGradient;
   final LinearGradient primaryGradient;
+
+  /// فاتح أو ليلي — الألوان أعلاه مبنية له.
+  final Brightness brightness;
 
   /// لون النص والأيقونات فوق [buttonFill] (وفوق [accent] متى طابقته التعبئة).
   final Color onAccent;
@@ -78,7 +119,10 @@ class WorldThemePalette {
     required this.primaryGradient,
     this.onAccent = Colors.white,
     Color? buttonFill,
+    this.brightness = Brightness.light,
   }) : buttonFill = buttonFill ?? accent;
+
+  bool get isDark => brightness == Brightness.dark;
 
   /// هوية المتجر نفسها في كل استدعاء (WorldTheme.of يعود إليها خارج الـ router).
   factory WorldThemePalette.brand() => _brand;
@@ -104,6 +148,74 @@ class WorldThemePalette {
       primaryGradient: AppColors.primaryGradient,
       onAccent: on.onAccent,
       buttonFill: on.buttonFill,
+    );
+  }
+
+  /// هوية المتجر في الوضع الليلي — نسخة واحدة مثل [WorldThemePalette.brand].
+  factory WorldThemePalette.brandDark() => _brandDark;
+
+  static final WorldThemePalette _brandDark = _buildDark(AppColors.primary);
+
+  /// ألوان الوضع الليلي لعالم ([world] فارغ = هوية المتجر): خلفيات داكنة بلمسة من
+  /// لون العالم ونص فاتح، واللون نفسه مرفوع حتى يُقرأ 4.5:1 فوق البطاقات.
+  /// ألوان الخلفية والحبر الخاصة بالعالم للفاتح فقط — كما في المتجر الإلكتروني.
+  factory WorldThemePalette.dark(StoreWorld? world) =>
+      world == null ? _brandDark : _buildDark(world.accent);
+
+  /// الفاتح أو الليلي لنفس العالم.
+  factory WorldThemePalette.of(StoreWorld? world, Brightness brightness) {
+    if (brightness == Brightness.dark) return WorldThemePalette.dark(world);
+    return world == null ? _brand : WorldThemePalette.fromWorld(world);
+  }
+
+  static WorldThemePalette _buildDark(Color base) {
+    final canvas = Color.lerp(_darkCanvasBase, base, 0.07)!;
+    final surface = Color.lerp(_darkSurfaceBase, base, 0.08)!;
+    const ink = _darkInk;
+    final accentSoft = Color.alphaBlend(base.withValues(alpha: 0.24), canvas);
+    final accentLight = Color.alphaBlend(base.withValues(alpha: 0.16), surface);
+    // اللون مرفوع نحو الأبيض: الليلكي الأصلي يغرق في الخلفية الداكنة.
+    final accent = _liftForContrast(Color.lerp(base, Colors.white, 0.18)!, Colors.white, surface);
+    // «accentDark» هو لون التوكيد للنص والأيقونات — في الليلي أفتح لا أغمق،
+    // ويُقرأ حتى فوق الخلفيات الناعمة (مربعات الأيقونات والشرائح).
+    final accentDark = _liftForContrast(Color.lerp(base, Colors.white, 0.3)!, Colors.white, accentSoft);
+    final inkSoft = Color.lerp(ink, canvas, 0.25)!;
+    final inkMuted = _liftForContrast(Color.lerp(ink, canvas, 0.48)!, ink, surface);
+    final mid = Color.lerp(base, AppColors.rose, 0.38)!;
+    final on = _accessibleAccentDark(accent, canvas);
+
+    return WorldThemePalette(
+      accent: accent,
+      accentDark: accentDark,
+      accentSoft: accentSoft,
+      accentLight: accentLight,
+      canvas: canvas,
+      canvasWarm: Color.lerp(canvas, base, 0.1)!,
+      ink: ink,
+      inkSoft: inkSoft,
+      inkMuted: inkMuted,
+      surface: surface,
+      hairline: Color.lerp(surface, ink, 0.12)!,
+      divider: Color.lerp(surface, ink, 0.07)!,
+      // التدرّجات أعمق من الفاتح: نصوص بيضاء فوقها (بطاقات الترحيب والأزرار).
+      signatureGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color.lerp(base, Colors.black, 0.12)!,
+          Color.lerp(mid, Colors.black, 0.18)!,
+          Color.lerp(base, Colors.black, 0.38)!,
+        ],
+        stops: const [0.0, 0.62, 1.0],
+      ),
+      primaryGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [base, Color.lerp(base, Colors.black, 0.3)!],
+      ),
+      onAccent: on.onAccent,
+      buttonFill: on.buttonFill,
+      brightness: Brightness.dark,
     );
   }
 
@@ -177,20 +289,35 @@ class WorldThemePalette {
       primaryContainer: accentSoft,
       onPrimaryContainer: accentDark,
       secondary: accentDark,
-      onSecondary: Colors.white,
+      onSecondary: isDark ? canvas : Colors.white,
       surface: surface,
       onSurface: ink,
       onSurfaceVariant: inkSoft,
       outline: hairline,
       outlineVariant: divider,
     );
+    // الليلي: طبقات Material 3 (القوائم، الحقول، البطاقات الافتراضية) من ألوان العالم
+    // بدل رماديات Material — الفاتح يبقى كما هو تماماً.
+    final layered = !isDark
+        ? scheme
+        : scheme.copyWith(
+            surfaceContainerLowest: canvas,
+            surfaceContainerLow: surface,
+            surfaceContainer: Color.lerp(surface, ink, 0.04),
+            surfaceContainerHigh: Color.lerp(surface, ink, 0.07),
+            surfaceContainerHighest: Color.lerp(surface, ink, 0.1),
+            inverseSurface: ink,
+            onInverseSurface: canvas,
+            shadow: Colors.black,
+            scrim: Colors.black,
+          );
     OutlineInputBorder border(Color c, [double w = 1]) => OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppCorners.md),
           borderSide: BorderSide(color: c, width: w),
         );
     final input = base.inputDecorationTheme;
     return base.copyWith(
-      colorScheme: scheme,
+      colorScheme: layered,
       primaryColor: accent,
       scaffoldBackgroundColor: canvas,
       canvasColor: canvas,
@@ -287,7 +414,8 @@ class WorldThemePalette {
         dragHandleColor: hairline,
       ),
       dialogTheme: base.dialogTheme.copyWith(backgroundColor: surface),
-      snackBarTheme: base.snackBarTheme.copyWith(backgroundColor: ink),
+      // الرسائل نصها أبيض دائماً: في الليلي خلفيتها سطح مرفوع لا الحبر الفاتح.
+      snackBarTheme: base.snackBarTheme.copyWith(backgroundColor: isDark ? Color.lerp(surface, ink, 0.16) : ink),
       extensions: [
         for (final ext in base.extensions.values)
           if (ext is! WorldTheme) ext,
@@ -302,15 +430,38 @@ class WorldThemePalette {
   static ButtonStyle _overBase(ButtonStyle colors, ButtonStyle? base) =>
       colors.copyWith(textStyle: base?.textStyle).merge(base);
 
-  List<BoxShadow> get cardShadow => [
-        BoxShadow(
-          color: accentDark.withValues(alpha: 0.055),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
-        ),
-      ];
+  List<BoxShadow> get cardShadow => isDark
+      // الظل الملوّن يتوهّج فوق الخلفية الداكنة — ظل أسود أعمق بدلاً منه.
+      ? [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.32),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ]
+      : [
+          BoxShadow(
+            color: accentDark.withValues(alpha: 0.055),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ];
 
   Color get blush => canvasWarm;
+
+  /// طبقة داكنة تحت نص أبيض فوق الصور والبطاقات (شارة «جديد»، «نفد»، شريط الانقطاع):
+  /// الحبر في الفاتح، وفي الليلي أغمق من الخلفية — الحبر هناك فاتح.
+  Color get scrim => isDark ? Color.lerp(canvas, Colors.black, 0.35)! : ink;
+
+  /// خلفية الصور أثناء تحميلها.
+  Color get placeholder => isDark ? Color.lerp(surface, ink, 0.06)! : AppColors.shimmerBase;
+
+  /// خلفية الصورة البديلة (رابط فارغ أو فشل التحميل).
+  Color get fallbackFill => isDark ? Color.lerp(surface, ink, 0.04)! : const Color(0xFFF7F7F7);
+
+  /// لون العالم كنص فوق خلفية بيضاء ثابتة (زر أبيض، إطار صورة المنتج):
+  /// [accentDark] في الفاتح، وفي الليلي نسخة مغمّقة تُقرأ 4.5:1 فوق الأبيض.
+  Color get accentOnWhite => isDark ? _liftForContrast(accent, Colors.black, Colors.white, maxT: 0.9) : accentDark;
 
   /// مقارنة بالقيمة: تحديث العوالم بنفس الألوان لا يُعدّ تغييراً للثيم
   /// (Riverpod لا يُبلغ، وMaterialApp لا يعيد حركة الثيم).
@@ -333,7 +484,8 @@ class WorldThemePalette {
           other.signatureGradient == signatureGradient &&
           other.primaryGradient == primaryGradient &&
           other.onAccent == onAccent &&
-          other.buttonFill == buttonFill;
+          other.buttonFill == buttonFill &&
+          other.brightness == brightness;
 
   @override
   int get hashCode => Object.hash(
@@ -353,6 +505,7 @@ class WorldThemePalette {
         primaryGradient,
         onAccent,
         buttonFill,
+        brightness,
       );
 }
 
@@ -363,7 +516,9 @@ class WorldTheme extends ThemeExtension<WorldTheme> {
   const WorldTheme({required this.palette});
 
   static WorldThemePalette of(BuildContext context) {
-    return Theme.of(context).extension<WorldTheme>()?.palette ?? WorldThemePalette.brand();
+    final theme = Theme.of(context);
+    return theme.extension<WorldTheme>()?.palette ??
+        (theme.brightness == Brightness.dark ? WorldThemePalette.brandDark() : WorldThemePalette.brand());
   }
 
   @override
@@ -397,6 +552,7 @@ class WorldTheme extends ThemeExtension<WorldTheme> {
                 from.primaryGradient,
         onAccent: Color.lerp(from.onAccent, to.onAccent, t)!,
         buttonFill: Color.lerp(from.buttonFill, to.buttonFill, t)!,
+        brightness: t < 0.5 ? from.brightness : to.brightness,
       ),
     );
   }
@@ -413,22 +569,32 @@ extension WorldThemeContext on BuildContext {
   WorldThemePalette get worldTheme => WorldTheme.of(this);
 }
 
-final activeWorldThemeProvider = Provider<WorldThemePalette>((ref) {
+/// ألوان العالم النشط لسطوع معيّن — الفاتح لـ `theme` والليلي لـ `darkTheme`.
+final worldPaletteProvider = Provider.family<WorldThemePalette, Brightness>((ref, brightness) {
   final worlds = ref.watch(worldsProvider).valueOrNull;
   final selected = ref.watch(selectedWorldSlugProvider);
   final slug = resolveWorldSlug(selected: selected, worlds: worlds);
-  if (slug == null) return WorldThemePalette.brand();
+  if (slug == null) return WorldThemePalette.of(null, brightness);
 
   // قائمة العوالم تحمل الألوان نفسها: لا ننتظر التفاصيل فيومض ليلكي المتجر أولاً.
   final fromList = worlds?.where((w) => w.slug == slug).firstOrNull;
   final world = ref.watch(worldDetailProvider(slug)).valueOrNull ?? fromList;
-  if (world == null) return WorldThemePalette.brand();
-  return WorldThemePalette.fromWorld(world);
+  return WorldThemePalette.of(world, brightness);
 });
+
+/// ألوان العالم النشط بالسطوع المطبَّق فعلاً (فاتح حتى يُفعَّل الوضع الليلي).
+final activeWorldThemeProvider = Provider<WorldThemePalette>(
+  (ref) => ref.watch(worldPaletteProvider(ref.watch(effectiveBrightnessProvider))),
+);
 
 /// ثيم التطبيق كله بألوان العالم النشط — يتغيّر فقط حين تتغيّر الألوان فعلاً.
 final appThemeDataProvider = Provider<ThemeData>(
-  (ref) => ref.watch(activeWorldThemeProvider).applyTo(AppTheme.light),
+  (ref) => ref.watch(worldPaletteProvider(Brightness.light)).applyTo(AppTheme.light),
+);
+
+/// النسخة الليلية من [appThemeDataProvider] (`darkTheme` في MaterialApp).
+final appDarkThemeDataProvider = Provider<ThemeData>(
+  (ref) => ref.watch(worldPaletteProvider(Brightness.dark)).applyTo(AppTheme.dark),
 );
 
 extension WorldThemeRef on WidgetRef {

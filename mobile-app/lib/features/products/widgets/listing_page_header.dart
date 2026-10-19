@@ -71,7 +71,8 @@ class ListingPageHeader extends ConsumerWidget {
     final meta = [if (subtitle != null && subtitle!.isNotEmpty) subtitle!, if (count != null) count].join('  •  ');
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: (context.worldTheme.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+          .copyWith(statusBarColor: Colors.transparent),
       child: Container(
         decoration: BoxDecoration(
           // شريط بلون العالم يذوب في سطح الصفحة — نفس لغة رأس الرئيسية.

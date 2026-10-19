@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../navigation/app_navigation.dart';
@@ -9,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../../features/worlds/world_theme.dart';
 import '../brand/brand_logo.dart';
+import '../widgets/app_network_image.dart';
 
 /// بانر إشعار أثناء فتح التطبيق (foreground): ينزلق من الأعلى، يُسحب للأعلى
 /// ليُغلق، ويختفي وحده بعد ثوانٍ.
@@ -223,17 +223,13 @@ class _BannerCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (image != null && image.isNotEmpty)
+                // خط الصور المشترك: يُفك بعرض الإشعار الفعلي (لا بحجم الصورة الأصلي أثناء انزلاقه)،
+                // بكاش التطبيق وبديله الموحّد إن تعذّر التحميل.
                 ExcludeSemantics(
-                  child: CachedNetworkImage(
-                    imageUrl: image,
-                    height: 120,
+                  child: SizedBox(
                     width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => Container(
-                      height: 120,
-                      color: t.accentLight,
-                      child: Icon(Icons.image_not_supported_outlined, color: t.inkMuted),
-                    ),
+                    height: 120,
+                    child: AppNetworkImage(url: image, height: 120, fit: BoxFit.cover),
                   ),
                 ),
               Padding(

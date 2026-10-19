@@ -14,6 +14,7 @@ import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/beauty.dart';
+import '../../data/models/cart_item.dart';
 import '../../data/models/product.dart';
 import '../cart/cart_packages_provider.dart';
 import '../cart/cart_provider.dart';
@@ -789,11 +790,14 @@ Future<bool> addPackagesToCart(BuildContext context, WidgetRef ref, List<BeautyP
   final shades = await _pickShades(context, lines, confirmLabel: s.beautyAddToBagFor(formatPrice(total)));
   if (shades == null || !context.mounted) return false;
 
-  final short = _addLines(ref, lines, shades);
+  // المخزون يُفحص للون المختار ومع ما في السلة قبل أي إضافة: إضافة جزئية كانت تترك
+  // قطعاً بسعرها الكامل بلا الباقة.
+  final short = _shortLine(ref, lines, shades);
   if (short != null) {
     AppSnackbar.show(context, s.beautyNotEnoughStock(short));
     return false;
   }
+  _addLines(ref, lines, shades);
   final registry = ref.read(cartPackagesProvider.notifier);
   for (final p in packs) {
     registry.add(p);
@@ -841,11 +845,12 @@ Future<bool> completePackageInCart(
   final missingTotal = lines.fold<int>(0, (sum, l) => sum + l.product.price * l.quantity);
   final shades = await _pickShades(context, lines, confirmLabel: s.beautyAddToBagFor(formatPrice(missingTotal)));
   if (shades == null || !context.mounted) return false;
-  final short = _addLines(ref, lines, shades);
+  final short = _shortLine(ref, lines, shades);
   if (short != null) {
     AppSnackbar.show(context, s.beautyNotEnoughStock(short));
     return false;
   }
+  _addLines(ref, lines, shades);
   HapticFeedback.mediumImpact();
   AppSnackbar.cartAdded(
     context,
@@ -880,6 +885,21 @@ Future<bool> addAvailablePackageItems(BuildContext context, WidgetRef ref, Beaut
     );
   }
   return true;
+}
+
+/// أول سطر لا يكفيه المخزون (مخزون اللون المختار، أو المنتج بلا لون) مع ما في السلة منه، أو null.
+/// نفس حد السلة في الإضافة — فما يمر هنا يُضاف كاملاً.
+String? _shortLine(WidgetRef ref, List<_Line> lines, Map<String, ProductShade?> shades) {
+  final items = ref.read(cartProvider).items;
+  for (final l in lines) {
+    final line = CartItem.fromProduct(l.product, quantity: l.quantity, shade: shades[l.product.id]);
+    final had = items.where((e) => e.key == line.key).fold<int>(0, (sum, e) => sum + e.quantity);
+    if (line.stock <= 0 || had + l.quantity > line.stock) {
+      final shade = line.shadeName;
+      return shade == null ? l.product.name : '${l.product.name} — $shade';
+    }
+  }
+  return null;
 }
 
 /// يضيف الأسطر للسلة؛ يعيد اسم أول منتج أُضيف منه أقل من المطلوب (حد المخزون)، أو null.

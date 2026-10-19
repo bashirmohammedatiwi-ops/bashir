@@ -14,6 +14,8 @@ import '../brands/brands_screen.dart';
 import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
 import '../categories/categories_screen.dart';
+import '../compare/compare_provider.dart';
+import '../compare/compare_tray.dart';
 import '../home/home_screen.dart';
 import '../offers/offers_screen.dart';
 import '../profile/account_screen.dart';
@@ -25,6 +27,9 @@ import 'shell_nav_bar.dart';
 export 'shell_nav_bar.dart' show ShellNavBar;
 
 final navIndexProvider = StateProvider<int>((ref) => 0);
+
+/// ارتفاع شريط المقارنة العائم مع فراغه — ترتفع «ديما» بقدره حين يظهر.
+const double _trayLift = 62;
 
 /// يزداد عند لمس تبويب "الرئيسية" وهي مفتوحة — الرئيسية تصعد للأعلى.
 final homeScrollToTopProvider = StateProvider<int>((ref) => 0);
@@ -78,6 +83,11 @@ class _MainShellState extends ConsumerState<MainShell> {
     final softUpdate = ref.watch(softUpdateVisibleProvider);
     final launcherOn = index == NavTabs.home && !softUpdate;
     final navHeight = Responsive.shellNavDockHeight(context);
+    // شريط المقارنة: ليس فوق أزرار السلة وحسابي، ولا مع بطاقة التحديث في المكان نفسه.
+    final trayAllowed = index != NavTabs.cart && index != NavTabs.account && !softUpdate;
+    final trayOn = trayAllowed &&
+        ref.watch(compareProvider.select((c) => c.canCompare && !c.trayDismissed));
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     _visited.add(index);
 
     // انتهت الجلسة من السيرفر (رفض التجديد): نخبرها ونعرض الدخول بلمسة.
@@ -99,9 +109,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       canPop: index == NavTabs.home && _exitArmed,
       onPopInvokedWithResult: (didPop, _) => _onBack(didPop),
       child: AnimatedContainer(
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 320),
+        duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 320),
         curve: Curves.easeOutCubic,
         color: theme.canvas,
         child: Scaffold(
@@ -114,56 +122,70 @@ class _MainShellState extends ConsumerState<MainShell> {
                 // كل إشعار يُفتح من التبويبات يظهر فوق الشريط العائم لا عليه.
                 child: ShellDockInsets(
                   height: navHeight,
-                  child: IndexedStack(
-                    index: index,
-                    sizing: StackFit.expand,
-                    children: [
-                      TickerMode(
-                        enabled: index == 0,
-                        child: const HomeScreen(),
-                      ),
-                      TickerMode(
-                        enabled: index == NavTabs.categories,
-                        child: _visited.contains(NavTabs.categories)
-                            ? const _DarkStatusBar(child: CategoriesScreen())
-                            : const SizedBox.shrink(),
-                      ),
-                      TickerMode(
-                        enabled: index == NavTabs.offers,
-                        child: _visited.contains(NavTabs.offers)
-                            ? const _DarkStatusBar(child: OffersScreen())
-                            : const SizedBox.shrink(),
-                      ),
-                      TickerMode(
-                        enabled: index == NavTabs.cart,
-                        child: _visited.contains(NavTabs.cart)
-                            ? const _DarkStatusBar(child: CartScreen())
-                            : const SizedBox.shrink(),
-                      ),
-                      TickerMode(
-                        enabled: index == NavTabs.account,
-                        child: _visited.contains(NavTabs.account)
-                            ? const _DarkStatusBar(child: AccountScreen())
-                            : const SizedBox.shrink(),
-                      ),
-                      TickerMode(
-                        enabled: index == NavTabs.brands,
-                        child: _visited.contains(NavTabs.brands)
-                            ? const _DarkStatusBar(
-                                child: BrandsScreen(embedded: true),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
+                  // التبويبات تحجز أسفل محتواها مساحة شريط المقارنة ما دام ظاهراً.
+                  child: ShellFloatingReserve(
+                    extra: trayOn ? _trayLift : 0,
+                    child: IndexedStack(
+                      index: index,
+                      sizing: StackFit.expand,
+                      children: [
+                        TickerMode(
+                          enabled: index == 0,
+                          child: const HomeScreen(),
+                        ),
+                        TickerMode(
+                          enabled: index == NavTabs.categories,
+                          child: _visited.contains(NavTabs.categories)
+                              ? const _DarkStatusBar(child: CategoriesScreen())
+                              : const SizedBox.shrink(),
+                        ),
+                        TickerMode(
+                          enabled: index == NavTabs.offers,
+                          child: _visited.contains(NavTabs.offers)
+                              ? const _DarkStatusBar(child: OffersScreen())
+                              : const SizedBox.shrink(),
+                        ),
+                        TickerMode(
+                          enabled: index == NavTabs.cart,
+                          child: _visited.contains(NavTabs.cart)
+                              ? const _DarkStatusBar(child: CartScreen())
+                              : const SizedBox.shrink(),
+                        ),
+                        TickerMode(
+                          enabled: index == NavTabs.account,
+                          child: _visited.contains(NavTabs.account)
+                              ? const _DarkStatusBar(child: AccountScreen())
+                              : const SizedBox.shrink(),
+                        ),
+                        TickerMode(
+                          enabled: index == NavTabs.brands,
+                          child: _visited.contains(NavTabs.brands)
+                              ? const _DarkStatusBar(
+                                  child: BrandsScreen(embedded: true),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              ),
+              // صور المقارنة والعدد و«قارني الآن» — فوق الشريط مباشرة.
+              PositionedDirectional(
+                start: 16,
+                end: 16,
+                bottom: navHeight + 10,
+                child: CompareTray(allowed: trayAllowed),
               ),
               // «ديما» على الرئيسية فقط، وتختفي ما دامت بطاقة التحديث ظاهرة فلا
               // يتراكبان. خارجها تبقى حالتها لكن تُطفأ مؤقّتاتها (TickerMode)
               // فلا ترسم إطارات وهي مخفية — وتُخفى فوراً كي لا تتجمّد نصف ظاهرة.
-              PositionedDirectional(
+              // شريط المقارنة ظاهر: تصعد فوقه بدل أن تغطّيه.
+              AnimatedPositionedDirectional(
+                duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
                 end: 14,
-                bottom: navHeight + 12,
+                bottom: navHeight + 12 + (trayOn ? _trayLift : 0),
                 child: Visibility(
                   visible: launcherOn,
                   maintainState: true,
@@ -208,17 +230,18 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-/// تبويبات الخلفية الفاتحة — أيقونات شريط الحالة داكنة دائماً
-/// (الرئيسية تدير شريطها بنفسها لأنها تبدأ فوق صورة).
+/// تبويبات الخلفية السادة — أيقونات شريط الحالة عكس سطوع الثيم
+/// (داكنة في الفاتح، فاتحة في الليلي). الرئيسية تدير شريطها بنفسها لأنها تبدأ فوق صورة.
 class _DarkStatusBar extends StatelessWidget {
   final Widget child;
   const _DarkStatusBar({required this.child});
 
   @override
   Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
-    value: SystemUiOverlayStyle.dark.copyWith(
-      statusBarColor: Colors.transparent,
-    ),
+    value: (context.worldTheme.isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark)
+        .copyWith(statusBarColor: Colors.transparent),
     child: child,
   );
 }

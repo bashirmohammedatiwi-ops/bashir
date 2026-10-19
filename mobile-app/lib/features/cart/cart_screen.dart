@@ -76,7 +76,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final report = await ref.read(cartProvider.notifier).revalidate();
     if (!mounted) return;
     final news =
-        report.changedPriceKeys.isNotEmpty || report.clampedKeys.isNotEmpty || report.droppedPackageNames.isNotEmpty;
+        report.changedPriceKeys.isNotEmpty ||
+        report.clampedKeys.isNotEmpty ||
+        report.droppedPackageNames.isNotEmpty ||
+        report.changedPackageNames.isNotEmpty;
     if (news) setState(() => _notice = report);
   }
 
@@ -215,6 +218,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final topPad = MediaQuery.paddingOf(context).top;
     final t = context.worldTheme;
     final unavailableCount = cart.unavailableKeys.length;
+    final needsShadeCount = cart.needsShadeKeys.length;
 
     return Scaffold(
       backgroundColor: t.canvas,
@@ -239,10 +243,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                               SliverToBoxAdapter(
                                 child: CartHeader(count: cart.count, topPad: topPad, onClear: _clearCart),
                               ),
-                              if (unavailableCount > 0 || _notice != null)
+                              if (unavailableCount > 0 || needsShadeCount > 0 || _notice != null)
                                 SliverToBoxAdapter(
                                   child: _CartUpdateNotice(
                                     unavailableCount: unavailableCount,
+                                    needsShadeCount: needsShadeCount,
                                     report: _notice,
                                     onRemoveUnavailable: _removeUnavailable,
                                     onDismiss: _notice == null ? null : () => setState(() => _notice = null),
@@ -321,7 +326,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           total: total,
                           itemCount: cart.count,
                           compareAt: cart.subtotal + saleSaving,
-                          blocked: unavailableCount > 0,
+                          blocked: cart.blocksCheckout,
                         ),
                       ],
                     );
@@ -388,12 +393,16 @@ class _FreeShippingFillers extends ConsumerWidget {
 /// وما تغيّر سعره أو كميته، والباقات التي انتهى عرضها.
 class _CartUpdateNotice extends ConsumerWidget {
   final int unavailableCount;
+
+  /// أسطر تنتظر اختيار اللون (يُختار من بطاقة السطر نفسه).
+  final int needsShadeCount;
   final CartRevalidation? report;
   final VoidCallback onRemoveUnavailable;
   final VoidCallback? onDismiss;
 
   const _CartUpdateNotice({
     required this.unavailableCount,
+    this.needsShadeCount = 0,
     required this.report,
     required this.onRemoveUnavailable,
     this.onDismiss,
@@ -408,10 +417,13 @@ class _CartUpdateNotice extends ConsumerWidget {
     final tone = urgent ? AppColors.sale : AppColors.warning;
     final lines = <String>[
       if (urgent) s.cartUnavailableCount(unavailableCount),
+      if (needsShadeCount > 0) s.cartNeedsShadeCount(needsShadeCount),
       if (r != null && r.changedPriceKeys.isNotEmpty) s.cartPricesUpdated(r.changedPriceKeys.length),
       if (r != null && r.clampedKeys.isNotEmpty) s.cartQuantitiesClamped,
       if (r != null && r.droppedPackageNames.isNotEmpty)
         s.cartPackagesEnded(r.droppedPackageNames.join(s.isAr ? '، ' : ', ')),
+      if (r != null && r.changedPackageNames.isNotEmpty)
+        s.cartPackagesChanged(r.changedPackageNames.join(s.isAr ? '، ' : ', ')),
     ];
 
     return Padding(

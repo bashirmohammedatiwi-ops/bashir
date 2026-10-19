@@ -19,6 +19,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_text.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'core/widgets/keyboard_dismiss.dart';
 import 'core/widgets/responsive_app.dart';
 import 'core/widgets/scroll_perf.dart';
@@ -264,6 +265,15 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
     }
 
     final router = ref.watch(routerProvider);
+    final brightness = ref.watch(effectiveBrightnessProvider);
+    // شريطا النظام يتبعان السطوع المطبَّق؛ الشاشات التي تبدأ فوق صورة تضبط
+    // شريط الحالة بنفسها فوق هذا الأساس.
+    final overlay = systemOverlayStyleFor(
+      brightness,
+      navigationBar: brightness == Brightness.dark
+          ? ref.watch(activeWorldThemeProvider).surface
+          : null,
+    );
     // بعد ظهور الـ router (انتهاء الـ splash) نفّذ أي إشعار معلّق.
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => PendingPushNavigation.flush(),
@@ -277,6 +287,14 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
         onGenerateTitle: (_) => AppConfig.displayStoreName(lang),
         debugShowCheckedModeBanner: false,
         theme: ref.watch(appThemeDataProvider),
+        // الليلي لا يُبنى قبل تفعيله؛ وthemeMode من السطوع المحسوب نفسه حتى يتفق
+        // الثيم مع ألوان العالم (context.worldTheme وref.worldTheme) دائماً.
+        darkTheme: AppConfig.darkModeEnabled
+            ? ref.watch(appDarkThemeDataProvider)
+            : null,
+        themeMode: brightness == Brightness.dark
+            ? ThemeMode.dark
+            : ThemeMode.light,
         themeAnimationDuration: reduceMotion
             ? Duration.zero
             : const Duration(milliseconds: 320),
@@ -286,13 +304,18 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
         locale: locale,
         supportedLocales: _locales,
         localizationsDelegates: _delegates,
-        builder: (context, child) => ResponsiveApp(
-          child: Directionality(
-            textDirection: direction,
-            child: _OfflineBanner(
-              // فحص تحديث التطبيق (إجباري/اختياري) من إعدادات لوحة التحكم.
-              child: AppUpdateGate(
-                child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+          value: overlay,
+          child: ResponsiveApp(
+            child: Directionality(
+              textDirection: direction,
+              child: _OfflineBanner(
+                // فحص تحديث التطبيق (إجباري/اختياري) من إعدادات لوحة التحكم.
+                child: AppUpdateGate(
+                  child: DismissKeyboard(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
               ),
             ),
           ),
@@ -467,7 +490,8 @@ class _NetStrip extends ConsumerWidget {
             ar: 'عاد الاتصال',
             en: 'Back online',
           );
-    final color = offline ? context.worldTheme.ink : AppColors.successDeep;
+    // scrim: الحبر في الفاتح، وأغمق من الخلفية في الليلي (النص أبيض في الحالتين).
+    final color = offline ? context.worldTheme.scrim : AppColors.successDeep;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       // أيقونات شريط الحالة فاتحة فوق الشريط الداكن.

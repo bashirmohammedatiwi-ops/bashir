@@ -483,7 +483,8 @@ class _SearchBar extends StatelessWidget {
     final t = context.worldTheme;
     final hintStyle = AppText.bodySmall.copyWith(color: t.inkMuted, fontSize: 14);
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: (context.worldTheme.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+          .copyWith(statusBarColor: Colors.transparent),
       child: Material(
         color: t.surface,
         child: SafeArea(

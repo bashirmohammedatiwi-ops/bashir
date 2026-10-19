@@ -598,7 +598,8 @@ class _WorldHeader extends ConsumerWidget {
     final tagline = world.localizedTagline(lang);
     final cartCount = ref.watch(cartProvider.select((c) => c.count));
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: (palette.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+          .copyWith(statusBarColor: Colors.transparent),
       child: ColoredBox(
         color: world.canvas,
         child: Column(

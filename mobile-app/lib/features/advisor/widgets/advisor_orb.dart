@@ -12,7 +12,12 @@ import '../../../core/brand/brand_logo.dart';
 class AdvisorOrb extends StatefulWidget {
   final double size;
   final bool thinking;
-  const AdvisorOrb({super.key, this.size = 44, this.thinking = false});
+
+  /// عدد الأنفاس ثم تستقر الكرة — null = تنفّس متواصل (كرات شاشة «ديما» نفسها).
+  /// زر الإطلاق على الرئيسية يتنفّس قليلاً ثم يهدأ، فلا تُرسم إطارات طوال الجلسة.
+  final int? breaths;
+
+  const AdvisorOrb({super.key, this.size = 44, this.thinking = false, this.breaths});
 
   @override
   State<AdvisorOrb> createState() => _AdvisorOrbState();
@@ -22,6 +27,9 @@ class _AdvisorOrbState extends State<AdvisorOrb> with TickerProviderStateMixin {
   late final AnimationController _spin = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
   late final AnimationController _breath = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600), value: 0.5);
   bool _still = false;
+
+  /// انتهت الأنفاس المحدودة — لا تبدأ من جديد مع كل تغيّر في الاعتماديات.
+  bool _breathDone = false;
 
   @override
   void didChangeDependencies() {
@@ -43,9 +51,20 @@ class _AdvisorOrbState extends State<AdvisorOrb> with TickerProviderStateMixin {
     } else {
       _spin.stop();
     }
-    if (widget.size >= 40 && !_still) {
-      if (!_breath.isAnimating) _breath.repeat(reverse: true);
-    } else {
+    final breaths = widget.breaths;
+    if (widget.size >= 40 && !_still && !_breathDone) {
+      if (_breath.isAnimating) return;
+      if (breaths == null) {
+        _breath.repeat(reverse: true);
+      } else {
+        // كل نفَس = شهيق وزفير، ثم تستقر في المنتصف.
+        _breath.repeat(reverse: true, count: breaths * 2).whenCompleteOrCancel(() {
+          if (!mounted || _breath.isAnimating) return;
+          _breathDone = true;
+          if (_breath.value != 0.5) _breath.animateTo(0.5, duration: const Duration(milliseconds: 700));
+        });
+      }
+    } else if (!_breathDone || _still) {
       _breath.stop();
       _breath.value = 0.5;
     }

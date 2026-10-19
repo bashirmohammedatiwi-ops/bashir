@@ -6,15 +6,16 @@ import '../../core/navigation/deep_link_redirect.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/navigation/app_navigation.dart';
+import '../../data/models/beauty.dart';
 
 import '../../features/advisor/advisor_screen.dart';
 import '../../features/alerts/restock_alerts_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/brands/brand_screen.dart';
-import '../../features/brands/brands_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
 import '../../features/checkout/order_success_screen.dart';
+import '../../features/compare/compare_screen.dart';
 import '../../features/orders/order_detail_screen.dart';
 import '../../features/orders/orders_screen.dart';
 import '../../features/packages/package_detail_screen.dart';
@@ -41,7 +42,12 @@ import '../../features/shell/nav_tabs.dart';
 import '../../features/wishlist/wishlist_screen.dart';
 import '../../features/worlds/world_screen.dart';
 import '../../features/worlds/worlds_provider.dart';
-import '../widgets/ui/app_icon_button.dart';
+import '../../features/profile/widgets/profile_ui.dart';
+import '../config/app_config.dart';
+import '../theme/app_spacing.dart';
+import '../utils/support_links.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/states.dart';
 
 /// «?ids=a,b,c» (أو معامل مكرر) ← قائمة معرّفات؛ null إن لم تُرسل.
 List<String>? _idsParam(Uri uri) {
@@ -81,8 +87,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // «ديما» بالعربية فقط — أي رابط إليها بلغة أخرى يعود للرئيسية.
-      final target = mapped ?? path;
-      if (!localeSettings.isArabic && (target == '/advisor' || target.startsWith('/advisor/') || target.startsWith('/advisor?'))) {
+      if (!localeSettings.isArabic && (path == '/advisor' || path.startsWith('/advisor/'))) {
         return '/';
       }
 
@@ -101,7 +106,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/';
       }
       if (path == '/brands') {
-        // البراندات صارت تبويباً في الشريط السفلي؛ ?q= يملأ بحثها.
+        // البراندات تبويب في الشريط السفلي (لا مسار لها): روابط المنصة و go() تصل هنا،
+        // والدفع من داخل التطبيق يمرّ عبر openTabPath. ?q= يملأ بحثها.
         final q = state.uri.queryParameters['q']?.trim();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final container = ProviderScope.containerOf(context);
@@ -143,7 +149,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/language', builder: (_, __) => const LanguagePickerScreen()),
       GoRoute(path: '/', builder: (_, __) => const MainShell()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      // extra: رقم الهاتف من صفحة التسجيل (رقم مسجّل مسبقاً) ليُملأ تلقائياً.
+      GoRoute(
+        path: '/login',
+        builder: (_, s) => LoginScreen(initialPhone: s.extra is String ? s.extra as String : null),
+      ),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
       GoRoute(
@@ -171,7 +181,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => WorldScreen(slug: s.pathParameters['slug']!),
       ),
       GoRoute(path: '/scan', builder: (_, st) => QrScanScreen(pickOnly: st.uri.queryParameters['pick'] == '1')),
-      GoRoute(path: '/brands', builder: (_, __) => const BrandsScreen()),
       GoRoute(
         path: '/product/:id',
         builder: (_, s) => ProductDetailScreen(
@@ -196,6 +205,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/products',
         builder: (_, s) => ProductListingScreen(
           title: s.uri.queryParameters['title'] ?? ref.read(stringsProvider).products,
+          // عنوان صريح في الرابط (رف الرئيسية، شريحة الميزانية…) يُعرض كما هو بدل العناوين العامة.
+          titleExplicit: (s.uri.queryParameters['title'] ?? '').trim().isNotEmpty,
           categoryId: s.uri.queryParameters['categoryId'],
           subcategoryId: s.uri.queryParameters['subcategoryId'],
           tertiaryCategoryId: s.uri.queryParameters['tertiaryCategoryId'],
@@ -216,7 +227,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/package/:id',
-        builder: (_, s) => PackageDetailScreen(idOrSlug: s.pathParameters['id']!),
+        // extra: الباقة كاملة من البطاقة المضغوطة — تُعرض فوراً بلا هيكل تحميل.
+        builder: (_, s) => PackageDetailScreen(
+          idOrSlug: s.pathParameters['id']!,
+          initial: s.extra is BeautyPackage ? s.extra as BeautyPackage : null,
+        ),
       ),
       GoRoute(
         path: '/packages',
@@ -260,26 +275,41 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const LegalDocumentScreen(type: LegalDocumentType.terms),
       ),
       GoRoute(path: '/about', builder: (_, __) => const AboutAppScreen()),
-      // «المساعدة» في الموقع: التواصل والأسئلة — في التطبيق صفحة «عن التطبيق» وفيها التواصل.
+      // الأسئلة الشائعة والتواصل (يقابل /help في الموقع).
       GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
       GoRoute(path: '/alerts', builder: (_, __) => const RestockAlertsScreen()),
+      // قائمة المقارنة المحفوظة على الجهاز (يقابل /compare في الموقع).
+      GoRoute(path: '/compare', builder: (_, __) => const CompareScreen()),
       GoRoute(path: '/licenses', builder: (_, __) => const OpenSourceLicensesScreen()),
     ],
+    // رابط لا مقابل له في التطبيق: رأس برجوع (أو للرئيسية إن فُتح من الخارج)،
+    // وزر يفتح الصفحة نفسها على الموقع بدل طريق مسدود.
     errorBuilder: (context, state) => Consumer(
       builder: (context, ref, _) {
         final s = ref.watch(stringsProvider);
-        return Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            leading: const Center(child: AppBackButton()),
-          ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+        return ProfileScaffold(
+          title: s.pageNotFound,
+          body: EmptyState(
+            icon: Icons.link_off_rounded,
+            title: s.pageNotFound,
+            action: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(s.pageNotFound, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 16),
-                TextButton(onPressed: () => context.go('/'), child: Text(s.goHome)),
+                ProfilePrimaryButton(
+                  label: s.goHome,
+                  icon: Icons.home_rounded,
+                  onPressed: () => context.go('/'),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextButton.icon(
+                  style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+                  onPressed: () async {
+                    final ok = await openExternalUrl(AppConfig.webUrl(state.uri.toString()));
+                    if (!ok && context.mounted) AppSnackbar.show(context, s.linkOpenFailed);
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: Text(s.viewOnWebsite),
+                ),
               ],
             ),
           ),

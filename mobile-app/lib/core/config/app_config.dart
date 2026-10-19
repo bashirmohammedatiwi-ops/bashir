@@ -9,6 +9,11 @@ class AppConfig {
   /// قائمة الإشعارات داخل التطبيق تعمل حتى لو فشل Firebase.
   static const bool pushNotificationsEnabled = true;
 
+  /// الوضع الليلي: الألوان الليلية والثيم جاهزان، لكن الاختيار (نظام/فاتح/ليلي)
+  /// في شاشة اللغة والمظهر يبقى مخفياً، والتطبيق فاتح دائماً، حتى تُنقل كل شاشات
+  /// مسار الشراء (الرئيسية، القوائم، المنتج، السلة، الدفع، الحساب) إلى ألوان العالم.
+  static const bool darkModeEnabled = false;
+
   static const String appScheme = 'https';
 
   /// أصل الموقع: `https://deemaalhayat.com`
