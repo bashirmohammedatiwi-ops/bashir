@@ -54,16 +54,24 @@ class CategorySearchResults extends ConsumerWidget {
                   color: t.accent.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  s.catNoMatch,
-                  style: AppText.title3.copyWith(color: t.ink),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  s.catNoMatchHint,
-                  textAlign: TextAlign.center,
-                  style: AppText.bodySmall.copyWith(color: t.inkMuted),
-                ),
+                // حرف واحد لا يكفي للمطابقة — «اكتبي حرفاً آخر» بدل «لا نتائج».
+                if (normalizeQuery(query).length < 2)
+                  Text(
+                    s.catTypeMore,
+                    style: AppText.title3.copyWith(color: t.ink),
+                  )
+                else ...[
+                  Text(
+                    s.catNoMatch,
+                    style: AppText.title3.copyWith(color: t.ink),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    s.catNoMatchHint,
+                    textAlign: TextAlign.center,
+                    style: AppText.bodySmall.copyWith(color: t.inkMuted),
+                  ),
+                ],
               ],
             ),
           )

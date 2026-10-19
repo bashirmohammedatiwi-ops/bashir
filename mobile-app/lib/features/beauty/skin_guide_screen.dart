@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/product_grid.dart';
@@ -99,10 +98,7 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
       backgroundColor: t.canvas,
       body: RefreshIndicator(
         color: t.accent,
-        onRefresh: () async {
-          ref.invalidate(skinConcernsListProvider);
-          ref.invalidate(beautyPackagesProvider);
-        },
+        onRefresh: () => refreshBeautyCatalog(ref, kinds: const ['routines', 'bundles'], concerns: true),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
@@ -131,7 +127,7 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
                 ),
               ),
               error: (e, _) => SliverToBoxAdapter(
-                child: ErrorView(message: friendlyError(e), onRetry: () => ref.invalidate(skinConcernsListProvider)),
+                child: ErrorView.from(e, onRetry: () => ref.invalidate(skinConcernsListProvider)),
               ),
               data: (list) => list.isEmpty
                   ? const SliverToBoxAdapter(
@@ -297,7 +293,7 @@ class SkinConcernScreen extends ConsumerWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.arrow_back_rounded)),
               ),
-              Expanded(child: ErrorView(message: friendlyError(e), onRetry: () => ref.invalidate(skinGuideProvider(slug)))),
+              Expanded(child: ErrorView.from(e, onRetry: () => ref.invalidate(skinGuideProvider(slug)))),
             ],
           ),
         ),

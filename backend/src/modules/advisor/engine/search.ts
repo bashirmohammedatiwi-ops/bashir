@@ -21,6 +21,26 @@ export interface SearchFilters {
   inStock?: boolean;
   deals?: boolean;
   sort?: SearchSort;
+  /** تجاهل الميزانية المفهومة من النص («تحت 50 ألف») — اختارت الزبونة «أي سعر» صراحة. */
+  noBudget?: boolean;
+  /** حصر النتائج بهذه المنتجات (نطاق «عالم»). */
+  scopeIds?: ReadonlySet<string>;
+}
+
+export interface SearchOptions {
+  /** أثناء الكتابة: الكلمة الأخيرة ناقصة. */
+  instant?: boolean;
+  /** بالكلمة كما كُتبت: بلا تصحيح إملائي («ابحثي عن الأصل بدلاً من ذلك»). */
+  exact?: boolean;
+  /** لغة أسماء الفئات وما فُهم («شامبو» / «Shampoo»). */
+  lang?: "ar" | "en";
+}
+
+/** شريحة سعر للفلتر: الطرفان شاملان (كفلتر السعر نفسه)، و null = مفتوح. */
+export interface PriceBucket {
+  min: number | null;
+  max: number | null;
+  count: number;
 }
 
 export interface SearchHit {
@@ -41,9 +61,16 @@ export interface SearchOutcome {
   corrected?: string;
   /** ما فهمه البحث (للعرض كشرائح): «شامبو»، «القشرة»، «≤ 20,000». */
   understood: string[];
-  /** ميزانية مفهومة من النص («تحت 20 ألف»). */
+  /** ميزانية مفهومة من النص («تحت 20 ألف») طُبّقت فعلاً — تغيب حين يُختار سعر صريح أو noBudget. */
   budget?: { min?: number; max?: number };
-  facets: { brands: FacetCount[]; kinds: FacetCount[]; categories: FacetCount[]; price: { min: number; max: number } | null };
+  facets: {
+    brands: FacetCount[];
+    kinds: FacetCount[];
+    categories: FacetCount[];
+    price: { min: number; max: number } | null;
+    /** 4–5 شرائح سعر بعدّاداتها على مدى النتائج كاملاً (قبل فلتر السعر والميزانية). */
+    priceBuckets: PriceBucket[];
+  };
 }
 
 // كلمات نية لا تحمل معنى بحث («اريد شامبو» = «شامبو»).
@@ -105,6 +132,7 @@ function groupsFor(catalog: CatalogIndex, toks: string[], prefixLast: boolean, r
 }
 
 function passFilters(p: IndexedProduct, f: SearchFilters, budget?: { min?: number; max?: number }): boolean {
+  if (f.scopeIds && !f.scopeIds.has(p.id)) return false;
   if (f.brandIds?.length && (!p.brandId || !f.brandIds.includes(p.brandId))) return false;
   if (f.categoryId && !p.cats.some((c) => c.id === f.categoryId)) return false;
   if (f.kind && !p.strong.get("kind")?.has(f.kind)) return false;
@@ -117,11 +145,12 @@ function passFilters(p: IndexedProduct, f: SearchFilters, budget?: { min?: numbe
   return true;
 }
 
-function run(catalog: CatalogIndex, query: string, f: SearchFilters, prefixLast: boolean) {
+function run(catalog: CatalogIndex, query: string, f: SearchFilters, prefixLast: boolean, exact = false) {
   const all = tokens(query);
   // حرف واحد في آخر الكتابة («عطر ر») لم يكتمل بعد — لا يُشترط.
   const toks = all.filter((t, i) => !FILLER.has(t) && (t.length > 1 || /\d/.test(t)) && !(prefixLast && i === all.length - 1 && t.length < 2));
-  const parsed = understand(query, catalog);
+  // البحث الحرفي لا يمر بتصحيح الفهم أيضاً (spelled = true).
+  const parsed = understand(query, catalog, exact);
   const d = parsed.delta;
   const budget = d.maxPrice || d.minPrice ? { min: d.minPrice, max: d.maxPrice } : undefined;
   // أرقام الميزانية ليست كلمات بحث («تحت 20 ألف»).
@@ -196,26 +225,70 @@ function run(catalog: CatalogIndex, query: string, f: SearchFilters, prefixLast:
   return { hits, parsed, budget };
 }
 
+/** التقييم موزوناً بالثقة: تقييم من مراجعة واحدة لا يسبق 4.8 من عشرات المراجعات. */
+const ratedScore = (p: IndexedProduct) => p.rating * Math.min(1, p.reviewCount / 3);
+
 const sorters: Record<SearchSort, (a: SearchHit, b: SearchHit) => number> = {
   relevance: (a, b) => b.score - a.score,
   price_asc: (a, b) => a.p.price - b.p.price,
   price_desc: (a, b) => b.p.price - a.p.price,
   new: (a, b) => b.p.createdAt - a.p.createdAt,
   best: (a, b) => b.p.soldCount - a.p.soldCount || b.score - a.score,
-  rating: (a, b) => b.p.rating * Math.min(1, b.p.reviewCount / 3) - a.p.rating * Math.min(1, a.p.reviewCount / 3) || b.score - a.score,
+  // الأعلى تقييماً، وعند التساوي الأكثر مراجعات ثم الأقرب للبحث.
+  rating: (a, b) => ratedScore(b.p) - ratedScore(a.p) || b.p.reviewCount - a.p.reviewCount || b.score - a.score,
   discount: (a, b) => b.p.discountPercent - a.p.discountPercent || b.score - a.score,
 };
 
-export function searchCatalog(catalog: CatalogIndex, query: string, f: SearchFilters = {}, opts: { instant?: boolean } = {}): SearchOutcome {
+/** خطوة تقريب حدود شرائح السعر (5,000 د.ع). */
+const PRICE_STEP = 5000;
+
+/**
+ * 4–5 شرائح سعر من أسعار النتائج: الحدود عند الخُمسيات مقرّبة لـ 5,000 (فتتوزع النتائج بالتساوي
+ * تقريباً — العطور 30–300 ألف لا تقع كلها بشريحة واحدة)، ثم تقسيم متساوٍ للمدى إن تكدّست الأسعار.
+ * أول شريحة «أقل من» وآخرها «فوق»؛ الشريحة الفارغة لا تُعرض. مدى أضيق من 10,000 = بلا شرائح.
+ */
+export function priceBucketsFor(prices: number[]): PriceBucket[] {
+  if (prices.length < 2) return [];
+  const sorted = [...prices].sort((a, b) => a - b);
+  const lo = sorted[0];
+  const hi = sorted[sorted.length - 1];
+  if (hi - lo < PRICE_STEP * 2) return [];
+  const round = (n: number) => Math.round(n / PRICE_STEP) * PRICE_STEP;
+  const edgesFrom = (raw: number[]) => {
+    const out: number[] = [];
+    for (const e of raw.map(round)) if (e > lo && e < hi && !out.includes(e)) out.push(e);
+    return out.sort((a, b) => a - b);
+  };
+  const quantile = (r: number) => sorted[Math.min(sorted.length - 1, Math.floor(r * sorted.length))];
+  let edges = edgesFrom([0.2, 0.4, 0.6, 0.8].map(quantile));
+  if (edges.length < 3) edges = edgesFrom([1, 2, 3, 4].map((k) => lo + ((hi - lo) * k) / 5));
+  if (!edges.length) return [];
+  const ranges: [number | null, number | null][] = [
+    [null, edges[0]],
+    ...edges.slice(1).map((e, i) => [edges[i], e] as [number, number]),
+    [edges[edges.length - 1], null],
+  ];
+  return ranges
+    .map(([min, max]) => ({
+      min,
+      max,
+      // شاملة الطرفين كفلتر السعر: العدد = ما تعرضه الشريحة عند اختيارها.
+      count: sorted.filter((p) => (min == null || p >= min) && (max == null || p <= max)).length,
+    }))
+    .filter((b) => b.count > 0);
+}
+
+export function searchCatalog(catalog: CatalogIndex, query: string, f: SearchFilters = {}, opts: SearchOptions = {}): SearchOutcome {
   const q = query.trim();
-  const empty: SearchOutcome = { hits: [], understood: [], facets: { brands: [], kinds: [], categories: [], price: null } };
+  const empty: SearchOutcome = { hits: [], understood: [], facets: { brands: [], kinds: [], categories: [], price: null, priceBuckets: [] } };
   if (q.length < 1) return empty;
+  const en = opts.lang === "en";
   // أثناء الكتابة: الكلمة الأخيرة ناقصة غالباً (إلا إذا انتهت بمسافة).
   const prefixLast = Boolean(opts.instant) && !/\s$/.test(query);
 
-  let { hits, parsed, budget } = run(catalog, q, f, prefixLast);
+  let { hits, parsed, budget } = run(catalog, q, f, prefixLast, opts.exact);
   let corrected: string | undefined;
-  if (!hits.length) {
+  if (!hits.length && !opts.exact) {
     // تصحيح إملائي كلمة بكلمة لأقرب كلمة شائعة في الفهرس.
     const raw = normalize(q).split(" ").filter(Boolean);
     let changed = false;
@@ -236,9 +309,13 @@ export function searchCatalog(catalog: CatalogIndex, query: string, f: SearchFil
     }
   }
 
+  // السعر الصريح (أو «أي سعر» = noBudget) يلغي الميزانية المفهومة من النص كلها — لا يتقاتلان
+  // («عطر تحت 50 ألف» + شريحة «فوق 100 ألف» كانت تعطي صفراً بلا تفسير).
+  const applied = f.noBudget || f.minPrice != null || f.maxPrice != null ? undefined : budget;
+
   // الفلاتر بعد الفهم؛ الفئات تُحسب قبل فلاتر البراند/القسم حتى تبقى قابلة للتبديل.
-  const base = hits.filter((h) => passFilters(h.p, { minPrice: f.minPrice, maxPrice: f.maxPrice, inStock: f.inStock, deals: f.deals }, budget));
-  const final = base.filter((h) => passFilters(h.p, f, budget));
+  const base = hits.filter((h) => passFilters(h.p, { minPrice: f.minPrice, maxPrice: f.maxPrice, inStock: f.inStock, deals: f.deals, scopeIds: f.scopeIds }, applied));
+  const final = base.filter((h) => passFilters(h.p, f, applied));
   final.sort(sorters[f.sort ?? "relevance"]);
   if ((f.sort ?? "relevance") !== "relevance") {
     // الترتيب بالسعر وغيره: النافد يبقى بالآخر.
@@ -259,31 +336,40 @@ export function searchCatalog(catalog: CatalogIndex, query: string, f: SearchFil
     return [...m.values()].sort((a, b) => b.count - a.count);
   };
   const prices = base.map((h) => h.p.price);
+  // الشرائح على المدى كاملاً: كل الفلاتر عدا السعر والميزانية (اختيار شريحة يرسل سعراً صريحاً).
+  const priceBuckets = opts.instant
+    ? []
+    : priceBucketsFor(hits.filter((h) => passFilters(h.p, { ...f, minPrice: undefined, maxPrice: undefined })).map((h) => h.p.price));
   const brandName = new Map(catalog.brands.map((b) => [b.id, b.name]));
+  const label = (facet: "kind" | "concern" | "gender", id: string) => {
+    const fv = facetValue(facet, id);
+    return fv ? (en ? fv.labelEn || fv.label : fv.label) : undefined;
+  };
 
   const d = parsed.delta;
   const understood = [
-    ...(d.kinds ?? []).map((k) => facetValue("kind", k)?.label),
-    ...(d.concerns ?? []).map((c) => facetValue("concern", c)?.label),
-    d.gender ? facetValue("gender", d.gender)?.label : undefined,
+    ...(d.kinds ?? []).map((k) => label("kind", k)),
+    ...(d.concerns ?? []).map((c) => label("concern", c)),
+    d.gender ? label("gender", d.gender) : undefined,
     ...(d.brands ?? []).slice(0, 1).map((b) => brandName.get(b)),
-    budget?.max ? `≤ ${budget.max.toLocaleString("en-US")}` : undefined,
-    budget?.min && !budget.max ? `≥ ${budget.min.toLocaleString("en-US")}` : undefined,
+    applied?.max ? `≤ ${applied.max.toLocaleString("en-US")}` : undefined,
+    applied?.min && !applied.max ? `≥ ${applied.min.toLocaleString("en-US")}` : undefined,
   ].filter(Boolean) as string[];
 
   return {
     hits: final,
     corrected,
     understood,
-    budget,
+    budget: applied,
     facets: {
       brands: count(base, (p) => (p.brandId ? [p.brandId] : []), (id, p) => ({ id, name: brandName.get(id) ?? p.brand, slug: p.brandSlug })).slice(0, 14),
       kinds: count(base, (p) => [...(p.strong.get("kind") ?? [])], (id) => {
-        const fv = facetValue("kind", id);
-        return fv ? { id, name: fv.label } : null;
+        const name = label("kind", id);
+        return name ? { id, name } : null;
       }).slice(0, 10),
       categories: count(base, (p) => p.cats.filter((c) => c.level > 0), (c) => ({ id: c.id, name: c.name, slug: c.slug })).slice(0, 10),
       price: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
+      priceBuckets,
     },
   };
 }
@@ -298,8 +384,17 @@ export interface Completion {
 
 const SIZE_OR_NUM = /^[\d.,٠-٩]+$|^(مل|ml|غ|g|جم|غرام|ملل)$/i;
 
-/** إكمالات للاستعلام: براندات وأنواع وعبارات من أسماء المنتجات الأقرب. */
-export function completionsFor(catalog: CatalogIndex, query: string, hits: SearchHit[], limit = 6): Completion[] {
+/**
+ * إكمالات للاستعلام: براندات وأنواع وعبارات من أسماء المنتجات الأقرب.
+ * بالإنجليزية تُقدَّم الأسماء الإنجليزية (للنوع والمنتج) وتبقى العربية لمن تكتب بالعربية.
+ */
+export function completionsFor(
+  catalog: CatalogIndex,
+  query: string,
+  hits: SearchHit[],
+  { limit = 6, lang = "ar" }: { limit?: number; lang?: "ar" | "en" } = {},
+): Completion[] {
+  const en = lang === "en";
   const rawWords = query.trim().split(/\s+/).filter(Boolean);
   if (!rawWords.length) return [];
   const lastRaw = rawWords[rawWords.length - 1];
@@ -324,18 +419,25 @@ export function completionsFor(catalog: CatalogIndex, query: string, hits: Searc
         push(withHead(b.name), "brand", 3 + Math.min(2, b.productCount / 40));
       }
     }
-    // أنواع/مشاكل المعجم بأسمائها العربية.
+    // أنواع/مشاكل المعجم بأسمائها (الإنجليزية أولاً بواجهة إنجليزية).
     for (const v of LEXICON) {
       if (v.facet !== "kind" && v.facet !== "concern") continue;
-      const nl = normalize(v.label);
-      if (nl.startsWith(nLast) || nl.replace(/^ال/, "").startsWith(nLast.replace(/^ال/, ""))) push(withHead(v.label), "term", 2.5);
+      for (const text of en ? [v.labelEn, v.label] : [v.label]) {
+        if (!text) continue;
+        const nl = normalize(text);
+        if (nl.startsWith(nLast) || nl.replace(/^ال/, "").startsWith(nLast.replace(/^ال/, ""))) {
+          push(withHead(text), "term", 2.5);
+          break;
+        }
+      }
     }
   }
 
   // عبارات من أسماء أقرب المنتجات: الكلمة المطابقة + كلمة/كلمتان بعدها.
   const freq = new Map<string, number>();
-  for (const h of hits.slice(0, 40)) {
-    const words = h.p.name.split(/[\s\-–—|،,()]+/).filter(Boolean);
+  /** أول كلمة تطابق ما كُتب في الاسم ← عبارتها؛ false إن لم تطابق. */
+  const phrasesFrom = (name: string) => {
+    const words = name.split(/[\s\-–—|،,()]+/).filter(Boolean);
     for (let i = 0; i < words.length; i++) {
       const nw = normalize(words[i]);
       if (!nw.startsWith(nLast) && !nw.replace(/^ال/, "").startsWith(nLast.replace(/^ال/, ""))) continue;
@@ -351,7 +453,13 @@ export function completionsFor(catalog: CatalogIndex, query: string, hits: Searc
         if (normalize(phrase).length < 3) continue;
         freq.set(phrase, (freq.get(phrase) ?? 0) + (n === 2 ? 1.2 : 1));
       }
-      break;
+      return true;
+    }
+    return false;
+  };
+  for (const h of hits.slice(0, 40)) {
+    for (const name of en ? [h.p.nameEn, h.p.name] : [h.p.name]) {
+      if (name && phrasesFrom(name)) break;
     }
   }
   for (const [phrase, n] of [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)) {

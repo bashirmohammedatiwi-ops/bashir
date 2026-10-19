@@ -1,13 +1,32 @@
-import { BadRequestException, Body, Controller, Param, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
+import { Transform } from "class-transformer";
+import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsString, MaxLength } from "class-validator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AssistantInsightsService } from "./assistant-insights.service";
+import { AssistantProfileService, SKIN_TYPES } from "./assistant-profile.service";
 import { AssistantService } from "./assistant.service";
 import { AssistantChatDto, AssistantFeedbackDto, AssistantTapDto } from "./dto/assistant-chat.dto";
+import { SkinType } from "./intelligence/profile";
+
+/** ملف البشرة من التطبيق (اختبار البشرة) — كل حقل اختياري؛ skinType = null أو "" يمسحه. */
+export class UpdateAssistantProfileDto {
+  @IsOptional()
+  @Transform(({ value }) => (value === "" ? null : value))
+  @IsIn(SKIN_TYPES)
+  skinType?: SkinType | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  sensitivities?: string[];
+}
 
 function readVoiceField(fields: Record<string, unknown> | undefined, key: string): string | undefined {
   const raw = fields?.[key];
@@ -26,7 +45,20 @@ export class AssistantController {
   constructor(
     private readonly assistant: AssistantService,
     private readonly insights: AssistantInsightsService,
+    private readonly profiles: AssistantProfileService,
   ) {}
+
+  /** ملفها المحفوظ على الحساب (نوع البشرة، الحساسيات…) — لاستعادته بعد تسجيل الدخول على جهاز جديد. */
+  @Get("profile")
+  profile(@CurrentUser() user: { id: string }) {
+    return this.profiles.publicProfile(user.id);
+  }
+
+  /** حفظ نتيجة اختبار البشرة على الحساب. */
+  @Patch("profile")
+  updateProfile(@CurrentUser() user: { id: string }, @Body() dto: UpdateAssistantProfileDto) {
+    return this.profiles.update(user.id, { skinType: dto.skinType, sensitivities: dto.sensitivities });
+  }
 
   @Post("chat")
   chat(@CurrentUser() user: { id: string }, @Body() dto: AssistantChatDto) {

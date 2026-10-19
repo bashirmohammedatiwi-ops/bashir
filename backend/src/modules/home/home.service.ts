@@ -7,6 +7,7 @@ import { withPlaceholderImages, hasRealProductImagesWhere } from "../../common/p
 import { rewriteMediaRecord } from "../../common/media-url.util";
 import { BrandsService } from "../catalog/brands.service";
 import { CategoriesService } from "../catalog/categories.service";
+import { WorldScope, worldProductMatch } from "../catalog/products.service";
 import { SettingsService } from "../settings/settings.service";
 import { HomeSectionResolver } from "./home-section.resolver";
 import { isPackageLive, packageInclude, publicPackage, worldScope } from "../cms/packages.service";
@@ -119,12 +120,13 @@ export class HomeService {
   private async buildFeed(
     settings: Record<string, unknown>,
     worldId: string | null = null,
-    scope: { subIds: string[]; legacyRootIds: string[] } = { subIds: [], legacyRootIds: [] },
+    scope: WorldScope = { subIds: [], legacyRootIds: [] },
     world: { id: string; slug: string; nameAr: string; nameEn: string | null; taglineAr: string | null; taglineEn: string | null; accentColor: string; canvasColor: string; inkColor: string; surfaceColor: string } | null = null,
   ) {
     const flashEndsAt = (settings as any).flashSaleEndsAt ?? null;
     const s = settings as Record<string, unknown>;
-    const worldMatch = this.worldProductMatch(scope);
+    // نفس شرط «عرض الكل» (/products?world=) حتى تطابق رفوف العالم قوائمها الكاملة.
+    const worldMatch = worldProductMatch(scope);
     const worldProductScope = worldMatch ? { OR: worldMatch } : {};
     const productVisibility = {
       ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
@@ -220,6 +222,7 @@ export class HomeService {
       productBuckets,
       allBanners: banners,
       skinConcerns,
+      worldSlug: world?.slug ?? null,
     });
     const sections = await this.cmsBilingual.enrichSections(resolvedSections);
     const enrichedBanners = await this.cmsBilingual.enrichBanners(
@@ -354,26 +357,11 @@ export class HomeService {
     };
   }
 
-  private worldProductMatch(scope: { subIds: string[]; legacyRootIds: string[] }) {
-    const match: Record<string, unknown>[] = [];
-    if (scope.subIds.length) {
-      match.push(
-        { subcategoryId: { in: scope.subIds } },
-        { tertiaryCategory: { parentId: { in: scope.subIds } } },
-      );
-    }
-    if (scope.legacyRootIds.length) {
-      match.push(
-        { categoryId: { in: scope.legacyRootIds } },
-        { subcategory: { parentId: { in: scope.legacyRootIds } } },
-        { tertiaryCategory: { parent: { parentId: { in: scope.legacyRootIds } } } },
-      );
-    }
-    return match.length ? match : null;
-  }
-
-  /** الأقسام الفرعية المختارة تظهر في رئيسية العالم. */
-  private async promotedWorldCategories(scope: { subIds: string[]; legacyRootIds: string[] }) {
+  /**
+   * الأقسام الفرعية المختارة تظهر في رئيسية العالم. نُرجع parentId ونوع القائمة (listingKind)
+   * حتى يبني categoryDefaultLink رابط القسم الفرعي/الدقيق الصحيح — لا رابط قسم رئيسي يفتح قائمة فارغة.
+   */
+  private async promotedWorldCategories(scope: WorldScope) {
     const ids = [...scope.subIds];
     if (scope.legacyRootIds.length) {
       const children = await this.prisma.category.findMany({
@@ -386,7 +374,7 @@ export class HomeService {
     if (!ids.length) return [];
     const rows = await this.prisma.category.findMany({
       where: { id: { in: ids }, isActive: true },
-      include: { image: true },
+      include: { image: true, parent: { select: { parentId: true } } },
     });
     const byId = new Map(rows.map((row) => [row.id, row]));
     return ids.flatMap((id) => {
@@ -402,6 +390,8 @@ export class HomeService {
         position: node.position,
         isActive: node.isActive,
         image: node.image,
+        parentId: node.parentId,
+        listingKind: node.parent?.parentId ? "tertiary" : "subcategory",
         children: [] as unknown[],
       }];
     });

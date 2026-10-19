@@ -1,3 +1,11 @@
+final _worldSlug = RegExp(r'^[a-z0-9-]{1,40}$', caseSensitive: false);
+
+/// slug العالم من «?world=…» إن كان صالحاً — نفس شرط الموقع (web-store/middleware.ts).
+String? worldSlugOf(Uri uri) {
+  final world = uri.queryParameters['world']?.trim();
+  return world != null && _worldSlug.hasMatch(world) ? world : null;
+}
+
 /// يحوّل روابط الموقع (App Links / Universal Links) إلى مسارات التطبيق.
 String? resolveDeepLink(Uri uri) {
   var path = uri.path;
@@ -28,7 +36,8 @@ String? resolveDeepLink(Uri uri) {
       // تحويله إلى مسار آخر أولاً كان ينتهي بصفحة "غير موجودة".
       return path;
     case '/brands':
-      return '/brands';
+      // ?q= يملأ بحث دليل البراندات (يطبّقه الموجّه قبل فتح التبويب).
+      return uri.hasQuery ? '/brands?${uri.query}' : '/brands';
     // دليل البشرة والباقات والروتين — للإشعارات والحملات.
     case '/skin-guide':
     case '/skin-quiz':
@@ -44,9 +53,37 @@ String? resolveDeepLink(Uri uri) {
     case '/notifications':
     case '/loyalty':
       return path;
+    // صفحات «حسابي» في الموقع ← شاشاتها في التطبيق (روابط واتساب والبريد).
+    case '/account/orders':
+      return '/orders';
+    case '/account/points':
+      return '/loyalty';
+    case '/account/addresses':
+      return '/addresses';
+    case '/account/notifications':
+      return '/notifications';
+    case '/account/profile':
+      return '/edit-profile';
+    case '/account/alerts':
+      return '/alerts';
+    case '/account/beauty':
+      // «ملفّي الجمالي» في الموقع = نتيجة اختبار البشرة المحفوظة.
+      return '/skin-quiz?result=1';
+    case '/signin':
+      return '/login';
+    case '/signup':
+      return '/register';
+    case '/help':
+      return '/help';
+    // صفحات ويب بلا مقابل في التطبيق — الرئيسية بدل «الصفحة غير موجودة».
+    case '/gifts':
+    case '/compare':
+      return '/';
     case '/privacy':
+    case '/en/privacy':
       return '/privacy';
     case '/terms':
+    case '/en/terms':
       return '/terms';
     case '/about':
       return '/about';
@@ -59,7 +96,9 @@ String? resolveDeepLink(Uri uri) {
       return uri.hasQuery ? '/advisor?${uri.query}' : '/advisor';
     case '':
     case '/':
-      return '/';
+      // ?world=slug يلوّن الرئيسية بعالمه (يطبّقه الموجّه) — بقية المعاملات تُهمل.
+      final world = worldSlugOf(uri);
+      return world != null ? '/?world=$world' : '/';
   }
 
   final productSeg = RegExp(r'^/product/([^/]+)$').firstMatch(path);
@@ -74,7 +113,7 @@ String? resolveDeepLink(Uri uri) {
   final categorySeg = RegExp(r'^/category/([^/]+)$').firstMatch(path);
   if (categorySeg != null) return '/category/${categorySeg.group(1)}';
 
-  final orderSeg = RegExp(r'^/orders/([^/]+)$').firstMatch(path);
+  final orderSeg = RegExp(r'^/(?:account/)?orders/([^/]+)$').firstMatch(path);
   if (orderSeg != null) return '/orders/${orderSeg.group(1)}';
 
   final brandSeg = RegExp(r'^/brand/([^/]+)$').firstMatch(path);
@@ -83,6 +122,15 @@ String? resolveDeepLink(Uri uri) {
   if (path.startsWith('/admin')) return '/';
 
   return null;
+}
+
+/// رابط كامل لموقع المتجر نفسه (من إشعار أو بانر) ← مساره داخل التطبيق،
+/// أو null إن لم يكن من موقعنا أو لا مقابل له (مثل /pay) فيُفتح في المتصفح.
+String? resolveStoreUrl(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null || !(uri.isScheme('https') || uri.isScheme('http'))) return null;
+  if (!_isStoreHost(uri.host)) return null;
+  return resolveDeepLink(uri);
 }
 
 /// يحلّل نص QR/باركود أو رابط كامل إلى مسار داخل التطبيق.

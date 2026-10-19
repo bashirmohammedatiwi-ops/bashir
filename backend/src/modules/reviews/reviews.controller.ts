@@ -4,6 +4,7 @@ import { Role } from "@prisma/client";
 import { Public } from "../../common/decorators/public.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { OptionalJwtGuard } from "../advisor/optional-jwt.guard";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { CreateReviewDto, QueryReviewsDto, UpdateReviewDto } from "./dto/review.dto";
@@ -22,10 +23,24 @@ export class ReviewsController {
     return this.reviews.list(q);
   }
 
+  /**
+   * تقييمات المنتج للعامة (بلا بريد أو معرّفات). «page» يطلب الشكل الجديد مع تقييم الزبونة نفسها؛
+   * بدونه يبقى الشكل القديم. الرمز اختياري: إن أُرسل نعرف «mine».
+   */
   @Public()
+  @UseGuards(OptionalJwtGuard)
   @Get("product/:productId")
-  listForProduct(@Param("productId") productId: string, @Query() q: QueryReviewsDto) {
-    return this.reviews.list({ ...q, productId, approved: true } as QueryReviewsDto);
+  listForProduct(
+    @Param("productId") productId: string,
+    @Query() q: QueryReviewsDto,
+    @Query("page") rawPage?: string,
+    @CurrentUser() user?: { id: string },
+  ) {
+    return this.reviews.listPublic(
+      productId,
+      { page: q.page, limit: q.limit, sort: q.sort, paged: rawPage !== undefined },
+      user?.id,
+    );
   }
 
   @Post()

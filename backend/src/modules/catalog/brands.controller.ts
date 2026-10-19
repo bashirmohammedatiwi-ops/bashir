@@ -33,20 +33,22 @@ export class BrandsController {
     @Query("subcategoryId") subcategoryId?: string,
     @Query("tertiaryCategoryId") tertiaryCategoryId?: string,
   ) {
+    // «all=1» يُظهر البراندات الموقوفة — للوحة التحكم وحدها؛ واجهات المتجر ترى النشطة فقط مهما طلبت.
+    const admin = isAdminViewRequest(req);
     return this.service.list({
       featuredOnly: featured === "1",
-      all: all === "1",
+      all: all === "1" && admin,
       activeProductsOnly: activeOnly === "1",
       categoryId: categoryId || undefined,
       subcategoryId: subcategoryId || undefined,
       tertiaryCategoryId: tertiaryCategoryId || undefined,
-      storefront: !isAdminViewRequest(req),
+      storefront: !admin,
     });
   }
 
   @Public() @Get(":idOrSlug/collections")
-  collections(@Param("idOrSlug") idOrSlug: string, @Query("all") all?: string) {
-    return this.service.listCollectionsBySlugOrId(idOrSlug, all === "1");
+  collections(@Req() req: any, @Param("idOrSlug") idOrSlug: string, @Query("all") all?: string) {
+    return this.service.listCollectionsBySlugOrId(idOrSlug, all === "1" && isAdminViewRequest(req));
   }
 
   @Public() @Get(":idOrSlug")

@@ -8,6 +8,7 @@ import '../../core/l10n/locale_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 
 import '../../features/advisor/advisor_screen.dart';
+import '../../features/alerts/restock_alerts_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/brands/brands_screen.dart';
@@ -37,6 +38,18 @@ import '../../features/shell/main_shell.dart';
 import '../../features/shell/nav_tabs.dart';
 import '../../features/wishlist/wishlist_screen.dart';
 import '../../features/worlds/world_screen.dart';
+import '../../features/worlds/worlds_provider.dart';
+import '../widgets/ui/app_icon_button.dart';
+
+/// «?ids=a,b,c» (أو معامل مكرر) ← قائمة معرّفات؛ null إن لم تُرسل.
+List<String>? _idsParam(Uri uri) {
+  final ids = [
+    for (final raw in uri.queryParametersAll['ids'] ?? const <String>[])
+      for (final id in raw.split(','))
+        if (id.trim().isNotEmpty) id.trim(),
+  ];
+  return ids.isEmpty ? null : ids;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
@@ -80,11 +93,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/';
       }
       if (path == '/brands') {
-        // البراندات صارت تبويباً في الشريط السفلي.
+        // البراندات صارت تبويباً في الشريط السفلي؛ ?q= يملأ بحثها.
+        final q = state.uri.queryParameters['q']?.trim();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final container = ProviderScope.containerOf(context);
+          if (q != null && q.isNotEmpty) {
+            container.read(brandsSearchRequestProvider.notifier).state = q;
+          }
           openMainTab(context, container, NavTabs.brands);
         });
+        return '/';
+      }
+      if (path == '/' && state.uri.hasQuery) {
+        // «/?world=slug» (رابط حملة لعالم): نلوّن الرئيسية بعالمه ونُسقط المعامل.
+        final world = worldSlugOf(state.uri);
+        if (world != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final container = ProviderScope.containerOf(context);
+            container.read(selectedWorldSlugProvider.notifier).state = world;
+            openMainTab(context, container, NavTabs.home);
+          });
+        }
         return '/';
       }
       if (path == '/account') {
@@ -163,6 +192,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           concernSlug: s.uri.queryParameters['concernSlug'],
           initialMinPrice: int.tryParse(s.uri.queryParameters['minPrice'] ?? ''),
           initialMaxPrice: int.tryParse(s.uri.queryParameters['maxPrice'] ?? ''),
+          world: s.uri.queryParameters['world'] ?? s.uri.queryParameters['worldSlug'],
+          ids: _idsParam(s.uri),
+          minDiscount: int.tryParse(s.uri.queryParameters['minDiscount'] ?? ''),
+          skinType: s.uri.queryParameters['skinType'],
         ),
       ),
       GoRoute(
@@ -211,12 +244,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const LegalDocumentScreen(type: LegalDocumentType.terms),
       ),
       GoRoute(path: '/about', builder: (_, __) => const AboutAppScreen()),
+      // «المساعدة» في الموقع: التواصل والأسئلة — في التطبيق صفحة «عن التطبيق» وفيها التواصل.
+      GoRoute(path: '/help', builder: (_, __) => const AboutAppScreen()),
+      GoRoute(path: '/alerts', builder: (_, __) => const RestockAlertsScreen()),
       GoRoute(path: '/licenses', builder: (_, __) => const OpenSourceLicensesScreen()),
     ],
     errorBuilder: (context, state) => Consumer(
       builder: (context, ref, _) {
         final s = ref.watch(stringsProvider);
         return Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            leading: const Center(child: AppBackButton()),
+          ),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

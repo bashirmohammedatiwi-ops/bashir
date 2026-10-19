@@ -51,9 +51,10 @@ class _AddressesBody extends ConsumerWidget {
         loading: () => Center(
           child: CircularProgressIndicator(color: context.worldTheme.accent),
         ),
-        error: (e, _) => ErrorView(
-          message: friendlyError(e),
+        error: (e, _) => ErrorView.from(
+          e,
           onRetry: () => ref.invalidate(addressesProvider),
+          loading: addresses.isLoading,
         ),
         data: (list) {
           if (list.isEmpty) {
@@ -97,7 +98,7 @@ class _AddressesBody extends ConsumerWidget {
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        AppSnackbar.show(context, friendlyError(e));
+        AppSnackbar.error(context, ref.friendly(e));
       }
     }
   }
@@ -110,11 +111,12 @@ class _AddressesBody extends ConsumerWidget {
     final result = await showAddressForm(context, initial: address);
     if (result == null) return;
     try {
-      await ref.read(apiServiceProvider).updateAddress(address.id, result);
+      // الحقول المُفرغة تُرسل null صراحةً فتُمسح على السيرفر (لا تبقى القيمة القديمة).
+      await ref.read(apiServiceProvider).updateAddress(address.id, result, clearMissing: true);
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        AppSnackbar.show(context, friendlyError(e));
+        AppSnackbar.error(context, ref.friendly(e));
       }
     }
   }
@@ -138,7 +140,7 @@ class _AddressesBody extends ConsumerWidget {
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        AppSnackbar.show(context, friendlyError(e));
+        AppSnackbar.error(context, ref.friendly(e));
       }
     }
   }
@@ -229,7 +231,7 @@ class _AddressTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        address.summary,
+                        address.summaryFor(s.isAr),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: AppText.bodySmall.copyWith(color: t.inkSoft),

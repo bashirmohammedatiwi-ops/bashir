@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/locale_provider.dart';
 import '../../core/utils/responsive.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/category.dart';
@@ -47,6 +46,8 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
       q.write('&subcategoryId=${parent.id}&tertiaryCategoryId=${node.id}');
     } else if (node.listingKind == 'category') {
       q.write('&categoryId=${node.id}');
+    } else if (node.listingKind == 'tertiary') {
+      q.write('&tertiaryCategoryId=${node.id}');
     } else {
       q.write('&subcategoryId=${node.id}');
     }
@@ -60,7 +61,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
     return worldAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
-        body: ErrorView(message: friendlyError(e), onRetry: () => ref.invalidate(worldDetailProvider(widget.slug))),
+        body: ErrorView.from(e, onRetry: () => ref.invalidate(worldDetailProvider(widget.slug))),
       ),
       data: (world) {
         final parents = _query.trim().isEmpty

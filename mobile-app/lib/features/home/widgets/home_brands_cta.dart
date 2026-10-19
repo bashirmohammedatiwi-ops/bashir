@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../worlds/world_theme.dart';
 import 'home_theme.dart';
+import '../../../core/navigation/app_navigation.dart';
 
 /// زر بارز لعرض كل البراندات — أسفل أقسام الرئيسية.
 class HomeBrandsCta extends ConsumerWidget {
@@ -42,7 +42,7 @@ class HomeBrandsCta extends ConsumerWidget {
           child: InkWell(
             onTap: () {
               HapticFeedback.lightImpact();
-              context.push('/brands');
+              openTabPath(context, '/brands');
             },
             borderRadius: BorderRadius.circular(18),
             child: Padding(

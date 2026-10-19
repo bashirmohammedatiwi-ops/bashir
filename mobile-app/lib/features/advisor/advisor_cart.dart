@@ -57,7 +57,7 @@ Future<AdvisorAddResult> advisorAddToCart(BuildContext context, WidgetRef ref, A
     }
     return r;
   } catch (e) {
-    if (context.mounted) AppSnackbar.error(context, friendlyError(e));
+    if (context.mounted) AppSnackbar.error(context, ref.friendly(e));
     return AdvisorAddResult.failed;
   }
 }

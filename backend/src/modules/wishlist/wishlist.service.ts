@@ -2,6 +2,19 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { AlertsService } from "../alerts/alerts.service";
 
+/** المنتج كما تعرضه المفضلة: الصور والبراند والتدرجات — نفسه في القائمة وبعد الإضافة. */
+const WISHLIST_PRODUCT_INCLUDE = {
+  product: {
+    include: {
+      brand: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true } },
+      images: { orderBy: { position: "asc" as const }, include: { media: true } },
+      shades: true,
+      variants: true,
+    },
+  },
+};
+
 @Injectable()
 export class WishlistService {
   constructor(
@@ -13,17 +26,7 @@ export class WishlistService {
     return this.prisma.wishlist.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      include: {
-        product: {
-          include: {
-            brand: { select: { id: true, name: true } },
-            category: { select: { id: true, name: true } },
-            images: { orderBy: { position: "asc" }, include: { media: true } },
-            shades: true,
-            variants: true,
-          },
-        },
-      },
+      include: WISHLIST_PRODUCT_INCLUDE,
     });
   }
 
@@ -34,7 +37,8 @@ export class WishlistService {
       where: { userId_productId: { userId, productId } },
       create: { userId, productId },
       update: {},
-      include: { product: true },
+      // المنتج كاملاً حتى يضيفه التطبيق مباشرة (لا بطاقة بلا صورة ولا منتج بلا تدرجات).
+      include: WISHLIST_PRODUCT_INCLUDE,
     });
     // مراقبة السعر تبدأ من سعر الإضافة — تنبيه تلقائي عند انخفاضه.
     await this.alerts.trackPrice(userId, productId, product.price).catch(() => undefined);

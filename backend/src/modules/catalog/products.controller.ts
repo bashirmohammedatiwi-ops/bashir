@@ -39,12 +39,18 @@ export class ProductsController {
     return this.products.facets(q);
   }
 
+  /** بحث المتجر؛ `world` (slug) اختياري يحصر النتائج بأقسام عالم واحد (بحث شاشة العالم). */
   @Public()
   @Get("search")
-  search(@Req() req: any, @Query("q") q: string, @Query("limit") limit?: string) {
+  search(
+    @Req() req: any,
+    @Query("q") q: string,
+    @Query("limit") limit?: string,
+    @Query("world") world?: string,
+  ) {
     const parsed = Number(limit);
     const take = Number.isFinite(parsed) ? parsed : 40;
-    return this.products.searchStorefront(q ?? "", take, !isAdminViewRequest(req));
+    return this.products.searchStorefront(q ?? "", take, !isAdminViewRequest(req), world?.slice(0, 80));
   }
 
   // اقتراحات حية أثناء الكتابة — منتجات + براندات + أقسام

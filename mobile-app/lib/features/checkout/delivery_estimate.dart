@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart' show DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/utils/json.dart';
 import '../auth/auth_provider.dart';
 import '../profile/profile_providers.dart';
@@ -39,7 +41,22 @@ class DeliveryWindow {
     return _days[d.weekday - 1];
   }
 
-  /// «يصلكِ إلى البصرة بين السبت والاثنين» / «يصلكِ غداً».
+  /// «يصلكِ إلى البصرة بين السبت والاثنين» / «Arrives in Basra tomorrow» — بلغة الواجهة.
+  String labelFor(AppStrings s, {bool withPlace = true}) {
+    final now = DateTime.now();
+    final from = _addWorkDays(now, minDays);
+    final to = _addWorkDays(now, maxDays);
+    final place = withPlace && (governorate?.isNotEmpty ?? false) ? governorate : null;
+    final weekday = DateFormat.EEEE(s.lang);
+    if (DateUtils.isSameDay(from, to)) {
+      final diff = DateTime(from.year, from.month, from.day).difference(DateTime(now.year, now.month, now.day)).inDays;
+      final day = diff == 0 ? s.today : diff == 1 ? s.tomorrow : weekday.format(from);
+      return s.deliveryArrives(place, day, null);
+    }
+    return s.deliveryArrives(place, weekday.format(from), weekday.format(to));
+  }
+
+  /// النسخة العربية القديمة — للواجهة استخدمي [labelFor].
   String label({bool withPlace = true}) {
     final now = DateTime.now();
     final from = _addWorkDays(now, minDays);

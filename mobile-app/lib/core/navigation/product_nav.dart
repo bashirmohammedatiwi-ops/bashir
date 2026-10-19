@@ -11,17 +11,36 @@ abstract final class ProductSeeds {
   static const _limit = 40;
   static final LinkedHashMap<String, Product> _seeds = LinkedHashMap();
 
-  static void put(Product p) {
-    for (final key in {p.id, if (p.slug.isNotEmpty) p.slug}) {
-      _seeds.remove(key);
+  /// مفاتيح البذور المختصرة (من لوحة البحث الفوري مثلاً): بلا درجات ولا مخزون
+  /// دقيق، فلا تُتاح الإضافة للسلة منها حتى تصل تفاصيل المنتج الكاملة.
+  static final Set<String> _lite = {};
+
+  static void put(Product p, {bool lite = false}) {
+    for (final key in {if (p.id.isNotEmpty) p.id, if (p.slug.isNotEmpty) p.slug}) {
+      final existing = _seeds.remove(key);
+      // بذرة مختصرة لا تحلّ محلّ بذرة كاملة للمنتج نفسه — تتقدّم الكاملة فقط.
+      if (lite && existing != null && !_lite.contains(key)) {
+        _seeds[key] = existing;
+        continue;
+      }
       _seeds[key] = p;
+      if (lite) {
+        _lite.add(key);
+      } else {
+        _lite.remove(key);
+      }
     }
     while (_seeds.length > _limit) {
-      _seeds.remove(_seeds.keys.first);
+      final oldest = _seeds.keys.first;
+      _seeds.remove(oldest);
+      _lite.remove(oldest);
     }
   }
 
   static Product? get(String idOrSlug) => _seeds[idOrSlug];
+
+  /// هل البذرة المحفوظة لهذا المنتج مختصرة؟ (false إن لم توجد بذرة أصلاً.)
+  static bool isLite(String idOrSlug) => _lite.contains(idOrSlug);
 }
 
 /// يفتح صفحة المنتج من بطاقة: يحفظ بياناتها أولاً ليظهر المنتج بلا انتظار.

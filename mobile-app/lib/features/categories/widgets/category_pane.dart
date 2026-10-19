@@ -134,7 +134,18 @@ class _CategoryPaneState extends ConsumerState<CategoryPane> {
       key: _paneKey,
       color: t.accent,
       backgroundColor: t.surface,
-      onRefresh: widget.onRefresh,
+      onRefresh: () async {
+        // ما في اللوحة نفسها (المعاينة، العدد، البراندات) يُجلب من جديد مع الشجرة.
+        ref.invalidate(categoryTopProductsProvider(target));
+        ref.invalidate(categoryVisibleCountProvider(target));
+        final id = entry.category.id;
+        if (entry.level == CategoryLevel.root) {
+          ref.invalidate(categoryBrandsProvider(id));
+        } else {
+          ref.invalidate(subcategoryBrandsProvider(id));
+        }
+        await widget.onRefresh();
+      },
       child: CustomScrollView(
         controller: _scroll,
         // كل المجموعات مبنية مسبقاً حتى يعمل القفز إلى أي منها.
@@ -598,7 +609,11 @@ class _BrandsRow extends ConsumerWidget {
           ],
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => _RetryRow(
+        onRetry: () => ref.invalidate(
+          entry.level == CategoryLevel.root ? categoryBrandsProvider(id) : subcategoryBrandsProvider(id),
+        ),
+      ),
       data: (brands) {
         final list = brands.where((b) => b.name.isNotEmpty).take(16).toList();
         if (list.isEmpty) return const SizedBox.shrink();
@@ -701,6 +716,38 @@ class _BrandBubble extends StatelessWidget {
 }
 
 // ─── الأقسام ──────────────────────────────────────────────────────────────────
+
+/// تعذّر تحميل جزء من اللوحة: سطر هادئ بزر «إعادة» بدل فراغ صامت.
+class _RetryRow extends ConsumerWidget {
+  final VoidCallback onRetry;
+  const _RetryRow({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    final s = ref.s;
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 14, 6, 0),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 18, color: t.inkMuted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(s.errorOccurred, style: AppText.bodySmall.copyWith(color: t.inkMuted)),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              foregroundColor: t.accentDark,
+              minimumSize: const Size(0, kMinTapTarget),
+            ),
+            child: Text(s.retry, style: AppText.label),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _GroupHeader extends StatelessWidget {
   final String title;
@@ -1016,7 +1063,7 @@ class _TopProducts extends ConsumerWidget {
           ],
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => _RetryRow(onRetry: () => ref.invalidate(categoryTopProductsProvider(target))),
       data: (products) {
         if (products.length < 2) return const SizedBox.shrink();
         return Padding(

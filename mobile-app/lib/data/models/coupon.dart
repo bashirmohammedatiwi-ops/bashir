@@ -1,3 +1,4 @@
+import '../../core/l10n/app_strings.dart';
 import '../../core/utils/json.dart';
 
 class Coupon {
@@ -79,6 +80,10 @@ class Coupon {
   bool get isPercent => type == 'PERCENT' || type == 'FIRST_ORDER';
   bool get isFixedAmount => type == 'FIXED' || type == 'AMOUNT';
 
+  /// فائدة الكوبون بلغة الواجهة: «خصم 20%» / «20% off» / «Free delivery».
+  String benefitLabelFor(AppStrings s) => s.couponBenefit(this);
+
+  /// النسخة العربية القديمة — للواجهة استخدمي [benefitLabelFor].
   String benefitLabel({String Function(int)? formatPrice}) {
     switch (type) {
       case 'PERCENT':

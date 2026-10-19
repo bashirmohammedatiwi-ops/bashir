@@ -18,6 +18,7 @@ import '../home/widgets/home_hero_header.dart';
 import 'world_icon.dart';
 import 'world_theme.dart';
 import 'worlds_provider.dart';
+import '../../core/navigation/app_navigation.dart';
 
 const _bannerAspect = 2.4;
 
@@ -1828,7 +1829,7 @@ class WorldHomeBrands extends ConsumerWidget {
         AppSectionTitle(
           title: lang == 'en' ? 'Our brands' : 'برانداتنا',
           actionLabel: lang == 'en' ? 'View all' : 'عرض الكل',
-          onAction: () => context.push('/brands'),
+          onAction: () => openTabPath(context, '/brands'),
         ),
         SizedBox(
           height: 100,

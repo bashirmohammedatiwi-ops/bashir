@@ -8,6 +8,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
 import '../auth/widgets/auth_shell.dart';
+import 'widgets/account_strings.dart';
 import 'widgets/account_theme.dart';
 import 'widgets/profile_ui.dart';
 
@@ -29,6 +30,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   bool _obscureNext = true;
   bool _obscureConfirm = true;
 
+  /// رفض السيرفر كلمة المرور الحالية — يظهر تحت حقلها ويُمسح عند تعديله.
+  String? _currentError;
+
   @override
   void dispose() {
     _current.dispose();
@@ -39,7 +43,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _currentError = null;
+    });
     try {
       await ref
           .read(apiServiceProvider)
@@ -48,11 +55,16 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             newPassword: _next.text,
           );
       if (!mounted) return;
+      // الرموز الجديدة لهذه الجلسة يحفظها dioProvider من الرد نفسه.
       AppSnackbar.success(context, ref.s.passwordChangedSuccess);
-      context.pop();
+      context.canPop() ? context.pop() : context.go('/');
     } catch (e) {
-      if (mounted) {
-        AppSnackbar.show(context, friendlyError(e));
+      if (!mounted) return;
+      final message = friendlyError(e, lang: ref.s.lang);
+      if (e is ApiException && e.status == 400 && e.code == 'WRONG_CURRENT_PASSWORD') {
+        setState(() => _currentError = message);
+      } else {
+        AppSnackbar.error(context, message);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -110,6 +122,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           obscureText: _obscureCurrent,
                           textInputAction: TextInputAction.next,
                           autofillHints: const [AutofillHints.password],
+                          onChanged: (_) {
+                            if (_currentError != null) setState(() => _currentError = null);
+                          },
                           decoration: authFieldDecoration(
                             context,
                             label: s.currentPassword,
@@ -120,7 +135,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                 () => _obscureCurrent = !_obscureCurrent,
                               ),
                             ),
-                          ),
+                          ).copyWith(errorText: _currentError),
                           validator: (v) => (v == null || v.length < 6)
                               ? s.passwordMin6
                               : null,
@@ -144,9 +159,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                   setState(() => _obscureNext = !_obscureNext),
                             ),
                           ),
-                          validator: (v) => (v == null || v.length < 6)
-                              ? s.passwordMin6
-                              : null,
+                          validator: (v) {
+                            if (v == null || v.length < 6) return s.passwordMin6;
+                            if (v == _current.text) return s.acctNewPasswordSame;
+                            return null;
+                          },
                         ),
                       ),
                       const SizedBox(height: 16),

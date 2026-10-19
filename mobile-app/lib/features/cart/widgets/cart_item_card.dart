@@ -42,7 +42,8 @@ void removeCartItemWithUndo(BuildContext context, WidgetRef ref, CartItem item) 
 
 /// «احفظيه لاحقاً»: ينقل المنتج للمفضلة ويخرجه من السلة (السلة للشراء الآن فقط).
 Future<void> saveCartItemForLater(BuildContext context, WidgetRef ref, CartItem item) async {
-  final ar = ref.read(stringsProvider).isAr;
+  final s = ref.read(stringsProvider);
+  final ar = s.isAr;
   if (!ref.read(authProvider).isAuthenticated) {
     AppSnackbar.show(context, ar ? 'سجّلي الدخول حتى تحفظين المنتج بالمفضلة' : 'Sign in to save items for later');
     context.push('/login');
@@ -51,7 +52,8 @@ Future<void> saveCartItemForLater(BuildContext context, WidgetRef ref, CartItem 
   HapticFeedback.selectionClick();
   if (!ref.read(wishlistProvider).ids.contains(item.productId)) {
     try {
-      await ref.read(wishlistProvider.notifier).toggle(Product.fromJson({
+      // إضافة صريحة لا «قلب»: لا تُزيل منتجاً حُفظ من جهاز آخر.
+      await ref.read(wishlistProvider.notifier).setWished(Product.fromJson({
         'id': item.productId,
         'slug': item.productSlug ?? item.productId,
         'name': item.name,
@@ -59,14 +61,26 @@ Future<void> saveCartItemForLater(BuildContext context, WidgetRef ref, CartItem 
         if (item.nameEn != null) 'nameEn': item.nameEn,
         'price': item.price,
         'stock': item.stock,
-      }));
+      }), true);
     } catch (e) {
-      if (context.mounted) AppSnackbar.error(context, friendlyError(e));
+      if (context.mounted) AppSnackbar.error(context, friendlyError(e, lang: s.lang));
       return;
     }
   }
-  ref.read(cartProvider.notifier).remove(item.key);
-  if (context.mounted) AppSnackbar.show(context, ar ? 'حفظناه بمفضلتكِ ♡' : 'Saved to your wishlist ♡');
+  final notifier = ref.read(cartProvider.notifier);
+  final index = ref.read(cartProvider).items.indexWhere((e) => e.key == item.key);
+  notifier.remove(item.key);
+  if (!context.mounted) return;
+  // «تراجع» يعيده للسلة في مكانه (ويبقى في المفضلة).
+  AppSnackbar.action(
+    context,
+    message: ar ? 'حفظناه بمفضلتكِ ♡' : 'Saved to your wishlist ♡',
+    actionLabel: s.undo,
+    onAction: () {
+      HapticFeedback.selectionClick();
+      notifier.restore(item, index: index < 0 ? null : index);
+    },
+  );
 }
 
 class CartItemCard extends ConsumerWidget {
@@ -100,7 +114,9 @@ class CartItemCard extends ConsumerWidget {
     final t = context.worldTheme;
     final displayName = item.localizedName(lang);
     final imageSize = Responsive.cartItemImageSize(context);
-    final lowStock = item.stock > 0 && item.stock <= 5;
+    // التحقق مع السيرفر: حُذف أو أُوقف أو نفد — يبقى ظاهراً ليعرف سبب غيابه، والإجراء الحذف.
+    final unavailable = ref.watch(cartProvider.select((c) => c.isUnavailable(item.key)));
+    final lowStock = !unavailable && item.stock > 0 && item.stock <= 5;
 
     return Dismissible(
       key: ValueKey('cart-${item.key}'),
@@ -134,7 +150,10 @@ class CartItemCard extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Thumb(item: item, name: displayName, size: imageSize),
+                Opacity(
+                  opacity: unavailable ? 0.45 : 1,
+                  child: _Thumb(item: item, name: displayName, size: imageSize),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -151,7 +170,7 @@ class CartItemCard extends ConsumerWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppText.bodySmall.copyWith(
-                                  color: t.ink,
+                                  color: unavailable ? t.inkMuted : t.ink,
                                   fontWeight: FontWeight.w700,
                                   height: 1.4,
                                 ),
@@ -159,10 +178,10 @@ class CartItemCard extends ConsumerWidget {
                             ),
                           ),
                           Transform.translate(
-                            offset: const Offset(0, -6),
+                            offset: const Offset(0, -10),
                             child: AppIconButton(
                               icon: Icons.favorite_border_rounded,
-                              size: 30,
+                              size: kMinTapTarget,
                               iconSize: 16,
                               outlined: false,
                               background: Colors.transparent,
@@ -172,10 +191,10 @@ class CartItemCard extends ConsumerWidget {
                             ),
                           ),
                           Transform.translate(
-                            offset: const Offset(0, -6),
+                            offset: const Offset(0, -10),
                             child: AppIconButton(
                               icon: Icons.close_rounded,
-                              size: 30,
+                              size: kMinTapTarget,
                               iconSize: 17,
                               outlined: false,
                               background: Colors.transparent,
@@ -186,12 +205,18 @@ class CartItemCard extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      if (item.shadeName != null || lowStock) ...[
+                      if (item.shadeName != null || lowStock || unavailable) ...[
                         const SizedBox(height: 4),
                         Wrap(
                           spacing: 6,
                           runSpacing: 4,
                           children: [
+                            if (unavailable)
+                              _MetaChip(
+                                icon: Icons.remove_shopping_cart_outlined,
+                                label: s.cartUnavailableLabel,
+                                color: AppColors.sale,
+                              ),
                             if (item.shadeName != null) _ShadeChip(label: item.shadeName!),
                             if (lowStock)
                               _MetaChip(
@@ -207,6 +232,20 @@ class CartItemCard extends ConsumerWidget {
                         padding: const EdgeInsetsDirectional.only(end: 8),
                         child: LayoutBuilder(
                           builder: (context, c) {
+                            if (unavailable) {
+                              return Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: TextButton.icon(
+                                  onPressed: () => removeCartItemWithUndo(context, ref, item),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.sale,
+                                    minimumSize: const Size(0, kMinTapTarget),
+                                  ),
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                                  label: Text(s.removeItem),
+                                ),
+                              );
+                            }
                             final price = _PriceBlock(item: item);
                             final stepper = QuantityStepper(
                               quantity: item.quantity,
@@ -297,7 +336,7 @@ class _PriceBlock extends ConsumerWidget {
         ),
         if (item.quantity > 1)
           Text(
-            ref.s.pricePerPiece(formatPrice(item.price)),
+            ref.s.pricePerPiece(formatPrice(item.price, lang: ref.s.lang)),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppText.caption.copyWith(color: t.inkMuted),

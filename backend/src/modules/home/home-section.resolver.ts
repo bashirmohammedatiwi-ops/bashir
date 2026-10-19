@@ -23,6 +23,9 @@ const productInclude = {
 
 type Payload = Record<string, unknown>;
 
+/** حد المعرّفات في رابط «عرض الكل» لرف مختار (نفس حد `ids` في /products). */
+const MAX_VIEW_ALL_IDS = 50;
+
 export interface ResolvedHomeSection {
   id: string;
   type: HomeBlockType;
@@ -125,6 +128,8 @@ export class HomeSectionResolver {
       productBuckets: Record<string, unknown[]>;
       allBanners: unknown[];
       skinConcerns: unknown[];
+      /** عالم الرئيسية الحالية (null = الرئيسية العامة) — روابط «عرض الكل» تبقى فيه. */
+      worldSlug?: string | null;
     },
   ): Promise<ResolvedHomeSection[]> {
     const sections: ResolvedHomeSection[] = [];
@@ -164,6 +169,8 @@ export class HomeSectionResolver {
       productBuckets: Record<string, unknown[]>;
       allBanners: unknown[];
       skinConcerns: unknown[];
+      /** عالم الرئيسية الحالية (null = الرئيسية العامة) — روابط «عرض الكل» تبقى فيه. */
+      worldSlug?: string | null;
     },
   ): Promise<ResolvedHomeSection | null> {
     const headerImageId = payload.headerImageId as string | undefined;
@@ -308,7 +315,7 @@ export class HomeSectionResolver {
           products,
           endsAt: endsAt ?? null,
           showViewAll: payload.showViewAll !== false,
-          viewAllQuery: customViewAll || this.buildViewAllQuery(payload, filter, block.title),
+          viewAllQuery: customViewAll || this.buildViewAllQuery(payload, filter, block.title, ctx.worldSlug),
         };
       }
 
@@ -335,7 +342,7 @@ export class HomeSectionResolver {
           showViewAll: payload.showViewAll !== false,
           viewAllQuery:
             (payload.viewAllQuery as string) ??
-            "isPromo=1&title=" + encodeURIComponent(block.title ?? "الباقات"),
+            this.withWorld("isPromo=1&title=" + encodeURIComponent(block.title ?? "الباقات"), ctx.worldSlug),
         };
       }
 
@@ -431,7 +438,9 @@ export class HomeSectionResolver {
           showViewAll: payload.showViewAll !== false,
           viewAllQuery:
             customViewAll ||
-            (kind === "both" ? "isPromo=1&title=روتين البشرة" : undefined),
+            (kind === "both"
+              ? this.withWorld(`isPromo=1&title=${encodeURIComponent("روتين البشرة")}`, ctx.worldSlug)
+              : undefined),
         };
       }
 
@@ -472,6 +481,7 @@ export class HomeSectionResolver {
               { ...payload, filter: productFilter },
               productFilter,
               block.title ?? "العناية",
+              ctx.worldSlug,
             ),
         };
       }
@@ -610,7 +620,11 @@ export class HomeSectionResolver {
     id: string;
     parentId?: string | null;
     parent?: { parentId?: string | null } | null;
+    listingKind?: string | null;
   }) {
+    // أقسام العالم تحمل نوع قائمتها صراحة (فرعي/دقيق) — أصدق من استنتاجه من الأب.
+    if (cat.listingKind === "tertiary") return buildAppLink("tertiary", cat.id);
+    if (cat.listingKind === "subcategory") return buildAppLink("subcategory", cat.id);
     if (!cat.parentId) return buildAppLink("category", cat.id);
     if (!cat.parent?.parentId) return buildAppLink("subcategory", cat.id);
     return buildAppLink("tertiary", cat.id);
@@ -628,6 +642,7 @@ export class HomeSectionResolver {
       id: string;
       parentId?: string | null;
       parent?: { parentId?: string | null } | null;
+      listingKind?: string | null;
       image?: unknown;
     } & Record<string, unknown>;
 
@@ -895,7 +910,8 @@ export class HomeSectionResolver {
       motion: (payload.motion as string) || "forward",
       customWidth: this.optionalNumber(payload.customWidth),
       customHeight: this.optionalNumber(payload.customHeight),
-      tileCornerRadius: Number(payload.tileCornerRadius) || undefined,
+      // 0 قيمة صحيحة (زوايا حادة) — لا تُعامل كغياب.
+      tileCornerRadius: this.optionalNumber(payload.tileCornerRadius) ?? undefined,
       backgroundColor: (payload.backgroundColor as string) ?? undefined,
     };
   }
@@ -1120,7 +1136,22 @@ export class HomeSectionResolver {
     return products.map((p) => withPlaceholderImages(p));
   }
 
-  private buildViewAllQuery(payload: Payload, filter: string, title?: string | null): string {
+  /**
+   * رابط «عرض الكل» لرف منتجات — يطابق ما يعرضه الرف نفسه:
+   * - رف مختار يدوياً (productIds) ← `ids=` بنفس الترتيب (مع شارة الفلتر للنسخ القديمة التي لا تعرف ids؛
+   *   القائمة تُهمل الشارات حين تصلها المعرّفات).
+   * - رف بقسم/براند صريح ← نفس النطاق (لا يُضيَّق بالعالم، كما لا يُضيَّق الرف).
+   * - رف شارة عام داخل عالم ← `world=` حتى لا تخرج «الأكثر مبيعاً» في العطور إلى كل المتجر.
+   */
+  private buildViewAllQuery(payload: Payload, filter: string, title?: string | null, worldSlug?: string | null): string {
+    const filterPart = this.filterToQuery(filter, title);
+    const productIds = Array.isArray(payload.productIds)
+      ? (payload.productIds as unknown[]).map((id) => String(id ?? "").trim()).filter(Boolean)
+      : [];
+    if (productIds.length) {
+      const ids = [...new Set(productIds)].slice(0, MAX_VIEW_ALL_IDS).map(encodeURIComponent).join(",");
+      return `ids=${ids}&${filterPart}`;
+    }
     const parts: string[] = [];
     const categoryId = payload.categoryId as string | undefined;
     const subcategoryId = payload.subcategoryId as string | undefined;
@@ -1130,9 +1161,13 @@ export class HomeSectionResolver {
     if (subcategoryId) parts.push(`subcategoryId=${encodeURIComponent(subcategoryId)}`);
     if (tertiaryCategoryId) parts.push(`tertiaryCategoryId=${encodeURIComponent(tertiaryCategoryId)}`);
     if (brandId) parts.push(`brandId=${encodeURIComponent(brandId)}`);
-    const filterPart = this.filterToQuery(filter, title);
     if (parts.length) return `${parts.join("&")}&${filterPart}`;
-    return filterPart;
+    return this.withWorld(filterPart, worldSlug);
+  }
+
+  /** يُلحق `world=<slug>` باستعلام قائمة منتجات حين تُبنى رئيسية عالم. */
+  private withWorld(query: string, worldSlug?: string | null): string {
+    return worldSlug ? `${query}&world=${encodeURIComponent(worldSlug)}` : query;
   }
 
   private filterToQuery(filter: string, title?: string | null): string {

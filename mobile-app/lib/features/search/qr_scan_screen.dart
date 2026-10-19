@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/navigation/deep_link_redirect.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/barcode_util.dart';
@@ -93,6 +94,8 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> with WidgetsBinding
     if (route != null) {
       if (!mounted) return;
       HapticFeedback.mediumImpact();
+      // مسار تبويب (الرئيسية بعالم، البراندات ببحث…): يبدّل التبويب ويغلق الماسح معاً.
+      if (openTabPath(context, route)) return;
       context.pop();
       context.push(route);
       return;

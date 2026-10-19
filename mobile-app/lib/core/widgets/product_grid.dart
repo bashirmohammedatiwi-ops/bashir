@@ -8,15 +8,25 @@ import 'product_card.dart';
 import 'shimmer_box.dart';
 
 /// شبكة منتجات موحّدة — تباعد، نسبة، وأداء متسق.
+///
+/// الشكل العادي ويدجت تمرير كاملة. [ProductGrid.sliver] يعيد الشبكة كـ sliver لتوضع مع
+/// الفلاتر والحالات في `CustomScrollView` واحد.
 class ProductGrid extends StatelessWidget {
   final List<Product> products;
   final ScrollController? controller;
   final bool showPromoBadge;
   final bool showRating;
+
+  /// بطاقات هيكلية بعد المنتجات أثناء تحميل الصفحة التالية.
   final int extraSlots;
   final EdgeInsetsGeometry padding;
   final bool listingStyle;
   final Widget? header;
+
+  /// يظهر بعد آخر عنصر (خطأ «تعذّر تحميل المزيد» مع إعادة المحاولة مثلاً).
+  final Widget? footer;
+
+  final bool _sliver;
 
   const ProductGrid({
     super.key,
@@ -28,7 +38,22 @@ class ProductGrid extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.md),
     this.listingStyle = false,
     this.header,
-  });
+    this.footer,
+  }) : _sliver = false;
+
+  /// الشبكة كـ sliver (مع [footer] بعدها) — بلا متحكّم تمرير ولا رأس: يضعهما الأب.
+  const ProductGrid.sliver({
+    super.key,
+    required this.products,
+    this.showPromoBadge = false,
+    this.showRating = true,
+    this.extraSlots = 0,
+    this.padding = const EdgeInsets.all(AppSpacing.md),
+    this.listingStyle = false,
+    this.footer,
+  })  : controller = null,
+        header = null,
+        _sliver = true;
 
   static SliverGridDelegate delegateFor(BuildContext context, {bool listing = false}) {
     final cols = Responsive.gridColumns(context);
@@ -48,51 +73,51 @@ class ProductGrid extends StatelessWidget {
     return index >= 0 ? index : null;
   }
 
+  Widget _itemBuilder(BuildContext context, int i) {
+    if (i >= products.length) return const ProductCardSkeleton();
+    final product = products[i];
+    return RepaintBoundary(
+      child: ProductCard(
+        key: ValueKey(product.id),
+        product: product,
+        showPromoBadge: showPromoBadge,
+        showRating: showRating,
+        lite: !listingStyle,
+        style: listingStyle ? ProductCardStyle.listing : ProductCardStyle.standard,
+      ),
+    );
+  }
+
+  /// الشبكة وتذييلها كقائمة slivers.
+  List<Widget> _slivers(BuildContext context) => [
+        SliverPadding(
+          padding: padding,
+          sliver: SliverGrid(
+            gridDelegate: delegateFor(context, listing: listingStyle),
+            delegate: SliverChildBuilderDelegate(
+              _itemBuilder,
+              childCount: products.length + extraSlots,
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
+              findChildIndexCallback: _indexForKey,
+            ),
+          ),
+        ),
+        if (footer != null) SliverToBoxAdapter(child: footer!),
+      ];
+
   @override
   Widget build(BuildContext context) {
-    final delegate = delegateFor(context, listing: listingStyle);
-    final itemCount = products.length + extraSlots;
+    if (_sliver) return SliverMainAxisGroup(slivers: _slivers(context));
 
-    Widget itemBuilder(BuildContext context, int i) {
-      if (i >= products.length) {
-        return ShimmerBox(
-          height: double.infinity,
-          radius: listingStyle ? AppRadius.lg : AppRadius.md,
-        );
-      }
-      final product = products[i];
-      return RepaintBoundary(
-        child: ProductCard(
-          key: ValueKey(product.id),
-          product: product,
-          showPromoBadge: showPromoBadge,
-          showRating: showRating,
-          lite: !listingStyle,
-          style: listingStyle ? ProductCardStyle.listing : ProductCardStyle.standard,
-        ),
-      );
-    }
-
-    if (header != null) {
+    if (header != null || footer != null) {
       return CustomScrollView(
         controller: controller,
         physics: AppScrollPerf.physics,
         cacheExtent: AppScrollPerf.gridCacheExtent,
         slivers: [
-          SliverToBoxAdapter(child: header!),
-          SliverPadding(
-            padding: padding,
-            sliver: SliverGrid(
-              gridDelegate: delegate,
-              delegate: SliverChildBuilderDelegate(
-                itemBuilder,
-                childCount: itemCount,
-                addAutomaticKeepAlives: false,
-                addRepaintBoundaries: true,
-                findChildIndexCallback: _indexForKey,
-              ),
-            ),
-          ),
+          if (header != null) SliverToBoxAdapter(child: header!),
+          ..._slivers(context),
         ],
       );
     }
@@ -104,10 +129,10 @@ class ProductGrid extends StatelessWidget {
       cacheExtent: AppScrollPerf.gridCacheExtent,
       addAutomaticKeepAlives: false,
       addRepaintBoundaries: true,
-      gridDelegate: delegate,
-      itemCount: itemCount,
+      gridDelegate: delegateFor(context, listing: listingStyle),
+      itemCount: products.length + extraSlots,
       findChildIndexCallback: _indexForKey,
-      itemBuilder: (_, i) => itemBuilder(context, i),
+      itemBuilder: _itemBuilder,
     );
   }
 }

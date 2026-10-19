@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/store_world.dart';
 import '../catalog/catalog_providers.dart';
+import '../shell/nav_tabs.dart';
 import '../worlds/world_theme.dart';
 import '../worlds/worlds_provider.dart';
 import 'category_browse.dart';
@@ -89,10 +89,22 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     _searchFocus.unfocus();
   }
 
+  /// لمسة ثانية على تبويب الأقسام: تمسح البحث، وإلا تعود لأول قسم.
+  void _onReselect() {
+    if (_query.trim().isNotEmpty) {
+      _clearSearch();
+    } else if (_selectedId != null) {
+      setState(() => _selectedId = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final s = ref.s;
+    ref.listen<({int tab, int tick})>(tabReselectProvider, (_, r) {
+      if (r.tab == NavTabs.categories) _onReselect();
+    });
     final cats = ref.watch(categoriesProvider);
     final worlds =
         ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
@@ -110,7 +122,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
           .where((e) => e.level == CategoryLevel.root)
           .length;
       final subs = statIndex.all.length - roots;
-      stats = s.isAr ? '$roots أقسام • $subs فرعياً' : '$roots • $subs sub';
+      stats = s.catCatalogStats(roots, subs);
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -146,8 +158,11 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 child: cats.when(
                   skipLoadingOnRefresh: true,
                   loading: () => const _BrowseSkeleton(),
-                  error: (e, _) =>
-                      ErrorView(message: friendlyError(e), onRetry: _refresh),
+                  error: (e, _) => ErrorView.from(
+                    e,
+                    onRetry: _refresh,
+                    loading: cats.isLoading,
+                  ),
                   data: (roots) {
                     final index =
                         statIndex ??
@@ -167,8 +182,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     }
                     final entries = _railEntries(index, lensWorld);
                     if (entries.isEmpty) {
-                      if (_lens != null && lensWorld == null)
+                      if (_lens != null && lensWorld == null) {
                         return const _BrowseSkeleton();
+                      }
                       return EmptyState(
                         icon: Icons.category_outlined,
                         title: s.noCategories,
@@ -215,9 +231,11 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
         out.add(
           IndexedCategory(
             category: c,
-            level: c.listingKind == 'subcategory'
-                ? CategoryLevel.sub
-                : CategoryLevel.root,
+            level: switch (c.listingKind) {
+              'tertiary' => CategoryLevel.tertiary,
+              'subcategory' => CategoryLevel.sub,
+              _ => CategoryLevel.root,
+            },
           ),
         );
       }

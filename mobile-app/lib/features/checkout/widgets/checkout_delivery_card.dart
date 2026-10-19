@@ -99,6 +99,7 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
                   textDirection: TextDirection.ltr,
+                  inputFormatters: phoneInputFormatters,
                   autofillHints: const [AutofillHints.telephoneNumber],
                   textInputAction: TextInputAction.next,
                   decoration: CheckoutTheme.fieldDecoration(
@@ -107,7 +108,7 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                     hint: '07701234567',
                     icon: Icons.phone_outlined,
                   ),
-                  validator: (v) => validateIraqiPhone(v),
+                  validator: (v) => validateIraqiPhone(v, lang: s.lang),
                 ),
               ),
               const SizedBox(height: 20),
@@ -288,9 +289,16 @@ class _GovernorateTextField extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
+    // تعذّر جلب المحافظات: كتابة يدوية، وزر يعيد المحاولة لقائمة الاختيار.
     return TextFormField(
       initialValue: value,
-      decoration: CheckoutTheme.fieldDecoration(context, label: s.governorateCity, icon: Icons.map_outlined),
+      decoration: CheckoutTheme.fieldDecoration(context, label: s.governorateCity, icon: Icons.map_outlined).copyWith(
+        suffixIcon: IconButton(
+          tooltip: s.retry,
+          icon: const Icon(Icons.refresh_rounded),
+          onPressed: () => retryShippingZones(ref),
+        ),
+      ),
       validator: (v) => (v == null || v.trim().isEmpty) ? s.requiredField : null,
       onChanged: onChanged,
     );

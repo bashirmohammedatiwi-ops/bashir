@@ -28,7 +28,7 @@ export class OrdersController {
   @Get()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CUSTOMER)
   list(@Query() q: QueryOrdersDto, @CurrentUser() user: any) {
-    if (![Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF].includes(user.role)) {
+    if (!isStaff(user)) {
       q.userId = user.id;
     }
     return this.orders.list(q);
@@ -59,12 +59,18 @@ export class OrdersController {
   async cancel(@Param("id") id: string, @CurrentUser() user: any) {
     const order = await this.orders.findOne(id);
     assertOwnerOrStaff(order.userId, user);
-    return this.orders.cancel(id, user.id);
+    // الزبونة تلغي قبل بدء التجهيز فقط؛ الإدارة تلغي أي طلب لم يُلغَ.
+    return this.orders.cancel(id, { id: user.id, staff: isStaff(user) });
   }
+}
+
+const STAFF_ROLES: Role[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF];
+
+function isStaff(user: any): boolean {
+  return STAFF_ROLES.includes(user?.role);
 }
 
 /** الزبونة ترى وتلغي طلباتها فقط؛ الإدارة ترى الكل. */
 function assertOwnerOrStaff(ownerId: string, user: any) {
-  const staff = [Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF].includes(user?.role);
-  if (!staff && ownerId !== user?.id) throw new NotFoundException("Order not found");
+  if (!isStaff(user) && ownerId !== user?.id) throw new NotFoundException("Order not found");
 }

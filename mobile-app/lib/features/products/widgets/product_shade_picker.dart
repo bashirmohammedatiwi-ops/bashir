@@ -150,6 +150,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
     HapticFeedback.selectionClick();
     final picked = await showModalBottomSheet<ProductShade>(
       context: context,
+      showDragHandle: false,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

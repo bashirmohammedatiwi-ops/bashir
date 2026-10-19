@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import '../../core/config/app_config.dart';
 import '../../core/l10n/localized_text.dart';
 import '../../core/utils/json.dart';
+import '../../core/utils/media_url.dart';
 import 'media.dart';
 import 'brand.dart';
 import 'category.dart';
@@ -9,7 +12,11 @@ class ProductImage {
   final String id;
   final bool isPrimary;
   final AppMedia? media;
-  const ProductImage({required this.id, this.isPrimary = false, this.media});
+
+  /// رابط مباشر بلا كائن وسائط (صورة الاقتراحات الفورية في نسخة مبدئية للمنتج).
+  final String? _directUrl;
+
+  const ProductImage({this.id = '', this.isPrimary = false, this.media, String? url}) : _directUrl = url;
 
   factory ProductImage.fromJson(Map<String, dynamic> json) => ProductImage(
         id: asString(json['id']),
@@ -17,8 +24,15 @@ class ProductImage {
         media: json['media'] is Map ? AppMedia.fromJson(asMap(json['media'])) : null,
       );
 
-  String get url => media?.thumb ?? '';
-  String get fullUrl => media?.full ?? '';
+  String get url {
+    final thumb = media?.thumb ?? '';
+    return thumb.isNotEmpty ? thumb : resolveMediaUrl(_directUrl);
+  }
+
+  String get fullUrl {
+    final full = media?.full ?? '';
+    return full.isNotEmpty ? full : resolveMediaUrl(_directUrl);
+  }
 }
 
 class ProductShade {
@@ -27,7 +41,13 @@ class ProductShade {
   final String colorHex;
   final String? colorHexEnd;
   final String? barcode;
+
+  /// سعر الدرجة إن اختلف عن المنتج (null = تتبع سعر المنتج).
   final int? price;
+
+  /// السعر قبل الخصم لهذه الدرجة — له معنى فقط مع [price] الخاص بها.
+  final int? originalPrice;
+  final int? discountPercent;
   final int stock;
   final AppMedia? image;
 
@@ -38,6 +58,8 @@ class ProductShade {
     this.colorHexEnd,
     this.barcode,
     this.price,
+    this.originalPrice,
+    this.discountPercent,
     this.stock = 0,
     this.image,
     this.listed = false,
@@ -50,6 +72,8 @@ class ProductShade {
         colorHexEnd: json['colorHexEnd']?.toString(),
         barcode: json['barcode']?.toString(),
         price: json['price'] != null ? asInt(json['price']) : null,
+        originalPrice: json['originalPrice'] != null ? asInt(json['originalPrice']) : null,
+        discountPercent: json['discountPercent'] != null ? asInt(json['discountPercent']) : null,
         stock: asInt(json['stock']),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
         listed: json['hasBarcode'] == true,
@@ -112,7 +136,18 @@ class Product {
   final bool isPromo;
   final List<String> tags;
   final Brand? brand;
+
+  /// القسم الرئيسي (الجذر).
   final Category? category;
+
+  /// القسم الفرعي والثالث كما يرسلهما الخادم ({id, name, nameEn, slug, parentId}).
+  final Category? subcategory;
+  final Category? tertiaryCategory;
+  final String? subcategoryId;
+  final String? tertiaryCategoryId;
+
+  /// أنواع البشرة المناسبة (oily، dry…) — الخادم يرسلها نص JSON في القوائم وقائمة في التفاصيل.
+  final List<String> skinTypes;
   final List<ProductImage> images;
   final List<ProductShade> shades;
   final List<ProductVariant> variants;
@@ -145,6 +180,11 @@ class Product {
     this.tags = const [],
     this.brand,
     this.category,
+    this.subcategory,
+    this.tertiaryCategory,
+    this.subcategoryId,
+    this.tertiaryCategoryId,
+    this.skinTypes = const [],
     this.images = const [],
     this.shades = const [],
     this.variants = const [],
@@ -154,6 +194,8 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) {
     final count = asMap(json['_count']);
     final shades = asList(json['shades']).map(ProductShade.fromJson).toList();
+    final subcategory = json['subcategory'] is Map ? Category.fromJson(asMap(json['subcategory'])) : null;
+    final tertiary = json['tertiaryCategory'] is Map ? Category.fromJson(asMap(json['tertiaryCategory'])) : null;
     return Product(
       id: asString(json['id']),
       sku: asString(json['sku']),
@@ -181,6 +223,11 @@ class Product {
       tags: json['tags'] is List ? asStringList(json['tags']) : const [],
       brand: json['brand'] is Map ? Brand.fromJson(asMap(json['brand'])) : null,
       category: json['category'] is Map ? Category.fromJson(asMap(json['category'])) : null,
+      subcategory: subcategory,
+      tertiaryCategory: tertiary,
+      subcategoryId: _idOrNull(json['subcategoryId']) ?? _idOrNull(subcategory?.id),
+      tertiaryCategoryId: _idOrNull(json['tertiaryCategoryId']) ?? _idOrNull(tertiary?.id),
+      skinTypes: _looseStringList(json['skinTypes'] ?? json['skinType']),
       images: asList(json['images']).map(ProductImage.fromJson).toList(),
       shades: shades,
       variants: asList(json['variants']).map(ProductVariant.fromJson).toList(),
@@ -217,6 +264,26 @@ class Product {
   }
   bool get inStock => stock > 0;
   bool get hasDiscount => discountPercent > 0 && originalPrice > price;
+
+  // ─── السعر حسب الدرجة — نفس ما يحاسب عليه السيرفر ───────────────────────────
+  // سعر المنتج وخصمه تجميعيان (الدرجة الرئيسية وأعلى خصم)، والدرجة قد يكون لها سعرها.
+
+  /// سعر القطعة للدرجة المختارة (أو سعر المنتج بلا درجة / لدرجة بلا سعر خاص).
+  int unitFor(ProductShade? shade) => shade?.price ?? price;
+
+  /// السعر قبل الخصم: درجة لها سعرها تستخدم سعرها الأصلي (0 = بلا خصم)،
+  /// ودرجة بلا سعر خاص ترث سعر المنتج الأصلي.
+  int origFor(ProductShade? shade) => shade?.price != null ? (shade!.originalPrice ?? 0) : originalPrice;
+
+  bool hasDiscountFor(ProductShade? shade) => origFor(shade) > unitFor(shade);
+
+  /// نسبة الخصم الفعلية للدرجة (مقرّبة) — 0 بلا خصم.
+  int pctFor(ProductShade? shade) {
+    final orig = origFor(shade);
+    final unit = unitFor(shade);
+    if (orig <= 0 || orig <= unit) return 0;
+    return ((orig - unit) * 100 / orig).round();
+  }
 
   String localizedName(String lang) => localizedText(
         languageCode: lang,
@@ -255,4 +322,24 @@ class Product {
     if (hasMultipleDisplayableShades) return selected;
     return soleDisplayableShade ?? selected;
   }
+}
+
+String? _idOrNull(dynamic v) {
+  final s = v?.toString().trim() ?? '';
+  return s.isEmpty ? null : s;
+}
+
+/// قائمة نصوص من List أو نص JSON («["oily","dry"]») أو نص مفصول بفواصل.
+List<String> _looseStringList(dynamic v) {
+  if (v is List) return v.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+  final raw = v?.toString().trim() ?? '';
+  if (raw.isEmpty) return const [];
+  if (raw.startsWith('[')) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return _looseStringList(decoded);
+    } catch (_) {}
+    return const [];
+  }
+  return raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 }

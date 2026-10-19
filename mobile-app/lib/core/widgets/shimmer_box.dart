@@ -1,7 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../features/worlds/world_theme.dart';
 
+import '../../features/worlds/world_theme.dart';
+import '../brand/brand_logo.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text.dart';
+import 'product_grid.dart';
+
+/// لون كتل الهيكل — أغمق قليلاً من خلفية العالم الدافئة.
+Color _blockColor(WorldThemePalette t) => Color.lerp(t.canvasWarm, t.hairline, 0.35)!;
+
+/// يعلّم أن الشجرة تحت [Skeleton]: كتل [ShimmerBox] داخلها لا تشغّل وميضاً خاصاً بها.
+class _SkeletonScope extends InheritedWidget {
+  const _SkeletonScope({required super.child});
+
+  static bool active(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_SkeletonScope>() != null;
+
+  @override
+  bool updateShouldNotify(_SkeletonScope oldWidget) => false;
+}
+
+/// وميض واحد يعبر هيكل التحميل كله بدل وميض لكل كتلة: متحكّم حركة واحد، وبريق
+/// يمرّ مرة واحدة على التخطيط (من اليمين في العربية). كل ما تحته يُرسم بلون الوميض،
+/// فالأسطح البيضاء (بئر الصورة مثلاً) تُبنى خارجه.
+class Skeleton extends StatelessWidget {
+  final Widget child;
+
+  const Skeleton({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return ExcludeSemantics(
+      child: Shimmer.fromColors(
+        baseColor: _blockColor(t),
+        highlightColor: t.surface,
+        direction: rtl ? ShimmerDirection.rtl : ShimmerDirection.ltr,
+        // تقليل الحركة: الكتل ثابتة بلا بريق.
+        enabled: !MediaQuery.disableAnimationsOf(context),
+        child: _SkeletonScope(child: child),
+      ),
+    );
+  }
+}
+
+/// كتلة هيكل مستديرة الزوايا. داخل [Skeleton] تومض معه، وخارجه تبقى بلونها الثابت.
+class SkeletonBlock extends StatelessWidget {
+  final double? width;
+  final double? height;
+  final double radius;
+
+  const SkeletonBlock({super.key, this.width, this.height, this.radius = AppCorners.xs});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: _blockColor(context.worldTheme),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+/// كتلة تومض وحدها — للاستدعاءات القديمة. داخل [Skeleton] تصبح [SkeletonBlock] عادية
+/// حتى لا يتراكب وميضان.
 class ShimmerBox extends StatelessWidget {
   final double? width;
   final double height;
@@ -10,81 +77,149 @@ class ShimmerBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.worldTheme;
-    return Shimmer.fromColors(
-      baseColor: Color.lerp(t.canvasWarm, t.hairline, 0.35)!,
-      highlightColor: t.surface,
-      child: Container(
-        width: width,
-        height: height,
+    final block = SkeletonBlock(width: width, height: height, radius: radius);
+    if (_SkeletonScope.active(context)) return block;
+    return Skeleton(child: block);
+  }
+}
+
+/// ارتفاع منطقة البيانات في بطاقة المنتج (براند، سطرا الاسم، السعر) — كما في ProductCard.
+const double _cardInfoHeight = 94;
+
+/// بطاقة منتج هيكلية بطبقتين بنفس الأبعاد: [lines] = false يرسم البطاقة الثابتة وبئر
+/// الصورة الأبيض بعلامة المتجر (كما تبدو البطاقة الحقيقية قبل وصول صورتها)، و
+/// [lines] = true يرسم أسطر البيانات فقط لتوضع تحت [Skeleton].
+class _SkeletonCard extends StatelessWidget {
+  final bool lines;
+
+  const _SkeletonCard({required this.lines});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!lines) {
+      final t = context.worldTheme;
+      return DecoratedBox(
         decoration: BoxDecoration(
-          color: t.canvasWarm,
-          borderRadius: BorderRadius.circular(radius),
+          color: t.surface,
+          borderRadius: BorderRadius.circular(AppCorners.lg),
+          boxShadow: t.cardShadow,
         ),
-      ),
-    );
-  }
-}
-
-/// شبكة هياكل تحميل لبطاقات المنتجات.
-class ProductGridSkeleton extends StatelessWidget {
-  final int count;
-  const ProductGridSkeleton({super.key, this.count = 6});
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.62,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: count,
-      itemBuilder: (_, __) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: const [
-          Expanded(child: ShimmerBox(height: double.infinity, radius: 16)),
-          SizedBox(height: 8),
-          ShimmerBox(height: 12, width: 60),
-          SizedBox(height: 6),
-          ShimmerBox(height: 12),
-          SizedBox(height: 6),
-          ShimmerBox(height: 14, width: 80),
-        ],
-      ),
-    );
-  }
-}
-
-class HorizontalProductsSkeleton extends StatelessWidget {
-  const HorizontalProductsSkeleton({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 250,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, __) => const SizedBox(
-          width: 150,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: ShimmerBox(height: double.infinity, radius: 16)),
-              SizedBox(height: 8),
-              ShimmerBox(height: 12),
-              SizedBox(height: 6),
-              ShimmerBox(height: 14, width: 70),
-            ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppCorners.lg - 5),
+                  ),
+                  child: Center(child: BrandMark(height: 26, color: t.hairline)),
+                ),
+              ),
+            ),
+            const SizedBox(height: _cardInfoHeight),
+          ],
+        ),
+      );
+    }
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Spacer(),
+        SizedBox(
+          height: _cardInfoHeight,
+          child: Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(11, 9, 11, 11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 14,
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: SkeletonBlock(width: 52, height: 8),
+                  ),
+                ),
+                SizedBox(height: 3),
+                SizedBox(
+                  height: 34,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      SkeletonBlock(width: double.infinity, height: 10),
+                      FractionallySizedBox(widthFactor: 0.62, child: SkeletonBlock(height: 10)),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 6),
+                Expanded(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: SkeletonBlock(width: 64, height: 13),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+      ],
+    );
+  }
+}
+
+/// بطاقة منتج هيكلية واحدة (خانات «تحميل المزيد» في آخر الشبكة).
+class ProductCardSkeleton extends StatelessWidget {
+  const ProductCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Stack(
+      fit: StackFit.expand,
+      children: [
+        _SkeletonCard(lines: false),
+        Skeleton(child: _SkeletonCard(lines: true)),
+      ],
+    );
+  }
+}
+
+/// شبكة هياكل تحميل بشكل بطاقات المنتجات وأبعاد شبكتها الحقيقية
+/// ([ProductGrid.delegateFor]) — تحلّ البطاقات مكانها دون قفزة.
+class ProductGridSkeleton extends StatelessWidget {
+  final int count;
+
+  /// نسبة بطاقات صفحات القوائم (كـ `ProductGrid.listingStyle`).
+  final bool listing;
+
+  final EdgeInsetsGeometry padding;
+
+  const ProductGridSkeleton({
+    super.key,
+    this.count = 6,
+    this.listing = false,
+    this.padding = const EdgeInsets.all(AppSpacing.md),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final delegate = ProductGrid.delegateFor(context, listing: listing);
+    Widget grid(Widget tile) => GridView.builder(
+          padding: padding,
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: delegate,
+          itemCount: count,
+          itemBuilder: (_, __) => tile,
+        );
+    // طبقتان بنفس الهندسة: البطاقات ثابتة، والأسطر وحدها تحت وميض واحد يعبر الشبكة.
+    return Stack(
+      children: [
+        grid(const _SkeletonCard(lines: false)),
+        Positioned.fill(child: Skeleton(child: grid(const _SkeletonCard(lines: true)))),
+      ],
     );
   }
 }
@@ -121,7 +256,7 @@ class HomeLoadingSkeleton extends StatelessWidget {
         children: [
           Container(
             color: band,
-            padding: EdgeInsets.fromLTRB(18, top + 4, 18, 46),
+            padding: EdgeInsetsDirectional.fromSTEB(18, top + 4, 18, 46),
             child: Row(
               children: [
                 glass(44),
@@ -177,33 +312,41 @@ class HomeLoadingSkeleton extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  const ShimmerBox(height: 52, radius: 26),
-                  const SizedBox(height: 14),
-                  const ShimmerBox(height: 86, radius: 22),
-                  const SizedBox(height: 16),
-                  ShimmerBox(height: (width * 0.9 - 12) / 2.15, radius: 24),
-                  const SizedBox(height: 26),
-                  const Row(
-                    children: [
-                      ShimmerBox(width: 120, height: 16, radius: 8),
-                      Spacer(),
-                      ShimmerBox(width: 70, height: 16, radius: 8),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      for (var i = 0; i < 4; i++) ...[
-                        if (i > 0) const SizedBox(width: 10),
-                        Column(
+                  // كل كتل الورقة تحت وميض واحد.
+                  Skeleton(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SkeletonBlock(height: 52, radius: 26),
+                        const SizedBox(height: 14),
+                        const SkeletonBlock(height: 86, radius: 22),
+                        const SizedBox(height: 16),
+                        SkeletonBlock(height: (width * 0.9 - 12) / 2.15, radius: 24),
+                        const SizedBox(height: 26),
+                        const Row(
                           children: [
-                            ShimmerBox(width: tileW, height: tileW, radius: 16),
-                            const SizedBox(height: 7),
-                            ShimmerBox(width: tileW * 0.6, height: 10, radius: 5),
+                            SkeletonBlock(width: 120, height: 16),
+                            Spacer(),
+                            SkeletonBlock(width: 70, height: 16),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            for (var i = 0; i < 4; i++) ...[
+                              if (i > 0) const SizedBox(width: 10),
+                              Column(
+                                children: [
+                                  SkeletonBlock(width: tileW, height: tileW, radius: AppCorners.md),
+                                  const SizedBox(height: 7),
+                                  SkeletonBlock(width: tileW * 0.6, height: 10, radius: 5),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ],
-                    ],
+                    ),
                   ),
                 ],
               ),

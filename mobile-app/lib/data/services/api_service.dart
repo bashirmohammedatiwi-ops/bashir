@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,47 +44,76 @@ class ApiService {
 
   Map<String, dynamic> _body(Response r) => asMap(r.data);
 
+  static String? _nonEmpty(String? v) {
+    final t = v?.trim();
+    return (t == null || t.isEmpty) ? null : t;
+  }
+
+  /// يحوّل خطأ الطلب إلى [ApiException] بلا ترجمة مسبقة: رسالة السيرفر كما هي، وإلا
+  /// وصف تقني إنجليزي محايد يعرفه friendlyError («Connection error»…) فيعرضه بلغة الواجهة.
+  /// يبقى معه رمز HTTP ورمز خطأ السيرفر ونوع فشل النقل ([ApiExceptionDetails]).
   Never _throw(Object e) {
+    if (e is ApiException) throw e;
     if (e is DioException) {
       final status = e.response?.statusCode;
-      final parsed = parseApiErrorMessage(e.response?.data);
-      String msg = parsed ?? '';
-
-      if (msg.isEmpty) {
-        if (e.type == DioExceptionType.connectionError ||
-            e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.sendTimeout ||
-            e.type == DioExceptionType.receiveTimeout) {
-          msg = 'تحققي من اتصالك بالإنترنت';
-        } else if (status != null) {
-          msg = switch (status) {
-            400 => 'البيانات المدخلة غير صحيحة',
-            401 => 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-            403 => 'غير مسموح بهذا الإجراء',
-            404 => 'غير موجود',
-            409 => 'البيانات مستخدمة مسبقاً',
-            422 => 'تحققي من البيانات المدخلة',
-            429 => 'محاولات كثيرة — حاولي لاحقاً',
-            >= 500 => 'الخادم مشغول مؤقتاً',
-            _ => 'حدث خطأ ($status)',
-          };
-        } else {
-          msg = 'تعذّر الاتصال بالخادم';
-        }
-      }
-
-      throw ApiException(msg, status);
+      final data = e.response?.data;
+      final parsed = parseApiErrorMessage(data)?.trim() ?? '';
+      throw _DetailedApiException(
+        parsed.isNotEmpty ? parsed : _fallbackMessage(e.type, status),
+        status,
+        code: _errorCode(data),
+        type: e.type,
+      );
     }
     throw ApiException(e.toString());
   }
 
+  static String _fallbackMessage(DioExceptionType type, int? status) => switch (type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout =>
+          'Connection timeout',
+        DioExceptionType.connectionError => 'Connection error',
+        DioExceptionType.cancel => 'Request cancelled',
+        DioExceptionType.badCertificate => 'Secure connection failed',
+        // unknown بلا رد = انقطاع أثناء الطلب (SocketException وأشباهه).
+        _ => status != null ? 'Request failed (HTTP $status)' : 'Connection error',
+      };
+
+  /// رمز الخطأ من السيرفر ({error: {code}} أو {code}) — مثل WRONG_CURRENT_PASSWORD.
+  static String? _errorCode(dynamic data) {
+    if (data is! Map) return null;
+    final err = data['error'];
+    final raw = (err is Map ? err['code'] : null) ?? data['code'];
+    final code = raw?.toString().trim() ?? '';
+    return code.isEmpty ? null : code;
+  }
+
   // ---- HOME ----
-  Future<HomeFeed> getHome({bool forceRefresh = false, String? worldSlug}) async {
+  static String _homeKey(String? worldSlug) => worldSlug == null ? 'home_v3' : 'home_v3_world_$worldSlug';
+
+  /// هل وصلت واجهة هذا العالم من الشبكة خلال [within]؟ (لا داعي لإعادة طلبها فوراً)
+  bool isHomeFresh({String? worldSlug, Duration within = AppConfig.homeCacheTtl}) =>
+      _cache.isFresh(_homeKey(worldSlug), within);
+
+  /// هل الواجهة المعروضة نسخة محفوظة لأن الشبكة فشلت؟ (لشارة «نسخة محفوظة»)
+  bool homeServedStale({String? worldSlug}) => _cache.servedStale(_homeKey(worldSlug));
+
+  /// وقت النسخة المعروضة من الواجهة («آخر تحديث قبل …»).
+  DateTime? homeFetchedAt({String? worldSlug}) => _cache.fetchedAt(_homeKey(worldSlug));
+
+  /// [staleOnError] = false (سحب للتحديث): فشل الشبكة يُرمى بدل إعادة النسخة المحفوظة،
+  /// فيعرف المستدعي أن التحديث لم يتم.
+  Future<HomeFeed> getHome({bool forceRefresh = false, String? worldSlug, bool staleOnError = true}) async {
     try {
       final raw = await _cache.getOrFetch<Map<String, dynamic>>(
-        key: worldSlug == null ? 'home_v3' : 'home_v3_world_$worldSlug',
+        key: _homeKey(worldSlug),
         ttl: AppConfig.homeCacheTtl,
+        // الواجهة المحفوظة تُعرض فوراً حتى عمر يوم تقريباً (90ث × 960) وتُحدَّث في الخلفية —
+        // لا هيكل تحميل عند كل فتح للتطبيق على شبكة بطيئة.
+        maxStaleFactor: 960,
         forceRefresh: forceRefresh,
+        staleOnError: staleOnError,
         fetch: () async {
           final r = await _dio.get(
             '/home',
@@ -101,13 +132,14 @@ class ApiService {
   }
 
   /// العوالم نادراً ما تتغير: تُعرض من الجهاز فوراً (وبلا إنترنت) وتُحدَّث في الخلفية.
-  Future<List<StoreWorld>> getWorlds({bool forceRefresh = false}) async {
+  Future<List<StoreWorld>> getWorlds({bool forceRefresh = false, bool staleOnError = true}) async {
     try {
       final raw = await _cache.getOrFetch<List<dynamic>>(
         key: 'worlds_v1',
         ttl: const Duration(minutes: 10),
         maxStaleFactor: 1008, // حتى 7 أيام تُعرض فوراً مع تحديث خلفي
         forceRefresh: forceRefresh,
+        staleOnError: staleOnError,
         fetch: () async {
           final r = await _dio.get('/worlds', options: Options(extra: {'auth': false}));
           return asList(_data(r));
@@ -121,13 +153,14 @@ class ApiService {
     }
   }
 
-  Future<StoreWorld> getWorld(String slug, {bool forceRefresh = false}) async {
+  Future<StoreWorld> getWorld(String slug, {bool forceRefresh = false, bool staleOnError = true}) async {
     try {
       final raw = await _cache.getOrFetch<Map<String, dynamic>>(
         key: 'world_v1_$slug',
         ttl: const Duration(minutes: 10),
         maxStaleFactor: 1008,
         forceRefresh: forceRefresh,
+        staleOnError: staleOnError,
         fetch: () async {
           final r = await _dio.get('/worlds/$slug', options: Options(extra: {'auth': false}));
           return asMap(_data(r));
@@ -190,15 +223,16 @@ class ApiService {
   }
 
   // ---- CATEGORIES ----
-  Future<List<Category>> getCategories({bool forceRefresh = false}) async {
+  /// شجرة الأقسام النشطة فقط (بلا all=1: القسم الموقوف من لوحة التحكم يختفي من التطبيق).
+  Future<List<Category>> getCategories({bool forceRefresh = false, bool staleOnError = true}) async {
     try {
       final raw = await _cache.getOrFetch<List<dynamic>>(
-        key: 'categories_all_v3',
+        key: 'categories_all_v4',
         ttl: AppConfig.catalogCacheTtl,
         forceRefresh: forceRefresh,
+        staleOnError: staleOnError,
         fetch: () async {
-          final r = await _dio.get('/categories',
-              queryParameters: {'all': '1'}, options: Options(extra: {'auth': false}));
+          final r = await _dio.get('/categories', options: Options(extra: {'auth': false}));
           return asList(_data(r));
         },
         parse: (json) => asList(json),
@@ -223,12 +257,15 @@ class ApiService {
   }
 
   // ---- BRANDS ----
+  /// [all] يطلب البراندات الموقوفة أيضاً — للوحة التحكم فقط (السيرفر يتجاهله لواجهات المتجر)،
+  /// فالافتراضي false.
   Future<List<Brand>> getBrands({
     bool featured = false,
-    bool all = true,
+    bool all = false,
     String? categoryId,
     String? subcategoryId,
     bool forceRefresh = false,
+    bool staleOnError = true,
   }) async {
     try {
       final key = categoryId != null
@@ -240,6 +277,7 @@ class ApiService {
         key: key,
         ttl: AppConfig.catalogCacheTtl,
         forceRefresh: forceRefresh,
+        staleOnError: staleOnError,
         fetch: () async {
           final r = await _dio.get('/brands', queryParameters: {
             if (featured) 'featured': '1',
@@ -271,6 +309,11 @@ class ApiService {
   }
 
   // ---- PRODUCTS ----
+  /// قائمة منتجات بفلاتر الخادم. كلها اختيارية:
+  /// - [world]: slug عالم — منتجات أقسامه فقط («عرض الكل» وشرائح الميزانية داخل العالم).
+  /// - [ids]: منتجات بعينها (يُستخدم معها [getProductsByIds] غالباً).
+  /// - [minDiscount]: خصم لا يقل عن هذه النسبة (شرائح العروض)، و`sort: 'discount'` للأعلى خصماً.
+  /// - [skinType]: نوع البشرة (dry | oily | combination | normal | sensitive).
   Future<Paginated<Product>> getProducts({
     int page = 1,
     int limit = 20,
@@ -289,10 +332,19 @@ class ApiService {
     bool? isPromo,
     String? concernSlug,
     bool? isFeatured,
+    String? world,
+    List<String>? ids,
+    int? minDiscount,
+    String? skinType,
     bool lite = true,
     bool forceRefresh = false,
   }) async {
     try {
+      final worldSlug = _nonEmpty(world);
+      final skin = _nonEmpty(skinType);
+      final idList = ids?.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      // الخادم يقبل 1–90%.
+      final discount = (minDiscount != null && minDiscount > 0) ? minDiscount.clamp(1, 90) : null;
       final cacheKey = _productsCacheKey(
         page: page,
         limit: limit,
@@ -302,11 +354,20 @@ class ApiService {
         tertiaryCategoryId: tertiaryCategoryId,
         brandId: brandId,
         sort: sort,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        minRating: minRating,
+        inStock: inStock,
         isNew: isNew,
         isBestSeller: isBestSeller,
         isPromo: isPromo,
         concernSlug: concernSlug,
         isFeatured: isFeatured,
+        world: worldSlug,
+        ids: idList,
+        minDiscount: discount,
+        skinType: skin,
+        lite: lite,
       );
 
       Future<Map<String, dynamic>> fetch() async {
@@ -329,6 +390,10 @@ class ApiService {
           if (isPromo == true) 'isPromo': '1',
           if (isFeatured == true) 'isFeatured': '1',
           if (concernSlug != null && concernSlug.isNotEmpty) 'concernSlug': concernSlug,
+          if (worldSlug != null) 'world': worldSlug,
+          if (idList != null && idList.isNotEmpty) 'ids': idList.join(','),
+          if (discount != null) 'minDiscount': discount,
+          if (skin != null) 'skinType': skin,
         }, options: Options(extra: {'auth': false}));
         return _body(r);
       }
@@ -351,14 +416,38 @@ class ApiService {
     }
   }
 
-  /// بحث ذكي للمتجر — ترتيب بالملاءمة، عربي/إنجليزي معاً.
-  Future<Paginated<Product>> searchProducts(String query, {int limit = 40}) async {
+  /// منتجات بعينها بترتيب [ids] (تابعي التسوق، المقارنة، تنبيهات التوفّر) — السعر والمخزون
+  /// والتدرجات الحالية من الخادم. ما حُذف أو أُوقف يسقط من النتيجة.
+  Future<List<Product>> getProductsByIds(List<String> ids, {bool forceRefresh = false}) async {
+    final wanted = <String>[];
+    for (final raw in ids) {
+      final id = raw.trim();
+      if (id.isNotEmpty && !wanted.contains(id)) wanted.add(id);
+    }
+    if (wanted.isEmpty) return const [];
+    // الخادم يأخذ أول 50 معرّفاً في الطلب الواحد.
+    final batches = [
+      for (var i = 0; i < wanted.length; i += _idsPerRequest)
+        wanted.sublist(i, math.min(i + _idsPerRequest, wanted.length)),
+    ];
+    final pages = await Future.wait(
+      batches.map((batch) => getProducts(ids: batch, limit: batch.length, forceRefresh: forceRefresh)),
+    );
+    final byId = {for (final page in pages) for (final p in page.items) p.id: p};
+    return [for (final id in wanted) ?byId[id]];
+  }
+
+  static const _idsPerRequest = 50;
+
+  /// بحث ذكي للمتجر — ترتيب بالملاءمة، عربي/إنجليزي معاً. [world] يحصر النتائج بأقسام عالم.
+  Future<Paginated<Product>> searchProducts(String query, {int limit = 40, String? world}) async {
     try {
       final q = query.trim();
       if (q.length < 2) return Paginated.empty();
+      final worldSlug = _nonEmpty(world);
       final r = await _dio.get(
         '/products/search',
-        queryParameters: {'q': q, 'limit': limit},
+        queryParameters: {'q': q, 'limit': limit, if (worldSlug != null) 'world': worldSlug},
         options: Options(extra: {'auth': false}),
       );
       return Paginated.fromJson(_body(r), Product.fromJson);
@@ -367,6 +456,8 @@ class ApiService {
     }
   }
 
+  /// مفتاح كاش الصفحة الأولى — يضم كل ما يغيّر النتيجة، فلا تُعرض قائمة مفلترة مكان
+  /// غير المفلترة عند انقطاع الشبكة. البحث النصي لا يُحفظ.
   String? _productsCacheKey({
     required int page,
     required int limit,
@@ -376,27 +467,46 @@ class ApiService {
     String? tertiaryCategoryId,
     String? brandId,
     String? sort,
+    int? minPrice,
+    int? maxPrice,
+    double? minRating,
+    bool? inStock,
     bool? isNew,
     bool? isBestSeller,
     bool? isPromo,
     String? concernSlug,
     bool? isFeatured,
+    String? world,
+    List<String>? ids,
+    int? minDiscount,
+    String? skinType,
+    bool lite = true,
   }) {
     if (page != 1) return null;
     if (search != null && search.isNotEmpty) return null;
     final parts = <String>[
-      'products_v3',
+      // v4: مفاتيح v3 لم تكن تميّز فلاتر السعر والتقييم والمخزون — تُهمَل.
+      'products_v4',
       'l$limit',
       if (categoryId != null) 'c$categoryId',
       if (subcategoryId != null) 'sc$subcategoryId',
       if (tertiaryCategoryId != null) 'tc$tertiaryCategoryId',
       if (brandId != null) 'b$brandId',
       if (sort != null) 's$sort',
+      if (minPrice != null) 'min$minPrice',
+      if (maxPrice != null) 'max$maxPrice',
+      if (minRating != null) 'r$minRating',
+      if (inStock == true) 'stock',
       if (isNew == true) 'new',
       if (isBestSeller == true) 'best',
       if (isPromo == true) 'promo',
       if (isFeatured == true) 'feat',
       if (concernSlug != null && concernSlug.isNotEmpty) 'cn$concernSlug',
+      if (world != null) 'w$world',
+      if (ids != null && ids.isNotEmpty) 'ids${ids.join(',')}',
+      if (minDiscount != null) 'd$minDiscount',
+      if (skinType != null) 'sk$skinType',
+      if (!lite) 'full',
     ];
     return parts.join('_');
   }
@@ -444,6 +554,42 @@ class ApiService {
       final r = await _dio.get('/reviews/product/$productId',
           options: Options(extra: {'auth': false}));
       return asList(_data(r)).map(Review.fromJson).toList();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// صفحة تقييمات مرتبة ([sort]: newest | highest | lowest) مع العدد الكلي، وتقييم
+  /// الزبونة نفسها ([mine]) إن كانت مسجّلة الدخول — يُرسل الرمز إن وُجد.
+  Future<({Paginated<Review> page, Review? mine})> getProductReviewsPage(
+    String productId, {
+    int page = 1,
+    int limit = 10,
+    String sort = 'newest',
+  }) async {
+    try {
+      final r = await _dio.get('/reviews/product/$productId', queryParameters: {
+        'page': page,
+        'limit': limit,
+        'sort': sort,
+      });
+      var body = _body(r);
+      // الشكل الجديد {items, meta, mine}؛ القديم {data, meta}؛ وقد يُغلَّف بـ data.
+      if (body['items'] == null && body['meta'] == null && body['data'] is Map) body = asMap(body['data']);
+      final meta = asMap(body['meta']);
+      final items = asList(body['items'] ?? body['data']).map(Review.fromJson).toList();
+      final current = asInt(meta['page'], page);
+      final totalPages = asInt(meta['totalPages'], 1);
+      return (
+        page: Paginated<Review>(
+          items: items,
+          total: asInt(meta['total'], items.length),
+          page: current,
+          totalPages: totalPages,
+          hasNext: meta['hasNext'] == null ? current < totalPages : asBool(meta['hasNext']),
+        ),
+        mine: body['mine'] is Map ? Review.fromJson(asMap(body['mine'])) : null,
+      );
     } catch (e) {
       _throw(e);
     }
@@ -513,15 +659,18 @@ class ApiService {
     }
   }
 
-  Future<void> changePassword({
+  /// تغيير كلمة المرور يُنهي كل الجلسات على الخادم. السيرفر الحديث يُرجع رموزاً جديدة
+  /// (accessToken / refreshToken) لهذه الجلسة — يحفظها المستدعي؛ القديم يُرجع {success}.
+  Future<Map<String, dynamic>> changePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
     try {
-      await _dio.post('/auth/change-password', data: {
+      final r = await _dio.post('/auth/change-password', data: {
         'currentPassword': currentPassword,
         'newPassword': newPassword,
       });
+      return asMap(_data(r));
     } catch (e) {
       _throw(e);
     }
@@ -554,10 +703,34 @@ class ApiService {
     }
   }
 
+  /// قلب على الخادم — غير آمن مع قائمة محلية ناقصة؛ استخدمي [addToWishlist] / [removeFromWishlist].
   Future<bool> toggleWishlist(String productId) async {
     try {
       final r = await _dio.post('/wishlist/$productId/toggle');
       return asBool(asMap(_data(r))['added']);
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// إضافة صريحة (تكرارها آمن). يُرجع المنتج كما تعرضه المفضلة (صور، براند، تدرجات)
+  /// إن أرسله الخادم.
+  Future<Product?> addToWishlist(String productId) async {
+    try {
+      final r = await _dio.post('/wishlist/${Uri.encodeComponent(productId)}');
+      final product = asMap(asMap(_data(r))['product']);
+      if (product.isEmpty) return null;
+      final p = Product.fromJson(product);
+      return p.id.isEmpty ? null : p;
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// إزالة صريحة (تكرارها آمن).
+  Future<void> removeFromWishlist(String productId) async {
+    try {
+      await _dio.delete('/wishlist/${Uri.encodeComponent(productId)}');
     } catch (e) {
       _throw(e);
     }
@@ -582,9 +755,12 @@ class ApiService {
     }
   }
 
-  Future<Address> updateAddress(String id, Address address) async {
+  /// [clearMissing] (تعديل من دفتر العناوين): الحقول الاختيارية الفارغة تُمسح على الخادم
+  /// (منطقة محافظة سابقة، ملاحظة حُذفت). بدونه يبقى الغائب كما هو — مسار الدفع الذي
+  /// لا يعرف كل حقول العنوان المحفوظ (الملاحظات مثلاً) فلا يمسحها.
+  Future<Address> updateAddress(String id, Address address, {bool clearMissing = false}) async {
     try {
-      final r = await _dio.patch('/addresses/$id', data: address.toJson());
+      final r = await _dio.patch('/addresses/$id', data: clearMissing ? address.toPatchJson() : address.toJson());
       return Address.fromJson(asMap(_data(r)));
     } catch (e) {
       _throw(e);
@@ -600,10 +776,22 @@ class ApiService {
   }
 
   // ---- SHIPPING ----
-  Future<List<Map<String, dynamic>>> getShippingZones() async {
+  /// المحافظات ومناطقها — محفوظة على الجهاز: انقطاع واحد لا يحوّل اختيار المحافظة
+  /// إلى حقل نص حر في الدفع ودفتر العناوين.
+  Future<List<Map<String, dynamic>>> getShippingZones({bool forceRefresh = false, bool staleOnError = true}) async {
     try {
-      final r = await _dio.get('/shipping/zones', options: Options(extra: {'auth': false}));
-      return asList(_data(r));
+      return await _cache.getOrFetch<List<Map<String, dynamic>>>(
+        key: 'shipping_zones_v1',
+        ttl: AppConfig.catalogCacheTtl,
+        forceRefresh: forceRefresh,
+        staleOnError: staleOnError,
+        fetch: () async {
+          final r = await _dio.get('/shipping/zones', options: Options(extra: {'auth': false}));
+          return asList(_data(r));
+        },
+        parse: (json) => asList(json),
+        serialize: (list) => list,
+      );
     } catch (e) {
       _throw(e);
     }
@@ -662,12 +850,20 @@ class ApiService {
   }
 
   /// الباقات الصالحة الآن. kind: routines | bundles | ROUTINE_MORNING | ROUTINE_EVENING | BRIDAL_KIT …
-  Future<List<BeautyPackage>> getPackages({String? world, String? kind, String? concern, String? skinType}) async {
+  /// [forceRefresh] للسحب للتحديث: من الشبكة الآن (وبلا اتصال تبقى النسخة المحفوظة).
+  Future<List<BeautyPackage>> getPackages({
+    String? world,
+    String? kind,
+    String? concern,
+    String? skinType,
+    bool forceRefresh = false,
+  }) async {
     try {
       final key = 'packages_v2_${world ?? '-'}_${kind ?? '-'}_${concern ?? '-'}_${skinType ?? '-'}';
       final raw = await _cache.getOrFetch<List<dynamic>>(
         key: key,
         ttl: AppConfig.catalogCacheTtl,
+        forceRefresh: forceRefresh,
         fetch: () async {
           final r = await _dio.get('/packages', queryParameters: {
             if (world != null) 'world': world,
@@ -686,12 +882,13 @@ class ApiService {
     }
   }
 
-  /// مشاكل البشرة لعالم معيّن (مع عدد المنتجات).
-  Future<List<SkinConcern>> getSkinConcerns({String? world}) async {
+  /// مشاكل البشرة لعالم معيّن (مع عدد المنتجات). [forceRefresh] للسحب للتحديث.
+  Future<List<SkinConcern>> getSkinConcerns({String? world, bool forceRefresh = false}) async {
     try {
       final raw = await _cache.getOrFetch<List<dynamic>>(
         key: 'skin_concerns_v2_${world ?? '-'}',
         ttl: AppConfig.catalogCacheTtl,
+        forceRefresh: forceRefresh,
         fetch: () async {
           final r = await _dio.get('/skin-concerns',
               queryParameters: {if (world != null) 'world': world}, options: Options(extra: {'auth': false}));
@@ -716,6 +913,35 @@ class ApiService {
       _throw(e);
     }
   }
+
+  /// ملف «ديما» المحفوظ على الحساب — لاستعادة نوع البشرة بعد تسجيل الدخول على جهاز جديد.
+  Future<AssistantProfileData> getAssistantProfile() async {
+    try {
+      final r = await _dio.get('/assistant/profile');
+      return _assistantProfile(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// حفظ نتيجة اختبار البشرة على الحساب (تبقى بعد إعادة التثبيت وعلى أي جهاز).
+  /// الحقل null لا يُرسل فيبقى كما هو؛ `skinType: ''` يمسح نوع البشرة، والحساسيات تستبدل القائمة.
+  Future<AssistantProfileData> updateAssistantProfile({String? skinType, List<String>? sensitivities}) async {
+    try {
+      final r = await _dio.patch('/assistant/profile', data: {
+        if (skinType != null) 'skinType': skinType.trim(),
+        if (sensitivities != null) 'sensitivities': sensitivities,
+      });
+      return _assistantProfile(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  static AssistantProfileData _assistantProfile(Map<String, dynamic> m) => (
+        skinType: _nonEmpty(m['skinType']?.toString()),
+        sensitivities: asStringList(m['sensitivities']).where((e) => e.trim().isNotEmpty).toList(),
+      );
 
   /// نتيجة اختبار البشرة.
   Future<SkinMatch> matchSkin({String? skinType, List<String> concerns = const [], String? world}) async {
@@ -778,9 +1004,17 @@ class ApiService {
   }
 
   // ---- ORDERS ----
-  Future<Paginated<AppOrder>> getOrders({int page = 1, int limit = 20}) async {
+  /// طلباتي. [preview]: أول 6 منتجات لكل طلب (صور مصغّرة واسم أول منتج في البطاقة) مع
+  /// العدد الكلي في `_count`. [status]: حالة واحدة (PENDING، SHIPPED…) أو null للكل.
+  Future<Paginated<AppOrder>> getOrders({int page = 1, int limit = 20, String? status, bool preview = true}) async {
     try {
-      final r = await _dio.get('/orders', queryParameters: {'page': page, 'limit': limit});
+      final st = _nonEmpty(status);
+      final r = await _dio.get('/orders', queryParameters: {
+        'page': page,
+        'limit': limit,
+        if (preview) 'preview': true,
+        if (st != null) 'status': st,
+      });
       return Paginated.fromJson(_body(r), AppOrder.fromJson);
     } catch (e) {
       _throw(e);
@@ -808,9 +1042,15 @@ class ApiService {
     bool isGift = false,
     String? giftMessage,
     bool giftHidePrices = false,
+    String? clientRef,
   }) async {
+    // مفتاح محاولة الإتمام: إعادة الإرسال بعد انقطاع بنفس المفتاح تُرجع الطلب نفسه بدل
+    // طلب ثانٍ (خصم مخزون وكوبون مكرر). الخادم يقبل حتى 64 حرفاً.
+    final attemptRef = _nonEmpty(clientRef);
+    final orderRef = attemptRef != null && attemptRef.length > 64 ? attemptRef.substring(0, 64) : attemptRef;
     try {
       final r = await _dio.post('/orders', data: {
+        if (orderRef != null) 'clientRef': orderRef,
         'items': items,
         // باقات مكتملة في السلة — السيرفر يتحقق منها ويطبّق سعرها الخاص.
         if (packages.isNotEmpty) 'packages': packages,
@@ -1021,27 +1261,55 @@ class ApiService {
   }
 
   // ---- SEARCH (v2: محرك في الذاكرة) ----
+  /// لغة البحث كما يفهمها السيرفر (ar | en) — أسماء المنتجات والأقسام بلغة الواجهة.
+  static String? _searchLang(String? lang) => lang == null ? null : (lang == 'en' ? 'en' : 'ar');
+
   /// اقتراحات فورية أثناء الكتابة — إكمالات + براندات + أقسام + منتجات.
-  Future<SearchInstant> searchInstant(String q, {CancelToken? cancelToken}) async {
+  /// [lang] لأسماء بلغة الواجهة، و[world] لحصرها بعالم.
+  Future<SearchInstant> searchInstant(
+    String q, {
+    CancelToken? cancelToken,
+    String? lang,
+    String? world,
+  }) async {
     try {
+      final l = _searchLang(lang);
+      final w = _nonEmpty(world);
       final r = await _dio.get(
         '/search/instant',
-        queryParameters: {'q': q},
+        queryParameters: {'q': q, if (l != null) 'lang': l, if (w != null) 'world': w},
         cancelToken: cancelToken,
         options: Options(extra: {'auth': false}),
       );
-      return SearchInstant.fromJson(_data(r));
+      return SearchInstant.fromJson(asMap(_data(r)));
     } catch (e) {
       _throw(e);
     }
   }
 
-  /// صفحة نتائج مرتبة بالملاءمة مع الفلاتر وعدّاداتها.
-  Future<SearchPage> searchPage(String q, SearchFilters filters, {int page = 1, int limit = 24, CancelToken? cancelToken}) async {
+  /// صفحة نتائج مرتبة بالملاءمة مع الفلاتر وعدّاداتها. [lang] و[world] كما في [searchInstant].
+  Future<SearchPage> searchPage(
+    String q,
+    SearchFilters filters, {
+    int page = 1,
+    int limit = 24,
+    CancelToken? cancelToken,
+    String? lang,
+    String? world,
+  }) async {
     try {
+      final l = _searchLang(lang);
+      final w = _nonEmpty(world);
       final r = await _dio.get(
         '/search',
-        queryParameters: {'q': q, 'page': page, 'limit': limit, ...filters.toQuery()},
+        queryParameters: {
+          'q': q,
+          'page': page,
+          'limit': limit,
+          ...filters.toQuery(),
+          if (l != null) 'lang': l,
+          if (w != null) 'world': w,
+        },
         cancelToken: cancelToken,
         options: Options(extra: {'auth': false}),
       );
@@ -1049,6 +1317,43 @@ class ApiService {
     } catch (e) {
       _throw(e);
     }
+  }
+
+  /// الأكثر بحثاً فعلاً (من سجل البحث على الخادم). فارغة إن لم يدعمها الخادم بعد أو تعذّر
+  /// الوصول — الواجهة تعرض قائمتها الثابتة بدلها.
+  Future<List<String>> getTrendingSearches({String? lang}) async {
+    final l = _searchLang(lang) ?? 'ar';
+    try {
+      return await _cache.getOrFetch<List<String>>(
+        key: 'search_trending_v1_$l',
+        ttl: const Duration(minutes: 10),
+        maxStaleFactor: 144, // حتى يوم تُعرض فوراً مع تحديث خلفي
+        fetch: () async {
+          final r = await _dio.get(
+            '/search/trending',
+            queryParameters: {'lang': l},
+            options: Options(extra: {'auth': false}),
+          );
+          return _trendingTerms(_data(r));
+        },
+        parse: _trendingTerms,
+        serialize: (terms) => terms,
+      );
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// ['سيروم', …] أو [{q|term|text|query: 'سيروم', count}, …] أو {items: […]}.
+  static List<String> _trendingTerms(dynamic raw) {
+    final list = raw is Map ? (raw['items'] ?? raw['terms'] ?? raw['data']) : raw;
+    if (list is! List) return const [];
+    final out = <String>[];
+    for (final e in list) {
+      final term = (e is Map ? (e['q'] ?? e['term'] ?? e['text'] ?? e['query']) : e)?.toString().trim() ?? '';
+      if (term.isNotEmpty && !out.contains(term)) out.add(term);
+    }
+    return out;
   }
 
   // ---- SEARCH SUGGEST ----
@@ -1078,3 +1383,45 @@ class ApiService {
 final apiServiceProvider = Provider<ApiService>(
   (ref) => ApiService(ref.read(dioProvider), ref.read(apiCacheProvider)),
 );
+
+/// ملف «ديما» على الحساب: نوع البشرة (dry | oily | combination | normal | sensitive) والحساسيات.
+typedef AssistantProfileData = ({String? skinType, List<String> sensitivities});
+
+/// [ApiException] من طلب HTTP مع تفاصيله — تُقرأ عبر [ApiExceptionDetails].
+class _DetailedApiException extends ApiException {
+  const _DetailedApiException(super.message, super.status, {this.code, this.type});
+
+  final String? code;
+  final DioExceptionType? type;
+}
+
+/// تفاصيل خطأ الطلب على أي [ApiException] (null لما لم يأتِ من طلب HTTP).
+extension ApiExceptionDetails on ApiException {
+  /// رمز الخطأ من السيرفر — مثل WRONG_CURRENT_PASSWORD أو NotFoundException.
+  String? get code => switch (this) {
+        _DetailedApiException(:final code) => code,
+        _ => null,
+      };
+
+  /// نوع فشل الطلب في Dio (انتهاء مهلة، لا اتصال، رد خطأ…).
+  DioExceptionType? get transportType => switch (this) {
+        _DetailedApiException(:final type) => type,
+        _ => null,
+      };
+
+  /// لم يصل رد من الخادم (لا اتصال أو انتهت المهلة) — قد يكون الطلب نُفّذ أو لا؛
+  /// إعادة إرسال آمنة فقط مع مفتاح تكرار (مثل clientRef في الطلب).
+  bool get isConnectionProblem {
+    final type = transportType;
+    if (type == null) return false;
+    return switch (type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError =>
+        true,
+      DioExceptionType.unknown => status == null,
+      _ => false,
+    };
+  }
+}

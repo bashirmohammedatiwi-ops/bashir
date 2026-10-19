@@ -1,13 +1,30 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../features/worlds/world_theme.dart';
+import '../brand/brand_logo.dart';
 import '../cache/image_cache.dart';
 import '../theme/app_colors.dart';
 import '../utils/media_url.dart';
 
 const _fallbackAsset = 'assets/images/app_icon_brand_foreground.png';
 
+/// العرض المنطقي الذي تُفكّ عليه الصورة. نمرّر العرض فقط (لا الارتفاع) حتى تحافظ الصورة
+/// على نسبتها: تمرير الاثنين يفكّها بالمقاس بالضبط فتتشوّه صور المنتجات غير المربعة.
+/// مع cover/fitHeight في صندوق أطول من عرضه تُملأ الصورة بالارتفاع، فنفكّ بالضلع الأطول
+/// حتى لا تظهر مكبّرة وضبابية.
+double? _decodeLogicalWidth(BoxFit fit, double? width, double? height) {
+  final w = width != null && width.isFinite && width > 0 ? width : null;
+  final h = height != null && height.isFinite && height > 0 ? height : null;
+  final fillsHeight = fit == BoxFit.cover || fit == BoxFit.fitHeight;
+  if (fillsHeight && w != null && h != null && h > w) return h;
+  return w;
+}
+
 /// صورة شبكية مع كاش محسّن وتحجيم حسب حجم العرض الفعلي.
+///
+/// تُفكّ مرة واحدة فقط بعرض الصندوق × كثافة الشاشة. بلا [width] يُقاس العرض من المساحة
+/// المتاحة؛ و[decodeWidth] يتجاوز الحساب (عارض الصور بملء الشاشة يحتاج دقة أعلى للتكبير).
 class AppNetworkImage extends StatelessWidget {
   final String url;
   final double? width;
@@ -20,6 +37,12 @@ class AppNetworkImage extends StatelessWidget {
   /// خلفية ثابتة خلف الصورة — ضرورية لـ PNG الشفاف.
   final Color? backgroundColor;
 
+  /// عرض الفكّ بالبكسل الفعلي — يتجاوز الحساب التلقائي.
+  final int? decodeWidth;
+
+  /// ما يظهر أثناء التحميل بدل اللون الثابت.
+  final Widget? placeholder;
+
   const AppNetworkImage({
     super.key,
     required this.url,
@@ -31,6 +54,8 @@ class AppNetworkImage extends StatelessWidget {
     this.placeholderColor,
     this.fallbackColor,
     this.backgroundColor,
+    this.decodeWidth,
+    this.placeholder,
   });
 
   @override
@@ -39,56 +64,54 @@ class AppNetworkImage extends StatelessWidget {
     Widget child;
     if (resolvedUrl.isEmpty) {
       child = _fallback();
+    } else if (decodeWidth != null || (width != null && width!.isFinite)) {
+      child = _image(context, resolvedUrl, width, height);
     } else {
-      final pixelW = cachePixelWidth(context, width);
-      final pixelH = height != null && height!.isFinite
-          ? (height! * MediaQuery.devicePixelRatioOf(context)).ceil()
-          : null;
-
-      final image = CachedNetworkImage(
-        imageUrl: resolvedUrl,
-        cacheManager: AppImageCacheManager.instance,
-        width: backgroundColor == null ? width : null,
-        height: backgroundColor == null ? height : null,
-        fit: fit,
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
-        memCacheWidth: pixelW,
-        memCacheHeight: pixelH,
-        maxWidthDiskCache: pixelW,
-        maxHeightDiskCache: pixelH,
-        filterQuality: FilterQuality.medium,
-        // مع خلفية مخصّصة تظهر الخلفية نفسها أثناء التحميل — لا أشرطة رمادية.
-        placeholder: (_, __) => backgroundColor != null
-            ? const SizedBox.expand()
-            : _solid(placeholderColor ?? AppColors.shimmerBase),
-        errorWidget: (_, __, ___) => _fallback(),
-        imageBuilder: (context, imageProvider) => Image(
-          image: imageProvider,
-          fit: fit,
-          filterQuality: FilterQuality.medium,
-          gaplessPlayback: true,
+      // بلا عرض محدد: نقيس الصندوق الفعلي بدل تخمين نصف الشاشة.
+      child = LayoutBuilder(
+        builder: (context, c) => _image(
+          context,
+          resolvedUrl,
+          c.hasBoundedWidth && c.maxWidth > 0 ? c.maxWidth : null,
+          height != null && height!.isFinite ? height : (c.hasBoundedHeight ? c.maxHeight : null),
         ),
       );
-
-      if (backgroundColor != null) {
-        child = SizedBox(
-          width: width,
-          height: height,
-          child: ColoredBox(
-            color: backgroundColor!,
-            child: image,
-          ),
-        );
-      } else {
-        child = image;
-      }
     }
 
     if (radius != null) {
       return ClipRRect(borderRadius: radius!, child: child);
     }
     return child;
+  }
+
+  Widget _image(BuildContext context, String resolvedUrl, double? layoutWidth, double? layoutHeight) {
+    final pixelW = decodeWidth ?? cachePixelWidth(context, _decodeLogicalWidth(fit, layoutWidth, layoutHeight));
+
+    final image = CachedNetworkImage(
+      imageUrl: resolvedUrl,
+      cacheManager: AppImageCacheManager.instance,
+      width: backgroundColor == null ? width : null,
+      height: backgroundColor == null ? height : null,
+      fit: fit,
+      filterQuality: FilterQuality.medium,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      useOldImageOnUrlChange: true,
+      memCacheWidth: pixelW,
+      maxWidthDiskCache: pixelW,
+      // مع خلفية مخصّصة تظهر الخلفية نفسها أثناء التحميل — لا أشرطة رمادية.
+      placeholder: (_, __) =>
+          placeholder ??
+          (backgroundColor != null ? const SizedBox.expand() : _solid(placeholderColor ?? AppColors.shimmerBase)),
+      errorWidget: (_, __, ___) => _fallback(),
+    );
+
+    if (backgroundColor == null) return image;
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ColoredBox(color: backgroundColor!, child: image),
+    );
   }
 
   Widget _solid(Color color) {
@@ -128,6 +151,9 @@ class ProductCoverImage extends StatelessWidget {
   final BoxFit fit;
   final FilterQuality filterQuality;
 
+  /// عرض الفكّ بالبكسل الفعلي — يتجاوز الحساب التلقائي.
+  final int? decodeWidth;
+
   static const Color wellColor = Colors.white;
 
   const ProductCoverImage({
@@ -137,6 +163,7 @@ class ProductCoverImage extends StatelessWidget {
     this.height,
     this.fit = BoxFit.contain,
     this.filterQuality = FilterQuality.medium,
+    this.decodeWidth,
   });
 
   @override
@@ -171,10 +198,9 @@ class ProductCoverImage extends StatelessWidget {
         }
 
         final resolvedUrl = resolveMediaUrl(url);
-        final pixelW = cachePixelWidth(context, w);
-        final pixelH = h != null && h.isFinite
-            ? (h * MediaQuery.devicePixelRatioOf(context)).ceil()
-            : null;
+        final pixelW = decodeWidth ?? cachePixelWidth(context, _decodeLogicalWidth(fit, w, h));
+        // علامة ثابتة بلون الخط الفاصل — لا مؤشرات دوّارة في كل بطاقة أثناء التمرير.
+        final mark = Center(child: BrandMark(height: 26, color: context.worldTheme.hairline));
 
         return SizedBox(
           width: w,
@@ -187,39 +213,19 @@ class ProductCoverImage extends StatelessWidget {
                 imageUrl: resolvedUrl,
                 cacheManager: AppImageCacheManager.instance,
                 fit: fit,
+                filterQuality: filterQuality,
                 fadeInDuration: const Duration(milliseconds: 60),
                 fadeOutDuration: Duration.zero,
                 useOldImageOnUrlChange: true,
                 memCacheWidth: pixelW,
-                memCacheHeight: pixelH,
                 maxWidthDiskCache: pixelW,
-                maxHeightDiskCache: pixelH,
-                filterQuality: filterQuality,
-                placeholder: (_, __) => ColoredBox(
-                  color: wellColor,
-                  child: Center(
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary.withValues(alpha: 0.35),
-                      ),
-                    ),
-                  ),
-                ),
+                placeholder: (_, __) => ColoredBox(color: wellColor, child: mark),
                 errorWidget: (_, __, ___) => Center(
                   child: Image.asset(
                     _fallbackAsset,
                     width: (w != null && w > 48) ? w * 0.45 : 48,
                     fit: BoxFit.contain,
                   ),
-                ),
-                imageBuilder: (context, imageProvider) => Image(
-                  image: imageProvider,
-                  fit: fit,
-                  filterQuality: filterQuality,
-                  gaplessPlayback: true,
                 ),
               ),
             ],

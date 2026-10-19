@@ -3,15 +3,50 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// فشل نقل عابر: لا اتصال، انتهاء مهلة، انقطاع أثناء القراءة، أو خادم متعطّل مؤقتاً
+/// (5xx / 408 / 429). معه فقط تُعرض آخر نسخة محفوظة.
+///
+/// أما بقية 4xx (مثل 404 لمنتج حُذف) فتعني أن النسخة المحفوظة لم تعد صحيحة.
+bool isTransientNetworkError(Object error) {
+  if (error is! DioException) return true;
+  switch (error.type) {
+    case DioExceptionType.connectionError:
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+      return true;
+    case DioExceptionType.unknown:
+      // انقطاع أثناء قراءة الاستجابة (SocketException/HttpException)، أو صفحة غير
+      // JSON من شبكة تطلب تسجيل دخول (واي فاي فندق) — ليست دليلاً على حذف المحتوى.
+      final inner = error.error;
+      if (inner is IOException || inner is FormatException) return true;
+    default:
+      break;
+  }
+  final status = error.response?.statusCode ?? 0;
+  return status >= 500 || status == 408 || status == 429;
+}
+
+/// المحتوى لم يعد موجوداً على الخادم (404 / 410) — تُحذف نسخته المحفوظة.
+bool isGoneError(Object error) {
+  if (error is! DioException) return false;
+  final status = error.response?.statusCode;
+  return status == 404 || status == 410;
+}
 
 /// كاش بيانات API — ذاكرة + ملفات على القرص مع إعادة تحميل في الخلفية.
 ///
 /// كل مفتاح في ملف مستقل (لا SharedPreferences): ملف التفضيلات يُحمَّل كاملاً عند
 /// كل تشغيل ويُعاد كتابته كاملاً عند كل حفظ — مع واجهات بالميغابايت كان ذلك يبطئ
 /// الإقلاع ويسبب تقطعاً. فكّ وترميز JSON الكبير يتم خارج خيط الواجهة.
+///
+/// النسخة المحفوظة تُعرض بعد فشل الشبكة فقط ([isTransientNetworkError])؛ 404/410
+/// يحذفها. الطلبات المتزامنة لنفس المفتاح تشترك في اتصال واحد.
 class ApiCache {
   ApiCache(this._prefs) {
     unawaited(_migrateFromPrefs());
@@ -29,8 +64,21 @@ class ApiCache {
 
   final LinkedHashMap<String, _Entry> _memory = LinkedHashMap();
   final Set<String> _revalidating = {};
+
+  /// طلب شبكة جارٍ لكل مفتاح — من يطلب نفس المفتاح أثناءه ينتظر نفس الرد.
+  final Map<String, Future<dynamic>> _inflight = {};
+
+  /// مفاتيح عُرضت آخر مرة من النسخة المحفوظة لأن الشبكة فشلت.
+  final Set<String> _staleKeys = {};
   Future<Directory>? _dir;
 
+  /// يقرأ [key] من الذاكرة/القرص أو يجلبه من الشبكة.
+  ///
+  /// - أحدث من [ttl]: يُعرض كما هو.
+  /// - أقدم من [ttl] وأحدث من `ttl × maxStaleFactor`: يُعرض فوراً ويُحدَّث في الخلفية.
+  /// - غير ذلك (أو [forceRefresh]): ننتظر الشبكة. إن فشلت فشلاً عابراً
+  ///   ([isTransientNetworkError]) و[staleOnError] مفعّل تُعرض آخر نسخة محفوظة؛
+  ///   مع 404/410 تُحذف النسخة ويُعاد رمي الخطأ.
   Future<T> getOrFetch<T>({
     required String key,
     required Duration ttl,
@@ -39,6 +87,7 @@ class ApiCache {
     required dynamic Function(T value) serialize,
     bool forceRefresh = false,
     int maxStaleFactor = 2,
+    bool staleOnError = true,
   }) async {
     final now = DateTime.now();
     final entry = _memoryGet(key) ?? await _loadDisk(key);
@@ -58,14 +107,17 @@ class ApiCache {
     }
 
     try {
-      final value = await fetch();
-      // الحفظ على القرص في الخلفية — لا نؤخّر عرض الصفحة بانتظاره.
-      unawaited(_store(key, serialize(value)));
-      return value;
+      return await _fetchOnce(key, fetch, serialize);
     } catch (e) {
+      // حُذف من الخادم: لا نعرض نسخته القديمة (سعر ومخزون منتهيان) مرة أخرى.
+      if (isGoneError(e)) {
+        await remove(key);
+        rethrow;
+      }
       // بلا إنترنت: آخر نسخة محفوظة مهما كان عمرها أفضل من شاشة خطأ.
-      if (entry != null) {
+      if (entry != null && staleOnError && isTransientNetworkError(e)) {
         _memoryPut(key, entry);
+        _staleKeys.add(key);
         return parse(entry.data);
       }
       rethrow;
@@ -78,9 +130,17 @@ class ApiCache {
     return e != null && DateTime.now().difference(e.storedAt) < within;
   }
 
+  /// هل عُرضت آخر قراءة لهذا المفتاح من النسخة المحفوظة لأن الشبكة فشلت؟
+  /// (لعرض «آخر تحديث قبل …» أو «بلا اتصال — نعرض آخر نسخة محفوظة»)
+  bool servedStale(String key) => _staleKeys.contains(key);
+
+  /// وقت آخر جلب ناجح لهذا المفتاح — من الذاكرة فقط (null إن لم يُقرأ بعد في هذه الجلسة).
+  DateTime? fetchedAt(String key) => _memory[key]?.storedAt;
+
   Future<void> remove(String key) async {
     _memory.remove(key);
     _revalidating.remove(key);
+    _staleKeys.remove(key);
     try {
       final f = await _file(key);
       if (await f.exists()) await f.delete();
@@ -91,6 +151,7 @@ class ApiCache {
   Future<void> removePrefix(String prefix) async {
     _memory.removeWhere((key, _) => key.startsWith(prefix));
     _revalidating.removeWhere((key) => key.startsWith(prefix));
+    _staleKeys.removeWhere((key) => key.startsWith(prefix));
     try {
       final dir = await _directory();
       final encoded = _fileName(prefix).replaceAll('.json', '');
@@ -104,6 +165,7 @@ class ApiCache {
   Future<void> clearPublic() async {
     _memory.clear();
     _revalidating.clear();
+    _staleKeys.clear();
     try {
       final dir = await _directory();
       if (await dir.exists()) await dir.delete(recursive: true);
@@ -127,18 +189,51 @@ class ApiCache {
     }
   }
 
+  /// جلب واحد لكل مفتاح: الطلبات المتزامنة (تحديث خلفي + سحب للتحديث + جلب مسبق)
+  /// تنتظر نفس الاتصال بدل تنزيل نفس البيانات مرتين.
+  Future<T> _fetchOnce<T>(
+    String key,
+    Future<T> Function() fetch,
+    dynamic Function(T value) serialize,
+  ) {
+    final pending = _inflight[key];
+    if (pending is Future<T>) return pending;
+    final completer = Completer<T>();
+    final future = completer.future;
+    _inflight[key] = future;
+    unawaited(() async {
+      try {
+        final value = await fetch();
+        _staleKeys.remove(key);
+        // الحفظ على القرص في الخلفية — لا نؤخّر عرض الصفحة بانتظاره.
+        unawaited(_store(key, serialize(value)));
+        completer.complete(value);
+      } catch (e, st) {
+        completer.completeError(e, st);
+      } finally {
+        if (identical(_inflight[key], future)) _inflight.remove(key);
+      }
+    }());
+    return future;
+  }
+
   void _revalidate<T>(
     String key,
     Future<T> Function() fetch,
     dynamic Function(T value) serialize,
   ) {
-    if (_revalidating.contains(key)) return;
+    if (_revalidating.contains(key) || _inflight.containsKey(key)) return;
     _revalidating.add(key);
     unawaited(() async {
       try {
-        final value = await fetch();
-        await _store(key, serialize(value));
-      } catch (_) {
+        await _fetchOnce(key, fetch, serialize);
+      } catch (e) {
+        if (isGoneError(e)) {
+          // حُذف من الخادم: القراءة التالية لا تعرض النسخة القديمة.
+          await remove(key);
+        } else if (isTransientNetworkError(e)) {
+          _staleKeys.add(key);
+        }
       } finally {
         _revalidating.remove(key);
       }

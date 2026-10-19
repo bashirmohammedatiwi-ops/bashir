@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
 import '../../data/models/beauty.dart';
 import '../../data/services/api_service.dart';
+import '../auth/auth_provider.dart';
 import '../worlds/worlds_provider.dart';
 
 /// العالم الظاهر الآن — الباقات ودليل البشرة تُفلتر به.
@@ -23,14 +25,43 @@ final skinGuideProvider = FutureProvider.family.autoDispose<SkinGuide, String>((
 
 /// kind: routines | bundles | ROUTINE_MORNING | ROUTINE_EVENING | BRIDAL_KIT | '' (الكل)
 final beautyPackagesProvider = FutureProvider.family<List<BeautyPackage>, String>((ref, kind) {
-  final profile = ref.watch(skinProfileProvider);
-  return ref.read(apiServiceProvider).getPackages(
-        world: ref.watch(beautyWorldProvider),
-        kind: kind.isEmpty ? null : kind,
-        // الروتينات: الأنسب لنوع بشرتها أولاً إن أجرت الاختبار.
-        skinType: kind.contains('ROUTINE') || kind == 'routines' ? profile?.skinType.key : null,
-      );
+  return _packages(
+    ref.read(apiServiceProvider),
+    kind,
+    world: ref.watch(beautyWorldProvider),
+    profile: ref.watch(skinProfileProvider),
+  );
 });
+
+Future<List<BeautyPackage>> _packages(
+  ApiService api,
+  String kind, {
+  String? world,
+  SkinProfile? profile,
+  bool forceRefresh = false,
+}) =>
+    api.getPackages(
+      world: world,
+      kind: kind.isEmpty ? null : kind,
+      // الروتينات: الأنسب لنوع بشرتها أولاً إن أجرت الاختبار.
+      skinType: kind.contains('ROUTINE') || kind == 'routines' ? profile?.skinType.key : null,
+      forceRefresh: forceRefresh,
+    );
+
+/// سحب للتحديث في الباقات ودليل البشرة: نسخ جديدة من الشبكة (لا المحفوظة) لما
+/// يُعرض — [kinds] أنواع الباقات الظاهرة — ثم إعادة بناء المزوّدات. الفشل يُبقي المعروض.
+Future<void> refreshBeautyCatalog(WidgetRef ref, {List<String> kinds = const [], bool concerns = false}) async {
+  final api = ref.read(apiServiceProvider);
+  final world = ref.read(beautyWorldProvider);
+  final profile = ref.read(skinProfileProvider);
+  await Future.wait<void>([
+    if (concerns) api.getSkinConcerns(world: world, forceRefresh: true).then((_) {}, onError: (_) {}),
+    for (final kind in kinds)
+      _packages(api, kind, world: world, profile: profile, forceRefresh: true).then((_) {}, onError: (_) {}),
+  ]);
+  if (concerns) ref.invalidate(skinConcernsListProvider);
+  ref.invalidate(beautyPackagesProvider);
+}
 
 final beautyPackageProvider = FutureProvider.family.autoDispose<BeautyPackage, String>((ref, idOrSlug) {
   return ref.read(apiServiceProvider).getPackage(idOrSlug);
@@ -81,16 +112,54 @@ class SkinProfileNotifier extends StateNotifier<SkinProfile?> {
   final Ref _ref;
   static const _key = 'skin_profile_v1';
 
+  bool get _signedIn => _ref.read(authProvider).isAuthenticated;
+
   void save(SkinProfile p) {
-    state = p;
-    _ref.read(sharedPreferencesProvider).setString(_key, jsonEncode(p.toJson()));
+    _store(p);
+    // نوع البشرة يُحفظ في حسابها أيضاً: يتبعها لجهاز آخر وللموقع وترشيحات «ديما».
+    if (_signedIn) _pushSkinType(p.skinType.key);
   }
 
   void clear() {
     state = null;
     _ref.read(sharedPreferencesProvider).remove(_key);
+    if (_signedIn) _pushSkinType('');
+  }
+
+  void _store(SkinProfile p) {
+    state = p;
+    _ref.read(sharedPreferencesProvider).setString(_key, jsonEncode(p.toJson()));
+  }
+
+  /// '' يمسح النوع على السيرفر. الفشل صامت: النسخة على الجهاز تكفي الآن، وتُرسل مع
+  /// الحفظ التالي.
+  void _pushSkinType(String key) {
+    unawaited(
+      _ref.read(apiServiceProvider).updateAssistantProfile(skinType: key).then((_) {}, onError: (_) {}),
+    );
+  }
+
+  /// دخلت حسابها: إن لم يكن على الجهاز اختبار نأخذ نوع بشرتها المحفوظ في الحساب،
+  /// وإن كان على الجهاز ولم يُحفظ في الحساب بعد نرسله.
+  Future<void> syncWithAccount() async {
+    try {
+      final remote = await _ref.read(apiServiceProvider).getAssistantProfile();
+      if (!mounted || !_signedIn) return;
+      final local = state;
+      final remoteType = skinTypeFromKey(remote.skinType);
+      if (local == null && remoteType != null) {
+        _store(SkinProfile(skinType: remoteType, takenAt: DateTime.now()));
+      } else if (local != null && remoteType == null) {
+        _pushSkinType(local.skinType.key);
+      }
+    } catch (_) {}
   }
 }
 
-final skinProfileProvider =
-    StateNotifierProvider<SkinProfileNotifier, SkinProfile?>((ref) => SkinProfileNotifier(ref));
+final skinProfileProvider = StateNotifierProvider<SkinProfileNotifier, SkinProfile?>((ref) {
+  final notifier = SkinProfileNotifier(ref);
+  ref.listen<String?>(authProvider.select((a) => a.isAuthenticated ? a.user?.id : null), (prev, next) {
+    if (next != null && next != prev) notifier.syncWithAccount();
+  }, fireImmediately: true);
+  return notifier;
+});

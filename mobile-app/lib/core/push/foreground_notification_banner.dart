@@ -1,17 +1,25 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../navigation/app_navigation.dart';
 import '../navigation/pending_push_navigation.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_text.dart';
 import '../../features/worlds/world_theme.dart';
 import '../brand/brand_logo.dart';
 
-/// بانر إشعار أثناء فتح التطبيق (foreground).
+/// بانر إشعار أثناء فتح التطبيق (foreground): ينزلق من الأعلى، يُسحب للأعلى
+/// ليُغلق، ويختفي وحده بعد ثوانٍ.
 class ForegroundNotificationBanner {
   ForegroundNotificationBanner._();
 
+  static const _visibleFor = Duration(seconds: 6);
+
   static OverlayEntry? _entry;
+  static GlobalKey<_BannerState>? _bannerKey;
+  static Timer? _timer;
 
   static void show({
     required String title,
@@ -21,154 +29,271 @@ class ForegroundNotificationBanner {
   }) {
     dismiss();
 
-    final context = rootNavigatorKey.currentContext;
-    if (context == null || !context.mounted) return;
+    // rootNavigatorKey مفتاح الـ Navigator نفسه، والـ Overlay ابنٌ له لا جدّ —
+    // فـ Overlay.maybeOf على سياقه يعيد null دائماً. نأخذه من حالة الـ Navigator.
+    final overlay = rootNavigatorKey.currentState?.overlay;
+    if (overlay == null || !overlay.mounted) return;
 
-    final overlay = Overlay.maybeOf(context);
-    if (overlay == null) return;
-
-    _entry = OverlayEntry(
-      builder: (ctx) => _Banner(
+    final key = GlobalKey<_BannerState>();
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _Banner(
+        key: key,
         title: title,
         body: body,
         imageUrl: imageUrl,
         onTap: () {
-          dismiss();
+          _remove(entry);
           if (payload != null) PendingPushNavigation.queue(payload);
         },
-        onDismiss: dismiss,
+        onClose: _hide,
+        onSwiped: () => _remove(entry),
       ),
     );
-    overlay.insert(_entry!);
-
-    Future.delayed(const Duration(seconds: 6), dismiss);
+    _entry = entry;
+    _bannerKey = key;
+    overlay.insert(entry);
+    _timer = Timer(_visibleFor, _hide);
   }
 
+  /// إزالة فورية (مثلاً عند فتح التطبيق من إشعار).
   static void dismiss() {
-    _entry?.remove();
+    final entry = _entry;
+    if (entry != null) _remove(entry);
+  }
+
+  /// إخفاء بانزلاق للأعلى ثم الإزالة — للمؤقّت وزر الإغلاق.
+  static Future<void> _hide() async {
+    final entry = _entry;
+    if (entry == null) return;
+    _timer?.cancel();
+    _timer = null;
+    await _bannerKey?.currentState?.slideOut();
+    _remove(entry);
+  }
+
+  static void _remove(OverlayEntry entry) {
+    // كل بانر يُزال مرة واحدة فقط: إن حلّ محله بانر أحدث فقد أُزيل سابقاً.
+    if (!identical(_entry, entry)) return;
+    _timer?.cancel();
+    _timer = null;
     _entry = null;
+    _bannerKey = null;
+    entry.remove();
+    entry.dispose();
   }
 }
 
-class _Banner extends StatelessWidget {
+class _Banner extends StatefulWidget {
   final String title;
   final String body;
   final String? imageUrl;
   final VoidCallback onTap;
-  final VoidCallback onDismiss;
+  final VoidCallback onClose;
+  final VoidCallback onSwiped;
 
   const _Banner({
+    super.key,
     required this.title,
     required this.body,
     this.imageUrl,
     required this.onTap,
-    required this.onDismiss,
+    required this.onClose,
+    required this.onSwiped,
+  });
+
+  @override
+  State<_Banner> createState() => _BannerState();
+}
+
+class _BannerState extends State<_Banner> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+    reverseDuration: const Duration(milliseconds: 200),
+  );
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, -1.2),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic));
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    // «تقليل الحركة»: يظهر في مكانه مباشرة.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _ctrl.value = 1;
+    } else {
+      _ctrl.forward();
+    }
+  }
+
+  /// يعكس حركة الدخول؛ يكتمل فوراً مع «تقليل الحركة» أو إن أُزيل البانر.
+  Future<void> slideOut() async {
+    if (!mounted || MediaQuery.disableAnimationsOf(context)) return;
+    try {
+      await _ctrl.reverse().orCancel;
+    } on TickerCanceled {
+      // أُزيل البانر أثناء الحركة.
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PositionedDirectional(
+      top: MediaQuery.paddingOf(context).top + 8,
+      start: 12,
+      end: 12,
+      child: Align(
+        alignment: AlignmentDirectional.topCenter,
+        heightFactor: 1,
+        child: ConstrainedBox(
+          // على الأجهزة اللوحية لا يمتد البانر بعرض الشاشة كاملاً.
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: SlideTransition(
+            position: _slide,
+            child: FadeTransition(
+              opacity: _ctrl,
+              child: Dismissible(
+                key: const ValueKey('foreground-push-banner'),
+                direction: DismissDirection.up,
+                onDismissed: (_) => widget.onSwiped(),
+                child: Semantics(
+                  container: true,
+                  liveRegion: true,
+                  child: _BannerCard(
+                    title: widget.title,
+                    body: widget.body,
+                    imageUrl: widget.imageUrl,
+                    onTap: widget.onTap,
+                    onClose: widget.onClose,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// بطاقة البانر: صورة الإشعار (إن وُجدت)، شعار ديما، العنوان والنص، وزر إغلاق.
+class _BannerCard extends StatelessWidget {
+  final String title;
+  final String body;
+  final String? imageUrl;
+  final VoidCallback onTap;
+  final VoidCallback onClose;
+
+  const _BannerCard({
+    required this.title,
+    required this.body,
+    required this.imageUrl,
+    required this.onTap,
+    required this.onClose,
   });
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top + 8;
+    final t = context.worldTheme;
+    final image = imageUrl;
+    final radius = BorderRadius.circular(AppCorners.lg);
 
-    return Positioned(
-      top: top,
-      left: 12,
-      right: 12,
+    return DecoratedBox(
+      // الظل خارج الـ Material كي لا يقصّه تقليم الزوايا.
+      decoration: BoxDecoration(borderRadius: radius, boxShadow: AppColors.elevatedShadow),
       child: Material(
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        color: AppColors.surface,
+        color: t.surface,
+        shape: RoundedRectangleBorder(borderRadius: radius, side: BorderSide(color: t.accentSoft)),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.primarySoft),
-              boxShadow: AppColors.cardShadow,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (imageUrl != null && imageUrl!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(15),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl!,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (image != null && image.isNotEmpty)
+                ExcludeSemantics(
+                  child: CachedNetworkImage(
+                    imageUrl: image,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => Container(
                       height: 120,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => Container(
-                        height: 120,
-                        color: context.worldTheme.accentLight,
-                        child: const Icon(Icons.image_not_supported_outlined),
-                      ),
+                      color: t.accentLight,
+                      child: Icon(Icons.image_not_supported_outlined, color: t.inkMuted),
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
+                ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 4, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(top: 2),
+                      child: ExcludeSemantics(
                         child: Container(
                           width: 36,
                           height: 36,
                           padding: const EdgeInsets.all(7),
                           decoration: BoxDecoration(
-                            gradient: context.worldTheme.signatureGradient,
+                            gradient: t.signatureGradient,
+                            borderRadius: BorderRadius.circular(AppCorners.sm),
                           ),
                           child: const Center(
-                            child: BrandMark(
-                              height: 22,
-                              color: Colors.white,
-                              weight: 1.2,
-                            ),
+                            child: BrandMark(height: 22, color: Colors.white, weight: 1.2),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 2),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
+                            if (title.isNotEmpty)
+                              Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppText.title3.copyWith(color: t.ink),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              body,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
-                                height: 1.35,
+                            if (title.isNotEmpty && body.isNotEmpty) const SizedBox(height: 2),
+                            if (body.isNotEmpty)
+                              Text(
+                                body,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppText.bodySmall.copyWith(color: t.inkSoft),
                               ),
-                            ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        onPressed: onDismiss,
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      onPressed: onClose,
+                      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                      constraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
+                      icon: Icon(Icons.close_rounded, size: 20, color: t.inkMuted),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

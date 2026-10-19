@@ -9,8 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/cache/home_image_precache.dart';
-import '../../core/utils/friendly_error.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/utils/responsive.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/home_feed.dart';
@@ -20,6 +21,7 @@ import '../catalog/catalog_refresh.dart';
 import '../worlds/worlds_provider.dart';
 import '../shell/main_shell.dart' show homeScrollToTopProvider;
 import 'home_section_renderer.dart';
+import 'home_strings.dart';
 import 'widgets/home_animations.dart';
 import 'widgets/home_scroll_perf.dart';
 import 'widgets/home_theme.dart';
@@ -31,8 +33,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen>
-    with WidgetsBindingObserver {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _precachedFor;
   HomeFeed? _heldFeed;
   String? _heldSlug;
@@ -49,12 +50,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refreshVisibleFeed();
+    // التجديد عند العودة للتطبيق في app.dart وحده (refreshStorefrontCatalogOnResume،
+    // مرة كل 3 دقائق) — لا طلب ثانٍ من هنا.
   }
 
   Future<void> _refreshVisibleFeed() async {
@@ -67,6 +64,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         worlds: worlds,
       );
       if (slug == null && worlds == null) return;
+      // تفاصيل العالم فشلت سابقاً (بلا اتصال): نعيد طلبها مع الواجهة.
+      if (slug != null) retryWorldIfErrored(ref, slug);
       final fresh = await ref
           .read(apiServiceProvider)
           .getHome(worldSlug: slug, forceRefresh: true);
@@ -96,7 +95,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
     _pastHero.dispose();
@@ -136,13 +134,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       );
     });
     ref.listen<String?>(selectedWorldSlugProvider, (previous, next) {
-      if (previous != next) {
-        setState(() {
-          _heldFeed = null;
-          _heldSlug = null;
-        });
-        _refreshVisibleFeed();
-      }
+      if (previous == next) return;
+      setState(() {
+        _heldFeed = null;
+        _heldSlug = null;
+      });
+      if (next != null) retryWorldIfErrored(ref, next);
+      // أول اختيار تلقائي للعالم، أو واجهة وصلت للتو (التجهيز المسبق): لا طلب إجباري
+      // ثانٍ — worldFeedProvider يجلبها أو يعرض المحفوظة.
+      if (previous == null) return;
+      if (ref.read(apiServiceProvider).isHomeFresh(worldSlug: next)) return;
+      _refreshVisibleFeed();
     });
     if (worlds != null && worlds.isNotEmpty) {
       prefetchWorldContent(ref, worlds);
@@ -188,8 +190,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           curve: Curves.easeOutCubic,
           color: canvas,
           child: worldsFailed
-              ? ErrorView(
-                  message: friendlyError(worldsAsync.error!),
+              ? ErrorView.from(
+                  worldsAsync.error!,
+                  loading: worldsAsync.isLoading,
                   onRetry: () {
                     HapticFeedback.lightImpact();
                     ref.invalidate(worldsProvider);
@@ -197,8 +200,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 )
               : worldsPending || visibleFeed == null
               ? (!worldsPending && feed.hasError
-                    ? ErrorView(
-                        message: friendlyError(feed.error!),
+                    ? ErrorView.from(
+                        feed.error!,
                         onRetry: () async {
                           await refreshStorefrontCatalog(ref);
                         },
@@ -281,12 +284,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           onRefresh: () async {
                             HapticFeedback.mediumImpact();
                             if (worldSlug != null) {
-                              await ref
-                                  .read(apiServiceProvider)
-                                  .getHome(
-                                    worldSlug: worldSlug,
-                                    forceRefresh: true,
-                                  );
+                              try {
+                                await ref
+                                    .read(apiServiceProvider)
+                                    .getHome(
+                                      worldSlug: worldSlug,
+                                      forceRefresh: true,
+                                      staleOnError: false,
+                                    );
+                              } catch (_) {
+                                // بلا اتصال: تبقى المعروضة، ونقول ذلك بدل صمت.
+                                if (context.mounted) {
+                                  AppSnackbar.show(context, ref.read(stringsProvider).homeRefreshFailed);
+                                }
+                                return;
+                              }
                               ref.invalidate(worldFeedProvider(worldSlug));
                               ref.invalidate(worldDetailProvider(worldSlug));
                               final fresh = await ref.read(
@@ -300,7 +312,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               }
                               return;
                             }
-                            await refreshStorefrontCatalog(ref);
+                            final ok = await refreshStorefrontCatalog(ref);
+                            if (!ok && context.mounted) {
+                              AppSnackbar.show(context, ref.read(stringsProvider).homeRefreshFailed);
+                            }
                           },
                           child: CustomScrollView(
                             controller: _scroll,

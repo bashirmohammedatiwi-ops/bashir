@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -42,6 +43,8 @@ export class CreateOrderDto {
   @IsOptional() @IsEnum(PaymentMethod) paymentMethod?: PaymentMethod;
   @IsOptional() @IsEnum(DeliveryOption) deliveryOption?: DeliveryOption;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) loyaltySpent?: number;
+  /** مفتاح محاولة الإتمام من التطبيق: نفس المفتاح بعد انقطاع الاتصال يعيد الطلب نفسه بدل إنشاء طلب ثانٍ. */
+  @IsOptional() @IsString() @MaxLength(64) clientRef?: string;
 }
 
 export class UpdateOrderStatusDto {

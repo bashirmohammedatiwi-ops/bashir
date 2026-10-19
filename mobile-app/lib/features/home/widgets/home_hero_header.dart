@@ -12,7 +12,6 @@ import '../../../core/navigation/app_navigation.dart';
 import '../../../core/utils/support_links.dart';
 import '../../auth/auth_provider.dart';
 import '../../cart/cart_provider.dart';
-import '../../catalog/catalog_providers.dart';
 import '../../profile/profile_providers.dart';
 import '../../worlds/world_theme.dart';
 import '../../worlds/worlds_provider.dart';
@@ -26,8 +25,7 @@ class HomeHeroHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final topPad = MediaQuery.paddingOf(context).top;
-    final feed = ref.watch(activeHomeFeedProvider).valueOrNull;
-    final whatsapp = feed?.settings.whatsapp;
+    final whatsapp = ref.watch(storeSettingsProvider)?.whatsapp;
     final auth = ref.watch(authProvider);
     final unread = auth.isAuthenticated
         ? ref.watch(unreadNotificationsCountProvider)

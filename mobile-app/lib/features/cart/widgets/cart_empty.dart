@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/product.dart';
-import '../../catalog/catalog_providers.dart';
 import '../../shell/main_shell.dart';
 import '../../worlds/world_theme.dart';
 import '../cart_strings.dart';

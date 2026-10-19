@@ -1,5 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/app_config.dart';
+
 Future<bool> openWhatsApp(String? phone, {String? message}) async {
   final raw = (phone ?? '').replaceAll(RegExp(r'\D'), '');
   if (raw.isEmpty) return false;
@@ -34,7 +36,25 @@ Future<bool> openExternalUrl(String url) async {
   final uri = Uri.tryParse(trimmed);
   if (uri == null) return false;
   final normalized = uri.hasScheme ? uri : Uri.parse('https://$trimmed');
+  // روابط موقعنا صارت App Links / Universal Links: فتحها «خارجياً» يعيدها للتطبيق
+  // نفسه. متصفح داخل التطبيق يعرض الصفحة فعلاً.
+  if (_isOwnSite(normalized)) {
+    for (final mode in const [LaunchMode.inAppBrowserView, LaunchMode.inAppWebView]) {
+      try {
+        if (await launchUrl(normalized, mode: mode)) return true;
+      } catch (_) {}
+    }
+  }
   return _launchUri(normalized, external: true);
+}
+
+bool _isOwnSite(Uri uri) {
+  if (!uri.isScheme('https') && !uri.isScheme('http')) return false;
+  final own = Uri.tryParse(AppConfig.appOrigin)?.host.toLowerCase() ?? '';
+  final host = uri.host.toLowerCase();
+  if (own.isEmpty) return false;
+  final bare = own.startsWith('www.') ? own.substring(4) : own;
+  return host == bare || host == 'www.$bare';
 }
 
 Future<bool> _launchUri(Uri uri, {bool external = false}) async {

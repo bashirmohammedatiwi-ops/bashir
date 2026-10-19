@@ -143,7 +143,7 @@ class CardPaymentFlow {
       return CardPaymentOutcome(CardPaymentResult.pending, s.paymentPendingHint);
     } catch (e) {
       hideOverlay();
-      return CardPaymentOutcome(CardPaymentResult.error, friendlyError(e));
+      return CardPaymentOutcome(CardPaymentResult.error, friendlyError(e, lang: s.lang));
     } finally {
       _running = false;
       ref.invalidate(orderDetailProvider(orderId));
@@ -305,6 +305,7 @@ class _RingPainter extends CustomPainter {
 Future<bool> showPaymentRetrySheet(BuildContext context, AppStrings s, CardPaymentOutcome outcome) async {
   final retry = await showModalBottomSheet<bool>(
     context: context,
+    showDragHandle: false,
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {

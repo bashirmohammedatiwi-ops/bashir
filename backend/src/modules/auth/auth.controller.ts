@@ -62,8 +62,11 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post("change-password")
-  changePassword(@CurrentUser() user: any, @Body() dto: ChangePasswordDto) {
-    return this.auth.changePassword(user.id, dto);
+  changePassword(@CurrentUser() user: any, @Body() dto: ChangePasswordDto, @Req() req: any) {
+    return this.auth.changePassword(user.id, dto, {
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
   }
 
   @ApiBearerAuth()

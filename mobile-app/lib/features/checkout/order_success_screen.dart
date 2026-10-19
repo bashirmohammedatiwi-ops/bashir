@@ -175,6 +175,7 @@ class _OrderRecap extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
+    final s = ref.s;
     final zones = ref.watch(shippingZonesProvider).valueOrNull ?? const [];
     final window = order.deliveryOption == 'PICKUP' ? null : windowFor(zones, order.address?.governorate);
     final thumbs = order.items.map((e) => e.imageUrl).where((u) => u.isNotEmpty).take(4).toList();
@@ -225,18 +226,18 @@ class _OrderRecap extends ConsumerWidget {
               ],
               Expanded(
                 child: Text(
-                  arProducts(order.items.fold<int>(0, (s, e) => s + e.quantity)),
+                  s.itemsCount(order.items.fold<int>(0, (sum, e) => sum + e.quantity)),
                   style: AppText.label.copyWith(color: t.inkSoft),
                 ),
               ),
               Text(order.totalLabel, style: AppText.title2.copyWith(color: t.ink)),
             ],
           ),
-          if (window != null) line(Icons.schedule_rounded, window.label()),
-          if (order.deliveryOption == 'PICKUP') line(Icons.storefront_outlined, 'استلام من الفرع — نبلغكِ حين يجهز طلبكِ'),
+          if (window != null) line(Icons.schedule_rounded, window.labelFor(s)),
+          if (order.deliveryOption == 'PICKUP') line(Icons.storefront_outlined, s.pickupReadyNotice),
           if (order.loyaltyEarned > 0)
-            line(Icons.stars_rounded, 'أُضيفت ${arPoints(order.loyaltyEarned)} لرصيدكِ ✨', color: const Color(0xFFB7791F)),
-          if (order.isGift) line(Icons.card_giftcard_rounded, 'نغلّفه كهدية${order.giftMessage != null ? ' مع رسالتكِ' : ''} 🎁'),
+            line(Icons.stars_rounded, s.pointsAddedToBalance(order.loyaltyEarned), color: const Color(0xFFB7791F)),
+          if (order.isGift) line(Icons.card_giftcard_rounded, s.giftWrapNotice(withMessage: order.giftMessage != null)),
         ],
       ),
     );

@@ -10,6 +10,8 @@
     "lint": "tsc --noEmit",
     "test:link-target": "npx tsx src/common/link-target.util.spec.ts",
     "test:assistant": "npx tsx src/modules/assistant/intelligence/understand.spec.ts",
+    "test:search": "npx tsx src/modules/advisor/engine/nlu.spec.ts",
+    "test:phone": "npx tsx src/common/phone.util.spec.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",

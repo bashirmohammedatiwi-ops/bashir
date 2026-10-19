@@ -1,3 +1,5 @@
+import '../../core/l10n/app_strings.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../core/utils/json.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/media_url.dart';
@@ -46,22 +48,17 @@ class AppNotification {
         createdAt: parseDate(json['createdAt']),
       );
 
-  String get timeLabel => formatDateTime(createdAt);
+  /// «اليوم • 3:20 م» بلغة التطبيق الحالية — والأفضل في الواجهة [timeLabelFor] مع `s.lang`.
+  String get timeLabel => timeLabelFor(AppLocale.current);
+
+  /// وقت الإشعار بلغة الواجهة: «Today • 3:20 PM».
+  String timeLabelFor(String lang) => formatDateTime(createdAt, lang: lang);
 
   String? get resolvedImageUrl => resolveMediaUrl(imageUrl);
 
-  String? get linkHint {
-    final type = (linkType ?? '').toUpperCase();
-    if (type == 'NONE' || type.isEmpty) return null;
-    final label = linkLabel?.trim();
-    if (label != null && label.isNotEmpty) return label;
-    if (type == 'OFFERS') return 'العروض';
-    if (type == 'PRODUCT') return 'منتج';
-    if (type == 'CATEGORY') return 'فئة';
-    if (type == 'BRAND') return 'براند';
-    if (type == 'PACKAGE') return 'باقة';
-    if (type == 'ORDER') return 'طلب';
-    if (type == 'EXTERNAL_URL') return 'رابط خارجي';
-    return null;
-  }
+  /// شارة الرابط بلغة التطبيق الحالية — والأفضل في الواجهة [linkHintFor] مع `ref.s`.
+  String? get linkHint => linkHintFor(AppStrings(AppLocale.current));
+
+  /// شارة الرابط بلغة الواجهة («منتج» / «Product»)، أو null إن لم يكن للإشعار رابط.
+  String? linkHintFor(AppStrings s) => s.notificationLinkHint(this);
 }

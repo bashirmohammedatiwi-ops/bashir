@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
@@ -19,41 +20,6 @@ import 'worlds_provider.dart';
 import '../../core/navigation/product_nav.dart';
 
 /// رئيسية العالم: بنرات، أقسام، منتجات، وبراندات خاصة به.
-class WorldTabChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Color accent;
-  final Color ink;
-  final VoidCallback onTap;
-
-  const WorldTabChip({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.accent,
-    required this.ink,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? accent : Colors.white,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Center(
-            child: Text(label, style: TextStyle(fontWeight: FontWeight.w800, color: selected ? Colors.white : ink)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class WorldExplore extends ConsumerWidget {
   final StoreWorld world;
   final void Function(String? categoryId) onOpenSections;
@@ -401,7 +367,7 @@ class _FeaturedSection extends StatelessWidget {
                         ),
                         if (count > 0)
                           Text(
-                            lang == 'en' ? '$count sections' : '$count أقسام',
+                            AppStrings(lang).sectionCount(count),
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ink.withValues(alpha: 0.5)),
                           ),
                       ],
@@ -655,11 +621,14 @@ class _WorldProductTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            product.localizedName(lang),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, height: 1.25, fontWeight: FontWeight.w700, color: ink),
+          // مرن: مع تكبير الخط يتقلّص الاسم بدل أن يدفع السعر خارج البطاقة.
+          Flexible(
+            child: Text(
+              product.localizedName(lang),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, height: 1.25, fontWeight: FontWeight.w700, color: ink),
+            ),
           ),
           const Spacer(),
           Row(

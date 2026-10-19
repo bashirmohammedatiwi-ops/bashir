@@ -37,6 +37,16 @@ class AppColors {
   // حالات
   static const Color sale = Color(0xFFE0457B);
   static const Color success = Color(0xFF0F8A4F);
+
+  /// خلفية ناعمة للنجاح («يناسب بشرتكِ»، «متوفر»).
+  static const Color successSoft = Color(0xFFE6F6EF);
+
+  /// نص النجاح فوق [successSoft] — تباين 4.8:1.
+  static const Color successDeep = Color(0xFF13795B);
+
+  /// تحذير صريح: «تجنّبي»، «نفد» — تباين 5.7:1 فوق [dangerSoft].
+  static const Color danger = Color(0xFFB4232F);
+  static const Color dangerSoft = Color(0xFFFDECEE);
   static const Color warning = Color(0xFFE8A317);
   static const Color star = Color(0xFFF5B942);
 
@@ -120,4 +130,28 @@ class AppColors {
           offset: const Offset(0, 2),
         ),
       ];
+}
+
+/// ألوان الروتين الثابتة — مصدر واحد لبطاقات الباقات ومبدّل الصباح/المساء.
+///
+/// لا تتبع العالم النشط عمداً: الصباح ذهبي دافئ والمساء بنفسجي ليلي في كل العوالم.
+/// للقائمة وحدها: `RoutinePalette.morning.colors`.
+abstract final class RoutinePalette {
+  static const morning = LinearGradient(
+    begin: AlignmentDirectional.topStart,
+    end: AlignmentDirectional.bottomEnd,
+    colors: [Color(0xFFFFC46B), Color(0xFFF08A5D)],
+  );
+
+  static const evening = LinearGradient(
+    begin: AlignmentDirectional.topStart,
+    end: AlignmentDirectional.bottomEnd,
+    colors: [Color(0xFF6C5BD4), Color(0xFF2E2A6B)],
+  );
+
+  static const bridal = LinearGradient(
+    begin: AlignmentDirectional.topStart,
+    end: AlignmentDirectional.bottomEnd,
+    colors: [Color(0xFFE9B7C8), Color(0xFFB65F86)],
+  );
 }

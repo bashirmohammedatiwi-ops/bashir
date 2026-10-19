@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/config/app_config.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -36,7 +35,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   bool _loading = false;
   bool _hasMore = true;
   bool _firstLoad = true;
-  String? _error;
+  /// الخطأ الخام — يُصاغ بلغة الواجهة عند العرض.
+  Object? _error;
 
   @override
   void initState() {
@@ -76,7 +76,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         _error = null;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = friendlyError(e));
+      if (mounted) setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -122,7 +122,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       );
     }
     if (_error != null && _items.isEmpty) {
-      return ErrorView(message: friendlyError(_error!), onRetry: () => _fetch(reset: true));
+      return ErrorView.from(_error, onRetry: () => _fetch(reset: true), onRefresh: () => _fetch(reset: true));
     }
     if (_items.isEmpty) {
       return EmptyState(
@@ -255,15 +255,17 @@ class _OrderCard extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             style: AppText.caption.copyWith(color: t.ink, fontWeight: FontWeight.w700),
                           ),
+                        // itemCount = عدد أسطر الطلب كله (المعاينة تحمل أول 6 فقط).
                         Text(
-                          order.items.length > 1
+                          order.itemCount > 1
                               ? (s.isAr
-                                  ? switch (order.items.length - 1) {
+                                  ? switch (order.itemCount - 1) {
                                       1 => 'ومنتج آخر',
                                       2 => 'ومنتجان آخران',
-                                      final n => 'و$n منتجات أخرى',
+                                      final n when n <= 10 => 'و$n منتجات أخرى',
+                                      final n => 'و$n منتجاً آخر',
                                     }
-                                  : '+ ${order.items.length - 1} more')
+                                  : '+ ${order.itemCount - 1} more')
                               : s.itemCountLabel(order.itemCount),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

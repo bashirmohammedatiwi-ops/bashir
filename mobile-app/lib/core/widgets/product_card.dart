@@ -1,25 +1,35 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/product.dart';
+import '../../features/alerts/restock_watch_provider.dart';
+import '../../features/auth/auth_provider.dart';
 import '../../features/brands/brand_search.dart';
 import '../../features/worlds/world_theme.dart';
 import '../l10n/app_strings.dart';
-import '../l10n/locale_provider.dart';
+import '../navigation/product_nav.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_shadows.dart';
 import '../theme/app_text.dart';
 import '../utils/formatters.dart';
+import '../utils/friendly_error.dart';
 import 'app_network_image.dart';
+import 'app_snackbar.dart';
+import 'ds_strings.dart';
 import 'product_card_actions.dart';
-import '../navigation/product_nav.dart';
+import 'quick_shade_sheet.dart';
+import 'ui/price_view.dart';
 
 /// كان هناك أسلوبان مختلفان؛ الآن تصميم واحد موحّد لكل التطبيق.
 /// يبقى الـ enum للتوافق مع الاستدعاءات القديمة.
 enum ProductCardStyle { standard, listing }
 
 /// بطاقة المنتج الموحّدة:
-/// صورة داخل إطار ناعم + شارة خصم/جديد + قلب + زر سلة،
+/// صورة داخل إطار ناعم + شارة خصم/جديد + قلب + زر سلة (أو جرس توفّر للنافد)،
 /// ثم البراند، الاسم (سطران ثابتان)، التقييم، السعر، ودرجات الألوان.
 class ProductCard extends ConsumerWidget {
   final Product product;
@@ -39,62 +49,114 @@ class ProductCard extends ConsumerWidget {
     this.style = ProductCardStyle.standard,
   });
 
-  static const radius = 20.0;
+  static const radius = AppCorners.lg;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
-    final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
+    final name = product.localizedName(s.lang);
+    final brand = product.brandLabel;
+    // البراند والاسم مستبعدان من القراءة داخل البطاقة — الوصف هنا يجمعهما مع السعر مرة واحدة.
+    final spokenName = brand.isNotEmpty && !name.toLowerCase().contains(brand.toLowerCase())
+        ? '$brand $name'
+        : name;
+
     return Semantics(
       button: true,
-      label: product.localizedName(lang),
-      // الظل على حاوية خارجية — طبقة التموّج في Material تقصّ ما يخرج عن حدودها.
-      child: Container(
+      label: s.dsProductSemantics(
+        spokenName,
+        formatPrice(product.price),
+        !product.inStock,
+        product.hasDiscount ? product.discountPercent : 0,
+      ),
+      child: _PressScale(
         width: width,
-        decoration: BoxDecoration(
-          color: t.surface,
-          borderRadius: BorderRadius.circular(radius),
-          boxShadow: [
-            BoxShadow(
-              color: t.accentDark.withValues(alpha: 0.07),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-              spreadRadius: -4,
+        radius: radius,
+        color: t.surface,
+        shadows: AppShadows.card(t),
+        splashColor: t.accent.withValues(alpha: 0.06),
+        highlightColor: t.accent.withValues(alpha: 0.06),
+        onTap: () => openProduct(context, product),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _CardImage(
+                product: product,
+                showPromoBadge: showPromoBadge,
+                lite: lite,
+              ),
             ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
+            _CardInfo(product: product, showRating: showRating),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// ضغطة البطاقة: انكماش خفيف (0.97) مع تموّج — إحساس فوري بأن اللمسة وصلت
+/// حتى قبل ظهور الصفحة التالية. بلا حركة عند تفعيل «تقليل الحركة».
+class _PressScale extends StatefulWidget {
+  final double? width;
+  final double radius;
+  final Color color;
+  final List<BoxShadow> shadows;
+  final Color splashColor;
+  final Color highlightColor;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _PressScale({
+    required this.width,
+    required this.radius,
+    required this.color,
+    required this.shadows,
+    required this.splashColor,
+    required this.highlightColor,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final still = MediaQuery.disableAnimationsOf(context);
+    final r = BorderRadius.circular(widget.radius);
+    return AnimatedScale(
+      scale: _down && !still ? 0.97 : 1,
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      // الظل على حاوية خارجية — طبقة التموّج في Material تقصّ ما يخرج عن حدودها.
+      child: Container(
+        width: widget.width,
+        decoration: BoxDecoration(
+          color: widget.color,
+          borderRadius: r,
+          boxShadow: widget.shadows,
+        ),
         child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(radius),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => openProduct(context, product),
-          borderRadius: BorderRadius.circular(radius),
-          splashColor: t.accent.withValues(alpha: 0.06),
-          highlightColor: t.accent.withValues(alpha: 0.03),
-          child: SizedBox(
-            width: width,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _CardImage(
-                    product: product,
-                    showPromoBadge: showPromoBadge,
-                    lite: lite,
-                  ),
-                ),
-                _CardInfo(product: product, showRating: showRating),
-              ],
-            ),
+          color: Colors.transparent,
+          borderRadius: r,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: widget.onTap,
+            onHighlightChanged: (v) {
+              if (v != _down) setState(() => _down = v);
+            },
+            borderRadius: r,
+            splashColor: widget.splashColor,
+            highlightColor: widget.highlightColor,
+            child: SizedBox(width: widget.width, child: widget.child),
           ),
         ),
-      ),
       ),
     );
   }
@@ -115,13 +177,16 @@ class _CardImage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
     final t = context.worldTheme;
-    final (String? badge, Color badgeColor) = product.hasDiscount
-        ? (formatDiscount(product.discountPercent), AppColors.sale)
+    // الخصم يُقرأ ضمن وصف البطاقة؛ «جديد» و«عرض» يُقرآن كما هما.
+    final Widget? badge = product.hasDiscount
+        ? ExcludeSemantics(
+            child: DiscountBadge(percent: product.discountPercent, small: true),
+          )
         : product.isNew
-        ? (s.newBadge, t.ink)
+        ? LabelBadge(label: s.newBadge, color: t.ink, small: true)
         : (showPromoBadge && product.isPromo)
-        ? (s.offerBadge, t.accent)
-        : (null, t.accent);
+        ? LabelBadge(label: s.offerBadge, color: t.accent, small: true)
+        : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
@@ -154,39 +219,43 @@ class _CardImage extends ConsumerWidget {
             ),
           ),
           if (badge != null)
-            PositionedDirectional(
-              top: 8,
-              start: 8,
-              child: _Badge(label: badge, color: badgeColor),
-            ),
+            PositionedDirectional(top: 8, start: 8, child: badge),
+          // الأزرار على الحافة تماماً: مساحة لمسها 44 والشكل المرئي في منتصفها.
           PositionedDirectional(
-            top: 2,
-            end: 2,
+            top: 0,
+            end: 0,
             child: RepaintBoundary(
               child: ProductCardWishButton(product: product, size: 32),
             ),
           ),
-          if (!product.inStock)
+          if (!product.inStock) ...[
             Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: t.ink.withValues(alpha: 0.82),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  s.soldOut,
-                  style: AppText.micro.copyWith(color: Colors.white),
+              child: ExcludeSemantics(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: t.ink.withValues(alpha: 0.82),
+                    borderRadius: BorderRadius.circular(AppCorners.pill),
+                  ),
+                  child: Text(
+                    s.soldOut,
+                    style: AppText.micro.copyWith(color: Colors.white),
+                  ),
                 ),
               ),
-            )
-          else
+            ),
             PositionedDirectional(
-              end: 2,
-              bottom: 2,
+              end: 0,
+              bottom: 0,
+              child: _RestockBellButton(product: product),
+            ),
+          ] else
+            PositionedDirectional(
+              end: 0,
+              bottom: 0,
               child: ProductCardCartControl(product: product, compact: true),
             ),
         ],
@@ -194,6 +263,103 @@ class _CardImage extends ConsumerWidget {
     );
   }
 }
+
+/// جرس «نبّهيني عند التوفّر» على بطاقة المنتج النافد — بدل زر السلة.
+class _RestockBellButton extends ConsumerWidget {
+  final Product product;
+
+  const _RestockBellButton({required this.product});
+
+  static const _side = 34.0;
+
+  Future<void> _toggle(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.lightImpact();
+    final s = ref.read(stringsProvider);
+    final id = product.id;
+    // الحاوية لا العنصر: البطاقة قد تُعاد بناؤها أثناء صفحة الدخول.
+    final container = ProviderScope.containerOf(context, listen: false);
+    try {
+      if (!container.read(authProvider).isAuthenticated) {
+        await context.push('/login');
+        if (!container.read(authProvider).isAuthenticated) return;
+        // حساب جديد: نجلب تنبيهاته أولاً — قد يكون طلب التنبيه سابقاً من جهاز آخر.
+        await container.read(restockWatchProvider.notifier).load();
+        if (container.read(restockWatchProvider).contains(id)) {
+          if (context.mounted) AppSnackbar.success(context, s.dsRestockWillNotify);
+          return;
+        }
+      }
+      final watching = await container.read(restockWatchProvider.notifier).toggle(id);
+      if (!context.mounted) return;
+      if (watching) {
+        AppSnackbar.success(context, s.dsRestockWillNotify);
+      } else {
+        AppSnackbar.show(context, s.dsRestockCancelled);
+      }
+    } catch (e) {
+      if (context.mounted) AppSnackbar.error(context, friendlyError(e, lang: s.lang));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    final s = ref.s;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final watching = ref.watch(
+      restockWatchProvider.select((w) => w.contains(product.id)),
+    );
+
+    return Semantics(
+      container: true,
+      button: true,
+      toggled: watching,
+      label: s.dsNotifyMe,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _toggle(context, ref),
+        child: SizedBox.square(
+          dimension: math.max(kMinTapTarget, _side),
+          child: Center(
+            child: AnimatedContainer(
+              duration: still ? Duration.zero : const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              width: _side,
+              height: _side,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: watching ? t.accent : t.surface,
+                border: Border.all(
+                  color: watching ? t.accent : t.hairline.withValues(alpha: 0.9),
+                ),
+                boxShadow: watching ? AppShadows.floating(t) : AppShadows.raised(t),
+              ),
+              child: AnimatedSwitcher(
+                duration: still ? Duration.zero : const Duration(milliseconds: 220),
+                transitionBuilder: (child, a) => ScaleTransition(
+                  scale: Tween(begin: 0.6, end: 1.0).animate(
+                    CurvedAnimation(parent: a, curve: Curves.easeOutBack),
+                  ),
+                  child: child,
+                ),
+                child: Icon(
+                  watching
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
+                  key: ValueKey(watching),
+                  size: _side * 0.5,
+                  color: watching ? Colors.white : t.accentDark,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final _arabicLetters = RegExp('[\u0600-\u06FF]');
 
 class _CardInfo extends ConsumerWidget {
   final Product product;
@@ -203,44 +369,52 @@ class _CardInfo extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lang = ref.watch(languageCodeProvider);
+    final lang = ref.watch(stringsProvider.select((s) => s.lang));
     final t = context.worldTheme;
     final brand = product.brandLabel;
-    final hasShades =
-        product.shades.where((x) => x.hasBarcode).length > 1 ||
-        product.shadeCount > 1;
+    final hasShades = product.hasDisplayableShades || product.shadeCount > 1;
+    // صندوقا البراند والاسم يكبران مع خط النظام (حتى 1.25) — لا قصّ لنزول الحروف العربية.
+    // الصورة (Expanded) تمتص الفرق، فتبقى البطاقات في الصف متحاذية بأي حجم خط.
+    final sc = MediaQuery.textScalerOf(context);
+    final brandBox = (sc.scale(10.5) * 1.2).ceilToDouble() + 1;
+    final nameBox = (sc.scale(12.5) * 1.32 * 2).ceilToDouble() + 1;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 14,
-            child: Text(
-              brand.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppText.micro.copyWith(
-                fontSize: 10.5,
-                color: t.accentDark,
-                letterSpacing: 0.3,
+          ExcludeSemantics(
+            child: SizedBox(
+              height: brandBox,
+              child: Text(
+                brand.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.micro.copyWith(
+                  fontSize: 10.5,
+                  color: t.accentDark,
+                  // تباعد خفيف للاسم اللاتيني فقط — أي تباعد يقطع وصل الحروف العربية.
+                  letterSpacing: _arabicLetters.hasMatch(brand) ? 0 : 0.3,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 3),
           // ارتفاع ثابت لسطرين — كل البطاقات في الصف بنفس المحاذاة.
-          SizedBox(
-            height: 34,
-            child: Text(
-              stripBrandPrefix(product.localizedName(lang), product.brand?.name),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppText.bodySmall.copyWith(
-                fontSize: 12.5,
-                height: 1.32,
-                fontWeight: FontWeight.w600,
-                color: t.ink,
+          ExcludeSemantics(
+            child: SizedBox(
+              height: nameBox,
+              child: Text(
+                stripBrandPrefix(product.localizedName(lang), product.brand?.name),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.bodySmall.copyWith(
+                  fontSize: 12.5,
+                  height: 1.32,
+                  fontWeight: FontWeight.w600,
+                  color: t.ink,
+                ),
               ),
             ),
           ),
@@ -255,11 +429,16 @@ class _CardInfo extends ConsumerWidget {
                   style: AppText.micro.copyWith(color: t.inkSoft),
                 ),
                 if (product.reviewCount > 0)
-                  Text(
-                    ' (${product.reviewCount})',
-                    style: AppText.micro.copyWith(
-                      color: t.inkMuted,
-                      fontWeight: FontWeight.w500,
+                  // العدد يُختصر قبل أن يدفع الصف خارج البطاقة الضيقة بخط كبير.
+                  Flexible(
+                    child: Text(
+                      ' (${product.reviewCount})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.micro.copyWith(
+                        color: t.inkMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
               ],
@@ -269,38 +448,13 @@ class _CardInfo extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              // السعر الحالي بارزاً والقديم بجانبه صغيراً — سطر واحد أنظف.
+              // يُقرأ ضمن وصف البطاقة، فلا يتكرر هنا.
               Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerStart,
-                  // السعر الحالي بارزاً والقديم بجانبه صغيراً — سطر واحد أنظف.
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        formatPrice(product.price),
-                        maxLines: 1,
-                        style: AppText.price.copyWith(
-                          color: product.hasDiscount ? AppColors.sale : t.ink,
-                        ),
-                      ),
-                      if (product.hasDiscount) ...[
-                        const SizedBox(width: 5),
-                        Text(
-                          formatPrice(product.originalPrice),
-                          maxLines: 1,
-                          style: AppText.caption.copyWith(
-                            fontSize: 10.5,
-                            height: 1.1,
-                            color: t.inkMuted,
-                            decoration: TextDecoration.lineThrough,
-                            decorationColor: t.inkMuted,
-                          ),
-                        ),
-                      ],
-                    ],
+                child: ExcludeSemantics(
+                  child: PriceView.compact(
+                    price: product.price,
+                    oldPrice: product.hasDiscount ? product.originalPrice : null,
                   ),
                 ),
               ),
@@ -315,38 +469,6 @@ class _CardInfo extends ConsumerWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _Badge({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.28),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: AppText.micro.copyWith(
-          color: Colors.white,
-          fontSize: 10.5,
-          height: 1,
-        ),
       ),
     );
   }
@@ -378,15 +500,17 @@ class ProductShadeSwatchRow extends StatelessWidget {
 
     // بلا ألوان في بيانات القائمة: «🎨 21 درجة» أوضح من «+21» وحدها.
     if (visible.isEmpty) {
-      final ar = Directionality.of(context) == TextDirection.rtl;
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.palette_outlined, size: 12.5, color: t.accent),
           const SizedBox(width: 3),
-          Text(
-            ar ? '$total درجة' : '$total shades',
-            style: AppText.micro.copyWith(fontSize: 10.5, color: t.inkSoft, height: 1),
+          // اللغة من إعداد التطبيق لا من اتجاه النص.
+          Consumer(
+            builder: (context, ref, _) => Text(
+              ref.s.dsShadesCount(total),
+              style: AppText.micro.copyWith(fontSize: 10.5, color: t.inkSoft, height: 1),
+            ),
           ),
         ],
       );
@@ -395,12 +519,12 @@ class ProductShadeSwatchRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // نقاط متراكبة قليلاً — شكل أنيق ومساحة أقل.
+        // دوائر صغيرة للدلالة فقط — أول 5 درجات متراكبة قليلاً، شكل أنيق ومساحة أقل.
         SizedBox(
-          // دوائر صغيرة للدلالة فقط — أول 5 درجات متراكبة قليلاً.
-          width: visible.isEmpty ? 0 : 11 + (visible.length - 1) * 8.0,
+          width: 11 + (visible.length - 1) * 8.0,
           height: 11,
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
               for (var i = 0; i < visible.length; i++)
                 PositionedDirectional(
@@ -441,14 +565,12 @@ class _ShadeDot extends StatelessWidget {
     required this.ring,
   });
 
-  Color _hex(String hex) {
-    final h = hex.replaceAll('#', '');
-    final v = h.length == 6 ? 'FF$h' : h;
-    return Color(int.tryParse(v, radix: 16) ?? 0xFFCCCCCC);
-  }
+  /// «#FFF» و«#FFFFFF» و«#AARRGGBB» — كانت الثلاثية تُقرأ شفافة فتختفي النقطة.
+  static Color _hex(String hex) => shadeSwatchColor(hex);
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     final start = _hex(shade.colorHex);
     final end = _hex(shade.colorHexEnd ?? shade.colorHex);
     final hasGradient =
@@ -469,7 +591,12 @@ class _ShadeDot extends StatelessWidget {
                 colors: [start, end],
               )
             : null,
+        // فاصل بلون البطاقة بين النقاط المتراكبة + حلقة رفيعة تُظهر الدرجات الفاتحة
+        // (العاجي والأبيض) على البطاقة البيضاء.
         border: Border.all(color: ring, width: 1.5),
+        boxShadow: [
+          BoxShadow(color: t.ink.withValues(alpha: 0.18), spreadRadius: 0.6),
+        ],
       ),
     );
   }

@@ -5,7 +5,6 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../worlds/world_theme.dart';
-import '../order_strings.dart';
 
 /// مسار حالات الطلب الطبيعي (بدون الإلغاء/الإرجاع).
 const orderStatusFlow = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];

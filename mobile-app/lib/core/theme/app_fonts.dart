@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// خط التطبيق كله (IBM Plex Sans Arabic — راقٍ وهادئ). تغييره هنا يغيّر كل الشاشات.
-/// نستدعي الخط بالاسم مباشرة: البحث بالاسم يدخل كتالوج Google Fonts كله للتطبيق ويكبّره.
+/// أسماء عائلات الخطوط المضمّنة في التطبيق (pubspec.yaml ← fonts).
+///
+/// الملفات داخل الحزمة نفسها: لا تحميل من الإنترنت عند التشغيل، وكل وزن له ملفه
+/// الحقيقي فيختار المحرك الأقرب لأي fontWeight (أثقل وزن متوفر 700).
+abstract final class AppFonts {
+  /// خط التطبيق كله (IBM Plex Sans Arabic — راقٍ وهادئ، عربي ولاتيني) بأوزان 400–700.
+  static const body = 'IBMPlexSansArabic';
+
+  /// عناوين العلامة بالعربية (El Messiri — 700).
+  static const brandArabic = 'ElMessiri';
+
+  /// عناوين العلامة بالإنجليزية (Cormorant Garamond — 600/700).
+  static const brandLatin = 'CormorantGaramond';
+
+  /// السطر اللاتيني في شاشة الافتتاح (Cinzel — 500).
+  static const display = 'Cinzel';
+}
+
+/// خط التطبيق كله. تغييره هنا يغيّر كل الشاشات.
 TextStyle appFont({
   TextStyle? textStyle,
   Color? color,
@@ -18,9 +34,9 @@ TextStyle appFont({
   List<Shadow>? shadows,
   List<FontFeature>? fontFeatures,
 }) {
-  return GoogleFonts.ibmPlexSansArabic(
+  return (textStyle ?? const TextStyle()).copyWith(
+    fontFamily: AppFonts.body,
     fontFeatures: fontFeatures,
-    textStyle: textStyle,
     color: color,
     fontSize: fontSize,
     fontWeight: fontWeight,
@@ -33,23 +49,14 @@ TextStyle appFont({
   );
 }
 
-TextTheme appTextTheme(TextTheme base) =>
-    GoogleFonts.ibmPlexSansArabicTextTheme(base);
+/// سلّم نصوص Material بخط التطبيق.
+TextTheme appTextTheme(TextTheme base) => base.apply(fontFamily: AppFonts.body);
 
-/// تحميل الخطوط مسبقاً لتجنب وميض تغيّر الخط عند فتح التطبيق أو تبديل اللغة.
-Future<void> preloadAppFonts() {
-  return GoogleFonts.pendingFonts([
-    appFont(),
-    appFont(fontWeight: FontWeight.w500),
-    appFont(fontWeight: FontWeight.w600),
-    appFont(fontWeight: FontWeight.w700),
-    GoogleFonts.elMessiri(fontWeight: FontWeight.w700),
-    GoogleFonts.cormorantGaramond(fontWeight: FontWeight.w600),
-    GoogleFonts.cormorantGaramond(fontWeight: FontWeight.w700),
-    // الاسم الإنجليزي في شاشة الافتتاح.
-    GoogleFonts.cinzel(fontWeight: FontWeight.w500),
-  ]);
-}
+/// تباعد الحروف حسب اللغة: العربية بلا تباعد أبداً.
+///
+/// المحرك يضيف المسافة بين الحروف المتصلة دون أن يمدّ خط الوصل، فتظهر فجوات
+/// بين الحروف (أو تتداخل مع القيم السالبة). [v] يُطبَّق على الإنجليزية فقط.
+double tracking(String lang, double v) => lang == 'ar' ? 0 : v;
 
 /// خط العلامة التجارية — يُستخدم في الرئيسية والافتتاح فقط.
 TextStyle brandTitleStyle({
@@ -58,15 +65,17 @@ TextStyle brandTitleStyle({
   Color? color,
 }) {
   if (lang == 'ar') {
-    return GoogleFonts.elMessiri(
+    return TextStyle(
+      fontFamily: AppFonts.brandArabic,
       fontSize: size,
       fontWeight: FontWeight.w700,
       height: 1.12,
-      letterSpacing: 0.8,
+      letterSpacing: 0,
       color: color,
     );
   }
-  return GoogleFonts.cormorantGaramond(
+  return TextStyle(
+    fontFamily: AppFonts.brandLatin,
     fontSize: size,
     fontWeight: FontWeight.w700,
     height: 1.18,

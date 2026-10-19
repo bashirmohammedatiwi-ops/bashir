@@ -6,6 +6,12 @@ import '../bootstrap/app_storage.dart';
 const _localeKey = 'app_locale';
 const _localeChosenKey = 'locale_chosen';
 
+/// لغة الواجهة الحالية لطبقة الأدوات التي لا تصلها `ref` (رسائل الخطأ والتحقق).
+/// يحدّثها [LocaleNotifier] عند التحميل وعند كل تغيير — لا تُعدَّل من مكان آخر.
+abstract final class AppLocale {
+  static String current = 'ar';
+}
+
 class AppLocaleSettings {
   final Locale locale;
   final bool hasChosen;
@@ -39,6 +45,7 @@ class LocaleNotifier extends StateNotifier<AppLocaleSettings> {
     final prefs = appSharedPreferences;
     final code = prefs.getString(_localeKey) ?? 'ar';
     final chosen = prefs.getBool(_localeChosenKey) ?? false;
+    AppLocale.current = code;
     state = AppLocaleSettings(
       locale: Locale(code),
       hasChosen: chosen,
@@ -52,6 +59,7 @@ class LocaleNotifier extends StateNotifier<AppLocaleSettings> {
     if (markChosen) {
       await prefs.setBool(_localeChosenKey, true);
     }
+    AppLocale.current = locale.languageCode;
     state = state.copyWith(
       locale: locale,
       hasChosen: markChosen ? true : state.hasChosen,

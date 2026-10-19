@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/json.dart';
+import '../../../core/utils/phone_util.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/address.dart';
 import '../profile_providers.dart';
@@ -113,12 +114,13 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
             TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
+              textDirection: TextDirection.ltr,
+              inputFormatters: phoneInputFormatters,
               textInputAction: TextInputAction.next,
               autofillHints: const [AutofillHints.telephoneNumber],
               decoration: profileFieldDecoration(context, hint: '07XXXXXXXXX'),
-              validator: (v) => (v == null || v.trim().length < 7)
-                  ? s.acctInvalidPhone
-                  : null,
+              // نفس قاعدة السيرفر (رقم عراقي) — كان يقبل أي 7 أحرف ثم يرفضه الحفظ.
+              validator: (v) => validateIraqiPhone(v, lang: s.lang),
             ),
             const SizedBox(height: 22),
             ProfileSectionTitle(
@@ -262,9 +264,17 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ProfileFieldLabel(_s.acctGovernorateCity),
+        // تعذّر جلب المحافظات: كتابة يدوية، وزر يعيد المحاولة لقائمة الاختيار.
         TextFormField(
           initialValue: _governorate,
-          decoration: profileFieldDecoration(context),
+          decoration: profileFieldDecoration(
+            context,
+            suffix: IconButton(
+              tooltip: _s.retry,
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: () => retryShippingZones(ref),
+            ),
+          ),
           validator: (v) =>
               (v == null || v.trim().isEmpty) ? _s.acctRequired : null,
           onChanged: (v) => _governorate = v,

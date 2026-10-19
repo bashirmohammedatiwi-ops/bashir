@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
+import { invalidateCache } from "../../common/memory-cache.util";
 import { PrismaService } from "../../common/prisma.service";
 import { WORLD_SEEDS } from "./worlds.defaults";
 import { UpdateWorldDto } from "./dto/update-world.dto";
@@ -17,6 +18,8 @@ const worldInclude = {
       category: {
         include: {
           image: true,
+          // جدّ القسم: القسم المربوط من المستوى الثالث يُعرف به (listingKind = tertiary).
+          parent: { select: { parentId: true } },
           children: {
             where: { isActive: true },
             orderBy: { position: "asc" as const },
@@ -141,6 +144,8 @@ export class WorldsService {
 
     const updated = await this.prisma.world.findUnique({ where: { id }, include: worldInclude });
     await this.homeFeedCache.invalidateAll();
+    // نطاق العالم (/products?world=، بحث «ديما» داخل العالم) يُحسب من أقسامه — لا ننتظر انتهاء الكاش.
+    invalidateCache("world:");
     return updated;
   }
 
@@ -152,7 +157,8 @@ export class WorldsService {
     const linked = world.categories.map((link) => link.category);
     const categories = linked.flatMap((node) => {
       if (node.parentId) {
-        return [{ ...node, parentId: null, listingKind: "subcategory" }];
+        // قسم دقيق (مستوى ثالث) يُفتح بـ tertiaryCategoryId — كفرعي كانت قائمته فارغة.
+        return [{ ...node, parentId: null, listingKind: node.parent?.parentId ? "tertiary" : "subcategory" }];
       }
       const subs = node.children ?? [];
       if (!subs.length) return [{ ...node, parentId: null, listingKind: "category" }];
@@ -160,7 +166,7 @@ export class WorldsService {
     });
     const rootCategoryIds = [
       ...new Set(
-        linked.map((node) => node.parentId || node.id),
+        linked.map((node) => node.parent?.parentId || node.parentId || node.id),
       ),
     ];
     return { ...world, rootCategoryIds, categories };

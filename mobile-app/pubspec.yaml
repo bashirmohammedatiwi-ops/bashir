@@ -25,7 +25,6 @@ dependencies:
   shared_preferences: ^2.3.0
 
   # UI / UX
-  google_fonts: ^6.2.1
   cached_network_image: ^3.4.0
   flutter_cache_manager: ^3.4.1
   path_provider: ^2.1.6
@@ -35,13 +34,20 @@ dependencies:
   flutter_rating_bar: ^4.0.1
   intl: ^0.20.2
   url_launcher: ^6.3.0
-  video_player: ^2.9.2
   mobile_scanner: ^7.0.1
   package_info_plus: ^8.3.0
   firebase_core: ^3.13.0
   firebase_messaging: ^15.2.5
   hugeicons: ^1.2.0
   flutter_svg: ^2.3.0
+
+  # الاتصال والمشاركة وإعدادات النظام — إصدارات مثبّتة بالضبط (صدرت قبل أسبوعين على الأقل).
+  # app_settings ثابت على 7.0.0: الإصدار 8 وما بعده ترك CocoaPods، ومشروع iOS هنا عليها.
+  # لا مكتبة صوت: قرار المالك ألا ميكروفون في التطبيق (ومكتبة مربوطة بلا أذوناتها تُرفض في App Store).
+  connectivity_plus: 7.3.1
+  share_plus: 12.0.2
+  app_settings: 7.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -67,4 +73,32 @@ flutter:
     - assets/images/app_icon_source.png
     - assets/images/app_icon_transparent.png
     - assets/images/app_icon_brand_foreground.png
-    - assets/videos/welcome.mp4
+    - assets/fonts/licenses/
+
+  # الخطوط مضمّنة في التطبيق: لا تحميل وقت التشغيل، والأوزان الحقيقية تظهر من أول إطار.
+  # المحرك يختار الملف الأقرب لكل fontWeight (w800/w900 تُرسم من Bold 700).
+  fonts:
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+    - family: ElMessiri
+      fonts:
+        - asset: assets/fonts/ElMessiri-Bold.ttf
+          weight: 700
+    - family: CormorantGaramond
+      fonts:
+        - asset: assets/fonts/CormorantGaramond-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/CormorantGaramond-Bold.ttf
+          weight: 700
+    - family: Cinzel
+      fonts:
+        - asset: assets/fonts/Cinzel-Medium.ttf
+          weight: 500

@@ -75,6 +75,10 @@ class SectionGroupSection extends ConsumerWidget {
                     AppSectionTitle(
                       title: title,
                       subtitle: subtitle,
+                      // لون العنوان من لوحة التحكم، وإلا أبيض فوق خلفية داكنة — والعنوان
+                      // الفرعي و«عرض الكل» يتبعانه.
+                      titleColor: parseHexColor(section.titleColor) ??
+                          (bg.computeLuminance() < 0.4 ? Colors.white : null),
                       padding: const EdgeInsetsDirectional.fromSTEB(
                         16,
                         0,

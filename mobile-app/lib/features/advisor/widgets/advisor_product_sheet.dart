@@ -18,6 +18,7 @@ Future<void> showAdvisorProductSheet(BuildContext context, AdvisorProduct p) {
   HapticFeedback.selectionClick();
   return showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _ProductSheet(product: p, parent: context),

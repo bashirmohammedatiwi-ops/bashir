@@ -9,6 +9,7 @@ import '../../shell/nav_tabs.dart';
 import '../../worlds/world_theme.dart';
 import 'home_animations.dart';
 import 'home_theme.dart';
+import '../../../core/navigation/app_navigation.dart';
 
 class HomeQuickDock extends ConsumerWidget {
   const HomeQuickDock({super.key});
@@ -25,7 +26,7 @@ class HomeQuickDock extends ConsumerWidget {
         ref.read(navIndexProvider.notifier).state = NavTabs.categories;
       }),
       _Item(Icons.storefront_outlined, s.quickBrands, () {
-        context.push('/brands');
+        openTabPath(context, '/brands');
       }),
       _Item(Icons.favorite_border_rounded, s.quickWishlist, () {
         context.push('/wishlist');

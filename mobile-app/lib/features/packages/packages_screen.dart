@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/ui/ui.dart';
@@ -52,7 +51,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
       backgroundColor: t.canvas,
       body: RefreshIndicator(
         color: t.accent,
-        onRefresh: () async => ref.invalidate(beautyPackagesProvider),
+        onRefresh: () => refreshBeautyCatalog(ref, kinds: const ['']),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
@@ -77,7 +76,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
               error: (e, _) => [
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: ErrorView(message: friendlyError(e), onRetry: () => ref.invalidate(beautyPackagesProvider)),
+                  child: ErrorView.from(e, onRetry: () => ref.invalidate(beautyPackagesProvider)),
                 ),
               ],
               data: (all) {

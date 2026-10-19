@@ -72,4 +72,32 @@ class AppBanner {
   }
 
   bool get hasImage => imageUrl.isNotEmpty;
+
+  /// هل للبانر وجهة عند اللمس؟ نفس قواعد openSectionLink: رابط مباشر، أو نوع لا يحتاج
+  /// قيمة (العروض، دليل البشرة…)، أو نوع معروف مع قيمته. بلا وجهة: لا حركة ضغط ولا دور «زر».
+  bool get hasLink {
+    if ((link ?? '').trim().isNotEmpty) return true;
+    final type = (linkType ?? '').trim();
+    final value = (linkValue ?? '').trim();
+    if (_standaloneLinkTypes.contains(type)) return true;
+    if (value.isEmpty) return false;
+    return _valueLinkTypes.contains(type) || value.startsWith('/');
+  }
+
+  /// أنواع روابط تفتح صفحة ثابتة بلا قيمة.
+  static const _standaloneLinkTypes = {'offers', 'categoriesTab', 'skinGuide', 'packages'};
+
+  /// أنواع روابط تحتاج قيمة (معرّف/slug/مسار).
+  static const _valueLinkTypes = {
+    'product',
+    'category',
+    'subcategory',
+    'tertiary',
+    'brand',
+    'package',
+    'skinConcern',
+    'search',
+    'products',
+    'url',
+  };
 }

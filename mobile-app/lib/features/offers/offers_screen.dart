@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/product_grid.dart';
@@ -45,7 +44,8 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
   bool _loadingMore = false;
   bool _hasMore = true;
   bool _initialLoad = true;
-  String? _gridError;
+  /// الخطأ الخام — يُصاغ بلغة الواجهة عند العرض.
+  Object? _gridError;
   bool _refreshingCms = false;
 
   @override
@@ -122,7 +122,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
         });
       } else if (reset || _items.isEmpty) {
         setState(() {
-          _gridError = friendlyError(e);
+          _gridError = e;
           _initialLoad = false;
         });
       } else {
@@ -246,8 +246,8 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                       if (_gridError != null && _items.isEmpty)
                         SliverFillRemaining(
                           hasScrollBody: false,
-                          child: ErrorView(
-                            message: _gridError!,
+                          child: ErrorView.from(
+                            _gridError,
                             onRetry: () => _fetchMore(reset: true),
                           ),
                         )

@@ -1,4 +1,5 @@
 import '../../core/utils/json.dart';
+import 'brand.dart';
 import 'paginated.dart';
 import 'product.dart';
 
@@ -36,6 +37,22 @@ class InstantProduct {
 
   String get route => '/product/${slug.isNotEmpty ? slug : id}';
   bool get hasDiscount => discountPercent > 0 && originalPrice > price;
+
+  /// نسخة مبدئية تُعرض فوراً في صفحة المنتج حتى تصل التفاصيل الكاملة.
+  ///
+  /// خفيفة: بلا درجات ولا أوصاف — لا تُستخدم للإضافة للسلة قبل وصول المنتج الكامل.
+  Product toSeed() => Product(
+        id: id,
+        sku: '',
+        name: name,
+        slug: slug,
+        brand: brand.trim().isEmpty ? null : Brand(id: '', name: brand.trim(), slug: ''),
+        price: price,
+        originalPrice: originalPrice,
+        discountPercent: discountPercent,
+        images: image.trim().isEmpty ? const [] : [ProductImage(url: image)],
+        stock: inStock ? 1 : 0,
+      );
 
   factory InstantProduct.fromJson(Map<String, dynamic> j) => InstantProduct(
         id: asString(j['id']),
@@ -101,18 +118,30 @@ class SearchInstant {
       );
 }
 
-/// ترتيب النتائج.
+/// ترتيب النتائج — [api] القيمة التي يفهمها السيرفر.
 enum SearchSort {
-  relevance('relevance', 'الأنسب'),
-  priceAsc('price_asc', 'الأرخص'),
-  priceDesc('price_desc', 'الأغلى'),
-  best('best', 'الأكثر مبيعاً'),
-  newest('new', 'الأحدث'),
-  discount('discount', 'أعلى خصم');
+  relevance('relevance'),
+  priceAsc('price_asc'),
+  priceDesc('price_desc'),
+  best('best'),
+  rating('rating'),
+  newest('new'),
+  discount('discount');
 
   final String api;
-  final String label;
-  const SearchSort(this.api, this.label);
+  const SearchSort(this.api);
+
+  /// عربي فقط — للواجهة استخدمي نص الترتيب المترجم في SearchStringsX.
+  @Deprecated('Arabic-only label; use the localized sort label from SearchStringsX')
+  String get label => switch (this) {
+        SearchSort.relevance => 'الأنسب',
+        SearchSort.priceAsc => 'الأرخص',
+        SearchSort.priceDesc => 'الأغلى',
+        SearchSort.best => 'الأكثر مبيعاً',
+        SearchSort.rating => 'الأعلى تقييماً',
+        SearchSort.newest => 'الأحدث',
+        SearchSort.discount => 'أعلى خصم',
+      };
 }
 
 /// فلاتر صفحة النتائج.
@@ -126,6 +155,12 @@ class SearchFilters {
   final int? minPrice;
   final int? maxPrice;
 
+  /// تجاهل الميزانية التي يستنتجها السيرفر من نص البحث («تحت 50 ألف») — عند اختيار سعر صريح.
+  final bool ignoreBudget;
+
+  /// البحث بالكلمة كما كُتبت بلا تصحيح إملائي («ابحثي عن … بدلاً من ذلك»).
+  final bool exact;
+
   const SearchFilters({
     this.sort = SearchSort.relevance,
     this.brandIds = const {},
@@ -135,6 +170,8 @@ class SearchFilters {
     this.deals = false,
     this.minPrice,
     this.maxPrice,
+    this.ignoreBudget = false,
+    this.exact = false,
   });
 
   bool get active =>
@@ -155,6 +192,8 @@ class SearchFilters {
     int? minPrice,
     int? maxPrice,
     bool clearPrice = false,
+    bool? ignoreBudget,
+    bool? exact,
   }) =>
       SearchFilters(
         sort: sort ?? this.sort,
@@ -165,6 +204,8 @@ class SearchFilters {
         deals: deals ?? this.deals,
         minPrice: clearPrice ? null : (minPrice ?? this.minPrice),
         maxPrice: clearPrice ? null : (maxPrice ?? this.maxPrice),
+        ignoreBudget: ignoreBudget ?? this.ignoreBudget,
+        exact: exact ?? this.exact,
       );
 
   Map<String, dynamic> toQuery() => {
@@ -176,7 +217,23 @@ class SearchFilters {
         if (deals) 'deals': '1',
         if (minPrice != null) 'minPrice': minPrice,
         if (maxPrice != null) 'maxPrice': maxPrice,
+        if (ignoreBudget) 'noBudget': '1',
+        if (exact) 'exact': '1',
       };
+}
+
+/// شريحة سعر من السيرفر مع عدد نتائجها (null = بلا حد).
+class SearchPriceBucket {
+  final int? min;
+  final int? max;
+  final int count;
+  const SearchPriceBucket({this.min, this.max, this.count = 0});
+
+  factory SearchPriceBucket.fromJson(Map<String, dynamic> j) => SearchPriceBucket(
+        min: j['min'] == null ? null : asInt(j['min']),
+        max: j['max'] == null ? null : asInt(j['max']),
+        count: asInt(j['count']),
+      );
 }
 
 class SearchPage {
@@ -186,6 +243,12 @@ class SearchPage {
   final List<SearchFacet> categories;
   final int? priceMin;
   final int? priceMax;
+
+  /// شرائح السعر من السيرفر (فارغة إن لم يرسلها) — على مدى النتائج قبل فلتر السعر.
+  final List<SearchPriceBucket> priceBuckets;
+
+  /// الحد الأعلى للسعر الذي استنتجه السيرفر من نص البحث («عطر تحت 50 ألف»).
+  final int? budget;
   final String? corrected;
   final List<String> understood;
 
@@ -196,6 +259,8 @@ class SearchPage {
     this.categories = const [],
     this.priceMin,
     this.priceMax,
+    this.priceBuckets = const [],
+    this.budget,
     this.corrected,
     this.understood = const [],
   });
@@ -203,6 +268,8 @@ class SearchPage {
   factory SearchPage.fromJson(Map<String, dynamic> j) {
     final f = asMap(j['facets']);
     final price = asMap(f['price']);
+    final rawBudget = j['budget'];
+    final budget = rawBudget is Map ? rawBudget['max'] : rawBudget;
     return SearchPage(
       page: Paginated.fromJson(j, Product.fromJson),
       brands: asList(f['brands']).map(SearchFacet.fromJson).toList(),
@@ -210,6 +277,8 @@ class SearchPage {
       categories: asList(f['categories']).map(SearchFacet.fromJson).toList(),
       priceMin: price.isEmpty ? null : asInt(price['min']),
       priceMax: price.isEmpty ? null : asInt(price['max']),
+      priceBuckets: asList(f['priceBuckets'] ?? j['priceBuckets']).map(SearchPriceBucket.fromJson).toList(),
+      budget: budget == null ? null : (asInt(budget) > 0 ? asInt(budget) : null),
       corrected: j['corrected']?.toString(),
       understood: asStringList(j['understood']),
     );

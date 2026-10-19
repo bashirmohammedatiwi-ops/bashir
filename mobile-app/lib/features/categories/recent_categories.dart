@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -29,44 +30,55 @@ class RecentCategory {
 /// آخر الأقسام التي فتحتها المستخدمة — الأحدث أولاً، بلا تكرار، محفوظة على الجهاز.
 class RecentCategoriesNotifier extends StateNotifier<List<RecentCategory>> {
   RecentCategoriesNotifier() : super(const []) {
-    _load();
+    unawaited(_ready);
   }
 
   static const _key = 'recent_categories_v1';
   static const _max = 8;
 
+  /// كل تعديل ينتظر انتهاء القراءة الأولى — فتح قسم قبل اكتمالها لا يمسح القائمة المحفوظة.
+  late final Future<void> _ready = _load();
+
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    if (raw == null) return;
     try {
-      final list = (jsonDecode(raw) as List)
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_key);
+      if (raw == null || !mounted) return;
+      final saved = (jsonDecode(raw) as List)
           .map(RecentCategory.fromJson)
           .whereType<RecentCategory>()
           .toList();
-      if (mounted) state = list;
+      // دمج لا استبدال: ما أُضيف أثناء القراءة يبقى في المقدمة.
+      final seen = {for (final e in state) e.location};
+      state = [...state, ...saved.where((e) => seen.add(e.location))].take(_max).toList();
     } catch (_) {}
   }
 
   Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _key,
-      jsonEncode(state.map((e) => e.toJson()).toList()),
-    );
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _key,
+        jsonEncode(state.map((e) => e.toJson()).toList()),
+      );
+    } catch (_) {}
   }
 
-  void add(RecentCategory item) {
+  Future<void> add(RecentCategory item) async {
+    await _ready;
+    if (!mounted) return;
     state = [
       item,
       ...state.where((e) => e.location != item.location),
     ].take(_max).toList();
-    _persist();
+    await _persist();
   }
 
-  void clear() {
+  Future<void> clear() async {
+    await _ready;
+    if (!mounted) return;
     state = const [];
-    _persist();
+    await _persist();
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../data/models/coupon.dart';
@@ -17,15 +18,15 @@ List<Color> couponThemeColors(String theme) => switch (theme) {
       _ => const [Color(0xFFF06A9B), Color(0xFFB43C7C)],
     };
 
-/// «ينتهي بعد يومين»، «ينتهي اليوم»، «حتى 25/10».
-String? couponExpiryLabel(DateTime? endsAt) {
+/// «ينتهي بعد يومين»، «ينتهي خلال ساعة»، «حتى 25 أكتوبر» — بلغة الواجهة.
+String? couponExpiryLabel(DateTime? endsAt, AppStrings s) {
   if (endsAt == null) return null;
   final left = endsAt.difference(DateTime.now());
   if (left.isNegative) return null;
-  if (left.inHours < 24) return left.inHours <= 1 ? 'ينتهي خلال ساعة' : 'ينتهي بعد ${left.inHours} ساعة';
+  if (left.inHours < 24) return left.inHours <= 1 ? s.couponEndsWithinHour : s.couponEndsInHours(left.inHours);
   final d = left.inDays;
-  if (d <= 7) return d == 1 ? 'ينتهي غداً' : d == 2 ? 'ينتهي بعد يومين' : 'ينتهي بعد $d أيام';
-  return 'حتى ${endsAt.day}/${endsAt.month}';
+  if (d <= 7) return d == 1 ? s.couponEndsTomorrow : s.couponEndsInDays(d);
+  return s.couponUntil(formatDate(endsAt, lang: s.lang));
 }
 
 /// بطاقة كوبون على شكل تذكرة: قيمة كبيرة، شروط واضحة، الكود، و«استخدمي الكود» بلمسة.
@@ -55,12 +56,13 @@ class _CouponTicketState extends ConsumerState<CouponTicket> {
   void _copy() {
     Clipboard.setData(ClipboardData(text: widget.coupon.code));
     HapticFeedback.selectionClick();
-    AppSnackbar.show(context, 'نُسخ الكود ${widget.coupon.code}');
+    AppSnackbar.show(context, ref.s.couponCopied(widget.coupon.code));
   }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.coupon;
+    final s = ref.s;
     final colors = couponThemeColors(c.theme);
     final applied = ref.watch(appliedCouponProvider.select((a) => a?.code.toUpperCase() == c.code.toUpperCase()));
     final compact = widget.compact;
@@ -68,22 +70,24 @@ class _CouponTicketState extends ConsumerState<CouponTicket> {
     final stubW = compact ? 82.0 : 96.0;
 
     final value = switch (c.type) {
-      'PERCENT' || 'FIRST_ORDER' => ('${c.value}%', 'خصم'),
-      'AMOUNT' || 'FIXED' => (_short(c.value), 'د.ع خصم'),
-      'FREE_SHIPPING' => ('مجاني', 'التوصيل'),
+      'PERCENT' || 'FIRST_ORDER' => ('${c.value}%', s.couponOffCaption),
+      'AMOUNT' || 'FIXED' => (_short(c.value), s.couponIqdOffCaption),
+      'FREE_SHIPPING' => (s.couponFree, s.couponDelivery),
       _ => (c.code, ''),
     };
     final title = c.title ??
         (c.type == 'FIRST_ORDER'
-            ? 'خصم ${c.value}% لأول طلب'
+            ? s.couponFirstOrder(c.value)
             : c.type == 'FREE_SHIPPING'
-                ? 'توصيل مجاني لطلبكِ'
-                : c.benefitLabel(formatPrice: formatPrice));
+                ? s.couponFreeDelivery
+                : c.benefitLabelFor(s));
+    final expiry = couponExpiryLabel(c.endsAt, s);
     final conditions = <String>[
-      if (c.minOrder > 0) 'فوق ${formatPrice(c.minOrder)}',
-      if (couponExpiryLabel(c.endsAt) != null) couponExpiryLabel(c.endsAt)!,
-      if (c.remaining != null && c.remaining! <= 30) 'باقي ${c.remaining} فقط',
-      if (c.maxDiscount != null && c.maxDiscount! > 0 && c.isPercent) 'حتى ${formatPrice(c.maxDiscount!)}',
+      if (c.minOrder > 0) s.couponMinOrder(formatPrice(c.minOrder, lang: s.lang)),
+      ?expiry,
+      if (c.remaining != null && c.remaining! <= 30) s.couponRemaining(c.remaining!),
+      if (c.maxDiscount != null && c.maxDiscount! > 0 && c.isPercent)
+        s.couponUpTo(formatPrice(c.maxDiscount!, lang: s.lang)),
     ];
 
     return SizedBox(
@@ -146,7 +150,7 @@ class _CouponTicketState extends ConsumerState<CouponTicket> {
                             ),
                           const SizedBox(height: 4),
                           Text(
-                            c.type == 'FREE_SHIPPING' ? 'توصيل مجاني' : value.$2,
+                            c.type == 'FREE_SHIPPING' ? s.freeDelivery : value.$2,
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w700, fontSize: 11.5),
                           ),
                         ],
@@ -229,7 +233,14 @@ class _CouponTicketState extends ConsumerState<CouponTicket> {
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
                                     alignment: AlignmentDirectional.centerEnd,
-                                    child: _UseButton(applied: applied, busy: _busy, ink: colors.last, short: compact, onTap: applied ? null : _use),
+                                    child: _UseButton(
+                                      label: applied ? s.couponActive : compact ? s.couponUseShort : s.couponUse,
+                                      applied: applied,
+                                      busy: _busy,
+                                      ink: colors.last,
+                                      short: compact,
+                                      onTap: applied ? null : _use,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -252,12 +263,20 @@ class _CouponTicketState extends ConsumerState<CouponTicket> {
 }
 
 class _UseButton extends StatelessWidget {
+  final String label;
   final bool applied;
   final bool busy;
   final Color ink;
   final bool short;
   final VoidCallback? onTap;
-  const _UseButton({required this.applied, required this.busy, required this.ink, required this.onTap, this.short = false});
+  const _UseButton({
+    required this.label,
+    required this.applied,
+    required this.busy,
+    required this.ink,
+    required this.onTap,
+    this.short = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +298,7 @@ class _UseButton extends StatelessWidget {
                       Icon(applied ? Icons.check_circle_rounded : Icons.bolt_rounded, size: 15, color: ink),
                       const SizedBox(width: 4),
                       Text(
-                        applied ? 'مُفعّل' : short ? 'استخدمي' : 'استخدمي الكود',
+                        label,
                         style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: 12.5),
                       ),
                     ],

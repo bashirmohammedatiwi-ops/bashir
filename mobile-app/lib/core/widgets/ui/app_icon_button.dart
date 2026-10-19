@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../features/worlds/world_theme.dart';
+import '../../l10n/app_strings.dart';
 import '../../theme/app_text.dart';
 
 /// زر أيقونة دائري موحّد — مساحة لمس 44 نقطة دائماً حتى لو كان الشكل أصغر.
@@ -93,7 +95,10 @@ class AppIconButton extends StatelessWidget {
 }
 
 /// زر الرجوع الموحّد — السهم ينعكس تلقائياً في العربية (لا تعكسه يدوياً).
-class AppBackButton extends StatelessWidget {
+///
+/// صفحة فُتحت وحدها من رابط خارجي (واتساب، إنستغرام، إشعار) لا شيء تحتها
+/// ترجع إليه: يصير الزر «الرئيسية» ويفتح المتجر بدل أن يبقى بلا عمل.
+class AppBackButton extends ConsumerWidget {
   final VoidCallback? onTap;
   final Color? color;
   final Color? background;
@@ -102,23 +107,34 @@ class AppBackButton extends StatelessWidget {
   const AppBackButton({super.key, this.onTap, this.color, this.background, this.outlined = true});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // الاعتماد على المسار يعيد بناء الزر حين يعود للأعلى أو يتغيّر ما تحته.
+    final route = ModalRoute.of(context);
+    final router = GoRouter.maybeOf(context);
+    final canPop = router?.canPop() ?? route?.canPop ?? false;
+    // onTap مخصّص يعني أن المستدعي يقرّر الوجهة — يبقى السهم كما هو.
+    final goesHome = onTap == null && router != null && !canPop;
+
     return AppIconButton(
-      icon: Icons.arrow_back_ios_new_rounded,
-      iconSize: 18,
+      icon: goesHome ? Icons.home_rounded : Icons.arrow_back_ios_new_rounded,
+      iconSize: goesHome ? 20 : 18,
       color: color,
       background: background,
       outlined: outlined,
-      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-      onTap: onTap ??
-          () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              Navigator.of(context).maybePop();
-            }
-          },
+      tooltip: goesHome ? ref.watch(stringsProvider).goHome : MaterialLocalizations.of(context).backButtonTooltip,
+      onTap: onTap ?? () => _back(context),
     );
+  }
+
+  static void _back(BuildContext context) {
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      Navigator.of(context).maybePop();
+    } else if (router.canPop()) {
+      router.pop();
+    } else {
+      router.go('/');
+    }
   }
 }
 

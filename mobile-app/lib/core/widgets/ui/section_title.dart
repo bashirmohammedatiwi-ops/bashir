@@ -14,6 +14,10 @@ class AppSectionTitle extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final bool showAccent;
 
+  /// لون العنوان فوق خلفية مخصّصة (مجموعة أقسام داكنة مثلاً). الوصف يأخذ نفس اللون أخفّ،
+  /// و«عرض الكل» يتحوّل لنسخة الخلفية الداكنة حين يكون اللون فاتحاً.
+  final Color? titleColor;
+
   const AppSectionTitle({
     super.key,
     required this.title,
@@ -23,12 +27,14 @@ class AppSectionTitle extends StatelessWidget {
     this.trailing,
     this.padding = const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 12),
     this.showAccent = true,
+    this.titleColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final hasSubtitle = subtitle != null && subtitle!.isNotEmpty;
+    final onDark = titleColor != null && titleColor!.computeLuminance() > 0.5;
     return Padding(
       padding: padding,
       child: Row(
@@ -58,7 +64,7 @@ class AppSectionTitle extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.title2.copyWith(color: t.ink),
+                  style: AppText.title2.copyWith(color: titleColor ?? t.ink),
                 ),
                 if (hasSubtitle) ...[
                   const SizedBox(height: 2),
@@ -66,7 +72,7 @@ class AppSectionTitle extends StatelessWidget {
                     subtitle!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppText.caption.copyWith(color: t.inkMuted),
+                    style: AppText.caption.copyWith(color: titleColor?.withValues(alpha: 0.72) ?? t.inkMuted),
                   ),
                 ],
               ],
@@ -75,7 +81,7 @@ class AppSectionTitle extends StatelessWidget {
           if (trailing != null) trailing!,
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(width: 8),
-            ViewAllButton(label: actionLabel!, onTap: onAction!),
+            ViewAllButton(label: actionLabel!, onTap: onAction!, onDark: onDark),
           ],
         ],
       ),
@@ -103,29 +109,39 @@ class ViewAllButton extends StatelessWidget {
           onTap();
         },
         borderRadius: BorderRadius.circular(AppCorners.pill),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(6, 6, 2, 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: AppText.label.copyWith(color: fg, fontSize: 12.5, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(width: 7),
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: onDark ? Colors.white.withValues(alpha: 0.2) : t.accent,
-                  boxShadow: onDark
-                      ? null
-                      : [BoxShadow(color: t.accent.withValues(alpha: 0.28), blurRadius: 8, offset: const Offset(0, 3))],
+        // منطقة لمس 44 والشكل نفسه في المنتصف — لا يكبر الشكل ولا تضيع الضغطة.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: kMinTapTarget),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 2, 0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: AppText.label.copyWith(color: fg, fontSize: 12.5, fontWeight: FontWeight.w700),
                 ),
-                child: const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
-              ),
-            ],
+                const SizedBox(width: 7),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: onDark ? Colors.white.withValues(alpha: 0.2) : t.accent,
+                    boxShadow: onDark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: t.accent.withValues(alpha: 0.28),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                  ),
+                  child: const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
+                ),
+              ],
+            ),
           ),
         ),
       ),

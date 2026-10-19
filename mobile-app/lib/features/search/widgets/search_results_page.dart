@@ -4,7 +4,6 @@ import '../../../core/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/product_grid.dart';
 import '../../../core/widgets/scroll_perf.dart';
@@ -283,6 +282,7 @@ Future<T?> _sheet<T>(BuildContext context, String title, Widget Function(BuildCo
   final t = context.worldTheme;
   return showModalBottomSheet<T>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     backgroundColor: t.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),

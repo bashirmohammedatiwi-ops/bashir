@@ -19,6 +19,11 @@ class RestockWatchNotifier extends StateNotifier<Set<String>> {
     } catch (_) {}
   }
 
+  /// قائمة جلبها غيره من السيرفر (شاشة التنبيهات) — لا داعي لطلب ثانٍ.
+  void sync(Set<String> ids) {
+    if (mounted) state = ids;
+  }
+
   /// تبديل متفائل: الواجهة تتغير فوراً، وتعود إن فشل الطلب.
   Future<bool> toggle(String productId) async {
     final watching = !state.contains(productId);

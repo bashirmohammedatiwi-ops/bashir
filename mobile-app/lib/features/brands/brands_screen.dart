@@ -7,9 +7,8 @@ import '../../core/widgets/ui/ui.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/utils/formatters.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -17,6 +16,7 @@ import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
 import '../catalog/catalog_providers.dart';
 import '../home/home_category_filter.dart';
+import '../shell/nav_tabs.dart';
 import '../worlds/world_theme.dart';
 import 'brand_search.dart';
 
@@ -53,6 +53,31 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     if (q.isNotEmpty) {
       _searchCtrl.text = q;
       _query = q;
+    }
+    // التبويب يُبنى أول مرة عند فتحه: طلب «/brands?q=…» يكون قد ضُبط قبل ظهوره
+    // فلا يصله ref.listen — نطبّقه هنا مرة.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applySearchRequest(ref.read(brandsSearchRequestProvider));
+    });
+  }
+
+  /// يطبّق بحثاً جاهزاً (من رابط) ثم يعيده null حتى لا يتكرر.
+  void _applySearchRequest(String? q) {
+    if (q == null) return;
+    ref.read(brandsSearchRequestProvider.notifier).state = null;
+    _setQuery(q);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  /// لمسة ثانية على تبويب البراندات: تمسح البحث وتصعد لأعلى الدليل.
+  void _onReselect() {
+    if (_query.isNotEmpty) _setQuery('');
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (!_scroll.hasClients) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(0);
+    } else {
+      _scroll.animateTo(0, duration: const Duration(milliseconds: 380), curve: Curves.easeOutCubic);
     }
   }
 
@@ -160,11 +185,16 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
 
   Future<void> _refresh() async {
     ref.invalidate(brandsProvider);
-    ref.invalidate(categoriesProvider);
     if (_selectedCategoryId != null) {
       ref.invalidate(categoryBrandsProvider(_selectedCategoryId!));
     }
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    // categoriesProvider يقرأ النسخة المحفوظة أولاً — التحديث الفعلي من الشبكة هنا.
+    try {
+      await refreshCategories(ref);
+    } catch (_) {}
+    try {
+      await ref.read(brandsProvider.future);
+    } catch (_) {}
   }
 
   void _openBrand(Brand brand, String name) {
@@ -183,6 +213,12 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     final s = ref.s;
     final t = context.worldTheme;
     final lang = ref.watch(languageCodeProvider);
+    ref.listen<String?>(brandsSearchRequestProvider, (_, q) => _applySearchRequest(q));
+    if (widget.embedded) {
+      ref.listen<({int tab, int tick})>(tabReselectProvider, (_, r) {
+        if (r.tab == NavTabs.brands) _onReselect();
+      });
+    }
     final cats = ref.watch(categoriesProvider).valueOrNull;
     final parents = cats == null
         ? const <Category>[]
@@ -206,7 +242,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       error: (e, _) => content.add(
         SliverFillRemaining(
           hasScrollBody: false,
-          child: ErrorView(message: friendlyError(e), onRetry: _refresh),
+          child: ErrorView.from(e, onRetry: _refresh, loading: brandsAsync.isLoading),
         ),
       ),
       data: (list) {

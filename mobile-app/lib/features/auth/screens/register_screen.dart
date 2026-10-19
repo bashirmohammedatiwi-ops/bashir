@@ -70,7 +70,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           context,
           message: msg,
           actionLabel: ref.s.signIn,
-          onAction: () => context.pop(),
+          onAction: _openLogin,
         );
       } else {
         AppSnackbar.error(context, msg);
@@ -80,6 +80,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  /// صفحة الدخول تحتها عادةً؛ وإن فُتحت من رابط (/signup) وحدها نفتح الدخول.
+  void _openLogin() {
+    if (!mounted) return;
+    context.canPop() ? context.pop() : context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = ref.s;
@@ -87,11 +93,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       title: s.register,
       subtitle: s.registerPhoneSubtitle,
       eyebrow: s.registerJoinTitle,
-      onBack: () => context.pop(),
       footer: ProfileLinkRow(
         prefix: s.haveAccountAlready,
         action: s.signIn,
-        onTap: () => context.pop(),
+        onTap: _openLogin,
       ),
       child: Form(
         key: _formKey,
@@ -119,6 +124,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               field: TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
+                textDirection: TextDirection.ltr,
+                inputFormatters: phoneInputFormatters,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.telephoneNumber],
                 decoration: authFieldDecoration(
@@ -127,7 +134,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   hint: '07701234567',
                   icon: Icons.phone_iphone_rounded,
                 ),
-                validator: (v) => validateIraqiPhone(v),
+                validator: (v) => validateIraqiPhone(v, lang: s.lang),
               ),
             ),
             const SizedBox(height: 16),

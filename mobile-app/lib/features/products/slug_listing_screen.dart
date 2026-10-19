@@ -13,6 +13,7 @@ import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
 import '../../data/services/api_service.dart';
 import 'product_listing_screen.dart';
+import 'widgets/listing_theme.dart';
 
 class CategorySlugListingScreen extends ConsumerWidget {
   final String slug;
@@ -62,7 +63,11 @@ class _LoadingScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.worldTheme.canvas,
-      body: const ProductGridSkeleton(count: 8),
+      body: const ProductGridSkeleton(
+        count: 8,
+        listing: true,
+        padding: EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 32),
+      ),
     );
   }
 }

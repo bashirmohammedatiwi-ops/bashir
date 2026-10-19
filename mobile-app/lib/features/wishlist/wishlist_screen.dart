@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
@@ -63,7 +62,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
         : '';
     AppSnackbar.action(
       context,
-      message: (s.isAr ? 'أُضيف $added منتج للسلة' : 'Added $added to bag') + extra,
+      message: s.addedToBagCount(added) + extra,
       actionLabel: s.navCart,
       onAction: () {
         ref.read(navIndexProvider.notifier).state = NavTabs.cart;
@@ -97,12 +96,16 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
         ),
       );
     } else if (wishlist.error != null && wishlist.products.isEmpty) {
-      body = ErrorView(
-        message: friendlyError(wishlist.error!),
+      body = ErrorView.from(
+        wishlist.errorObject ?? wishlist.error,
+        loading: wishlist.loading,
         onRetry: () => ref.read(wishlistProvider.notifier).load(),
       );
     } else if (wishlist.loading && wishlist.products.isEmpty) {
-      body = const ProductGridSkeleton(count: 6);
+      body = const ProductGridSkeleton(
+        count: 6,
+        padding: EdgeInsets.fromLTRB(ProfileUi.hPad, 4, ProfileUi.hPad, 24),
+      );
     } else if (wishlist.products.isEmpty) {
       body = RefreshIndicator(
         color: t.accent,

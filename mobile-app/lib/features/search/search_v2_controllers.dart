@@ -11,7 +11,11 @@ import '../../data/services/api_service.dart';
 /// آخر نتيجة ظاهرة أثناء التحميل (لا وميض ولا شاشة فارغة بين الحروف).
 class InstantSearchController extends ChangeNotifier {
   final ApiService api;
-  InstantSearchController(this.api);
+
+  /// لغة الواجهة — أسماء المنتجات والأقسام والإكمالات تأتي بها (جزء من مفتاح الكاش).
+  final String Function() lang;
+
+  InstantSearchController(this.api, {required this.lang});
 
   static const _debounce = Duration(milliseconds: 110);
   final _cache = <String, SearchInstant>{};
@@ -40,7 +44,7 @@ class InstantSearchController extends ChangeNotifier {
       _notify();
       return;
     }
-    final hit = _cache[q];
+    final hit = _cache[_key(q)];
     if (hit != null) {
       _cancel();
       _data = hit;
@@ -61,8 +65,9 @@ class InstantSearchController extends ChangeNotifier {
     final token = CancelToken();
     _token = token;
     try {
-      final r = await api.searchInstant(q, cancelToken: token);
-      _cache[q] = r;
+      final l = lang();
+      final r = await api.searchInstant(q, cancelToken: token, lang: l);
+      _cache['$l|$q'] = r;
       if (_cache.length > 80) _cache.remove(_cache.keys.first);
       if (_disposed || seq != _seq) return;
       _data = r;
@@ -74,6 +79,8 @@ class InstantSearchController extends ChangeNotifier {
       _notify();
     }
   }
+
+  String _key(String q) => '${lang()}|$q';
 
   void _cancel() {
     _seq++;
@@ -98,7 +105,11 @@ class InstantSearchController extends ChangeNotifier {
 /// نتائج البحث: صفحة أولى سريعة ثم «المزيد» تلقائياً، والفلاتر تعيد البحث فوراً.
 class SearchResultsV2Controller extends ChangeNotifier {
   final ApiService api;
-  SearchResultsV2Controller(this.api);
+
+  /// لغة الواجهة للأسماء و«فهمت منكِ» في النتائج.
+  final String Function() lang;
+
+  SearchResultsV2Controller(this.api, {required this.lang});
 
   String _query = '';
   SearchFilters _filters = const SearchFilters();
@@ -156,7 +167,7 @@ class SearchResultsV2Controller extends ChangeNotifier {
     _loading = true;
     _notify();
     try {
-      final r = await api.searchPage(_query, _filters, page: 1, cancelToken: token);
+      final r = await api.searchPage(_query, _filters, page: 1, cancelToken: token, lang: lang());
       if (_disposed || seq != _seq) return;
       // العدّادات من البحث بلا فلاتر البراند/النوع حتى تبقى الخيارات كاملة.
       _meta = keepMeta && _meta != null
@@ -187,7 +198,7 @@ class SearchResultsV2Controller extends ChangeNotifier {
     _loadingMore = true;
     _notify();
     try {
-      final r = await api.searchPage(_query, _filters, page: _page + 1);
+      final r = await api.searchPage(_query, _filters, page: _page + 1, lang: lang());
       if (_disposed || seq != _seq) return;
       _append(r);
     } catch (_) {

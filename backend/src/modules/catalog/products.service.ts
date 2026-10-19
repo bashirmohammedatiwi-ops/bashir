@@ -58,6 +58,120 @@ export const productRelationsLite = {
   _count: { select: { shades: true, variants: true, images: true } },
 };
 
+/** أقصى عدد معرّفات في `ids` (رفوف مختارة يدوياً، «تابعي التسوق»). */
+const MAX_IDS = 50;
+
+/** «a,b,c» ← معرّفات فريدة بالترتيب، حتى 50. */
+function parseIdList(raw?: string | null): string[] {
+  if (!raw) return [];
+  const ids = raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  return [...new Set(ids)].slice(0, MAX_IDS);
+}
+
+/**
+ * مفاتيح أنواع البشرة ← أسماؤها العربية. نموذج المنتج في لوحة التحكم يحفظ الاسم العربي («جافة»)،
+ * والتطبيق والباقات يرسلان المفتاح («dry») — نطابق الصيغتين معاً.
+ */
+const SKIN_TYPE_LABELS: Record<string, string> = {
+  dry: "جافة",
+  oily: "دهنية",
+  combination: "مختلطة",
+  normal: "عادية",
+  sensitive: "حساسة",
+};
+
+/**
+ * نوع البشرة محفوظ نصاً بصيغة JSON (`["دهنية","جافة"]`) — نطابق القيمة بين علامتي تنصيص
+ * حتى لا تطابق جزءاً من قيمة أخرى، وبلا حساسية لحالة الأحرف، بالمفتاح وبالاسم العربي.
+ */
+function skinTypeWhere(raw?: string | null): Prisma.ProductWhereInput | null {
+  const value = raw?.trim().replace(/"/g, "");
+  if (!value) return null;
+  const key = value.toLowerCase();
+  const byLabel = Object.keys(SKIN_TYPE_LABELS).find((k) => SKIN_TYPE_LABELS[k] === value);
+  const variants = [...new Set([value, SKIN_TYPE_LABELS[key], byLabel].filter((v): v is string => Boolean(v)))];
+  return { OR: variants.map((v) => ({ skinType: { contains: `"${v}"`, mode: "insensitive" as const } })) };
+}
+
+/** أقسام «العالم» المرتبطة: الفرعية (أو الدقيقة) كما هي، والرئيسية القديمة بكل فروعها. */
+export interface WorldScope {
+  subIds: string[];
+  legacyRootIds: string[];
+}
+
+/**
+ * شرط منتجات العالم — اتحاد ما تعرضه أقسامه عند فتحها (نفس منطق buildCategoryFilter):
+ * القسم الفرعي ودقيقه، والرئيسي القديم بكل فروعه، بالحقول المفردة وبالتصنيف المتعدد معاً.
+ * null = عالم بلا أقسام مرتبطة (لا تضييق).
+ */
+export function worldProductMatch(scope: WorldScope): Prisma.ProductWhereInput[] | null {
+  const { subIds, legacyRootIds } = scope;
+  const match: Prisma.ProductWhereInput[] = [];
+  if (subIds.length) {
+    match.push(
+      { subcategoryId: { in: subIds } },
+      { subcategories: { some: { id: { in: subIds } } } },
+      { tertiaryCategory: { parentId: { in: subIds } } },
+      { tertiaryCategories: { some: { parentId: { in: subIds } } } },
+      // عالم يربط قسماً دقيقاً مباشرة.
+      { tertiaryCategoryId: { in: subIds } },
+      { tertiaryCategories: { some: { id: { in: subIds } } } },
+    );
+  }
+  if (legacyRootIds.length) {
+    match.push(
+      { categoryId: { in: legacyRootIds } },
+      { subcategory: { parentId: { in: legacyRootIds } } },
+      { subcategories: { some: { parentId: { in: legacyRootIds } } } },
+      { tertiaryCategory: { parent: { parentId: { in: legacyRootIds } } } },
+      { tertiaryCategories: { some: { parent: { parentId: { in: legacyRootIds } } } } },
+    );
+  }
+  return match.length ? match : null;
+}
+
+/**
+ * نطاق العالم من الـ slug (يُحفظ دقيقة). عالم غير موجود أو موقوف = null (القائمة بلا تضييق،
+ * فالروابط القديمة لعالم أُوقف لا تنتهي بصفحة فارغة).
+ */
+export async function resolveWorldScope(prisma: PrismaService, slug?: string | null): Promise<WorldScope | null> {
+  const key = slug?.trim();
+  if (!key) return null;
+  const cacheKey = `world:scope:${key}`;
+  const hit = getCached<WorldScope | false>(cacheKey);
+  if (hit !== null) return hit || null;
+  const world = await prisma.world.findFirst({
+    where: { slug: key, isActive: true },
+    select: { categories: { select: { category: { select: { id: true, parentId: true } } } } },
+  });
+  const linked = world?.categories.map((link) => link.category) ?? [];
+  const scope: WorldScope | null = world
+    ? {
+        subIds: linked.filter((c) => c.parentId).map((c) => c.id),
+        legacyRootIds: linked.filter((c) => !c.parentId).map((c) => c.id),
+      }
+    : null;
+  setCached(cacheKey, scope ?? false, 60_000);
+  return scope;
+}
+
+/** معرّفات منتجات العالم النشطة — للبحث في الذاكرة (فهرس «ديما»). null = بلا تضييق. */
+export async function worldProductIds(prisma: PrismaService, slug?: string | null): Promise<ReadonlySet<string> | null> {
+  const scope = await resolveWorldScope(prisma, slug);
+  const match = scope ? worldProductMatch(scope) : null;
+  if (!match) return null;
+  const cacheKey = `world:product-ids:${slug!.trim()}`;
+  const hit = getCached<Set<string>>(cacheKey);
+  if (hit) return hit;
+  const rows = await prisma.product.findMany({ where: { isActive: true, OR: match }, select: { id: true } });
+  const ids = new Set(rows.map((row) => row.id));
+  setCached(cacheKey, ids, 60_000);
+  return ids;
+}
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -82,23 +196,29 @@ export class ProductsService {
 
   /** فلاتر القائمة الأساسية (بلا البحث النصي) — تشترك فيها القائمة وعدّادات الفلاتر. */
   private async baseFilters(q: QueryProductsDto, storefront: boolean) {
-    const [brandId, categoryId, subcategoryId, tertiaryCategoryId] = await Promise.all([
+    // المعرّفات تحدد المجموعة بنفسها: شارات التسويق والعالم لا تُضيّقها
+    // (روابط «عرض الكل» تُبقي isBestSeller=1 للنسخ القديمة التي لا تعرف ids).
+    const ids = parseIdList(q.ids);
+    const curated = ids.length > 0;
+    const [brandId, categoryId, subcategoryId, tertiaryCategoryId, worldScope] = await Promise.all([
       resolveBrandId(this.prisma, q.brandId),
       resolveCategoryId(this.prisma, q.categoryId),
       resolveCategoryId(this.prisma, q.subcategoryId),
       resolveCategoryId(this.prisma, q.tertiaryCategoryId),
+      curated ? Promise.resolve(null) : resolveWorldScope(this.prisma, q.world || q.worldSlug),
     ]);
 
     const andFilters: Prisma.ProductWhereInput[] = [
       {
         isActive: storefront ? true : q.status === "all" ? undefined : true,
+        id: curated ? { in: ids } : undefined,
         brandId,
-        isFeatured: q.isFeatured,
-        isNew: q.isNew,
-        isBestSeller: q.isBestSeller,
-        isPromo: q.isPromo,
+        isFeatured: curated ? undefined : q.isFeatured,
+        isNew: curated ? undefined : q.isNew,
+        isBestSeller: curated ? undefined : q.isBestSeller,
+        isPromo: curated ? undefined : q.isPromo,
+        discountPercent: q.minDiscount ? { gte: q.minDiscount } : undefined,
         tags: q.tag ? { contains: q.tag } : undefined,
-        skinType: q.skinType ? { contains: q.skinType } : undefined,
         skinConcerns: q.concernSlug
           ? { some: { concern: { slug: q.concernSlug } } }
           : q.concernId
@@ -124,6 +244,13 @@ export class ProductsService {
     });
     if (categoryFilter) andFilters.push(categoryFilter);
 
+    const skinFilter = skinTypeWhere(q.skinType);
+    if (skinFilter) andFilters.push(skinFilter);
+
+    // «عرض الكل» داخل عالم (العطور مثلاً) يبقى في العالم نفسه.
+    const worldMatch = worldScope ? worldProductMatch(worldScope) : null;
+    if (worldMatch) andFilters.push({ OR: worldMatch });
+
     const textSearch = Boolean(q.search?.trim());
 
     // فلاتر ظهور واجهة المتجر — لا تُطبَّق أثناء البحث حتى يظهر المنتج حتى لو بلا صورة أو نفد
@@ -136,7 +263,7 @@ export class ProductsService {
         andFilters.push(hasRealProductImagesWhere());
       }
     }
-    return { andFilters, brandId };
+    return { andFilters, brandId, ids };
   }
 
   /**
@@ -187,7 +314,16 @@ export class ProductsService {
   }
 
   private async buildList(q: QueryProductsDto, storefront: boolean) {
-    const { andFilters, brandId } = await this.baseFilters(q, storefront);
+    const { andFilters, brandId, ids } = await this.baseFilters(q, storefront);
+    // مختارات بعينها: علاقات مصغّرة دائماً، وترتيبها الافتراضي ترتيب المعرّفات
+    // («brand» هو افتراضي قائمة التطبيق، فيُعامل كغياب الترتيب هنا).
+    const curated = ids.length > 0;
+    const keepIdOrder = curated && !q.search?.trim() && (!q.sort || q.sort === "default" || q.sort === "brand");
+    const relations = q.lite || curated ? productRelationsLite : productRelationsFull;
+    // الترقيم من الصفحة والحد مباشرة (لا من getter الـ DTO) — يصح حتى لو مُرِّر كائن عادي.
+    const page = Math.max(1, q.page ?? 1);
+    const limit = q.limit ?? 20;
+    const skip = (page - 1) * limit;
 
     let rankedSearchIds: string[] = [];
     if (q.search) {
@@ -212,15 +348,22 @@ export class ProductsService {
       ? ({ id: "asc" } as const)
       : this.buildOrderBy(q.sort, storefront, brandId);
 
-    const fetchItems = (w: Prisma.ProductWhereInput, page?: { skip: number; take: number }) =>
+    const fetchItems = (w: Prisma.ProductWhereInput, range?: { skip: number; take: number }) =>
       this.prisma.product.findMany({
         where: w,
-        ...(page ? { orderBy, skip: page.skip, take: page.take } : {}),
-        include: q.lite ? productRelationsLite : productRelationsFull,
+        ...(range ? { orderBy, skip: range.skip, take: range.take } : {}),
+        include: relations,
       });
     let total: number;
     let rawItems: Awaited<ReturnType<typeof fetchItems>>;
-    if (rankedSearchIds.length) {
+    if (keepIdOrder) {
+      // حتى 50 منتجاً: نجلبها كلها ونرتّبها بترتيب المعرّفات ثم نقطع الصفحة.
+      const rank = new Map(ids.map((id, index) => [id, index]));
+      const matching = await fetchItems(where);
+      matching.sort((a, b) => (rank.get(a.id) ?? MAX_IDS) - (rank.get(b.id) ?? MAX_IDS));
+      total = matching.length;
+      rawItems = matching.slice(skip, skip + limit);
+    } else if (rankedSearchIds.length) {
       // البحث: نرقّم بترتيب الملاءمة نفسه (كان يُرقَّم بالمعرّف فتضيع أفضل النتائج).
       const matching = await this.prisma.product.findMany({ where, select: { id: true } });
       const allowed = new Set(matching.map((m) => m.id));
@@ -230,11 +373,11 @@ export class ProductsService {
         ...rankedSearchIds.filter((id) => allowed.has(id)),
       ];
       total = ordered.length;
-      const pageIds = ordered.slice(q.skip, q.skip + q.limit);
+      const pageIds = ordered.slice(skip, skip + limit);
       rankedSearchIds = pageIds;
       rawItems = pageIds.length ? await fetchItems({ id: { in: pageIds } }) : [];
     } else {
-      [total, rawItems] = await Promise.all([this.prisma.product.count({ where }), fetchItems(where, { skip: q.skip, take: q.limit })]);
+      [total, rawItems] = await Promise.all([this.prisma.product.count({ where }), fetchItems(where, { skip, take: limit })]);
     }
 
     const items = rankedSearchIds.length
@@ -244,24 +387,26 @@ export class ProductsService {
     return paginate(
       items.map((p) => withPlaceholderImages(rewriteProductMediaUrls(p))),
       total,
-      q.page,
-      q.limit,
+      page,
+      limit,
     );
   }
 
-  /** بحث ذكي للمتجر — منتجات مرتبة بالملاءمة، ثنائي اللغة. */
-  async searchStorefront(query: string, limit = 40, storefront = true) {
+  /** بحث ذكي للمتجر — منتجات مرتبة بالملاءمة، ثنائي اللغة. `world` يحصر النتائج بأقسام عالم واحد. */
+  async searchStorefront(query: string, limit = 40, storefront = true, world?: string) {
     const q = query.trim();
     if (q.length < 2) {
       return paginate([], 0, 1, limit);
     }
+    // نسخة فعلية من الـ DTO (لا كائن عادي) — فيها `skip` التي ترقّم نتائج الملاءمة.
     return this.list(
-      {
+      Object.assign(new QueryProductsDto(), {
         page: 1,
         limit: Math.min(Math.max(limit, 1), 60),
         search: q,
         lite: true,
-      } as QueryProductsDto,
+        world: world?.trim() || undefined,
+      }),
       storefront,
     );
   }
@@ -1294,9 +1439,12 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
       case "price_desc":
         return { price: "desc" };
       case "rating":
-        return { rating: "desc" };
+        return [{ rating: "desc" }, { reviewCount: "desc" }, { soldCount: "desc" }, { id: "asc" }];
       case "popular":
         return { soldCount: "desc" };
+      case "discount":
+        // الأكبر خصماً أولاً، وعند التساوي الأكثر مبيعاً (ثم ثابت حتى لا تتكرر المنتجات بين الصفحات).
+        return [{ discountPercent: "desc" }, { soldCount: "desc" }, { createdAt: "desc" }, { id: "asc" }];
       case "oldest":
         return { createdAt: "asc" };
       case "latest":

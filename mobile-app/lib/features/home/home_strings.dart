@@ -23,4 +23,7 @@ extension HomeStringsX on AppStrings {
   String get homeFooterHelp => isAr ? 'تحتاجين مساعدة في الاختيار؟' : 'Need help choosing?';
   String get homeFooterChat => isAr ? 'تحدّثي معنا' : 'Chat with us';
   String get homeFooterBrowse => isAr ? 'كل الأقسام' : 'All categories';
+  String get homeRefreshFailed => isAr
+      ? 'تعذّر التحديث — نعرض آخر نسخة محفوظة'
+      : "Couldn't refresh — showing the saved version";
 }

@@ -105,22 +105,37 @@ const SORT_RE: [RegExp, Need["sort"]][] = [
   [/(فخم|فخمه|فاخر|فاخره|راقي|راقيه|ارقى|براند عالمي|luxury|premium|high end)/, "premium"],
 ];
 
-function parseBudget(norm: string): { min?: number; max?: number } {
+/**
+ * الميزانية من نص مطبَّع («تحت 50 الف»، «بين 10 و 20 الف»، «ب 25 الف»).
+ * كلمة الميزانية يجب أن تبدأ كلمة مستقلة: «ذهب 24» ليست «ب 24»، و«واحد 2» ليست «حد 2».
+ * «ب» و«حد» وحدهما لا تُفهمان ميزانية إلا مع وحدة نقد بعد الرقم («ب 25 الف») — «فيتامين ب5» اسم لا سعر.
+ */
+export function parseBudget(norm: string): { min?: number; max?: number } {
+  // بداية كلمة: أول النص أو بعد مسافة.
+  const at = String.raw`(?:^|\s)`;
   const num = String.raw`(\d+(?:\.\d+)?)\s*(الف|الاف|k|ك|مليون)?`;
-  const between = norm.match(new RegExp(`(بين|من)\\s*${num}\\s*(و|الى|ل|-|to)\\s*${num}`));
+  const between = norm.match(new RegExp(`${at}(بين|من)\\s*${num}\\s*(و|الى|ل|-|to)\\s*${num}`));
   if (between) {
     const a = parseMoney(`${between[2]} ${between[3] ?? between[7] ?? ""}`);
     const b = parseMoney(`${between[5]} ${between[6] ?? ""}`);
     if (a && b) return { min: Math.min(a, b), max: Math.max(a, b) };
   }
   const max = norm.match(
-    new RegExp(`(تحت|اقل من|ما يتعدى|مايتعدى|لا يتجاوز|ما يتجاوز|لحد|حد|الى|ل حد|بحدود|حدود|ميزانيتي|ميزانيه|بسعر|ب|under|below|max|up to|less than|budget)\\s*${num}`),
+    new RegExp(`${at}(تحت|اقل من|ما يتعدى|مايتعدى|لا يتجاوز|ما يتجاوز|لحد|الى|ل حد|بحدود|حدود|ميزانيتي|ميزانيه|بسعر|under|below|max|up to|less than|budget)\\s*${num}`),
   );
   if (max) {
     const n = parseMoney(`${max[2]} ${max[3] ?? ""}`);
     if (n) return { max: n };
   }
-  const min = norm.match(new RegExp(`(فوق|اكثر من|اعلى من|above|over|more than|من)\\s*${num}`));
+  // «ب»/«حد» + رقم + وحدة نقد إلزامية تنتهي بها الكلمة (لا «5 كريم» ولا «5kg»).
+  const shortMax = norm.match(
+    new RegExp(`${at}(ب|حد)\\s*(\\d+(?:\\.\\d+)?)\\s*(الف|الاف|الفين|k|ك|مليون|دينار|د ع|iqd)(?=\\s|$)`),
+  );
+  if (shortMax) {
+    const n = parseMoney(`${shortMax[2]} ${shortMax[3]}`);
+    if (n) return { max: n };
+  }
+  const min = norm.match(new RegExp(`${at}(فوق|اكثر من|اعلى من|above|over|more than|من)\\s*${num}`));
   if (min) {
     const n = parseMoney(`${min[2]} ${min[3] ?? ""}`);
     if (n && n >= 1000) return { min: n };

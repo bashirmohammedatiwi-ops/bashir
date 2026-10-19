@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/providers/app_info_provider.dart';
 import '../../core/utils/phone_util.dart';
 import '../../core/utils/responsive.dart';
@@ -25,6 +26,7 @@ import '../worlds/world_theme.dart';
 import 'profile_providers.dart';
 import 'widgets/account_strings.dart';
 import 'widgets/account_theme.dart';
+import 'widgets/notification_permission_tile.dart';
 import 'widgets/profile_ui.dart';
 import 'widgets/support_contact_section.dart';
 
@@ -46,34 +48,52 @@ class AccountScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: context.worldTheme.canvas,
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          ProfileUi.hPad,
-          top + 8,
-          ProfileUi.hPad,
-          bottomPad,
-        ),
-        children: [
-          _AccountTopBar(
-            title: s.myAccount,
-            showBell: auth.isAuthenticated,
-            unread: unread,
-            bellTooltip: s.notifications,
-            onBell: () => context.push('/notifications'),
-          ),
-          const SizedBox(height: 14),
-          ...children,
-          const SizedBox(height: 20),
-          Center(
-            child: Text(
-              '${AppConfig.displayStoreName(s.lang)} • ${s.version} $version',
-              textAlign: TextAlign.center,
-              style: ProfileUi.captionStyle(context),
+      body: RefreshIndicator(
+        color: context.worldTheme.accent,
+        edgeOffset: top,
+        onRefresh: () => _refresh(ref),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              ProfileUi.hPad,
+              top + 8,
+              ProfileUi.hPad,
+              bottomPad,
             ),
+            children: [
+              _AccountTopBar(
+                title: s.myAccount,
+                showBell: auth.isAuthenticated,
+                unread: unread,
+                bellTooltip: s.notifications,
+                onBell: () => context.push('/notifications'),
+              ),
+              const SizedBox(height: 14),
+              ...children,
+              const SizedBox(height: 20),
+              Center(
+                child: Text(
+                  '${AppConfig.displayStoreName(s.lang)} • ${s.version} $version',
+                  textAlign: TextAlign.center,
+                  style: ProfileUi.captionStyle(context),
+                ),
+              ),
+            ],
           ),
-        ],
       ),
     );
+  }
+
+  /// سحب للتحديث: الطلبات والإشعارات و«اطلبيها مرة ثانية» وبيانات الحساب معاً؛
+  /// فشل أيّها لا يوقف البقية.
+  Future<void> _refresh(WidgetRef ref) async {
+    if (!ref.read(authProvider).isAuthenticated) return;
+    await Future.wait<void>([
+      ref.refresh(ordersProvider.future),
+      ref.refresh(notificationsProvider.future),
+      ref.refresh(buyAgainProvider.future),
+      ref.read(authProvider.notifier).refreshUser(),
+    ].map((f) => f.then<void>((_) {}, onError: (_) {})));
   }
 
   List<Widget> _memberSections(
@@ -126,6 +146,8 @@ class AccountScreen extends ConsumerWidget {
       ),
       const _BuyAgainRail(),
       const SizedBox(height: AccountTheme.sectionGap),
+      // الإشعارات مرفوضة: دعوة لتفعيلها (تختفي وحدها حين تُفعَّل).
+      const NotificationPermissionTile(standalone: true),
       ProfileSectionTitle(s.acctAccount),
       ProfileMenuCard(
         children: [
@@ -203,7 +225,7 @@ class AccountScreen extends ConsumerWidget {
             icon: Icons.storefront_outlined,
             title: s.brands,
             subtitle: s.acctBrandsHint,
-            onTap: () => context.push('/brands'),
+            onTap: () => openTabPath(context, '/brands'),
           ),
           ProfileMenuTile(
             icon: Icons.spa_outlined,
@@ -271,7 +293,10 @@ class AccountScreen extends ConsumerWidget {
       confirmLabel: s.logout,
       cancelLabel: s.cancel,
     );
-    if (ok) await ref.read(authProvider.notifier).logout();
+    if (!ok) return;
+    // الخروج فوري على الجهاز، وطلبات السيرفر تكمل في الخلفية.
+    await ref.read(authProvider.notifier).logout();
+    if (context.mounted) AppSnackbar.success(context, s.loggedOut);
   }
 
   Future<void> _deleteAccount(
@@ -287,13 +312,26 @@ class AccountScreen extends ConsumerWidget {
       cancelLabel: s.cancel,
     );
     if (!ok || !context.mounted) return;
+    // انتظار لا يُغلق: الحذف قد يأخذ ثواني، ولا نريد ضغطة ثانية أو مغادرة في منتصفه.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    showDialog<void>(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
     try {
       await ref.read(authProvider.notifier).deleteAccount();
+      navigator.pop();
       if (!context.mounted) return;
       AppSnackbar.success(context, s.deleteAccountSuccess);
     } catch (e) {
+      navigator.pop();
       if (!context.mounted) return;
-      AppSnackbar.show(context, friendlyError(e));
+      AppSnackbar.error(context, friendlyError(e, lang: s.lang));
     }
   }
 }

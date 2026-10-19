@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/navigation/app_navigation.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -43,7 +42,7 @@ class PackageDetailScreen extends ConsumerWidget {
                 child: IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.arrow_back_rounded)),
               ),
               Expanded(
-                child: ErrorView(message: friendlyError(e), onRetry: () => ref.invalidate(beautyPackageProvider(idOrSlug))),
+                child: ErrorView.from(e, onRetry: () => ref.invalidate(beautyPackageProvider(idOrSlug))),
               ),
             ],
           ),

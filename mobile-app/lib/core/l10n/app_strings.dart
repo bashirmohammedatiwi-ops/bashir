@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/models/coupon.dart';
+import '../../data/models/notification.dart';
+import '../config/app_config.dart';
+import '../utils/formatters.dart';
 import 'locale_provider.dart';
 
 final stringsProvider = Provider<AppStrings>((ref) {
@@ -11,6 +15,28 @@ extension AppStringsX on WidgetRef {
   AppStrings get s => watch(stringsProvider);
 }
 
+/// «1,250» — فواصل الآلاف كبقية أرقام التطبيق.
+String _grouped(int n) => n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+
+/// تنوين النصب في آخر الكلمة («قسماً» → «قسم») — لتمييز المئات والألوف المجرور.
+/// يقبل الترتيبين الشائعين في الكتابة: ألف ثم تنوين («اً») وتنوين ثم ألف («ًا»).
+final _tanweenFath = RegExp('(?:\u0627\u064B|\u064B\u0627)(?=\\s|\$)');
+
+/// تمييز العدد بالعربي بصيغه الأربع: 1 → [one]، 2 → [two]، 3–10 → «n [few]»، 11–99 → «n [many]».
+/// المئات والألوف (100، 101، 1000…) تمييزها مفرد مجرور: «100 قسم» لا «100 قسماً».
+String arCount(int n, {required String one, required String two, required String few, required String many}) {
+  if (n == 1) return one;
+  if (n == 2) return two;
+  final m = n % 100;
+  final num = _grouped(n);
+  if (m >= 3 && m <= 10) return '$num $few';
+  if (m >= 11) return '$num $many';
+  return '$num ${many.replaceAll(_tanweenFath, '')}';
+}
+
+/// English count: «1 item» / «12 items».
+String enCount(int n, String one, String many) => n == 1 ? '1 $one' : '${_grouped(n)} $many';
+
 /// نصوص واجهة التطبيق — عربي / إنجليزي.
 /// «5 نقاط» لا «5 نقطة»: تمييز العدد بالعربي (1 نقطة، 2 نقطتين، 3–10 نقاط، 11+ نقطة).
 String arPoints(int n) {
@@ -21,17 +47,74 @@ String arPoints(int n) {
   return '$n نقطة';
 }
 
-/// «3 منتجات» / «15 منتج» / «منتجان» — تمييز العدد بالعربي.
-String arProducts(int n) {
-  final m = n % 100;
-  if (n == 1) return 'منتج واحد';
-  if (n == 2) return 'منتجان';
-  final num = n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-  if (m >= 3 && m <= 10) return '$num منتجات';
-  return '$num منتج';
-}
+/// «منتج واحد» / «منتجان» / «3 منتجات» / «15 منتجاً» / «100 منتج».
+String arProducts(int n) => arCount(n, one: 'منتج واحد', two: 'منتجان', few: 'منتجات', many: 'منتجاً');
+
+/// «خطوة واحدة» / «خطوتان» / «4 خطوات» / «12 خطوة».
+String arSteps(int n) => arCount(n, one: 'خطوة واحدة', two: 'خطوتان', few: 'خطوات', many: 'خطوة');
+
+/// «قطعة واحدة» / «قطعتان» / «3 قطع» / «12 قطعة».
+String arPieces(int n) => arCount(n, one: 'قطعة واحدة', two: 'قطعتان', few: 'قطع', many: 'قطعة');
+
+/// «قسم واحد» / «قسمان» / «5 أقسام» / «12 قسماً».
+String arSections(int n) => arCount(n, one: 'قسم واحد', two: 'قسمان', few: 'أقسام', many: 'قسماً');
+
+/// «طلب واحد» / «طلبان» / «3 طلبات» / «15 طلباً».
+String arOrders(int n) => arCount(n, one: 'طلب واحد', two: 'طلبان', few: 'طلبات', many: 'طلباً');
+
+/// «إشعار واحد» / «إشعاران» / «4 إشعارات» / «20 إشعاراً».
+String arNotifications(int n) =>
+    arCount(n, one: 'إشعار واحد', two: 'إشعاران', few: 'إشعارات', many: 'إشعاراً');
+
+/// «يوم واحد» / «يومين» / «3 أيام» / «14 يوماً» — بصيغة ما بعد «خلال/بعد/باقي».
+String arDays(int n) => arCount(n, one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوماً');
+
+/// «ساعة واحدة» / «ساعتين» / «5 ساعات» / «12 ساعة».
+String arHours(int n) => arCount(n, one: 'ساعة واحدة', two: 'ساعتين', few: 'ساعات', many: 'ساعة');
+
+/// «ألف» / «ألفين» / «3 آلاف» / «25 ألف» — للمبالغ المختصرة بالآلاف.
+String arThousands(int k) => arCount(k, one: 'ألف', two: 'ألفين', few: 'آلاف', many: 'ألف');
 
 int _countOf(String n) => int.tryParse(n.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
+/// «قسم فرعي واحد» / «قسمان فرعيان» / «4 أقسام فرعية» / «12 قسماً فرعياً».
+String _arSubSections(int n) =>
+    arCount(n, one: 'قسم فرعي واحد', two: 'قسمان فرعيان', few: 'أقسام فرعية', many: 'قسماً فرعياً');
+
+/// تطبيع بسيط لأسماء المحافظات («البصره» = «البصرة»، «اربيل» = «أربيل»).
+String _normGov(String s) => s.replaceAll(RegExp('[أإآ]'), 'ا').replaceAll('ة', 'ه').trim();
+
+/// أسماء المحافظات بالإنجليزي — تُدخل بالعربي من لوحة التحكم.
+const _governoratesEn = <(String, String)>[
+  ('بغداد', 'Baghdad'),
+  ('البصره', 'Basra'),
+  ('نينوى', 'Nineveh'),
+  ('الموصل', 'Mosul'),
+  ('اربيل', 'Erbil'),
+  ('السليمانيه', 'Sulaymaniyah'),
+  ('دهوك', 'Duhok'),
+  ('حلبجه', 'Halabja'),
+  ('كركوك', 'Kirkuk'),
+  ('النجف', 'Najaf'),
+  ('كربلاء', 'Karbala'),
+  ('بابل', 'Babylon'),
+  ('الحله', 'Hillah'),
+  ('الانبار', 'Anbar'),
+  ('ديالى', 'Diyala'),
+  ('صلاح الدين', 'Saladin'),
+  ('واسط', 'Wasit'),
+  ('الكوت', 'Kut'),
+  ('ذي قار', 'Dhi Qar'),
+  ('الناصريه', 'Nasiriyah'),
+  ('ميسان', 'Maysan'),
+  ('العماره', 'Amarah'),
+  ('المثنى', 'Muthanna'),
+  ('السماوه', 'Samawah'),
+  ('القادسيه', 'Al-Qadisiyyah'),
+  ('الديوانيه', 'Diwaniyah'),
+];
+
+final _arabicLetters = RegExp(r'[\u0600-\u06FF]');
 
 class AppStrings {
   final String lang;
@@ -118,7 +201,9 @@ class AppStrings {
       : 'Libraries used in this app and their licenses';
   String get searchPackages => isAr ? 'ابحثي عن مكتبة...' : 'Search packages...';
   String get noPackagesFound => isAr ? 'لا توجد نتائج' : 'No packages found';
-  String packageCount(int n) => isAr ? '$n مكتبة' : '$n packages';
+  String packageCount(int n) => isAr
+      ? arCount(n, one: 'مكتبة واحدة', two: 'مكتبتان', few: 'مكتبات', many: 'مكتبة')
+      : enCount(n, 'package', 'packages');
   String get website => isAr ? 'الموقع' : 'Website';
   String get visitWebsite => isAr ? 'زيارة الموقع' : 'Visit website';
   String get shareProduct => isAr ? 'مشاركة المنتج' : 'Share product';
@@ -156,11 +241,14 @@ class AppStrings {
       isAr ? 'ابحثي بين الأقسام… ماسكرا، شامبو، عطور' : 'Search categories… mascara, shampoo';
   String get catLensAll => isAr ? 'كل الأقسام' : 'All';
   String get catShopAll => isAr ? 'تسوقي الكل' : 'Shop all';
-  String catProducts(String n) => isAr ? arProducts(_countOf(n)) : '$n products';
+  String catProducts(String n) =>
+      isAr ? arProducts(_countOf(n)) : '$n ${_countOf(n) == 1 ? 'product' : 'products'}';
   String get catTopBrands => isAr ? 'أبرز البراندات' : 'Top brands';
   String get catBestSellers => isAr ? 'الأكثر طلباً هنا' : 'Most loved here';
   String get catSections => isAr ? 'الأقسام' : 'Sections';
-  String catResults(int n) => isAr ? '$n قسم مطابق' : '$n matching categories';
+  String catResults(int n) => isAr
+      ? arCount(n, one: 'قسم واحد مطابق', two: 'قسمان مطابقان', few: 'أقسام مطابقة', many: 'قسماً مطابقاً')
+      : enCount(n, 'matching category', 'matching categories');
   String catSearchInProducts(String q) =>
       isAr ? 'ابحثي عن «$q» في كل المنتجات' : 'Search all products for “$q”';
   String get catNoMatch => isAr ? 'لا يوجد قسم بهذا الاسم' : 'No category matches';
@@ -177,17 +265,21 @@ class AppStrings {
   String get brandsAzIndex => isAr ? 'حسب الحرف' : 'A–Z';
   String get searchShort => isAr ? 'بحث' : 'Search';
   String get browseInDetail => isAr ? 'تصفّح بالتفصيل' : 'Browse in detail';
-  String groupCount(int n) => isAr ? '$n مجموعة' : '$n groups';
+  String groupCount(int n) => isAr
+      ? arCount(n, one: 'مجموعة واحدة', two: 'مجموعتان', few: 'مجموعات', many: 'مجموعة')
+      : enCount(n, 'group', 'groups');
   String get sectionBrands => isAr ? 'براندات القسم' : 'Category Brands';
-  String brandCountLabel(int n) => isAr ? '$n براند' : '$n brands';
+  String brandCountLabel(int n) => brandsCount(n);
   String get swipeForMore => isAr ? 'مرّري للمزيد' : 'Swipe for more';
-  String subcategoryCount(int n) => isAr ? '$n قسم فرعي' : '$n subcategories';
+  String subcategoryCount(int n) => isAr ? _arSubSections(n) : enCount(n, 'subcategory', 'subcategories');
   String get allSectionProducts => isAr ? 'كل منتجات القسم' : 'All category products';
   String get subcategories => isAr ? 'الأقسام الفرعية' : 'Subcategories';
   String get tapNameToOpenProducts =>
       isAr ? 'اضغطي على الدائرة لفتح القسم' : 'Tap a circle to open the category';
-  String childGroupCount(int n) => isAr ? '$n قسم فرعي' : '$n sub-items';
-  String tertiaryCountLabel(int n) => isAr ? '$n قسم ثانوي' : '$n sub-sections';
+  String childGroupCount(int n) => isAr ? _arSubSections(n) : enCount(n, 'sub-item', 'sub-items');
+  String tertiaryCountLabel(int n) => isAr
+      ? arCount(n, one: 'قسم ثانوي واحد', two: 'قسمان ثانويان', few: 'أقسام ثانوية', many: 'قسماً ثانوياً')
+      : enCount(n, 'sub-section', 'sub-sections');
   String tertiarySectionsBarCount(int n) =>
       isAr ? 'الأقسام الثانوية · $n' : 'Sub-sections · $n';
   String get browseTertiarySections =>
@@ -224,7 +316,8 @@ class AppStrings {
   String lfPriceOver(String v) => isAr ? 'أكثر من $v' : 'Over $v';
   String lfPriceBetween(String a, String b) => '$a – $b';
   String lfRatingAtLeast(String r) => isAr ? '$r★ فأكثر' : '$r★ & up';
-  String lfResults(String n) => isAr ? arProducts(_countOf(n)) : '$n products';
+  String lfResults(String n) =>
+      isAr ? arProducts(_countOf(n)) : '$n ${_countOf(n) == 1 ? 'product' : 'products'}';
   String get sort => isAr ? 'ترتيب' : 'Sort';
   String get filter => isAr ? 'تصفية' : 'Filter';
   String get filterProducts => isAr ? 'تصفية المنتجات' : 'Filter Products';
@@ -238,7 +331,7 @@ class AppStrings {
   String get apply => isAr ? 'تطبيق' : 'Apply';
   String get productCount => isAr ? 'منتج' : 'products';
   /// العدد مع التمييز الصحيح («4 منتجات»).
-  String productsN(int n) => isAr ? arProducts(n) : '$n products';
+  String productsN(int n) => isAr ? arProducts(n) : enCount(n, 'product', 'products');
   String get browseProducts => isAr ? 'تصفّحي واختاري الأنسب' : 'Browse and find your match';
   String get availableProducts => isAr ? 'منتج متاح' : 'products available';
   String get subcategory => isAr ? 'القسم الفرعي' : 'Subcategory';
@@ -276,14 +369,19 @@ class AppStrings {
   String get viewCart => isAr ? 'عرض السلة' : 'View Cart';
   String get quantity => isAr ? 'الكمية' : 'Quantity';
   String earnPoints(int points) =>
-      isAr ? 'اكسبي ${arPoints(points)} عند شراء هذا المنتج' : 'Earn $points points when you buy this';
+      isAr ? 'اكسبي ${arPoints(points)} عند شراء هذا المنتج' : 'Earn ${enCount(points, 'point', 'points')} when you buy this';
   String get bestSeller => isAr ? 'الأكثر مبيعاً' : 'Best Seller';
-  String reviewCount(int n) => isAr ? '($n تقييم)' : '($n reviews)';
+  String reviewCount(int n) => isAr
+      ? '(${arCount(n, one: 'تقييم واحد', two: 'تقييمان', few: 'تقييمات', many: 'تقييماً')})'
+      : '(${enCount(n, 'review', 'reviews')})';
   String savePercent(int p) => isAr ? 'وفّري \u2066$p%\u2069' : 'Save $p%';
   String get outOfStockNow => isAr ? 'غير متوفر حالياً' : 'Currently out of stock';
-  String lowStock(int stock) => isAr
-      ? (stock == 1 ? 'آخر قطعة' : 'متبقى $stock قطع')
-      : (stock == 1 ? 'Last one' : 'Only $stock left');
+  String lowStock(int stock) {
+    if (stock <= 0) return outOfStockNow;
+    return isAr
+        ? (stock == 1 ? 'آخر قطعة' : 'بقيت ${arPieces(stock)}')
+        : (stock == 1 ? 'Last one' : 'Only $stock left');
+  }
   String get inStock => isAr ? 'متوفر في المخزون' : 'In stock';
   String get selectShade => isAr ? 'اختاري التدرج' : 'Select shade';
   String get scrollAllShades => isAr ? 'مرّري لعرض كل التدرجات' : 'Swipe to see all shades';
@@ -294,14 +392,17 @@ class AppStrings {
   String get thanksForReview => isAr ? 'شكراً على تقييمك!' : 'Thanks for your review!';
   String get ratingsTitle => isAr ? 'التقييمات' : 'Ratings';
   String get addReview => isAr ? 'أضيفي تقييماً' : 'Add a review';
-  String fromReviews(int n) => isAr ? 'من $n تقييم' : 'from $n reviews';
+  String fromReviews(int n) => isAr
+      ? 'من ${arCount(n, one: 'تقييم واحد', two: 'تقييمين', few: 'تقييمات', many: 'تقييماً')}'
+      : 'from ${enCount(n, 'review', 'reviews')}';
   String get reviewHint => isAr ? 'اكتبي تجربتك مع المنتج...' : 'Share your experience...';
   String get submitReview => isAr ? 'إرسال التقييم' : 'Submit review';
   String get beFirstToReview => isAr ? 'كوني أول من يقيّم هذا المنتج' : 'Be the first to review';
   String get loginToReview => isAr ? 'سجّلي الدخول لإضافة تقييم' : 'Sign in to add a review';
   String get youMayAlsoLike => isAr ? 'قد يعجبكِ أيضاً' : 'You may also like';
   String get total => isAr ? 'الإجمالي' : 'Total';
-  String totalWithQty(int qty) => isAr ? 'الإجمالي ($qty قطع)' : 'Total ($qty items)';
+  String totalWithQty(int qty) =>
+      isAr ? 'الإجمالي (${arPieces(qty)})' : 'Total (${enCount(qty, 'item', 'items')})';
   String get addToCartBtn => isAr ? 'إضافة إلى السلة' : 'Add to Cart';
   String get soldOut => isAr ? 'نفد' : 'Sold out';
 
@@ -343,7 +444,7 @@ class AppStrings {
   String get noSearchResults => isAr ? 'لا توجد منتجات مطابقة' : 'No matching products';
   String get searchProductsSection => isAr ? 'المنتجات' : 'Products';
   String searchProductsFound(int count) =>
-      isAr ? '$count ${count == 1 ? 'منتج' : 'منتجات'}' : '$count ${count == 1 ? 'product' : 'products'}';
+      isAr ? arProducts(count) : enCount(count, 'product', 'products');
   String get searchBrowseAlso => isAr ? 'تصفّحي أيضاً' : 'Browse also';
   String get searchInStore => isAr ? 'ابحثي في ديما الحياة' : 'Search Deema Alhayat';
   String get searchInStoreHint => isAr
@@ -380,7 +481,7 @@ class AppStrings {
   String get applyCode => isAr ? 'تطبيق الكود' : 'Apply code';
   String get orderSummary => isAr ? 'ملخص الطلب' : 'Order summary';
   String subtotalItems(int count) =>
-      isAr ? 'المجموع ($count منتج)' : 'Subtotal ($count items)';
+      isAr ? 'المجموع (${arProducts(count)})' : 'Subtotal (${enCount(count, 'item', 'items')})';
   String get couponDiscount => isAr ? 'خصم الكوبون' : 'Coupon discount';
   String get shippingAtCheckout => isAr ? 'يُحسب عند الدفع' : 'Calculated at checkout';
   String get shippingByDeliveryArea =>
@@ -419,7 +520,7 @@ class AppStrings {
   // ─── Checkout ─────────────────────────────────────────────────────────────
   String get checkout => isAr ? 'إتمام الطلب' : 'Checkout';
   String usePoints(int points) =>
-      isAr ? 'استخدمي ${arPoints(points)}' : 'Use $points points';
+      isAr ? 'استخدمي ${arPoints(points)}' : 'Use ${enCount(points, 'point', 'points')}';
 
   // ─── Package ──────────────────────────────────────────────────────────────
   String get packageTitle => isAr ? 'الباقة' : 'Package';
@@ -439,7 +540,7 @@ class AppStrings {
   /// «اكسبي 10 نقاط عن كل 1,000 د.ع من طلبكِ».
   String loyaltyEarnOnOrder(int perThousand) => isAr
       ? 'اكسبي ${arPoints(perThousand)} عن كل 1,000 د.ع من طلبكِ'
-      : 'Earn $perThousand points for every 1,000 IQD you spend';
+      : 'Earn ${enCount(perThousand, 'point', 'points')} for every 1,000 IQD you spend';
   String get noHistoryYet => isAr ? 'لا يوجد سجل بعد' : 'No history yet';
   String get pointsWillAppearHere =>
       isAr ? 'ستظهر معاملات النقاط هنا' : 'Point transactions will appear here';
@@ -467,8 +568,7 @@ class AppStrings {
   String get emptyCartSubtitle =>
       isAr ? 'أضيفي منتجات قبل إتمام الطلب' : 'Add products before checkout';
   String get goToCart => isAr ? 'الذهاب للسلة' : 'Go to Cart';
-  String itemCountLabel(int count) =>
-      isAr ? (count == 1 ? '$count منتج' : '$count منتجات') : (count == 1 ? '$count item' : '$count items');
+  String itemCountLabel(int count) => itemsCount(count);
   String get confirmOrder => isAr ? 'تأكيد الطلب' : 'Place Order';
   String get delete => isAr ? 'حذف' : 'Delete';
   String get deleteAddressConfirm =>
@@ -571,7 +671,7 @@ class AppStrings {
   String get confirmStep => isAr ? 'تأكيد' : 'Confirm';
   String get useLoyaltyPoints => isAr ? 'نقاط الولاء' : 'Loyalty points';
   String loyaltyUseTitle(int points) =>
-      isAr ? 'استخدمي ${arPoints(points)} ولاء' : 'Use $points loyalty points';
+      isAr ? 'استخدمي ${arPoints(points)} ولاء' : 'Use ${enCount(points, 'loyalty point', 'loyalty points')}';
   String loyaltyDiscountHint(String discount) => isAr
       ? 'خصم $discount من فاتورتكِ'
       : '$discount off your order';
@@ -580,7 +680,7 @@ class AppStrings {
       : 'Each point = $perPoint off your order';
   String loyaltyPointsNeedMore(int step) => isAr
       ? 'تحتاجين ${arPoints(step)} على الأقل للاستخدام'
-      : 'You need at least $step points to redeem';
+      : 'You need at least ${enCount(step, 'point', 'points')} to redeem';
   String loyaltyPointsUsed(int points) =>
       isAr ? 'نقاط مستخدمة ($points)' : 'Points used ($points)';
   String loyaltyPointsEarned(int points) =>
@@ -621,8 +721,9 @@ class AppStrings {
       isAr ? 'ستصلك الإشعارات هنا' : 'Notifications will appear here';
   String get markAllRead => isAr ? 'تعليم الكل كمقروء' : 'Mark all as read';
   String get errorOccurred => isAr ? 'حدث خطأ' : 'Something went wrong';
-  String get passwordChangedSuccess =>
-      isAr ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully';
+  String get passwordChangedSuccess => isAr
+      ? 'تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى'
+      : 'Password changed. Other devices were signed out.';
   String get changePasswordInstructions => isAr
       ? 'أدخلي كلمة المرور الحالية ثم اختاري كلمة مرور جديدة (6 أحرف على الأقل).'
       : 'Enter your current password, then choose a new one (at least 6 characters).';
@@ -644,4 +745,282 @@ class AppStrings {
   String get noAddressesSaved => isAr ? 'لا توجد عناوين محفوظة' : 'No saved addresses';
   String get setAsDefault => isAr ? 'تعيين كافتراضي' : 'Set as default';
   String get defaultAddress => isAr ? 'العنوان الافتراضي' : 'Default address';
+
+  // ─── Counts (تمييز العدد) ─────────────────────────────────────────────────
+  /// «3 منتجات» / «1 item».
+  String itemsCount(int n) => isAr ? arProducts(n) : enCount(n, 'item', 'items');
+  /// «قسمان» / «12 sections».
+  String sectionCount(int n) => isAr ? arSections(n) : enCount(n, 'section', 'sections');
+  /// «5 طلبات» / «1 order».
+  String ordersCount(int n) => isAr ? arOrders(n) : enCount(n, 'order', 'orders');
+  /// «خطوتان» / «3 steps».
+  String stepsCount(int n) => isAr ? arSteps(n) : enCount(n, 'step', 'steps');
+  /// «3 قطع» / «1 piece».
+  String piecesCount(int n) => isAr ? arPieces(n) : enCount(n, 'piece', 'pieces');
+  /// «12 برانداً» / «1 brand».
+  String brandsCount(int n) => isAr
+      ? arCount(n, one: 'براند واحد', two: 'براندان', few: 'براندات', many: 'برانداً')
+      : enCount(n, 'brand', 'brands');
+  /// «لديكِ إشعاران جديدان» / «You have 2 new notifications».
+  String newNotificationsCount(int n) {
+    if (n <= 0) return isAr ? 'لا إشعارات جديدة' : 'No new notifications';
+    return isAr
+        ? 'لديكِ ${arCount(n, one: 'إشعار جديد', two: 'إشعاران جديدان', few: 'إشعارات جديدة', many: 'إشعاراً جديداً')}'
+        : 'You have ${enCount(n, 'new notification', 'new notifications')}';
+  }
+  /// «باقي يومين» / «3 days left» — وصفر يعني اليوم الأخير.
+  String daysLeft(int n) {
+    if (n <= 0) return isAr ? 'آخر يوم' : 'Last day';
+    if (isAr) return n == 1 ? 'باقي يوم' : 'باقي ${arDays(n)}';
+    return '${enCount(n, 'day', 'days')} left';
+  }
+
+  /// سعر مختصر بالآلاف: «25 ألف د.ع» / «25K IQD».
+  String priceThousands(int k) => isAr ? '${arThousands(k)} ${AppConfig.currency}' : '${_grouped(k)}K IQD';
+  /// «في سلتكِ 3 منتجات» / «3 items in your bag».
+  String cartItemsCount(int n) {
+    if (n <= 0) return isAr ? 'سلتكِ فارغة' : 'Your bag is empty';
+    return isAr ? 'في سلتكِ ${arProducts(n)}' : '${enCount(n, 'item', 'items')} in your bag';
+  }
+
+  // ─── Order status ─────────────────────────────────────────────────────────
+  /// تسمية حالة الطلب — REFUNDED (من السيرفر) وRETURNED (قديم) كلاهما «مُسترجع».
+  String orderStatus(String status) => switch (status.toUpperCase()) {
+        'PENDING' => isAr ? 'قيد المراجعة' : 'Under review',
+        'CONFIRMED' => isAr ? 'مؤكد' : 'Confirmed',
+        'PROCESSING' => isAr ? 'قيد التجهيز' : 'Preparing',
+        'SHIPPED' => isAr ? 'تم الشحن' : 'Shipped',
+        'DELIVERED' => isAr ? 'تم التسليم' : 'Delivered',
+        'CANCELLED' => isAr ? 'ملغي' : 'Cancelled',
+        'REFUNDED' || 'RETURNED' => isAr ? 'مُسترجع' : 'Refunded',
+        _ => status,
+      };
+
+  // ─── Model labels ─────────────────────────────────────────────────────────
+  /// فائدة الكوبون بلغة الواجهة: «خصم 20%» / «5,000 IQD off» / «Free delivery».
+  String couponBenefit(Coupon c) => switch (c.type) {
+        'PERCENT' || 'FIRST_ORDER' => couponOff(c.value),
+        'FIXED' || 'AMOUNT' => couponOffIqd(formatPrice(c.value, lang: lang)),
+        'FREE_SHIPPING' => freeDelivery,
+        _ => c.description.isNotEmpty && (isAr || !_arabicLetters.hasMatch(c.description)) ? c.description : c.code,
+      };
+
+  /// شارة رابط الإشعار: تسمية لوحة التحكم إن وُجدت (وبالإنجليزي فقط إن لم تكن عربية)، وإلا نوع الرابط.
+  String? notificationLinkHint(AppNotification n) {
+    final type = (n.linkType ?? '').toUpperCase();
+    if (type.isEmpty || type == 'NONE') return null;
+    final generic = switch (type) {
+      'OFFERS' => isAr ? 'العروض' : 'Offers',
+      'PRODUCT' => isAr ? 'منتج' : 'Product',
+      'CATEGORY' => isAr ? 'فئة' : 'Category',
+      'BRAND' => isAr ? 'براند' : 'Brand',
+      'PACKAGE' => isAr ? 'باقة' : 'Bundle',
+      'ORDER' => isAr ? 'طلب' : 'Order',
+      'EXTERNAL_URL' => isAr ? 'رابط خارجي' : 'External link',
+      _ => null,
+    };
+    final label = n.linkLabel?.trim() ?? '';
+    if (label.isNotEmpty && (isAr || generic == null || !_arabicLetters.hasMatch(label))) return label;
+    return generic;
+  }
+
+  // ─── Delivery ETA ─────────────────────────────────────────────────────────
+  String get today => isAr ? 'اليوم' : 'Today';
+  String get tomorrow => isAr ? 'غداً' : 'Tomorrow';
+  String get yesterday => isAr ? 'أمس' : 'Yesterday';
+
+  /// اسم المحافظة بلغة الواجهة — يبقى كما أُدخل إن لم يُعرف.
+  String governorateName(String name) {
+    if (isAr) return name;
+    final norm = _normGov(name);
+    for (final (ar, en) in _governoratesEn) {
+      if (norm.contains(ar)) return en;
+    }
+    return name;
+  }
+
+  /// «يوم واحد» / «يومين» / «يوم إلى يومين» / «2–4 أيام» / «1–3 days».
+  String _dayRange(int min, int max) {
+    final lo = min < 1 ? 1 : min;
+    final hi = max < lo ? lo : max;
+    if (!isAr) return lo == hi ? enCount(lo, 'day', 'days') : '$lo–$hi days';
+    if (lo == hi) return arDays(lo);
+    if (lo == 1 && hi == 2) return 'يوم إلى يومين';
+    final m = hi % 100;
+    return '$lo–$hi ${m >= 3 && m <= 10 ? 'أيام' : 'يوماً'}';
+  }
+
+  /// «التوصيل خلال يومين» / «Delivery in 2 days».
+  String deliveryWithinDays(int n) => isAr ? 'التوصيل خلال ${_dayRange(n, n)}' : 'Delivery in ${_dayRange(n, n)}';
+  /// «التوصيل لكل المحافظات خلال 1–3 أيام» / «Delivery to all governorates in 1–3 days».
+  String deliveryAllIn(int min, int max) => isAr
+      ? 'التوصيل لكل المحافظات خلال ${_dayRange(min, max)}'
+      : 'Delivery to all governorates in ${_dayRange(min, max)}';
+  /// «يصلكِ إلى البصرة غداً» / «يصلكِ بين السبت والاثنين» / «Arrives in Basra on Saturday».
+  /// [from] و[to] أسماء أيام جاهزة ([today] و[tomorrow] أو أسماء الأسبوع)، و[to] = null ليوم واحد.
+  String deliveryArrives(String? place, String from, String? to) {
+    final hasPlace = place != null && place.trim().isNotEmpty;
+    if (isAr) {
+      final where = hasPlace ? ' إلى ${place.trim()}' : '';
+      return to == null ? 'يصلكِ$where $from' : 'يصلكِ$where بين $from و$to';
+    }
+    final where = hasPlace ? ' in ${governorateName(place.trim())}' : '';
+    if (to != null) return 'Arrives$where between $from and $to';
+    final relative = from == today || from == tomorrow;
+    return 'Arrives$where ${relative ? from.toLowerCase() : 'on $from'}';
+  }
+
+  // ─── Coupons ──────────────────────────────────────────────────────────────
+  /// «خصم 20%» / «20% off» — النسبة معزولة LTR حتى لا تنقلب داخل النص العربي.
+  String couponOff(int pct) => isAr ? 'خصم \u2066$pct%\u2069' : '$pct% off';
+  /// «خصم 5,000 د.ع» / «5,000 IQD off».
+  String couponOffIqd(String price) => isAr ? 'خصم $price' : '$price off';
+  /// تحت القيمة الكبيرة في كعب التذكرة: «20%» ثم «خصم».
+  String get couponOffCaption => isAr ? 'خصم' : 'OFF';
+  /// «5K» ثم «د.ع خصم».
+  String get couponIqdOffCaption => isAr ? 'د.ع خصم' : 'IQD OFF';
+  String get couponFree => isAr ? 'مجاني' : 'Free';
+  String get couponDelivery => isAr ? 'التوصيل' : 'Delivery';
+  String get couponFreeDelivery => isAr ? 'توصيل مجاني لطلبكِ' : 'Free delivery on your order';
+  String couponFirstOrder(int pct) => isAr ? 'خصم \u2066$pct%\u2069 لأول طلب' : '$pct% off your first order';
+  /// شرط الحد الأدنى: «فوق 25,000 د.ع».
+  String couponMinOrder(String price) => isAr ? 'فوق $price' : 'Over $price';
+  String get couponEndsWithinHour => isAr ? 'ينتهي خلال ساعة' : 'Ends within an hour';
+  String couponEndsInHours(int n) =>
+      n <= 1 ? couponEndsWithinHour : (isAr ? 'ينتهي بعد ${arHours(n)}' : 'Ends in $n hours');
+  String get couponEndsTomorrow => isAr ? 'ينتهي غداً' : 'Ends tomorrow';
+  String couponEndsInDays(int n) =>
+      n <= 1 ? couponEndsTomorrow : (isAr ? 'ينتهي بعد ${arDays(n)}' : 'Ends in $n days');
+  String couponUntil(String date) => isAr ? 'حتى $date' : 'Until $date';
+  String couponRemaining(int n) => isAr ? 'باقي $n فقط' : 'Only $n left';
+  /// سقف خصم النسبة: «خصم حتى 10,000 د.ع».
+  String couponUpTo(String price) => isAr ? 'خصم حتى $price' : 'Up to $price off';
+  String get couponUse => isAr ? 'استخدمي الكود' : 'Use code';
+  String get couponUseShort => isAr ? 'استخدمي' : 'Use';
+  /// شارة الكوبون المفعّل على التذكرة (`couponApplied(code)` لرسالة التطبيق).
+  String get couponActive => isAr ? 'مُفعّل' : 'Applied';
+  String couponCopied(String code) => isAr ? 'نُسخ الكود $code' : 'Code $code copied';
+  /// أُزيل الكوبون تلقائياً — مع السبب من السيرفر.
+  String couponRemoved(String reason) => isAr ? 'أزلنا الكوبون — $reason' : 'Coupon removed — $reason';
+
+  // ─── Session & connectivity ───────────────────────────────────────────────
+  String get sessionExpired => isAr ? 'انتهت الجلسة — سجّلي الدخول مجدداً' : 'Session expired — please sign in';
+  String get signInAgain => isAr ? 'سجّلي الدخول مجدداً' : 'Sign in again';
+  String get loggedOut => isAr ? 'تم تسجيل الخروج' : "You've been signed out";
+  String get noConnection => isAr ? 'لا يوجد اتصال بالإنترنت' : 'No internet connection';
+  String get offlineShowingSaved => isAr
+      ? 'أنتِ غير متصلة — نعرض آخر ما حُفظ على جهازكِ'
+      : "You're offline — showing what's saved on your device";
+  String get loadMoreFailed => isAr ? 'تعذّر تحميل المزيد' : "Couldn't load more";
+  String get checkingYourOrder => isAr ? 'نتحقق من طلبكِ…' : 'Checking your order…';
+
+  // ─── Common actions ───────────────────────────────────────────────────────
+  String get undo => isAr ? 'تراجع' : 'Undo';
+  String get copied => isAr ? 'تم النسخ' : 'Copied';
+  String get share => isAr ? 'مشاركة' : 'Share';
+  String get openSettings => isAr ? 'فتح الإعدادات' : 'Open settings';
+  String get pressBackAgainToExit => isAr ? 'اضغطي رجوع مرة أخرى للخروج' : 'Press back again to exit';
+  String get forgotPassword => isAr ? 'نسيتِ كلمة المرور؟' : 'Forgot password?';
+  /// رسالة واتساب جاهزة لاسترجاع الحساب.
+  String forgotPasswordMessage(String phone) => isAr
+      ? 'مرحباً، نسيت كلمة المرور لحسابي${phone.isEmpty ? '' : ' برقم $phone'}'
+      : 'Hello, I forgot the password for my account${phone.isEmpty ? '' : ' ($phone)'}';
+  String get contactSupportWhatsApp => isAr ? 'تواصلي مع الدعم عبر واتساب' : 'Contact support on WhatsApp';
+  String get tryRemovingFilters => isAr ? 'جرّبي إزالة بعض الفلاتر' : 'Try removing some filters';
+  String get browseCategories => isAr ? 'تصفّحي الأقسام' : 'Browse categories';
+  /// وصف صورة المعرض لقارئ الشاشة: «الصورة 2 من 5».
+  String imageOf(int i, int n) => isAr ? 'الصورة $i من $n' : 'Image $i of $n';
+
+  // ─── Product & bag ────────────────────────────────────────────────────────
+  String shadeSoldOut(String name) => isAr ? 'لون «$name» نفد حالياً' : 'The shade “$name” is sold out';
+  String get soldOutShort => isAr ? 'نفد' : 'Sold out';
+  /// أُضيف أقل من المطلوب لأن المخزون لا يكفي.
+  String addedOnly(int n) => isAr ? 'أضفنا $n فقط — هذا المتوفر' : 'Added only $n — that’s all we have';
+  String get fillTheGap => isAr ? 'أكملي الفرق' : 'Close the gap';
+  String get freeShippingFillers =>
+      isAr ? 'إضافات صغيرة توصلكِ للتوصيل المجاني' : 'Little extras to unlock free delivery';
+  String get productNoLongerAvailable => isAr ? 'هذا المنتج لم يعد متوفراً' : 'This product is no longer available';
+  String get savedToWishlist => isAr ? 'حُفظ في المفضلة' : 'Saved to wishlist';
+  String get viewWishlist => isAr ? 'عرض المفضلة' : 'View wishlist';
+  String get addToWishlist => isAr ? 'أضيفي للمفضلة' : 'Add to wishlist';
+  String get removeFromWishlist => isAr ? 'إزالة من المفضلة' : 'Remove from wishlist';
+
+  // ─── Barcode scanner ──────────────────────────────────────────────────────
+  String get cameraPermissionDenied => isAr ? 'الكاميرا غير مسموحة' : 'Camera access is off';
+  String get cameraPermissionBody => isAr
+      ? 'اسمحي للتطبيق باستخدام الكاميرا من الإعدادات لمسح الباركود، أو اكتبي الرقم يدوياً.'
+      : 'Allow camera access in Settings to scan barcodes, or type the number instead.';
+  String get typeCodeManually => isAr ? 'إدخال الرقم يدوياً' : 'Type the code';
+  String get enterBarcodeHint => isAr ? 'الأرقام المكتوبة تحت الباركود' : 'Digits printed under the barcode';
+  String get lookingUpCode => isAr ? 'نبحث عن المنتج…' : 'Looking up the product…';
+  String get codeNotFound => isAr ? 'لم نجد منتجاً بهذا الرقم' : 'No product matches this code';
+
+  // ─── App update ───────────────────────────────────────────────────────────
+  String get updateAvailableTitle => isAr ? 'تحديث جديد متاح ✨' : 'A new update is available ✨';
+  String get updateAvailableBody =>
+      isAr ? 'حدّثي التطبيق للحصول على أحدث المزايا' : 'Update the app to get the latest features';
+  String get updateNow => isAr ? 'حدّثي' : 'Update';
+  String get later => isAr ? 'لاحقاً' : 'Later';
+  String get updateRequiredTitle => isAr ? 'التحديث مطلوب' : 'Update required';
+  String get updateRequiredBody => isAr
+      ? 'أصدرنا نسخة جديدة من التطبيق — حدّثيها لتكملي التسوق.'
+      : 'We released a new version of the app — update it to keep shopping.';
+  String updateFromStore(bool isIos) => isAr
+      ? (isIos ? 'التحديث من App Store' : 'التحديث من Google Play')
+      : (isIos ? 'Update from the App Store' : 'Update from Google Play');
+  String versionLabel(String v) => isAr ? 'الإصدار $v' : 'Version $v';
+  String get updateReassure => isAr
+      ? 'يستغرق دقيقة واحدة — سلتكِ ومفضلتكِ محفوظة 💜'
+      : 'It takes a minute — your bag and wishlist stay saved 💜';
+
+  // ─── Ask Deema (product page) ─────────────────────────────────────────────
+  String get askDeemaAbout => isAr ? 'اسألي ديما عن هذا المنتج' : 'Ask Deema about this product';
+  String get askDeemaFit => isAr ? 'هل يناسبني؟' : 'Does it suit me?';
+  String get askDeemaDupe => isAr ? 'بديل أرخص' : 'Cheaper dupe';
+  String get askDeemaComplement => isAr ? 'شنو يكمّله؟' : 'What pairs with it?';
+  String get askDeemaHowTo => isAr ? 'شلون أستخدمه؟' : 'How do I use it?';
+
+  // ─── Catalog & brands search ──────────────────────────────────────────────
+  /// «5 أقسام رئيسية • 48 قسماً فرعياً» / «5 categories • 48 subcategories».
+  String catCatalogStats(int roots, int subs) {
+    if (!isAr) return '${enCount(roots, 'category', 'categories')} • ${enCount(subs, 'subcategory', 'subcategories')}';
+    final main = arCount(roots, one: 'قسم رئيسي واحد', two: 'قسمان رئيسيان', few: 'أقسام رئيسية', many: 'قسماً رئيسياً');
+    return '$main • ${_arSubSections(subs)}';
+  }
+  /// حرف واحد لا يكفي للبحث — تلميح بدل «لا نتائج».
+  String get catTypeMore => isAr ? 'اكتبي حرفاً آخر…' : 'Keep typing…';
+  String get brandNoMatch => isAr ? 'لا يوجد براند بهذا الاسم' : 'No brand matches this name';
+  String get brandTryLatin =>
+      isAr ? 'جربي كتابته بالإنجليزي أو بجزء من الاسم' : 'Try the English spelling or part of the name';
+  String searchProductsFor(String q) => isAr ? 'ابحثي عن «$q» في المنتجات' : 'Search products for “$q”';
+  String get didYouMean => isAr ? 'هل تقصدين؟' : 'Did you mean?';
+  String get featuredBrands => isAr ? 'براندات مميزة' : 'Featured brands';
+  /// تلميح حقل البحث: «ابحثي بين 120 براند…».
+  String searchAmongBrands(int n) => isAr
+      ? 'ابحثي بين ${arCount(n, one: 'براند واحد', two: 'براندين', few: 'براندات', many: 'برانداً')}…'
+      : 'Search ${enCount(n, 'brand', 'brands')}…';
+  String get recentlyVisited => isAr ? 'زرتِها مؤخراً' : 'Recently visited';
+  String get clearAction => isAr ? 'مسح' : 'Clear';
+
+  // ─── Restock alerts ───────────────────────────────────────────────────────
+  String get restockAlerts => isAr ? 'تنبيهات التوفر' : 'Restock alerts';
+  String get waitingRestock => isAr ? 'بانتظار التوفر' : 'Waiting for restock';
+  String get backInStock => isAr ? 'عاد متوفراً' : 'Back in stock';
+  String get cancelAlert => isAr ? 'إلغاء التنبيه' : 'Cancel alert';
+  String get notifyMeWhenAvailable => isAr ? 'نبّهيني عند التوفر' : 'Notify me when available';
+  String get restockWillNotify => isAr ? 'سننبّهكِ فور توفره' : "We'll let you know as soon as it's back";
+  /// «أضيفي المتوفر للسلة (3)».
+  String addAvailableToBag(int n) => isAr ? 'أضيفي المتوفر للسلة ($n)' : 'Add available to bag ($n)';
+  /// «أُضيف 3 منتجات إلى السلة».
+  String addedToBagCount(int n) =>
+      isAr ? 'أُضيف ${arProducts(n)} إلى السلة' : 'Added ${enCount(n, 'item', 'items')} to your bag';
+
+  /// شارة التقييم: اشترت المنتج فعلاً.
+  String get verifiedBuyer => isAr ? 'مشترية موثّقة' : 'Verified buyer';
+
+  // ─── Account extras ───────────────────────────────────────────────────────
+  String get helpAndFaq => isAr ? 'المساعدة والأسئلة الشائعة' : 'Help & FAQ';
+  String get yourBirthday => isAr ? 'عيد ميلادكِ' : 'Your birthday';
+  String get branchPickup => isAr ? 'استلام من الفرع' : 'Branch pickup';
+  String get branchPickupFree => isAr ? 'استلام من الفرع — مجاناً' : 'Pick up at the branch — free';
 }

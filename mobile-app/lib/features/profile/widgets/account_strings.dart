@@ -33,8 +33,29 @@ extension AccountStringsX on AppStrings {
   String get acctSupportChatHint =>
       isAr ? 'تواصلي معنا مباشرة' : 'Chat with us';
 
-  String acctOrdersCount(int n) =>
-      isAr ? '$n طلب' : '$n ${n == 1 ? 'order' : 'orders'}';
+  String get acctNewPasswordSame => isAr
+      ? 'اختاري كلمة مرور مختلفة عن الحالية'
+      : 'Choose a password different from your current one';
+
+  // ── إذن الإشعارات ──
+  String get acctTurnOnNotifications => isAr ? 'تفعيل الإشعارات' : 'Turn on notifications';
+  String get acctTurnOnNotificationsHint => isAr
+      ? 'لتصلكِ تحديثات طلباتكِ والعروض فور حدوثها'
+      : 'Get order updates and offers the moment they happen';
+  String get acctNotificationsTurnedOn => isAr ? 'تم تفعيل الإشعارات' : 'Notifications are on';
+
+  // ── تنبيهات التوفّر ──
+  String get alertsEmptyTitle => isAr ? 'لا تنبيهات بعد' : 'No alerts yet';
+  String get alertsEmptySubtitle => isAr
+      ? 'حين ينفد منتج تحبينه اضغطي «نبّهيني عند التوفر» في صفحته'
+      : 'When a product you love sells out, tap “Notify me when available” on its page';
+  String get alertsHint => isAr
+      ? 'نرسل لكِ إشعاراً فور عودة أي منتج هنا للمخزون'
+      : "We'll send you a notification as soon as any of these is back";
+  String get loginToViewAlerts =>
+      isAr ? 'سجّلي الدخول لعرض تنبيهاتك' : 'Sign in to see your alerts';
+
+  String acctOrdersCount(int n) => ordersCount(n);
   String acctItemsCount(int n) =>
       isAr ? arProducts(n) : '$n ${n == 1 ? 'item' : 'items'}';
   String acctPointsCount(int n) => isAr ? arPoints(n) : '$n pts';
@@ -71,11 +92,7 @@ extension AccountStringsX on AppStrings {
       : 'Used automatically at checkout';
 
   // ── الإشعارات ──
-  String acctNewNotifications(int n) => isAr
-      ? (n == 1 ? 'لديكِ إشعار جديد' : 'لديكِ $n إشعارات جديدة')
-      : (n == 1
-            ? 'You have 1 new notification'
-            : 'You have $n new notifications');
+  String acctNewNotifications(int n) => newNotificationsCount(n);
   String get acctNotifOffer => isAr ? 'عرض' : 'Offer';
   String get acctNotifNew => isAr ? 'جديد' : 'New';
   String get acctNotifReminder => isAr ? 'تذكير' : 'Reminder';

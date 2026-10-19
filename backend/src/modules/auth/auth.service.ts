@@ -166,16 +166,30 @@ export class AuthService {
     };
   }
 
-  async changePassword(userId: string, dto: ChangePasswordDto) {
+  /**
+   * تغيير كلمة المرور يُنهي كل الجلسات، ثم يُصدر جلسة جديدة لهذا الجهاز كي
+   * لا تُطرد الزبونة بعد انتهاء توكن الوصول. `success` باقٍ للعملاء القدامى.
+   */
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+    meta?: { ip?: string; userAgent?: string },
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, passwordHash: true },
+      select: { id: true, passwordHash: true, role: true },
     });
     if (!user?.passwordHash) {
       throw new BadRequestException("لا يمكن تغيير كلمة المرور لهذا الحساب");
     }
     const ok = await bcrypt.compare(dto.currentPassword, user.passwordHash);
-    if (!ok) throw new UnauthorizedException("كلمة المرور الحالية غير صحيحة");
+    // 400 لا 401: الـ 401 يعني للتطبيقات «انتهت الجلسة» فتجدّد التوكن وتعيد الطلب في حلقة.
+    if (!ok) {
+      throw new BadRequestException({
+        code: "WRONG_CURRENT_PASSWORD",
+        message: "كلمة المرور الحالية غير صحيحة",
+      });
+    }
     if (dto.currentPassword === dto.newPassword) {
       throw new BadRequestException("اختر كلمة مرور جديدة مختلفة عن الحالية");
     }
@@ -187,7 +201,9 @@ export class AuthService {
         data: { revokedAt: new Date() },
       }),
     ]);
-    return { success: true };
+    // بعد إبطال كل الجلسات (والأجهزة الأخرى معها) نصدر جلسة جديدة لهذا الجهاز.
+    const tokens = await this.issueTokens(userId, user.role, meta);
+    return { success: true, ...tokens };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

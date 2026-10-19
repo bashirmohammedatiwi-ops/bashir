@@ -1,9 +1,10 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { DeliveryOption, DiscountType, OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client";
+import { DeliveryOption, DiscountType, OrderStatus, PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
@@ -18,6 +19,62 @@ import {
   QueryOrdersDto,
   UpdateOrderStatusDto,
 } from "./dto/order.dto";
+
+/** من يلغي الطلب: الزبونة (طلبها قبل بدء التجهيز فقط) أو الإدارة والنظام (أي طلب لم يُلغَ). */
+export interface CancelActor {
+  id?: string;
+  staff: boolean;
+}
+
+/** إلغاء من النظام نفسه (مثل انتهاء مهلة الدفع بالبطاقة) — بصلاحية الإدارة. */
+const SYSTEM_ACTOR: CancelActor = { staff: true };
+
+/** الحالات التي تلغي فيها الزبونة طلبها بنفسها — بعدها يكون الطلب قيد التجهيز أو الشحن. */
+const CUSTOMER_CANCELLABLE: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.CONFIRMED];
+
+type ShadeRow = {
+  id: string;
+  name: string;
+  barcode: string | null;
+  price: number | null;
+  stock: number;
+  isActive: boolean;
+};
+
+type ShipSnapshot = {
+  shipFullName?: string | null;
+  shipPhone?: string | null;
+  shipGovernorate?: string | null;
+  shipArea?: string | null;
+  shipStreet?: string | null;
+  shipHouse?: string | null;
+  shipNotes?: string | null;
+  address?: object | null;
+};
+
+/**
+ * عنوان الطلب كما كان وقت الطلب: لقطة الطلب تُعرض في كائن «address» نفسه (فلا يتغير شيء في التطبيقات)،
+ * فتعديل دفتر العناوين أو حذف العنوان لاحقاً لا يغيّر الطلبات السابقة.
+ * الطلبات الأقدم (بلا لقطة) والاستجابات التي لا تتضمن العنوان تبقى كما هي.
+ */
+export function withShipSnapshot<T extends ShipSnapshot>(order: T): T {
+  if (!("address" in order) || (order.shipFullName == null && order.shipPhone == null)) return order;
+  const current = (order.address ?? {}) as Record<string, unknown>;
+  return {
+    ...order,
+    address: {
+      ...current,
+      fullName: order.shipFullName ?? current.fullName ?? "",
+      phone: order.shipPhone ?? current.phone ?? "",
+      city: order.shipGovernorate ?? current.city ?? "",
+      governorate: order.shipGovernorate ?? null,
+      area: order.shipArea ?? null,
+      street: order.shipStreet ?? null,
+      house: order.shipHouse ?? null,
+      notes: order.shipNotes ?? null,
+    },
+  };
+}
 
 @Injectable()
 export class OrdersService {
@@ -42,6 +99,9 @@ export class OrdersService {
               { user: { name: { contains: search, mode: "insensitive" as const } } },
               { user: { email: { contains: search, mode: "insensitive" as const } } },
               { user: { phone: { contains: search } } },
+              // المستلمة كما في لقطة الطلب (هدية أو عنوان عُدّل لاحقاً).
+              { shipFullName: { contains: search, mode: "insensitive" as const } },
+              { shipPhone: { contains: search } },
             ],
           }
         : {}),
@@ -96,7 +156,7 @@ export class OrdersService {
               },
       }),
     ]);
-    return paginate(items, total, q.page, q.limit);
+    return paginate(items.map(withShipSnapshot), total, q.page, q.limit);
   }
 
   async findOne(id: string) {
@@ -121,12 +181,38 @@ export class OrdersService {
       },
     });
     if (!order) throw new NotFoundException("Order not found");
-    return order;
+    return withShipSnapshot(order);
+  }
+
+  /** طلب أنشأته المحاولة نفسها من قبل — بنفس شكل استجابة الإنشاء. */
+  private findByClientRef(userId: string, clientRef: string) {
+    return this.prisma.order.findFirst({
+      where: { userId, clientRef },
+      include: { items: true },
+    });
   }
 
   /**
-   * توفير الباقات: لكل باقة صالحة في الطلب، عدد النسخ المكتملة = أقل (كمية المنتج ÷ كميته في الباقة)،
-   * والتوفير = (مجموع أسعار منتجاتها الحالية − سعر الباقة) × النسخ المكتملة. باقة ناقصة = بلا توفير.
+   * تدرج السطر: المختار إن أُرسل (يتبع المنتج نفسه وشغال)، وإلا التدرج المعروض الوحيد للمنتج.
+   * منتج بأكثر من تدرج معروض (شغال وله باركود) بلا اختيار = سطر لا يمكن تجهيزه، فيُرفض.
+   */
+  private lineShade(p: { name: string; shades: ShadeRow[] }, shadeId?: string): ShadeRow | undefined {
+    if (!shadeId) {
+      const listed = p.shades.filter((s) => s.isActive && !!s.barcode?.trim());
+      if (listed.length > 1) throw new BadRequestException(`Shade required: ${p.name}`);
+      return listed[0];
+    }
+    const shade = p.shades.find((s) => s.id === shadeId);
+    if (!shade) throw new BadRequestException(`اللون المختار لـ«${p.name}» لم يعد متوفراً — احذفيه من السلة`);
+    // تدرج أوقفه المدير بعد أن أضافته الزبونة للسلة — لا يُطلب.
+    if (!shade.isActive) throw new BadRequestException(`اللون «${shade.name}» غير متوفر حالياً — احذفيه من السلة`);
+    return shade;
+  }
+
+  /**
+   * توفير الباقات: لكل نسخة مكتملة من باقة صالحة في الطلب، التوفير = (سعر قطعها في الطلب − سعر الباقة).
+   * القطع تُؤخذ سطراً سطراً بسعر سطرها (تدرجان بسعرين للمنتج نفسه لا يختلطان)، من آخر سطر أولاً —
+   * فتطابق حساب التطبيق (سعر آخر سطر للمنتج) في الحالة المعتادة. القطعة لا تُحسب لباقتين، والباقة الناقصة بلا توفير.
    */
   private async packageSavings(
     dto: CreateOrderDto,
@@ -139,64 +225,83 @@ export class OrdersService {
       include: { items: true },
     });
     const now = new Date();
-    // كمية كل منتج متاحة للباقات (لا تُحسب القطعة لباقتين).
-    const left = new Map<string, number>();
-    const price = new Map<string, number>();
+    // ما بقي متاحاً للباقات من كل سطر.
+    const lines = new Map<string, { unitPrice: number; left: number }[]>();
     for (const it of itemsData) {
-      left.set(it.productId, (left.get(it.productId) ?? 0) + it.quantity);
-      price.set(it.productId, it.unitPrice);
+      const list = lines.get(it.productId) ?? [];
+      list.push({ unitPrice: it.unitPrice, left: it.quantity });
+      lines.set(it.productId, list);
     }
+    const available = (productId: string) => (lines.get(productId) ?? []).reduce((s, l) => s + l.left, 0);
+    // سعر need قطعة من آخر الأسطر؛ take يحجزها للباقة.
+    const pick = (productId: string, need: number, take: boolean) => {
+      const list = lines.get(productId) ?? [];
+      let cost = 0;
+      for (let i = list.length - 1; i >= 0 && need > 0; i--) {
+        const n = Math.min(list[i].left, need);
+        cost += n * list[i].unitPrice;
+        need -= n;
+        if (take) list[i].left -= n;
+      }
+      return cost;
+    };
     let saving = 0;
     for (const w of wanted) {
       const pack = packs.find((p) => p.id === w.packageId);
       if (!pack || !pack.items.length || (pack.endsAt && pack.endsAt <= now)) continue;
-      let sets = w.quantity;
-      for (const pi of pack.items) {
-        const need = Math.max(1, pi.quantity);
-        sets = Math.min(sets, Math.floor((left.get(pi.productId) ?? 0) / need));
+      for (let set = 0; set < w.quantity; set++) {
+        if (pack.items.some((pi) => available(pi.productId) < Math.max(1, pi.quantity))) break;
+        const itemsTotal = pack.items.reduce((s, pi) => s + pick(pi.productId, Math.max(1, pi.quantity), false), 0);
+        const perSet = itemsTotal - pack.price;
+        if (perSet <= 0) break;
+        for (const pi of pack.items) pick(pi.productId, Math.max(1, pi.quantity), true);
+        saving += perSet;
       }
-      if (sets <= 0) continue;
-      const itemsTotal = pack.items.reduce((s, pi) => s + (price.get(pi.productId) ?? 0) * Math.max(1, pi.quantity), 0);
-      const perSet = itemsTotal - pack.price;
-      if (perSet <= 0) continue;
-      for (const pi of pack.items) left.set(pi.productId, (left.get(pi.productId) ?? 0) - sets * Math.max(1, pi.quantity));
-      saving += perSet * sets;
     }
     return saving;
   }
 
   async create(userId: string, dto: CreateOrderDto) {
     if (!dto.items.length) throw new BadRequestException("Empty order");
-    await this.assertPaymentMethodAvailable(userId, dto.paymentMethod ?? PaymentMethod.COD);
-
-    const productIds = dto.items.map((i) => i.productId);
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
-    });
-    // تدرج أوقفه المدير بعد أن أضافته الزبونة للسلة — لا يُطلب.
-    const shadeIds = dto.items.map((i) => i.shadeId).filter((id): id is string => !!id);
-    if (shadeIds.length) {
-      const off = await this.prisma.productShade.findFirst({
-        where: { id: { in: shadeIds }, isActive: false },
-        select: { name: true },
-      });
-      if (off) throw new BadRequestException(`اللون «${off.name}» غير متوفر حالياً — احذفيه من السلة`);
+    // المحاولة نفسها أُعيد إرسالها (انقطع الاتصال قبل وصول الرد): نعيد الطلب الذي أُنشئ بدل طلب ثانٍ.
+    // قبل أي تحقق — فالطلب الأول قد يكون استهلك المخزون أو الكوبون أو النقاط.
+    const clientRef = dto.clientRef?.trim() || undefined;
+    if (clientRef) {
+      const existing = await this.findByClientRef(userId, clientRef);
+      if (existing) return existing;
     }
 
+    const productIds = [...new Set(dto.items.map((i) => i.productId))];
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      include: {
+        shades: { select: { id: true, name: true, barcode: true, price: true, stock: true, isActive: true } },
+      },
+    });
+
+    // السعر والمخزون من التدرج المختار فعلاً (سعر المنتج سعر تدرجه الأبرز، ومخزونه مجموع تدرجاته) —
+    // نفس ما عرضه التطبيق في السلة والدفع، وعليه تُبنى الباقات والكوبون والنقاط وحد الشحن المجاني.
     let subtotal = 0;
+    // «المنتج — التدرج» لرسالة نفاد المخزون.
+    const shadeLabels = new Map<string, string>();
     const itemsData = dto.items.map((it) => {
       const p = products.find((x) => x.id === it.productId);
       if (!p) throw new BadRequestException(`Product ${it.productId} not found`);
       // منتج أوقفه المدير بعد إضافته للسلة — لا يُطلب.
       if (!p.isActive) throw new BadRequestException(`«${p.name}» غير متوفر حالياً — احذفيه من السلة`);
-      if (p.stock < it.quantity) throw new BadRequestException(`Out of stock: ${p.name}`);
-      const unit = p.price;
+      const shade = this.lineShade(p, it.shadeId);
+      const label = shade ? `${p.name} — ${shade.name}` : p.name;
+      if (shade) shadeLabels.set(shade.id, label);
+      if (p.stock < it.quantity || (shade && shade.stock < it.quantity)) {
+        throw new BadRequestException(`Out of stock: ${label}`);
+      }
+      const unit = shade?.price ?? p.price;
       const total = unit * it.quantity;
       subtotal += total;
       return {
         productId: p.id,
         variantId: it.variantId,
-        shadeId: it.shadeId,
+        shadeId: shade?.id,
         quantity: it.quantity,
         unitPrice: unit,
         totalPrice: total,
@@ -255,6 +360,14 @@ export class OrdersService {
     }
     discountTotal += packageDiscount;
 
+    // عنوان الزبونة نفسها فقط — لا يُربط الطلب (ولا تُكشف بياناته في تفاصيله) بعنوان حساب آخر.
+    const address = dto.addressId
+      ? await this.prisma.address.findFirst({ where: { id: dto.addressId, userId } })
+      : null;
+    if (dto.addressId && !address) {
+      throw new BadRequestException("عنوان التوصيل غير موجود — اختاري عنواناً آخر");
+    }
+
     const delivery = dto.deliveryOption ?? DeliveryOption.STANDARD;
     let shippingTotal = 0;
 
@@ -265,9 +378,6 @@ export class OrdersService {
       }
       shippingTotal = 0;
     } else {
-      const address = dto.addressId
-        ? await this.prisma.address.findUnique({ where: { id: dto.addressId } })
-        : null;
       shippingTotal = await this.shipping.calculateOrderShipping({
         governorate: address?.governorate,
         area: address?.area,
@@ -291,60 +401,94 @@ export class OrdersService {
     const total = Math.max(0, subtotal - discountTotal + shippingTotal - loyaltyDiscount);
     const loyaltyEarned = pointsForAmount(total, rules);
 
+    // طلب مغطّى بالكامل (نقاط أو كوبون): لا مبلغ يُدفع — لا جلسة بطاقة، ولا يلغيه انتهاء مهلة الدفع.
+    const covered = total === 0;
+    const paymentMethod = covered ? PaymentMethod.COD : (dto.paymentMethod ?? PaymentMethod.COD);
+    if (!covered) await this.assertPaymentMethodAvailable(userId, paymentMethod);
+
     const orderNumber = "ORD-" + Date.now().toString(36).toUpperCase() +
       randomBytes(2).toString("hex").toUpperCase();
 
-    const order = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.order.create({
-        data: {
-          orderNumber,
-          userId,
-          addressId: dto.addressId,
-          paymentMethod: dto.paymentMethod ?? PaymentMethod.COD,
-          status: OrderStatus.PENDING,
-          paymentStatus: PaymentStatus.PENDING,
-          subtotal,
-          discountTotal,
-          packageDiscount,
-          shippingTotal,
-          total,
-          loyaltyEarned,
-          loyaltySpent: loyaltyPointsUsed,
-          loyaltyDiscount,
-          deliveryOption: delivery,
-          notes: dto.notes,
-          // هدية: الرسالة تُطبع على البطاقة (300 حرف كحد أقصى).
-          isGift: dto.isGift === true,
-          giftMessage: dto.isGift ? dto.giftMessage?.trim().slice(0, 300) || null : null,
-          giftHidePrices: dto.isGift === true && dto.giftHidePrices === true,
-          couponId,
-          items: { create: itemsData },
-        },
-        include: { items: true },
-      });
-
-      // The stock check above runs before the transaction, so concurrent orders can all pass it.
-      // Only a conditional decrement is safe against overselling.
-      for (const it of itemsData) {
-        const { count } = await tx.product.updateMany({
-          where: { id: it.productId, stock: { gte: it.quantity } },
+    let order: Prisma.OrderGetPayload<{ include: { items: true } }>;
+    try {
+      order = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.order.create({
           data: {
-            stock: { decrement: it.quantity },
-            soldCount: { increment: it.quantity },
+            orderNumber,
+            userId,
+            addressId: address?.id ?? null,
+            paymentMethod,
+            status: OrderStatus.PENDING,
+            paymentStatus: covered ? PaymentStatus.PAID : PaymentStatus.PENDING,
+            subtotal,
+            discountTotal,
+            packageDiscount,
+            shippingTotal,
+            total,
+            loyaltyEarned,
+            loyaltySpent: loyaltyPointsUsed,
+            loyaltyDiscount,
+            deliveryOption: delivery,
+            notes: dto.notes,
+            // هدية: الرسالة تُطبع على البطاقة (300 حرف كحد أقصى).
+            isGift: dto.isGift === true,
+            giftMessage: dto.isGift ? dto.giftMessage?.trim().slice(0, 300) || null : null,
+            giftHidePrices: dto.isGift === true && dto.giftHidePrices === true,
+            couponId,
+            clientRef,
+            shipFullName: address?.fullName ?? null,
+            shipPhone: address?.phone ?? null,
+            shipGovernorate: address ? (address.governorate ?? address.city) : null,
+            shipArea: address?.area ?? null,
+            shipStreet: address?.street ?? null,
+            shipHouse: address?.house ?? null,
+            shipNotes: address?.notes ?? null,
+            shadeStockHeld: true,
+            items: { create: itemsData },
           },
+          include: { items: true },
         });
-        if (count === 0) throw new BadRequestException(`Out of stock: ${it.productName}`);
-      }
 
-      if (couponId) {
-        await tx.coupon.update({
-          where: { id: couponId },
-          data: { redeemedCount: { increment: 1 } },
-        });
-      }
+        // The stock check above runs before the transaction, so concurrent orders can all pass it.
+        // Only a conditional decrement is safe against overselling.
+        for (const it of itemsData) {
+          // مخزون التدرج المختار أولاً — مخزون المنتج مجموع كل تدرجاته فلا يكفي وحده.
+          if (it.shadeId) {
+            const { count } = await tx.productShade.updateMany({
+              where: { id: it.shadeId, isActive: true, stock: { gte: it.quantity } },
+              data: { stock: { decrement: it.quantity } },
+            });
+            if (count === 0) {
+              throw new BadRequestException(`Out of stock: ${shadeLabels.get(it.shadeId) ?? it.productName}`);
+            }
+          }
+          const { count } = await tx.product.updateMany({
+            where: { id: it.productId, stock: { gte: it.quantity } },
+            data: {
+              stock: { decrement: it.quantity },
+              soldCount: { increment: it.quantity },
+            },
+          });
+          if (count === 0) throw new BadRequestException(`Out of stock: ${it.productName}`);
+        }
 
-      return created;
-    });
+        if (couponId) {
+          await tx.coupon.update({
+            where: { id: couponId },
+            data: { redeemedCount: { increment: 1 } },
+          });
+        }
+
+        return created;
+      });
+    } catch (e) {
+      // طلبان بالمفتاح نفسه في اللحظة نفسها: الثاني ينتظر الأول ثم يصطدم بالقيد الفريد — يعيد الأول.
+      if (clientRef && e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        const existing = await this.findByClientRef(userId, clientRef);
+        if (existing) return existing;
+      }
+      throw e;
+    }
 
     if (loyaltyPointsUsed > 0) {
       await this.loyalty.redeemPoints(userId, loyaltyPointsUsed, "استخدام نقاط في الطلب", order.id);
@@ -368,7 +512,7 @@ export class OrdersService {
     // الإلغاء من لوحة التحكم يمر بنفس مسار الإلغاء: إعادة المخزون والنقاط والكوبون،
     // وعكس الدفعة الإلكترونية (عبر الحدث).
     if (dto.status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
-      await this.cancel(id, actorId);
+      await this.cancel(id, { id: actorId, staff: true });
     }
     const updated = await this.prisma.order.update({
       where: { id },
@@ -388,10 +532,23 @@ export class OrdersService {
     return updated;
   }
 
-  async cancel(id: string, actorId?: string) {
+  /**
+   * إلغاء ذرّي: الحالة تُشترط داخل التحديث نفسه، فلا يعيد إلغاءان متزامنان (نقرتان، التطبيق والموقع)
+   * المخزون والكوبون مرتين، ولا تلغي الزبونة من شاشة قديمة طلباً بدأ تجهيزه أو شُحن (فيُسترجع مبلغ البطاقة خطأً).
+   * الإدارة والنظام يلغيان أي طلب لم يُلغَ بعد.
+   */
+  async cancel(id: string, actor: CancelActor = SYSTEM_ACTOR) {
+    // شرط الملكية لا يسقط أبداً (userId فارغ في Prisma = بلا شرط).
+    if (!actor.staff && !actor.id) throw new ForbiddenException("Unauthenticated");
     const order = await this.findOne(id);
-    if (order.status === OrderStatus.CANCELLED) return order;
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: actor.staff
+          ? { id, status: { not: OrderStatus.CANCELLED } }
+          : { id, userId: actor.id, status: { in: CUSTOMER_CANCELLABLE } },
+        data: { status: OrderStatus.CANCELLED },
+      });
+      if (count === 0) return null;
       for (const it of order.items) {
         await tx.product.update({
           where: { id: it.productId },
@@ -400,6 +557,13 @@ export class OrdersService {
             soldCount: { decrement: it.quantity },
           },
         });
+        // التدرج يُعاد فقط إن خُصم عند الطلب (الطلبات الأقدم خصمت مخزون المنتج وحده).
+        if (it.shadeId && order.shadeStockHeld) {
+          await tx.productShade.updateMany({
+            where: { id: it.shadeId },
+            data: { stock: { increment: it.quantity } },
+          });
+        }
       }
       // الكوبون يعود متاحاً (لا يُحسب استخدام طلب أُلغي).
       if (order.couponId) {
@@ -408,20 +572,24 @@ export class OrdersService {
           data: { redeemedCount: { decrement: 1 } },
         });
       }
-      return tx.order.update({
-        where: { id },
-        data: { status: OrderStatus.CANCELLED },
-      });
-    }).then(async (updated) => {
-      await this.loyalty.reverseForCancelledOrder(
-        order.userId,
-        order.id,
-        order.loyaltySpent,
-        order.loyaltyEarned,
-      );
-      this.events.emitCancelled({ orderId: order.id, actorId });
-      return updated;
+      return tx.order.findUniqueOrThrow({ where: { id } });
     });
+
+    if (!updated) {
+      const fresh = await this.findOne(id);
+      // أُلغي من قبل (نقرة ثانية أو جهاز آخر)، أو طلب الإدارة على حاله: لا أثر جديد.
+      if (actor.staff || fresh.status === OrderStatus.CANCELLED) return fresh;
+      throw new BadRequestException("لا يمكن إلغاء الطلب بعد بدء تجهيزه — تواصلي معنا");
+    }
+
+    await this.loyalty.reverseForCancelledOrder(
+      order.userId,
+      order.id,
+      order.loyaltySpent,
+      order.loyaltyEarned,
+    );
+    this.events.emitCancelled({ orderId: order.id, actorId: actor.id });
+    return updated;
   }
 
   private async assertPaymentMethodAvailable(userId: string, method: PaymentMethod) {

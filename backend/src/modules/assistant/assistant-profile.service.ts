@@ -3,6 +3,39 @@ import { PrismaService } from "../../common/prisma.service";
 import { normalizeBrandKey } from "../catalog/brands.service";
 import { CustomerProfile, emptyProfile, HairType, mergeProfile, ProfileFacts, SkinType } from "./intelligence/profile";
 
+/** أنواع البشرة المعروفة (نفس مفاتيح التطبيق ولوحة التحكم). */
+export const SKIN_TYPES: readonly SkinType[] = ["oily", "dry", "sensitive", "combination", "normal"];
+
+/** شكل الملف المُرجَع للتطبيق. */
+export interface PublicProfile {
+  skinType: SkinType | null;
+  hairType: HairType | null;
+  sensitivities: string[];
+  likedBrands: string[];
+  avoidBrands: string[];
+}
+
+function toPublicProfile(p: CustomerProfile): PublicProfile {
+  return {
+    skinType: p.skinType ?? null,
+    hairType: p.hairType ?? null,
+    sensitivities: p.sensitivities,
+    likedBrands: p.likedBrands,
+    avoidBrands: p.avoidBrands,
+  };
+}
+
+/** حساسيات نظيفة: مقصوصة، بلا تكرار، حتى 8 (نفس حد mergeProfile). اللاتيني بأحرف صغيرة («fragrance»). */
+function cleanSensitivities(list: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of list) {
+    const v = String(raw ?? "").trim();
+    const key = /^[a-z\s_-]+$/i.test(v) ? v.toLowerCase() : v;
+    if (key && !out.includes(key)) out.push(key);
+  }
+  return out.slice(0, 8);
+}
+
 @Injectable()
 export class AssistantProfileService {
   private readonly logger = new Logger(AssistantProfileService.name);
@@ -56,6 +89,31 @@ export class AssistantProfileService {
       }
     }
     return { profile: next, liked, avoided, changed };
+  }
+
+  /** ملفها كما يراه التطبيق (GET /assistant/profile) — حقول غائبة = null. */
+  async publicProfile(userId: string): Promise<PublicProfile> {
+    return toPublicProfile(await this.get(userId));
+  }
+
+  /**
+   * تعديل صريح من التطبيق (نتيجة اختبار البشرة): يُحفظ على الحساب فيبقى بعد إعادة التثبيت
+   * وعلى أي جهاز. الحقل الغائب يبقى كما هو، و skinType = null يمسحه، والحساسيات تستبدل القائمة.
+   */
+  async update(userId: string, patch: { skinType?: SkinType | null; sensitivities?: string[] }): Promise<PublicProfile> {
+    const data: { skinType?: string | null; sensitivities?: string[] } = {};
+    if (patch.skinType !== undefined) data.skinType = patch.skinType;
+    if (patch.sensitivities !== undefined) data.sensitivities = cleanSensitivities(patch.sensitivities);
+    const row = await this.prisma.assistantProfile.upsert({ where: { userId }, create: { userId, ...data }, update: data });
+    const profile: CustomerProfile = {
+      skinType: (row.skinType as SkinType | null) ?? undefined,
+      hairType: (row.hairType as HairType | null) ?? undefined,
+      sensitivities: row.sensitivities,
+      likedBrands: row.likedBrands,
+      avoidBrands: row.avoidBrands,
+    };
+    this.cache.set(userId, { at: Date.now(), profile });
+    return toPublicProfile(profile);
   }
 
   async forget(userId: string) {

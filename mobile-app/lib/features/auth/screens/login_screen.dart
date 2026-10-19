@@ -44,7 +44,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .login(_phone.text.trim(), _password.text);
       if (mounted) {
         HapticFeedback.mediumImpact();
-        context.pop();
+        // فُتحت من رابط (/signin) بلا صفحة تحتها: للرئيسية بدل رجوع مستحيل.
+        context.canPop() ? context.pop() : context.go('/');
       }
     } catch (e) {
       if (mounted) {
@@ -65,7 +66,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       title: s.login,
       subtitle: s.loginPhoneSubtitle,
       eyebrow: s.welcomeBack,
-      onBack: () => context.pop(),
       footer: ProfileLinkRow(
         prefix: s.noAccountYet,
         action: s.signUp,
@@ -81,6 +81,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               field: TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
+                textDirection: TextDirection.ltr,
+                inputFormatters: phoneInputFormatters,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.telephoneNumber],
                 decoration: authFieldDecoration(
@@ -89,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   hint: '07701234567',
                   icon: Icons.phone_iphone_rounded,
                 ),
-                validator: (v) => validateIraqiPhone(v),
+                validator: (v) => validateIraqiPhone(v, lang: s.lang),
               ),
             ),
             const SizedBox(height: 16),

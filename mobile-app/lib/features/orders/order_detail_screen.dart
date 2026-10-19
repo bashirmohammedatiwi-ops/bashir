@@ -7,6 +7,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/utils/support_links.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/order_detail_skeleton.dart';
@@ -20,11 +21,13 @@ import '../cart/cart_provider.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../cart/widgets/pill_buttons.dart';
 import '../catalog/catalog_providers.dart';
+import '../checkout/checkout_strings.dart';
 import '../payments/pay_now_card.dart';
 import '../profile/profile_providers.dart';
 import '../shell/main_shell.dart';
 import '../shell/nav_tabs.dart';
 import '../worlds/world_theme.dart';
+import '../worlds/worlds_provider.dart';
 import 'order_strings.dart';
 import 'widgets/order_status.dart';
 
@@ -57,7 +60,7 @@ class OrderDetailScreen extends ConsumerWidget {
         error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(orderDetailProvider(orderId))),
         data: (order) => RefreshIndicator(
           color: t.accent,
-          onRefresh: () async => ref.invalidate(orderDetailProvider(orderId)),
+          onRefresh: () => ref.refresh(orderDetailProvider(orderId).future).then((_) {}, onError: (_) {}),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 8, CartTheme.hPad, 24),
@@ -105,7 +108,7 @@ class OrderDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       _InfoLine(icon: Icons.phone_outlined, text: order.address!.phone, ltr: true),
                       const SizedBox(height: 8),
-                      _InfoLine(icon: Icons.home_outlined, text: order.address!.summary),
+                      _InfoLine(icon: Icons.home_outlined, text: order.address!.summaryFor(s.isAr)),
                     ],
                   ),
                 ),
@@ -214,6 +217,21 @@ class OrderDetailScreen extends ConsumerWidget {
                   onTap: () => _cancel(context, ref),
                 ),
               ],
+              // سؤال عن هذا الطلب: واتساب المتجر برسالة فيها رقمه.
+              if ((ref.watch(storeSettingsProvider)?.whatsapp ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SecondaryPillButton(
+                  label: s.orderAskOnWhatsApp,
+                  icon: Icons.chat_outlined,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    openWhatsApp(
+                      ref.read(storeSettingsProvider)?.whatsapp,
+                      message: s.orderWhatsAppMessage(order.orderNumber),
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 6),
               Center(
                 child: TextButton(
@@ -302,7 +320,9 @@ class OrderDetailScreen extends ConsumerWidget {
       ref.read(authProvider.notifier).refreshUser();
       if (context.mounted) AppSnackbar.success(context, s.orderCancelledToast);
     } catch (e) {
-      if (context.mounted) AppSnackbar.error(context, friendlyError(e));
+      // ربما تغيّرت حالته (بدأ تجهيزه): نعرض الحالة الحالية مع السبب.
+      ref.invalidate(orderDetailProvider(orderId));
+      if (context.mounted) AppSnackbar.error(context, ref.friendly(e));
     }
   }
 }
@@ -377,12 +397,29 @@ class _OrderHero extends ConsumerWidget {
                   children: [
                     Text(s.orderNumberCaption, style: AppText.caption.copyWith(color: t.inkMuted)),
                     const SizedBox(height: 2),
-                    Text(
-                      '#${order.orderNumber}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textDirection: TextDirection.ltr,
-                      style: AppText.title1.copyWith(color: t.ink, letterSpacing: 0.4),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '#${order.orderNumber}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textDirection: TextDirection.ltr,
+                            style: AppText.title1.copyWith(color: t.ink, letterSpacing: 0.4),
+                          ),
+                        ),
+                        // نسخ الرقم للتواصل مع خدمة العملاء أو تتبّع الشحنة.
+                        IconButton(
+                          tooltip: s.copyOrderNumber,
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(Icons.copy_rounded, size: 18, color: t.inkMuted),
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: order.orderNumber));
+                            HapticFeedback.selectionClick();
+                            AppSnackbar.show(context, s.orderNumberCopied);
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

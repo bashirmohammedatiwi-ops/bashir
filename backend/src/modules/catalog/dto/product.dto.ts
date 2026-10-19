@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -150,8 +151,34 @@ export class QueryProductsDto extends PaginationDto {
   @IsOptional() @IsString() tag?: string;
   @IsOptional() @IsString() concernId?: string;
   @IsOptional() @IsString() concernSlug?: string;
+  /** نوع البشرة (dry | oily | combination | normal | sensitive، أو اسمه العربي «جافة»…) — منتجات وُسمت به. */
   @IsOptional() @IsString() skinType?: string;
   @IsOptional() @IsString() status?: string;
+
+  /** نطاق «عالم» بالـ slug: منتجات أقسامه المرتبطة فقط (كما تظهر في رئيسية العالم). */
+  @IsOptional() @IsString() @MaxLength(80) world?: string;
+  /** اسم بديل لـ `world`. */
+  @IsOptional() @IsString() @MaxLength(80) worldSlug?: string;
+
+  /**
+   * منتجات بعينها: معرّفات مفصولة بفواصل (يُؤخذ أول 50) — لرفوف «مختاراتنا» و«تابعي التسوق».
+   * المعرّفات تحدد المجموعة، فتُهمَل معها شارات التسويق (isBestSeller…) والعالم، وتبقى فلاتر التنقية
+   * (السعر، البراند، المتوفر…) وقواعد ظهور المتجر. الترتيب الافتراضي بترتيب المعرّفات نفسه.
+   */
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value.join(",") : value))
+  @IsString()
+  @MaxLength(4000)
+  ids?: string;
+
+  /** خصم لا يقل عن هذه النسبة (شرائح العروض: 10% / 30% / 50%…). 0 أو فارغ = شريحة «الكل» بلا تضييق. */
+  @IsOptional()
+  @Transform(({ value }) => (value === "" || value === "0" || value === 0 ? undefined : value))
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(90)
+  minDiscount?: number;
 
   @IsOptional()
   @Transform(({ value }) => value === "true" || value === true || value === "1")

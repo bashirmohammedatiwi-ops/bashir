@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/support_links.dart';
-import '../../catalog/catalog_providers.dart';
 import 'account_strings.dart';
 import 'profile_ui.dart';
 import '../../worlds/worlds_provider.dart';
@@ -17,9 +16,8 @@ class SupportContactSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref
-        .watch(activeHomeFeedProvider)
-        .maybeWhen(data: (d) => d.settings, orElse: () => null);
+    // آخر إعدادات معروفة (محفوظة) — أرقام التواصل تظهر حتى بلا شبكة.
+    final settings = ref.watch(storeSettingsProvider);
     final whatsapp = settings?.whatsapp;
     final phone = settings?.supportPhone;
     final email = AppConfig.supportEmail;

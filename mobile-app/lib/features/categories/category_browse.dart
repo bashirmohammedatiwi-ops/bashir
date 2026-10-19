@@ -9,6 +9,7 @@ import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../search/smart_query.dart';
 import 'recent_categories.dart';
+import '../catalog/catalog_providers.dart' show keepAliveFor;
 
 /// مستوى القسم في الشجرة (رئيسي › فرعي › ثانوي).
 enum CategoryLevel { root, sub, tertiary }
@@ -169,44 +170,44 @@ class CategoryIndex {
 
 /// الأكثر طلباً داخل قسم — معاينة سريعة في لوحة الأقسام.
 final categoryTopProductsProvider = FutureProvider.autoDispose
-    .family<List<Product>, CategoryTarget>((ref, target) async {
-      final link = ref.keepAlive();
-      // نُبقي النتيجة دقيقتين للتنقل السريع بين الأقسام بدون إعادة تحميل.
-      Future.delayed(const Duration(minutes: 2), link.close);
-      final Paginated<Product> page = await ref
-          .read(apiServiceProvider)
-          .getProducts(
-            limit: 10,
-            sort: 'popular',
-            categoryId:
-                target.tertiaryCategoryId == null &&
-                    target.subcategoryId == null
-                ? target.categoryId
-                : null,
-            subcategoryId: target.subcategoryId,
-            tertiaryCategoryId: target.tertiaryCategoryId,
-            inStock: true,
-          );
-      return page.items;
+    .family<List<Product>, CategoryTarget>((ref, target) {
+      // نُبقي النتيجة دقيقتين للتنقل السريع بين الأقسام بدون إعادة تحميل — والخطأ لا يُبقى.
+      return keepAliveFor(ref, const Duration(minutes: 2), () async {
+        final Paginated<Product> page = await ref
+            .read(apiServiceProvider)
+            .getProducts(
+              limit: 10,
+              sort: 'popular',
+              categoryId:
+                  target.tertiaryCategoryId == null &&
+                      target.subcategoryId == null
+                  ? target.categoryId
+                  : null,
+              subcategoryId: target.subcategoryId,
+              tertiaryCategoryId: target.tertiaryCategoryId,
+              inStock: true,
+            );
+        return page.items;
+      });
     });
 
 /// العدد الفعلي للمنتجات الظاهرة في المتجر داخل قسم — نفس رقم صفحة المنتجات.
 /// (أعداد شجرة الأقسام في الخادم تشمل المخفي ونافد المخزون فلا تُعرض.)
 final categoryVisibleCountProvider = FutureProvider.autoDispose
-    .family<int, CategoryTarget>((ref, target) async {
-      final link = ref.keepAlive();
-      Future.delayed(const Duration(minutes: 5), link.close);
-      final page = await ref
-          .read(apiServiceProvider)
-          .getProducts(
-            limit: 1,
-            categoryId:
-                target.tertiaryCategoryId == null &&
-                    target.subcategoryId == null
-                ? target.categoryId
-                : null,
-            subcategoryId: target.subcategoryId,
-            tertiaryCategoryId: target.tertiaryCategoryId,
-          );
-      return page.total;
+    .family<int, CategoryTarget>((ref, target) {
+      return keepAliveFor(ref, const Duration(minutes: 5), () async {
+        final page = await ref
+            .read(apiServiceProvider)
+            .getProducts(
+              limit: 1,
+              categoryId:
+                  target.tertiaryCategoryId == null &&
+                      target.subcategoryId == null
+                  ? target.categoryId
+                  : null,
+              subcategoryId: target.subcategoryId,
+              tertiaryCategoryId: target.tertiaryCategoryId,
+            );
+        return page.total;
+      });
     });

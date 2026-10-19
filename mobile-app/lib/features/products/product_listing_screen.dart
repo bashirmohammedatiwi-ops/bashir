@@ -8,7 +8,6 @@ import '../../core/l10n/locale_provider.dart';
 import '../../core/config/app_config.dart';
 import '../../core/utils/barcode_util.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
@@ -43,6 +42,18 @@ class ProductListingScreen extends ConsumerStatefulWidget {
   final int? initialMinPrice;
   final int? initialMaxPrice;
 
+  /// يحصر القائمة بأقسام عالم («عرض الكل» لرفوف العالم: ?world=slug).
+  final String? world;
+
+  /// مختارات بعينها بترتيبها (رف مختار يدوياً في الرئيسية: ?ids=a,b,c).
+  final List<String>? ids;
+
+  /// أقل نسبة خصم (1–90) — مستويات صفحة العروض.
+  final int? minDiscount;
+
+  /// نوع البشرة (oily/dry/…) — من دليل البشرة واختبارها.
+  final String? skinType;
+
   const ProductListingScreen({
     super.key,
     required this.title,
@@ -58,6 +69,10 @@ class ProductListingScreen extends ConsumerStatefulWidget {
     this.concernSlug,
     this.initialMinPrice,
     this.initialMaxPrice,
+    this.world,
+    this.ids,
+    this.minDiscount,
+    this.skinType,
   });
 
   @override
@@ -81,7 +96,8 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   _BrandListingPhase _brandPhase = _BrandListingPhase.inCategory;
   bool _firstLoad = true;
   bool _paginationQueued = false;
-  String? _error;
+  /// الخطأ الخام — يُصاغ بلغة الواجهة عند العرض.
+  Object? _error;
 
   String _sort = 'default';
   int? _minPrice;
@@ -199,7 +215,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         await _fetchStandardListing();
       }
     } catch (e) {
-      setState(() => _error = friendlyError(e));
+      if (mounted) setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -311,6 +327,10 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
           maxPrice: _maxPrice,
           inStock: _inStock ? true : null,
           minRating: _minRating,
+          world: widget.world,
+          ids: widget.ids,
+          minDiscount: widget.minDiscount,
+          skinType: widget.skinType,
           forceRefresh: page == 1,
         );
   }
@@ -436,9 +456,16 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   Widget _buildBody() {
     final s = ref.watch(stringsProvider);
     final lang = ref.watch(languageCodeProvider);
-    if (_firstLoad && _loading) return const ProductGridSkeleton(count: 8);
+    if (_firstLoad && _loading) {
+      // نفس شكل شبكة القائمة وهوامشها — لا قفزة عند وصول المنتجات.
+      return const ProductGridSkeleton(
+        count: 8,
+        listing: true,
+        padding: EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 32),
+      );
+    }
     if (_error != null && _visibleItems.isEmpty) {
-      return ErrorView(message: _error!, onRetry: () => _fetch(reset: true));
+      return ErrorView.from(_error, onRetry: () => _fetch(reset: true), onRefresh: () => _fetch(reset: true));
     }
     if (_visibleItems.isEmpty) {
       return EmptyState(
@@ -680,9 +707,10 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: [
               label(s.priceRange),
+              // AppChoiceChip مساحة لمسه 44 (4 فوق وتحت الحبة) — الفراغ المرئي يبقى 8.
               Wrap(
                 spacing: 8,
-                runSpacing: 8,
+                runSpacing: 0,
                 children: [
                   AppChoiceChip(
                     label: s.lfAnyPrice,
@@ -708,9 +736,10 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                 ],
               ),
               label(s.minRating),
+              // AppChoiceChip مساحة لمسه 44 (4 فوق وتحت الحبة) — الفراغ المرئي يبقى 8.
               Wrap(
                 spacing: 8,
-                runSpacing: 8,
+                runSpacing: 0,
                 children: [
                   for (final r in const <double?>[null, 3, 4, 4.5])
                     AppChoiceChip(

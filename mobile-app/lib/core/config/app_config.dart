@@ -92,7 +92,7 @@ class AppConfig {
 
     final path = uri.path.isEmpty ? '/' : uri.path;
     final normalizedPath = path.replaceAll('/media/media/', '/media/');
-    final buffer = StringBuffer('${appOrigin}$normalizedPath');
+    final buffer = StringBuffer('$appOrigin$normalizedPath');
     if (uri.hasQuery) buffer.write('?${uri.query}');
     if (uri.hasFragment) buffer.write('#${uri.fragment}');
     return buffer.toString();
@@ -125,9 +125,14 @@ class AppConfig {
   /// Bundle ID / Application ID — iOS و Android.
   static const String appBundleId = 'com.deemaalhayat.app';
 
-  /// رابط مشاركة منتج على الموقع (نفس صيغة المتجر الإلكتروني).
+  /// رابط مشاركة منتج على الموقع — نفس مسار المتجر الإلكتروني (productHref)،
+  /// بلا صيغة `?slug=` القديمة التي تكلّف إعادة توجيه.
   static String productShareUrl(String slug) =>
-      webUrl('/product/?slug=${Uri.encodeComponent(slug)}');
+      webUrl('/product/${Uri.encodeComponent(slug)}');
+
+  /// رابط مشاركة باقة/روتين — نفس مسار المتجر الإلكتروني (packageHref).
+  static String packageShareUrl(String slug) =>
+      webUrl('/package/${Uri.encodeComponent(slug)}');
 
   /// صورة بديلة للمنتجات بدون صور (من السيرفر).
   static String get productPlaceholderUrl =>

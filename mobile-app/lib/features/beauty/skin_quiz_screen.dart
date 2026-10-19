@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/utils/formatters.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/horizontal_product_list.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -381,7 +380,7 @@ class _QuizResult extends ConsumerWidget {
             padding: EdgeInsets.all(16),
             child: Column(children: [ShimmerBox(height: 220, radius: 24), SizedBox(height: 12), ShimmerBox(height: 220, radius: 24)]),
           ),
-          error: (e, _) => ErrorView(message: friendlyError(e), onRetry: () => ref.invalidate(skinMatchProvider)),
+          error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(skinMatchProvider)),
           data: (m) {
             if (m == null) return const SizedBox.shrink();
             final both = [m.morning, m.evening].whereType<BeautyPackage>().toList();

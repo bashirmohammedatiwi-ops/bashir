@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/connectivity/connectivity_provider.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/push/push_service.dart';
 import '../../core/utils/form_scroll.dart';
@@ -17,13 +19,14 @@ import '../../core/widgets/keyboard_dismiss.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
-import '../../data/models/coupon.dart';
+import '../../data/models/order.dart';
 import '../../data/models/payment.dart';
 import '../../data/models/user.dart';
 import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../cart/cart_packages_provider.dart';
+import '../cart/cart_strings.dart';
 import '../cart/coupon_provider.dart';
 import '../shell/main_shell.dart';
 import '../shell/nav_tabs.dart';
@@ -31,6 +34,7 @@ import '../catalog/catalog_providers.dart';
 import '../profile/widgets/address_form.dart';
 import '../profile/profile_providers.dart';
 import '../payments/card_payment_flow.dart';
+import 'checkout_strings.dart';
 import 'widgets/checkout_delivery_card.dart';
 import 'widgets/checkout_header.dart';
 import 'widgets/checkout_sections.dart';
@@ -65,8 +69,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _isGift = false;
   bool _giftHidePrices = true;
 
-  Coupon? _coupon;
   String? _couponError;
+
+  /// مفتاح محاولة الإتمام: ثابت طوال هذه الشاشة، فإعادة الإرسال بعد انقطاع (أو ضغطة
+  /// ثانية بعد رد لم يصل) تُرجع الطلب نفسه من السيرفر بدل طلب مكرر.
+  final String _checkoutRef =
+      'app-${DateTime.now().microsecondsSinceEpoch}-${math.Random().nextInt(1 << 32).toRadixString(36)}';
   int _shippingFee = 0;
   bool _shippingLoading = false;
   String? _shippingError;
@@ -83,16 +91,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final c = ref.read(appliedCouponProvider);
-      if (c != null && mounted) {
-        setState(() {
-          _coupon = c;
-          _couponCtrl.text = c.code;
-        });
-      }
+      if (c != null) _couponCtrl.text = c.code;
+      // قبل الدفع: الكود ما زال صالحاً؟ والأسعار والمخزون كما في السلة؟
+      ref.read(appliedCouponProvider.notifier).revalidate(force: true);
+      _revalidateCart();
       _maybeBootstrap();
     });
     _scrollCtrl.addListener(_syncActiveStep);
+  }
+
+  Future<void> _revalidateCart() async {
+    final report = await ref.read(cartProvider.notifier).revalidate(force: true);
+    if (!mounted || !report.hasChanges) return;
+    final s = ref.s;
+    final parts = <String>[
+      if (report.unavailableKeys.isNotEmpty) s.cartUnavailableCount(report.unavailableKeys.length),
+      if (report.changedPriceKeys.isNotEmpty) s.cartPricesUpdated(report.changedPriceKeys.length),
+      if (report.clampedKeys.isNotEmpty) s.cartQuantitiesClamped,
+      if (report.droppedPackageNames.isNotEmpty) s.cartPackagesEnded(report.droppedPackageNames.join('، ')),
+    ];
+    if (parts.isNotEmpty) AppSnackbar.show(context, parts.join(' · '), duration: const Duration(seconds: 4));
   }
 
   /// يحدّث مؤشّر الخطوات حسب القسم الظاهر حالياً — واجهة فقط.
@@ -183,42 +203,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .shippingQuote(governorate: _governorate, area: _area, subtotal: subtotal);
       if (mounted) setState(() => _shippingFee = fee);
     } catch (e) {
-      if (mounted) setState(() => _shippingError = friendlyError(e));
+      if (mounted) setState(() => _shippingError = friendlyError(e, lang: ref.s.lang));
     } finally {
       if (mounted) setState(() => _shippingLoading = false);
     }
   }
 
+  /// نفس منطق السلة: الكود السابق يبقى إن رُفض الجديد أو انقطعت الشبكة.
   Future<void> _applyCoupon() async {
     FocusScope.of(context).unfocus();
     final code = _couponCtrl.text.trim();
     if (code.isEmpty) return;
     final s = ref.s;
     setState(() => _couponError = null);
-    try {
-      final res = await ref.read(apiServiceProvider).checkCoupon(code);
-      final coupon = res.coupon;
-      final int packageSaving = ref.read(cartPackageSavingProvider);
-      final subtotal = ref.read(cartProvider).subtotal - packageSaving;
-      if (coupon == null) {
-        setState(() {
-          _coupon = null;
-          _couponError = res.reason ?? s.invalidCoupon;
-        });
-        return;
-      }
-      // دون الحد الأدنى: نبقيه مفعّلاً ونوضح كم ينقص (يتفعّل الخصم حين تبلغه السلة).
-      if (!coupon.eligibleFor(subtotal)) {
-        setState(() => _couponError = s.minOrderAmount(formatPrice(coupon.minOrder)));
-      }
-      setState(() => _coupon = coupon);
-      ref.read(appliedCouponProvider.notifier).state = coupon;
-    } catch (_) {
-      setState(() {
-        _coupon = null;
-        _couponError = s.invalidCoupon;
-      });
-    }
+    final int packageSaving = ref.read(cartPackageSavingProvider);
+    final subtotal = ref.read(cartProvider).subtotal - packageSaving;
+    final err = await applyCouponFromField(ref, code, subtotal: subtotal);
+    if (!mounted) return;
+    final coupon = ref.read(appliedCouponProvider);
+    setState(() {
+      // دون الحد الأدنى: يبقى مفعّلاً ونوضح كم ينقص (يتفعّل الخصم حين تبلغه السلة).
+      _couponError = err ??
+          (coupon != null && !coupon.eligibleFor(subtotal)
+              ? s.minOrderAmount(formatPrice(coupon.minOrder, lang: s.lang))
+              : null);
+    });
   }
 
   Address _buildAddressFromForm() {
@@ -286,7 +295,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _applyAddress(created);
       if (mounted) AppSnackbar.success(context, ref.s.addressSaved);
     } catch (e) {
-      if (mounted) AppSnackbar.error(context, friendlyError(e));
+      if (mounted) AppSnackbar.error(context, friendlyError(e, lang: ref.s.lang));
+    }
+  }
+
+  /// إرسال الطلب، ومرة ثانية بنفس المفتاح إن انقطع الاتصال قبل وصول الرد —
+  /// السيرفر يعيد الطلب نفسه إن كان قد أُنشئ.
+  Future<AppOrder> _submitOrder(Future<AppOrder> Function() send) async {
+    try {
+      return await send();
+    } on ApiException catch (e) {
+      if (!e.isConnectionProblem || !mounted) rethrow;
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      return send();
     }
   }
 
@@ -312,37 +333,42 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         for (final st in ref.read(cartPackageStatusProvider))
           if (st.complete) {'packageId': st.pack.id, 'quantity': st.completeSets},
       ];
+      final coupon = ref.read(appliedCouponProvider);
       final address = await _upsertAddress();
       ref.invalidate(addressesProvider);
-      final order = await ref
-          .read(apiServiceProvider)
-          .createOrder(
-            items: cart.items.map((e) => e.toOrderItem()).toList(),
-            addressId: address.id,
-            // الكود يُرسل فقط إن بلغت السلة حدّه الأدنى (وإلا يرفض السيرفر الطلب).
-            couponCode: _coupon != null && _coupon!.eligibleFor(couponBase) ? _coupon!.code : null,
-            packages: packs,
-            notes: _notesCtrl.text.trim(),
-            isGift: _isGift,
-            giftMessage: _isGift ? _giftMsgCtrl.text.trim() : null,
-            giftHidePrices: _isGift && _giftHidePrices,
-            loyaltySpent: _useLoyalty ? _loyaltySpent : 0,
-            paymentMethod: _paymentMethod,
-          );
+      final api = ref.read(apiServiceProvider);
+      final items = cart.items.map((e) => e.toOrderItem()).toList();
+      final order = await _submitOrder(
+        () => api.createOrder(
+          items: items,
+          addressId: address.id,
+          // الكود يُرسل فقط إن بلغت السلة حدّه الأدنى (وإلا يرفض السيرفر الطلب).
+          couponCode: coupon != null && coupon.eligibleFor(couponBase) ? coupon.code : null,
+          packages: packs,
+          notes: _notesCtrl.text.trim(),
+          isGift: _isGift,
+          giftMessage: _isGift ? _giftMsgCtrl.text.trim() : null,
+          giftHidePrices: _isGift && _giftHidePrices,
+          loyaltySpent: _useLoyalty ? _loyaltySpent : 0,
+          paymentMethod: _paymentMethod,
+          clientRef: _checkoutRef,
+        ),
+      );
       ref.read(cartProvider.notifier).clear();
       ref.read(cartPackagesProvider.notifier).clear();
-      ref.read(appliedCouponProvider.notifier).state = null;
+      ref.read(appliedCouponProvider.notifier).clear();
       ref.invalidate(ordersProvider);
       ref.invalidate(loyaltyProvider);
       ref.read(authProvider.notifier).refreshUser();
-      if (order.paymentMethod == 'CARD') {
+      // السيرفر يحفظ الطلب المغطّى بالكامل (نقاط/كوبون) نقداً ومدفوعاً — بلا بطاقة.
+      if (order.paymentMethod == 'CARD' && order.paymentStatus != 'PAID') {
         await _payOrder(order.id);
       } else if (mounted) {
         context.pushReplacement('/order-success/${order.id}');
       }
       unawaited(PushService.requestPermissionInContext());
     } catch (e) {
-      if (mounted) AppSnackbar.error(context, friendlyError(e));
+      if (mounted) AppSnackbar.error(context, friendlyError(e, lang: ref.s.lang));
     } finally {
       if (mounted) setState(() => _placing = false);
     }
@@ -378,6 +404,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     });
   }
 
+  /// فُتحت من رابط بلا صفحة تحتها: للسلة بدل رجوع مستحيل.
+  void _back() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    ref.read(navIndexProvider.notifier).state = NavTabs.cart;
+    context.go('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = ref.s;
@@ -398,7 +434,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         backgroundColor: context.worldTheme.canvas,
         body: Column(
           children: [
-            CheckoutHeader(s: s, itemCount: 0, onBack: () => context.pop()),
+            CheckoutHeader(s: s, itemCount: 0, onBack: _back),
             Expanded(
               child: EmptyState(
                 icon: Icons.shopping_bag_outlined,
@@ -422,17 +458,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
     }
 
+    final coupon = ref.watch(appliedCouponProvider);
+    // أُزيل الكود تلقائياً (انتهى، لأول طلب فقط…): السبب مكان خطأ الحقل.
+    final couponError = _couponError ?? ref.watch(appliedCouponRejectProvider);
     final points = user?.points ?? 0;
     final subtotal = cart.subtotal;
     final packageSaving = ref.watch(cartPackageSavingProvider);
     final couponBase = subtotal - packageSaving;
-    final discount = _coupon?.discountFor(couponBase) ?? 0;
-    final shipping = (_coupon?.freeShipping ?? false) && _coupon!.eligibleFor(couponBase) ? 0 : _shippingFee;
+    final discount = coupon?.discountFor(couponBase) ?? 0;
+    final shipping = (coupon?.freeShipping ?? false) && coupon!.eligibleFor(couponBase) ? 0 : _shippingFee;
     final beforeLoyalty = (subtotal - packageSaving - discount + shipping).clamp(0, 1 << 31);
     final loyaltyDiscount = _useLoyalty ? _loyaltyDiscount : 0;
     final total = (beforeLoyalty - loyaltyDiscount).clamp(0, 1 << 31);
     final savedAddresses = addressesAsync.valueOrNull ?? [];
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final offline = ref.watch(connectivityProvider).valueOrNull == false;
+    final blockedReason = offline
+        ? s.checkoutOffline
+        : cart.hasUnavailable
+            ? s.checkoutUnavailableItems
+            : null;
+    // مغطّى بالكامل بالنقاط والكوبون: لا شيء يُدفع بالبطاقة.
+    final payByCard = _paymentMethod == 'CARD' && payMethods.cardEnabled && total > 0;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -445,7 +492,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               builder: (_, step, __) => CheckoutHeader(
                 s: s,
                 itemCount: cart.count,
-                onBack: () => context.pop(),
+                onBack: _back,
                 activeStep: step,
                 onStepTap: addressesAsync.hasValue ? _jumpToStep : null,
               ),
@@ -502,8 +549,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     CheckoutCouponCard(
                       s: s,
                       controller: _couponCtrl,
-                      error: _couponError,
-                      appliedCode: _coupon?.code,
+                      error: couponError,
+                      appliedCode: coupon?.code,
                       onApply: _applyCoupon,
                     ),
                     const SizedBox(height: 14),
@@ -563,7 +610,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 total: total,
                 placing: _placing,
                 onPlace: _placeOrder,
-                payByCard: _paymentMethod == 'CARD' && payMethods.cardEnabled,
+                payByCard: payByCard,
+                blockedReason: blockedReason,
               ),
           ],
         ),

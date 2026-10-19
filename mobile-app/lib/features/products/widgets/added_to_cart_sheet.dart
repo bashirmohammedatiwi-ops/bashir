@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/free_shipping_progress.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/horizontal_product_list.dart';
@@ -25,6 +26,7 @@ Future<void> showAddedToCartSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
@@ -156,7 +158,14 @@ class _AddedSheet extends ConsumerWidget {
                   ],
                 ),
               ),
-              _FreeShippingProgress(subtotal: cart.subtotal),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                child: FreeShippingProgress(
+                  subtotal: cart.subtotal,
+                  threshold: ref.watch(storeSettingsProvider)?.freeShippingThreshold ?? 0,
+                  compact: true,
+                ),
+              ),
               if (pairs.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
@@ -227,55 +236,6 @@ class _AddedSheet extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// كم يبقى للتوصيل المجاني (إن كان للمتجر حد).
-class _FreeShippingProgress extends ConsumerWidget {
-  final int subtotal;
-  const _FreeShippingProgress({required this.subtotal});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final threshold = ref.watch(activeHomeFeedProvider).valueOrNull?.settings.freeShippingThreshold ?? 0;
-    if (threshold <= 0) return const SizedBox.shrink();
-    final t = context.worldTheme;
-    final ar = ref.s.isAr;
-    final remaining = threshold - subtotal;
-    final done = remaining <= 0;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(done ? Icons.check_circle_rounded : Icons.local_shipping_outlined,
-                  size: 17, color: done ? AppColors.success : t.accentDark),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  done
-                      ? (ar ? 'مبروك! طلبكِ صار توصيله مجاني 🎉' : 'Your order now ships free 🎉')
-                      : (ar ? 'باقي ${formatPrice(remaining)} وتصير التوصيلة مجانية' : '${formatPrice(remaining)} more for free delivery'),
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: t.inkSoft),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 7),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              value: (subtotal / threshold).clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: t.accentLight,
-              color: done ? AppColors.success : t.accent,
-            ),
-          ),
-        ],
       ),
     );
   }

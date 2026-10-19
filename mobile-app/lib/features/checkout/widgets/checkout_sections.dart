@@ -814,6 +814,9 @@ class CheckoutBottomBar extends StatelessWidget {
   final VoidCallback onPlace;
   final bool payByCard;
 
+  /// سبب يمنع الإتمام الآن (لا اتصال، منتج غير متوفر) — الزر معطّل والسبب مكان سطر الأمان.
+  final String? blockedReason;
+
   const CheckoutBottomBar({
     super.key,
     required this.s,
@@ -821,6 +824,7 @@ class CheckoutBottomBar extends StatelessWidget {
     required this.placing,
     required this.onPlace,
     this.payByCard = false,
+    this.blockedReason,
   });
 
   @override
@@ -865,7 +869,7 @@ class CheckoutBottomBar extends StatelessWidget {
                       label: payByCard ? s.payNow : s.confirmOrder,
                       icon: payByCard ? Icons.credit_card_rounded : Icons.lock_outline_rounded,
                       loading: placing,
-                      onTap: onPlace,
+                      onTap: blockedReason == null ? onPlace : null,
                     ),
                   ),
                 ],
@@ -874,14 +878,25 @@ class CheckoutBottomBar extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.verified_user_outlined, size: 14, color: t.inkMuted),
+                  Icon(
+                    blockedReason == null ? Icons.verified_user_outlined : Icons.info_outline_rounded,
+                    size: 14,
+                    color: blockedReason == null ? t.inkMuted : AppColors.sale,
+                  ),
                   const SizedBox(width: 4),
                   Flexible(
-                    child: Text(
-                      '${s.secureCheckout} • ${payByCard ? s.secureCardNote : s.secureCodNote}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppText.caption.copyWith(color: t.inkMuted),
+                    child: Semantics(
+                      liveRegion: blockedReason != null,
+                      child: Text(
+                        blockedReason ?? '${s.secureCheckout} • ${payByCard ? s.secureCardNote : s.secureCodNote}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: AppText.caption.copyWith(
+                          color: blockedReason == null ? t.inkMuted : AppColors.sale,
+                          fontWeight: blockedReason == null ? null : FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],

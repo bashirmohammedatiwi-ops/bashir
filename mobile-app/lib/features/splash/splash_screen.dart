@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/brand/brand_logo_paths.dart';
+import '../../core/theme/app_fonts.dart';
 
 /// لوحة "أوركيد ووردي" — ألوان الشعار المعتمدة.
 abstract final class SplashTheme {
@@ -27,16 +27,36 @@ abstract final class SplashTheme {
 /// 4. الانزلاق: الرمز ينزلق لمكانه في الشعار الكامل، وحروف alhayat ترتفع
 ///    واحداً تلو الآخر بارتداد، ثم تهبط حروف deema.
 /// 5. الختام: "ديما الحياة" بالعربية تحته.
+///
+/// لمسة في أي مكان تُنهي المشهد فوراً، و[onFinished] يُستدعى مرة واحدة عند
+/// اكتماله (طبيعياً أو باللمس) — التطبيق ينتقل للرئيسية حينها.
 class SplashScreen extends StatefulWidget {
-  final String lang;
+  final SplashIntro intro;
+  final VoidCallback? onFinished;
 
-  const SplashScreen({super.key, this.lang = 'ar'});
+  const SplashScreen({
+    super.key,
+    this.intro = SplashIntro.full,
+    this.onFinished,
+  });
 
-  /// مدة المشهد الكامل — التطبيق ينتظرها قبل الانتقال للرئيسية.
+  /// مدة المشهد الكامل.
   static const introDuration = Duration(milliseconds: 4300);
+
+  /// بداية النسخة المختصرة (نسبة من المشهد): لحظة انزلاق الرمز المكتمل لمكانه.
+  static const double shortStart = _T.glide / _T.end;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
+}
+
+/// كيف يُعرض مشهد الافتتاح.
+enum SplashIntro {
+  /// المشهد كله (4.3 ث): أول تشغيل، بعد كل تحديث للتطبيق، ومرة كل أسبوع.
+  full,
+
+  /// من انزلاق الرمز لمكانه حتى الختام (نحو ثانيتين) — للزبونة العائدة.
+  short,
 }
 
 class _SplashScreenState extends State<SplashScreen>
@@ -45,12 +65,18 @@ class _SplashScreenState extends State<SplashScreen>
     vsync: this,
     duration: SplashScreen.introDuration,
   );
-  bool _browHaptic = false;
-  bool _settleHaptic = false;
+  late final bool _short = widget.intro == SplashIntro.short;
+  late bool _browHaptic;
+  late bool _settleHaptic;
+  bool _finished = false;
 
   @override
   void initState() {
     super.initState();
+    if (_short) _c.value = SplashScreen.shortStart;
+    // ما سبق نقطة البداية لا يهتز (المختصرة تبدأ بعد ولادة الحاجب).
+    _browHaptic = _seconds >= _T.brow;
+    _settleHaptic = _seconds >= _T.settle;
     _c.addListener(() {
       // لمستان خفيفتان: ولادة الحاجب، ثم استقرار الشعار.
       if (!_browHaptic && _seconds >= _T.brow) {
@@ -62,6 +88,9 @@ class _SplashScreenState extends State<SplashScreen>
         HapticFeedback.mediumImpact();
       }
     });
+    _c.addStatusListener((status) {
+      if (status == AnimationStatus.completed) _finish();
+    });
     _c.forward();
   }
 
@@ -70,8 +99,26 @@ class _SplashScreenState extends State<SplashScreen>
     super.didChangeDependencies();
     // من فعّلت "تقليل الحركة": المشهد يظهر مكتملاً مباشرة.
     if (MediaQuery.disableAnimationsOf(context) && !_c.isCompleted) {
-      _c.value = 1;
+      _skipToEnd();
     }
+  }
+
+  /// يقفز للإطار الأخير بلا اهتزاز (اللمسات كانت ستنطلق كلها معاً).
+  void _skipToEnd() {
+    if (_c.isCompleted) return;
+    _browHaptic = true;
+    _settleHaptic = true;
+    _c.value = 1;
+  }
+
+  /// يُبلغ التطبيق بعد الإطار الحالي: قد يكتمل المشهد أثناء البناء
+  /// (تقليل الحركة)، والتطبيق يعيد بناء نفسه حينها.
+  void _finish() {
+    if (_finished) return;
+    _finished = true;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => widget.onFinished?.call(),
+    );
   }
 
   @override
@@ -92,99 +139,121 @@ class _SplashScreenState extends State<SplashScreen>
       ),
       child: Scaffold(
         backgroundColor: SplashTheme.background,
-        body: LayoutBuilder(
-          builder: (context, box) {
-            final size = box.biggest;
-            final scale = math.min(
-              (size.width - 56) / BrandLogo.bounds.width,
-              1.2,
-            );
-            final center = Offset(size.width / 2, size.height * 0.44);
-            final logoBottom = center.dy + BrandLogo.bounds.height * scale / 2;
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _skipToEnd,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final size = box.biggest;
+              final scale = math.min(
+                (size.width - 56) / BrandLogo.bounds.width,
+                1.2,
+              );
+              final center = Offset(size.width / 2, size.height * 0.44);
+              final logoBottom =
+                  center.dy + BrandLogo.bounds.height * scale / 2;
 
-            return AnimatedBuilder(
-              animation: _c,
-              builder: (context, _) {
-                final t = _seconds;
-                // العبارة تظهر مع مرور حزمة الضوء على الشعار — لحظة ختام واحدة.
-                final tag = _ease(t, _T.shine + 0.06, 0.8, Curves.easeOutQuart);
-                final line = _ease(
-                  t,
-                  _T.shine - 0.04,
-                  0.65,
-                  Curves.easeInOutCubic,
-                );
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ضوء أبيض خافت في المركز — عمق بلا ازدحام.
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          center: Alignment(0, -0.12),
-                          radius: 0.85,
-                          colors: [Colors.white, SplashTheme.background],
+              return AnimatedBuilder(
+                animation: _c,
+                builder: (context, _) {
+                  final t = _seconds;
+                  // المختصرة تبدأ بالرمز مكتملاً: يظهر بتلاشٍ سريع بدل أن يقفز.
+                  final entrance = _short
+                      ? _ease(t, _T.glide, 0.22, Curves.easeOutCubic)
+                      : 1.0;
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // ضوء أبيض خافت في المركز — عمق بلا ازدحام.
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            center: Alignment(0, -0.12),
+                            radius: 0.85,
+                            colors: [Colors.white, SplashTheme.background],
+                          ),
                         ),
                       ),
-                    ),
-                    // هالة تتنفس بألوان الهوية خلف الشعار.
-                    CustomPaint(
-                      painter: _AuraPainter(t: t, center: center),
-                    ),
-                    CustomPaint(
-                      painter: _LogoMotionPainter(
-                        t: t,
-                        scale: scale,
-                        center: center,
-                      ),
-                    ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: logoBottom + 30,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      Opacity(
+                        opacity: entrance,
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            _Hairline(width: 34 * line, fadeToStart: true),
-                            const SizedBox(width: 12),
-                            // لا يتجاوز عرض الشاشة أبداً: يصغر تلقائياً إن ضاقت المساحة.
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Opacity(
-                                  opacity: tag,
-                                  child: Text(
-                                    'PERFUMES & COSMETICS',
-                                    maxLines: 1,
-                                    textDirection: TextDirection.ltr,
-                                    style: GoogleFonts.cinzel(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      // الحروف تبدأ متباعدة ثم تتقارب حتى تستقر.
-                                      letterSpacing: 3.6 + 5 * (1 - tag),
-                                      color: SplashTheme.ink.withValues(
-                                        alpha: 0.82,
-                                      ),
-                                      height: 1,
-                                    ),
-                                  ),
-                                ),
+                            // هالة تتنفس بألوان الهوية خلف الشعار.
+                            CustomPaint(
+                              painter: _AuraPainter(t: t, center: center),
+                            ),
+                            CustomPaint(
+                              painter: _LogoMotionPainter(
+                                t: t,
+                                scale: scale,
+                                center: center,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            _Hairline(width: 34 * line, fadeToStart: false),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: logoBottom + 30,
+                              child: _Tagline(t: t),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
+                    ],
+                  );
+                },
+              );
+            },
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// «PERFUMES & COSMETICS» بين خطّين رفيعين — تظهر مع مرور حزمة الضوء على
+/// الشعار، لحظة ختام واحدة.
+class _Tagline extends StatelessWidget {
+  final double t;
+  const _Tagline({required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final tag = _ease(t, _T.shine + 0.06, 0.8, Curves.easeOutQuart);
+    final line = _ease(t, _T.shine - 0.04, 0.65, Curves.easeInOutCubic);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _Hairline(width: 34 * line, fadeToStart: true),
+          const SizedBox(width: 12),
+          // لا يتجاوز عرض الشاشة أبداً: يصغر تلقائياً إن ضاقت المساحة.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Opacity(
+                opacity: tag,
+                child: Text(
+                  'PERFUMES & COSMETICS',
+                  maxLines: 1,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(
+                    fontFamily: AppFonts.display,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    // الحروف تبدأ متباعدة ثم تتقارب حتى تستقر.
+                    letterSpacing: 3.6 + 5 * (1 - tag),
+                    color: SplashTheme.ink.withValues(alpha: 0.82),
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          _Hairline(width: 34 * line, fadeToStart: false),
+        ],
       ),
     );
   }
@@ -224,6 +293,7 @@ abstract final class _T {
   static const settle = 3.32; // استقرار الشعار + اهتزاز خفيف
   static const shine = 3.36;
   static const sparkles = 3.5;
+  static const end = 4.3; // = SplashScreen.introDuration
 }
 
 class _LogoMotionPainter extends CustomPainter {

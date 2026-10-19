@@ -1,18 +1,51 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_fonts.dart';
+import 'app_text.dart';
 
 class AppTheme {
   AppTheme._();
 
-  static const _radius = 16.0;
+  static const _radius = AppCorners.md;
 
-  static ThemeData get light {
-    final base = ThemeData.light(useMaterial3: true);
-    final textTheme = appTextTheme(base.textTheme).apply(
-      bodyColor: AppColors.textPrimary,
-      displayColor: AppColors.textPrimary,
+  /// يُبنى مرة واحدة: كل قراءة تعيد النسخة نفسها فلا يرى Flutter "ثيماً جديداً"
+  /// في كل إعادة بناء (ولا يعيد حركة AnimatedTheme).
+  static final ThemeData light = _buildLight();
+
+  /// التباعد صفر لكل أنماط السلّم — بدونها يرث العربي 0.25–0.5 من Material
+  /// (tall2021) فتنقطع وصلات الحروف في النصوص والحقول.
+  static TextTheme _withoutTracking(TextTheme t) {
+    TextStyle? z(TextStyle? s) => s?.copyWith(letterSpacing: 0);
+    return t.copyWith(
+      displayLarge: z(t.displayLarge),
+      displayMedium: z(t.displayMedium),
+      displaySmall: z(t.displaySmall),
+      headlineLarge: z(t.headlineLarge),
+      headlineMedium: z(t.headlineMedium),
+      headlineSmall: z(t.headlineSmall),
+      titleLarge: z(t.titleLarge),
+      titleMedium: z(t.titleMedium),
+      titleSmall: z(t.titleSmall),
+      bodyLarge: z(t.bodyLarge),
+      bodyMedium: z(t.bodyMedium),
+      bodySmall: z(t.bodySmall),
+      labelLarge: z(t.labelLarge),
+      labelMedium: z(t.labelMedium),
+      labelSmall: z(t.labelSmall),
+    );
+  }
+
+  static ThemeData _buildLight() {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      fontFamily: AppFonts.body,
+    );
+    final textTheme = _withoutTracking(
+      appTextTheme(base.textTheme).apply(
+        bodyColor: AppColors.textPrimary,
+        displayColor: AppColors.textPrimary,
+      ),
     );
     final rounded = RoundedRectangleBorder(borderRadius: BorderRadius.circular(_radius));
 
@@ -38,6 +71,7 @@ class AppTheme {
         error: AppColors.sale,
       ),
       textTheme: textTheme,
+      primaryTextTheme: _withoutTracking(base.primaryTextTheme),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
@@ -46,7 +80,7 @@ class AppTheme {
         scrolledUnderElevation: 0.5,
         shadowColor: AppColors.primaryDeep.withValues(alpha: 0.12),
         centerTitle: true,
-        titleTextStyle: appFont(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
+        titleTextStyle: appFont(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
       ),
       cardTheme: CardThemeData(
         color: AppColors.card,
@@ -63,7 +97,7 @@ class AppTheme {
           elevation: 0,
           minimumSize: const Size.fromHeight(54),
           shape: rounded,
-          textStyle: appFont(fontSize: 16, fontWeight: FontWeight.w800),
+          textStyle: appFont(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -71,7 +105,7 @@ class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,
           shape: rounded,
-          textStyle: appFont(fontSize: 15, fontWeight: FontWeight.w800),
+          textStyle: appFont(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -80,13 +114,13 @@ class AppTheme {
           side: const BorderSide(color: AppColors.primary, width: 1.3),
           minimumSize: const Size.fromHeight(54),
           shape: rounded,
-          textStyle: appFont(fontSize: 16, fontWeight: FontWeight.w800),
+          textStyle: appFont(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryDark,
-          textStyle: appFont(fontSize: 14, fontWeight: FontWeight.w800),
+          textStyle: appFont(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: AppColors.textPrimary)),
@@ -94,9 +128,9 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        hintStyle: appFont(color: AppColors.textMuted, fontSize: 14),
-        labelStyle: appFont(color: AppColors.textSecondary, fontSize: 14),
-        floatingLabelStyle: appFont(color: AppColors.primaryDark, fontSize: 14, fontWeight: FontWeight.w700),
+        hintStyle: appFont(color: AppColors.textMuted, fontSize: 14, letterSpacing: 0),
+        labelStyle: appFont(color: AppColors.textSecondary, fontSize: 14, letterSpacing: 0),
+        floatingLabelStyle: appFont(color: AppColors.primaryDark, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0),
         prefixIconColor: AppColors.textMuted,
         suffixIconColor: AppColors.textMuted,
         border: OutlineInputBorder(
@@ -124,18 +158,20 @@ class AppTheme {
         showUnselectedLabels: true,
         elevation: 0,
       ),
+      // كل ورقة في التطبيق ترسم مقبضها بنفسها (showAppSheet وغيرها): مقبض Material
+      // الافتراضي كان يظهر مقبضاً ثانياً عائماً فوق الخلفية الداكنة.
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
-        showDragHandle: true,
+        showDragHandle: false,
         dragHandleColor: AppColors.hairline,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppCorners.xl))),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        titleTextStyle: appFont(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
+        titleTextStyle: appFont(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
         contentTextStyle: appFont(color: AppColors.textSecondary, fontSize: 14.5, height: 1.5),
       ),
       popupMenuTheme: PopupMenuThemeData(
@@ -149,7 +185,7 @@ class AppTheme {
         unselectedLabelColor: AppColors.textSecondary,
         indicatorColor: AppColors.primary,
         dividerColor: AppColors.divider,
-        labelStyle: appFont(fontSize: 14, fontWeight: FontWeight.w800),
+        labelStyle: appFont(fontSize: 14, fontWeight: FontWeight.w700),
         unselectedLabelStyle: appFont(fontSize: 14, fontWeight: FontWeight.w600),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(

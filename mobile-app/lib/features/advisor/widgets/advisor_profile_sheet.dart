@@ -11,6 +11,7 @@ Future<void> showAdvisorProfileSheet(BuildContext context) {
   HapticFeedback.selectionClick();
   return showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const _ProfileSheet(),

@@ -14,7 +14,6 @@ import '../../../core/widgets/shimmer_box.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/product.dart';
-import '../../catalog/catalog_providers.dart';
 import '../../catalog/recently_viewed_provider.dart';
 import '../../categories/category_browse.dart';
 import '../../worlds/world_theme.dart';
@@ -183,10 +182,11 @@ class _HomeNeedsShelfState extends ConsumerState<HomeNeedsShelf> {
   String? _selectedId;
   String? _forSlug;
 
-  CategoryTarget _target(Category c, String lang) =>
-      c.listingKind == 'subcategory'
-      ? CategoryTarget(title: c.localizedName(lang), subcategoryId: c.id)
-      : CategoryTarget(title: c.localizedName(lang), categoryId: c.id);
+  CategoryTarget _target(Category c, String lang) => switch (c.listingKind) {
+        'tertiary' => CategoryTarget(title: c.localizedName(lang), tertiaryCategoryId: c.id),
+        'subcategory' => CategoryTarget(title: c.localizedName(lang), subcategoryId: c.id),
+        _ => CategoryTarget(title: c.localizedName(lang), categoryId: c.id),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +346,7 @@ class HomeFooterSignature extends ConsumerWidget {
     final s = ref.s;
     final lang = ref.watch(languageCodeProvider);
     final t = context.worldTheme;
-    final whatsapp = ref.watch(activeHomeFeedProvider).valueOrNull?.settings.whatsapp;
+    final whatsapp = ref.watch(storeSettingsProvider)?.whatsapp;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 30, 16, 8),

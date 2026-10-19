@@ -1,46 +1,58 @@
 import 'package:intl/intl.dart';
 import '../config/app_config.dart';
+import '../l10n/locale_provider.dart';
 
 final _priceFormat = NumberFormat.decimalPattern('en');
 
-/// تنسيق السعر مع رمز العملة.
-String formatPrice(num? value) {
+/// رمز العملة في الواجهة الإنجليزية.
+const _currencyEn = 'IQD';
+
+/// تنسيق السعر مع رمز العملة: «45,000 د.ع» / «45,000 IQD».
+/// [lang] اختياري: بدونه تُتبع لغة الواجهة الحالية ([AppLocale.current]).
+String formatPrice(num? value, {String? lang}) {
   final v = (value ?? 0).round();
-  return '${_priceFormat.format(v)} ${AppConfig.currency}';
+  return '${_priceFormat.format(v)} ${(lang ?? AppLocale.current) == 'ar' ? AppConfig.currency : _currencyEn}';
 }
 
+/// رقم بفواصل الآلاف: «12,500».
 String formatNumber(num? value) => _priceFormat.format((value ?? 0).round());
 
 /// أرقام لاتينية كبقية التطبيق (الأسعار والكميات) — «14 أكتوبر 2026» لا «١٤ أكتوبر ٢٠٢٦».
 String _latinDigits(String s) =>
     s.replaceAllMapped(RegExp('[٠-٩]'), (m) => (m[0]!.codeUnitAt(0) - 0x0660).toString());
 
-/// «14 أكتوبر 2026» — مع «اليوم/أمس» للتواريخ القريبة.
-String formatDate(DateTime? date) {
+/// «14 أكتوبر 2026» / «October 14, 2026» — مع «اليوم/أمس» («Today/Yesterday») للتواريخ القريبة.
+String formatDate(DateTime? date, {String? lang}) {
   if (date == null) return '';
+  lang ??= AppLocale.current;
   final d = date.toLocal();
-  final rel = _relativeDay(d);
+  final rel = _relativeDay(d, lang);
   if (rel != null) return rel;
   final now = DateTime.now();
-  final pattern = d.year == now.year ? 'd MMMM' : 'd MMMM y';
-  return _latinDigits(DateFormat(pattern, 'ar').format(d));
+  // الهيكل يختار ترتيب اللغة: «14 أكتوبر» بالعربي و«October 14» بالإنجليزي.
+  final format = d.year == now.year ? DateFormat.MMMMd(lang) : DateFormat.yMMMMd(lang);
+  return _digitsFor(format.format(d), lang);
 }
 
-/// «اليوم • 8:05 م» / «14 أكتوبر • 8:05 م».
-String formatDateTime(DateTime? date) {
+/// «اليوم • 8:05 م» / «14 أكتوبر • 8:05 م» / «Today • 8:05 PM».
+String formatDateTime(DateTime? date, {String? lang}) {
   if (date == null) return '';
+  lang ??= AppLocale.current;
   final d = date.toLocal();
-  final time = _latinDigits(DateFormat('h:mm a', 'ar').format(d));
-  return '${formatDate(d)} • $time';
+  final time = _digitsFor(DateFormat('h:mm a', lang).format(d), lang);
+  return '${formatDate(d, lang: lang)} • $time';
 }
 
-String? _relativeDay(DateTime d) {
+String _digitsFor(String s, String lang) => lang == 'ar' ? _latinDigits(s) : s;
+
+String? _relativeDay(DateTime d, String lang) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final day = DateTime(d.year, d.month, d.day);
   final diff = today.difference(day).inDays;
-  if (diff == 0) return 'اليوم';
-  if (diff == 1) return 'أمس';
+  final isAr = lang == 'ar';
+  if (diff == 0) return isAr ? 'اليوم' : 'Today';
+  if (diff == 1) return isAr ? 'أمس' : 'Yesterday';
   return null;
 }
 

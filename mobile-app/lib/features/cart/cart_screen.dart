@@ -5,13 +5,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/utils/friendly_error.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/free_shipping_progress.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/coupon.dart';
-import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
 import '../shell/main_shell.dart';
+import '../shell/nav_tabs.dart';
 import 'cart_provider.dart';
 import 'cart_packages_provider.dart';
 import 'widgets/cart_packages_card.dart';
@@ -23,7 +24,6 @@ import 'widgets/cart_header.dart';
 import 'widgets/cart_item_card.dart';
 import 'widgets/cart_recommendations.dart';
 import '../../data/models/product.dart';
-import 'widgets/cart_shipping_banner.dart';
 import 'widgets/cart_theme.dart';
 import '../worlds/world_theme.dart';
 import 'cart_strings.dart';
@@ -42,13 +42,56 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   String? _couponError;
   bool _couponLoading = false;
 
+  /// صف «أكملي للتوصيل المجاني» — يقفز إليه زر «أضيفي المزيد» في شريط التقدّم.
+  final _fillersKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final applied = ref.read(appliedCouponProvider);
       if (applied != null) _couponCtrl.text = applied.code;
+      // التبويب يُبنى أول مرة حين يُفتح: نتحقق من الأسعار والمخزون الآن.
+      _revalidate();
     });
+  }
+
+  /// يتحقق من السلة مع السيرفر (مرة في الدقيقة على الأكثر) ويخبرها بما تغيّر.
+  Future<void> _revalidate() async {
+    if (ref.read(cartProvider).isEmpty) return;
+    final report = await ref.read(cartProvider.notifier).revalidate();
+    if (!mounted || !report.hasChanges) return;
+    final s = ref.s;
+    final parts = <String>[
+      if (report.unavailableKeys.isNotEmpty) s.cartUnavailableCount(report.unavailableKeys.length),
+      if (report.changedPriceKeys.isNotEmpty) s.cartPricesUpdated(report.changedPriceKeys.length),
+      if (report.clampedKeys.isNotEmpty) s.cartQuantitiesClamped,
+      if (report.droppedPackageNames.isNotEmpty) s.cartPackagesEnded(report.droppedPackageNames.join('، ')),
+    ];
+    if (parts.isEmpty) return;
+    AppSnackbar.show(context, parts.join(' · '), duration: const Duration(seconds: 4));
+  }
+
+  void _browse() {
+    context.go('/');
+    ref.read(navIndexProvider.notifier).state = NavTabs.home;
+  }
+
+  /// «أضيفي المزيد»: إلى صف المنتجات المقترحة إن ظهر، وإلا للتسوّق.
+  void _fillGap() {
+    final ctx = _fillersKey.currentContext;
+    if (ctx == null) {
+      _browse();
+      return;
+    }
+    HapticFeedback.selectionClick();
+    Scrollable.ensureVisible(
+      ctx,
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      alignment: 0.1,
+    );
   }
 
   @override
@@ -59,50 +102,29 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Future<void> _applyCoupon() async {
-    final s = ref.s;
     final code = _couponCtrl.text.trim();
-    if (code.isEmpty) {
-      setState(() => _couponError = s.enterCouponPrompt);
-      return;
-    }
-
     FocusScope.of(context).unfocus();
     setState(() {
-      _couponLoading = true;
+      _couponLoading = code.isNotEmpty;
       _couponError = null;
     });
-
-    try {
-      // التحقق مع السبب؛ والكود يبقى مفعّلاً حتى لو كانت السلة دون حدّه الأدنى (يُعرض كم ينقص).
-      final res = await ref.read(apiServiceProvider).checkCoupon(code);
-      final coupon = res.coupon;
-
-      if (coupon == null) {
-        ref.read(appliedCouponProvider.notifier).state = null;
-        setState(() => _couponError = res.reason ?? s.invalidCoupon);
-        return;
-      }
-
-      ref.read(appliedCouponProvider.notifier).state = coupon;
-      setState(() => _couponError = null);
-      HapticFeedback.mediumImpact();
-      if (mounted) AppSnackbar.success(context, s.couponApplied(coupon.code));
-    } on ApiException catch (e) {
-      ref.read(appliedCouponProvider.notifier).state = null;
-      setState(() => _couponError = e.message);
-    } catch (e) {
-      ref.read(appliedCouponProvider.notifier).state = null;
-      setState(() => _couponError = friendlyError(e));
-    } finally {
-      if (mounted) setState(() => _couponLoading = false);
-    }
+    // الكود السابق يبقى مطبّقاً إن رُفض الجديد أو انقطعت الشبكة.
+    final int packageSaving = ref.read(cartPackageSavingProvider);
+    final base = ref.read(cartProvider).subtotal - packageSaving;
+    final err = await applyCouponFromField(ref, code, subtotal: base);
+    if (!mounted) return;
+    setState(() {
+      _couponLoading = false;
+      _couponError = err;
+    });
+    final applied = ref.read(appliedCouponProvider);
+    if (err == null && applied != null) AppSnackbar.success(context, ref.s.couponApplied(applied.code));
   }
 
   void _removeCoupon() {
-    ref.read(appliedCouponProvider.notifier).state = null;
+    removeAppliedCoupon(ref);
     _couponCtrl.clear();
     setState(() => _couponError = null);
-    HapticFeedback.selectionClick();
   }
 
   void _clearCart() {
@@ -141,13 +163,17 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
     final coupon = ref.watch(appliedCouponProvider);
-    final feed = ref.watch(activeHomeFeedProvider);
-    final threshold = feed.maybeWhen(data: (d) => d.settings.freeShippingThreshold, orElse: () => 50000);
+    // آخر إعدادات معروفة؛ قبل وصولها لا نعد بحد لا نعرفه.
+    final threshold = ref.watch(storeSettingsProvider)?.freeShippingThreshold ?? 0;
 
     ref.listen<CartState>(cartProvider, (prev, next) {
       if (prev?.subtotal != next.subtotal) {
         _validateCouponOnCartChange(ref.read(appliedCouponProvider));
       }
+    });
+    // كل فتح لتبويب السلة: الأسعار والمخزون كما هي الآن على السيرفر.
+    ref.listen<int>(navIndexProvider, (prev, next) {
+      if (next == NavTabs.cart && prev != NavTabs.cart) _revalidate();
     });
 
     // الباقات المكتملة أولاً، ثم الكوبون على ما تبقّى (نفس قاعدة السيرفر).
@@ -177,16 +203,23 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           child: CartHeader(count: cart.count, topPad: topPad, onClear: _clearCart),
                         ),
                         SliverToBoxAdapter(
-                          child: CartShippingBanner(
-                            subtotal: cart.subtotal,
-                            threshold: threshold,
-                            freeShippingCoupon: freeShipping,
-                            onBrowse: () {
-                              context.go('/');
-                              ref.read(navIndexProvider.notifier).state = 0;
-                            },
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 14, CartTheme.hPad, 0),
+                            child: FreeShippingProgress(
+                              subtotal: cart.subtotal,
+                              threshold: threshold,
+                              viaCoupon: freeShipping,
+                              onFillGap: _fillGap,
+                            ),
                           ),
                         ),
+                        if (!freeShipping && threshold > cart.subtotal)
+                          SliverToBoxAdapter(
+                            child: KeyedSubtree(
+                              key: _fillersKey,
+                              child: _FreeShippingFillers(remaining: threshold - cart.subtotal),
+                            ),
+                          ),
                         const SliverToBoxAdapter(child: CartPackagesCard()),
                         SliverToBoxAdapter(
                           child: CartSectionLabel(title: ref.s.yourProducts, subtitle: ref.s.swipeToRemoveHint),
@@ -277,6 +310,27 @@ class _CartPairs extends ConsumerWidget {
         products: pairs.take(10).toList(),
         title: ar ? 'يكمّل سلتكِ' : 'Complete your bag',
         subtitle: ar ? 'اختيارات تناسب ما أضفتِه' : 'Picked to go with your items',
+      ),
+    );
+  }
+}
+
+/// «أكملي للتوصيل المجاني»: منتجات بسعر قريب مما ينقص — تظهر فقط إن وُجد منها اثنان.
+class _FreeShippingFillers extends ConsumerWidget {
+  final int remaining;
+  const _FreeShippingFillers({required this.remaining});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final products = ref.watch(freeShippingFillersFor(remaining)).valueOrNull ?? const <Product>[];
+    if (products.length < 2) return const SizedBox.shrink();
+    final s = ref.s;
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: CartRecommendations(
+        products: products.take(10).toList(),
+        title: s.cartCompleteFreeShipping,
+        subtitle: s.cartCompleteFreeShippingHint(formatPrice(remaining, lang: s.lang)),
       ),
     );
   }

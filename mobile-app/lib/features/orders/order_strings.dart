@@ -2,17 +2,6 @@ import '../../core/l10n/app_strings.dart';
 
 /// نصوص الطلبات — تسميات الحالات بالعربية والإنجليزية ورسائل الشاشات.
 extension OrderStringsX on AppStrings {
-  String orderStatus(String status) => switch (status) {
-    'PENDING' => isAr ? 'قيد المراجعة' : 'Under review',
-    'CONFIRMED' => isAr ? 'مؤكد' : 'Confirmed',
-    'PROCESSING' => isAr ? 'قيد التجهيز' : 'Preparing',
-    'SHIPPED' => isAr ? 'تم الشحن' : 'Shipped',
-    'DELIVERED' => isAr ? 'تم التسليم' : 'Delivered',
-    'CANCELLED' => isAr ? 'ملغي' : 'Cancelled',
-    'RETURNED' => isAr ? 'مُرجع' : 'Returned',
-    _ => status,
-  };
-
   /// عناوين خطوات الخط الزمني.
   String orderStepTitle(String status) => switch (status) {
     'PENDING' => isAr ? 'تم استلام الطلب' : 'Order placed',
@@ -47,9 +36,13 @@ extension OrderStringsX on AppStrings {
   String get addingToCart => isAr ? 'جارٍ إضافة المنتجات إلى السلة…' : 'Adding items to your cart…';
   String get reorderFailed =>
       isAr ? 'تعذّرت إضافة المنتجات. حاولي لاحقاً' : "Couldn't add the items. Please try again later";
-  String reorderAdded(int n) => isAr ? 'تمت إضافة $n منتج إلى السلة' : 'Added $n items to your cart';
+  String reorderAdded(int n) => isAr ? 'تمت إضافة ${arProducts(n)} إلى السلة' : 'Added ${enCount(n, 'item', 'items')} to your cart';
   String get orderCancelledToast =>
       isAr ? 'تم إلغاء الطلب وتحديث نقاط الولاء' : 'Order cancelled and loyalty points updated';
   String get paymentMethodLabel => isAr ? 'طريقة الدفع' : 'Payment method';
   String get totalPaid => isAr ? 'الإجمالي' : 'Total';
+  String get orderAskOnWhatsApp => isAr ? 'استفسري عن الطلب عبر واتساب' : 'Ask about this order on WhatsApp';
+  String orderWhatsAppMessage(String number) =>
+      isAr ? 'مرحباً، عندي استفسار عن طلبي رقم #$number' : 'Hi, I have a question about my order #$number';
+  String get copyOrderNumber => isAr ? 'نسخ رقم الطلب' : 'Copy order number';
 }

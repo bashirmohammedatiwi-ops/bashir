@@ -132,9 +132,7 @@ class HomeCartReminder extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          ar
-                              ? '${cart.count} ${cart.count == 1 ? 'منتج' : 'منتجات'} • ${formatPrice(cart.subtotal)}'
-                              : '${cart.count} items • ${formatPrice(cart.subtotal)}',
+                          '${ref.s.itemsCount(cart.count)} • ${formatPrice(cart.subtotal, lang: ref.s.lang)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppText.caption.copyWith(color: t.inkMuted),

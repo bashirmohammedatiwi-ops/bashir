@@ -202,9 +202,10 @@ class _CategorySquareTile extends ConsumerWidget {
 
     return HomeTapScale(
       onTap: () {
-        if (worldSections && category.listingKind == 'subcategory') {
+        if (worldSections && (category.listingKind == 'subcategory' || category.listingKind == 'tertiary')) {
           final title = Uri.encodeComponent(displayName);
-          context.push('/products?subcategoryId=${category.id}&title=$title');
+          final param = category.listingKind == 'tertiary' ? 'tertiaryCategoryId' : 'subcategoryId';
+          context.push('/products?$param=${category.id}&title=$title');
           return;
         }
         openCategoryLink(context, category);

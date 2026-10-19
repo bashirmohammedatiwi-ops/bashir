@@ -139,7 +139,11 @@ export class NotificationsService {
     return { success: true };
   }
 
-  /** تسجيل جهاز بدون حساب — لاستقبال Push العام لكل من ثبّت التطبيق */
+  /**
+   * تسجيل جهاز بدون حساب — لاستقبال Push العام لكل من ثبّت التطبيق.
+   * التطبيق يسجّل كزائر فقط حين لا جلسة له، لذا نفصل أي حساب سابق عن التوكن
+   * (خروج أو انتهاء جلسة) كي لا تصل إشعارات الحساب السابق لهذا الجهاز.
+   */
   async registerGuestDevice(token: string, platform = "android") {
     const clean = token.trim();
     if (!clean) throw new BadRequestException("Device token is required");
@@ -148,7 +152,7 @@ export class NotificationsService {
     if (existing) {
       return this.prisma.deviceToken.update({
         where: { token: clean },
-        data: { platform, isActive: true, lastUsedAt: new Date() },
+        data: { userId: null, platform, isActive: true, lastUsedAt: new Date() },
       });
     }
 
@@ -174,11 +178,15 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * فصل الجهاز عن الحساب عند الخروج: يبقى فعّالاً كجهاز زائر يستقبل الإشعارات
+   * العامة، ولا تصله بعدها إشعارات الحساب الخاصة (الطلبات، النقاط…).
+   */
   async unregisterDevice(userId: string, token: string) {
     const clean = token.trim();
     await this.prisma.deviceToken.updateMany({
       where: { token: clean, userId },
-      data: { isActive: false },
+      data: { userId: null, lastUsedAt: new Date() },
     });
     return { success: true };
   }

@@ -19,12 +19,14 @@ export class CategoriesController {
     @Query("all") all?: string,
     @Query("minimal") minimal?: string,
   ) {
-    return this.service.list(all === "1", minimal === "1", !isAdminViewRequest(req));
+    // «all=1» يُظهر الأقسام الموقوفة — للوحة التحكم وحدها؛ واجهات المتجر ترى النشطة فقط مهما طلبت.
+    const admin = isAdminViewRequest(req);
+    return this.service.list(all === "1" && admin, minimal === "1", !admin);
   }
 
   @Public() @Get(":idOrSlug/subcategories")
-  subcategories(@Param("idOrSlug") idOrSlug: string, @Query("all") all?: string) {
-    return this.service.listSubcategories(idOrSlug, all === "1");
+  subcategories(@Req() req: any, @Param("idOrSlug") idOrSlug: string, @Query("all") all?: string) {
+    return this.service.listSubcategories(idOrSlug, all === "1" && isAdminViewRequest(req));
   }
 
   @Public() @Get(":idOrSlug")

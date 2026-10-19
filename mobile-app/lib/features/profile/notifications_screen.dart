@@ -7,20 +7,22 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/navigation/notification_navigation.dart';
-import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/notification.dart';
-import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
 import 'profile_providers.dart';
 import 'widgets/account_strings.dart';
 import 'widgets/account_theme.dart';
+import 'widgets/notification_permission_tile.dart';
 import 'widgets/profile_ui.dart';
 import '../../features/worlds/world_theme.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
+
+  Future<void> _refresh(WidgetRef ref) =>
+      ref.refresh(notificationsProvider.future).then((_) {}, onError: (_) {});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,15 +51,15 @@ class NotificationsScreen extends ConsumerWidget {
         loading: () => Center(
           child: CircularProgressIndicator(color: context.worldTheme.accent),
         ),
-        error: (e, _) => ErrorView(
-          message: friendlyError(e),
+        error: (e, _) => ErrorView.from(
+          e,
           onRetry: () => ref.invalidate(notificationsProvider),
         ),
         data: (list) {
           if (list.isEmpty) {
             return RefreshIndicator(
               color: context.worldTheme.accent,
-              onRefresh: () async => ref.invalidate(notificationsProvider),
+              onRefresh: () => _refresh(ref),
               child: ProfileEmptyState(
                 icon: Icons.notifications_none_rounded,
                 title: s.noNotifications,
@@ -71,12 +73,17 @@ class NotificationsScreen extends ConsumerWidget {
           }
           return RefreshIndicator(
             color: context.worldTheme.accent,
-            onRefresh: () async => ref.invalidate(notificationsProvider),
+            onRefresh: () => _refresh(ref),
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
               slivers: [
+                // الإشعارات مرفوضة على الجهاز: دعوة لتفعيلها فوق القائمة.
+                const SliverPadding(
+                  padding: EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 0),
+                  sliver: SliverToBoxAdapter(child: NotificationPermissionTile()),
+                ),
                 if (unread > 0)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -90,12 +97,8 @@ class NotificationsScreen extends ConsumerWidget {
                         count: unread,
                         label: s.acctNewNotifications(unread),
                         actionLabel: s.markAllRead,
-                        onMarkAll: () async {
-                          await ref
-                              .read(apiServiceProvider)
-                              .markAllNotificationsRead();
-                          ref.invalidate(notificationsProvider);
-                        },
+                        // فوراً على الجهاز، والسيرفر في الخلفية.
+                        onMarkAll: () => ref.read(notificationsProvider.notifier).markAllRead(),
                       ),
                     ),
                   ),
@@ -109,8 +112,16 @@ class NotificationsScreen extends ConsumerWidget {
                   sliver: SliverList.separated(
                     itemCount: list.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) =>
-                        _NotificationCard(notification: list[i], s: s),
+                    itemBuilder: (_, i) {
+                      // آخر بطاقة ظهرت: الصفحة التالية (الدالة تتجاهل الطلب المكرر).
+                      if (i == list.length - 1) {
+                        final notifier = ref.read(notificationsProvider.notifier);
+                        if (notifier.hasMore) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) => notifier.loadMore());
+                        }
+                      }
+                      return _NotificationCard(notification: list[i], s: s);
+                    },
                   ),
                 ),
               ],
@@ -197,12 +208,10 @@ class _NotificationCard extends ConsumerWidget {
     _ => s.acctNotifGeneral,
   };
 
-  Future<void> _open(BuildContext context, WidgetRef ref) async {
-    if (!notification.read) {
-      await ref.read(apiServiceProvider).markNotificationRead(notification.id);
-      ref.invalidate(notificationsProvider);
-    }
-    if (context.mounted) openNotificationLink(context, notification);
+  void _open(BuildContext context, WidgetRef ref) {
+    // الوجهة أولاً بلا انتظار، ثم «مقروء» فوراً على الجهاز والسيرفر في الخلفية.
+    openNotificationLink(context, notification);
+    if (!notification.read) ref.read(notificationsProvider.notifier).markRead(notification.id);
   }
 
   @override
@@ -210,7 +219,7 @@ class _NotificationCard extends ConsumerWidget {
     final t = context.worldTheme;
     final imageUrl = notification.resolvedImageUrl;
     final hasImage = imageUrl != null && imageUrl.isNotEmpty;
-    final linkHint = notification.linkHint;
+    final linkHint = notification.linkHintFor(s);
     final unread = !notification.read;
     final radius = BorderRadius.circular(AppCorners.lg);
 
@@ -373,7 +382,7 @@ class _NotificationCard extends ConsumerWidget {
                             const Spacer(),
                             const SizedBox(width: 8),
                             Text(
-                              notification.timeLabel,
+                              notification.timeLabelFor(s.lang),
                               style: AppText.caption.copyWith(
                                 color: t.inkMuted,
                               ),

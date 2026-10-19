@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/models/beauty.dart';
+import '../../data/services/api_service.dart';
 import 'cart_provider.dart';
 
 /// باقة أُضيفت للسلة: منتجاتها وكمياتها وسعرها الخاص.
@@ -17,6 +18,10 @@ class CartPackage {
   final Map<String, int> items; // productId → الكمية في الباقة الواحدة
   final int sets;
 
+  /// من آخر تحقق: السيرفر يتجاهل الباقة الموقوفة أو المنتهية عند الطلب.
+  final bool isActive;
+  final DateTime? endsAt;
+
   const CartPackage({
     required this.id,
     required this.routeId,
@@ -26,6 +31,8 @@ class CartPackage {
     this.isRoutine = false,
     this.coverUrl,
     this.sets = 1,
+    this.isActive = true,
+    this.endsAt,
   });
 
   factory CartPackage.from(BeautyPackage p) => CartPackage(
@@ -36,17 +43,23 @@ class CartPackage {
         isRoutine: p.isRoutine,
         coverUrl: p.coverUrl ?? (p.thumbs.isNotEmpty ? p.thumbs.first : null),
         items: {for (final i in p.items) i.product.id: i.quantity},
+        endsAt: p.endsAt,
       );
 
-  CartPackage copyWith({int? sets}) => CartPackage(
+  /// صالحة الآن بقاعدة السيرفر: فعّالة ولم ينتهِ وقتها.
+  bool get isLive => isActive && (endsAt == null || endsAt!.isAfter(DateTime.now()));
+
+  CartPackage copyWith({int? sets, int? price, bool? isActive, DateTime? endsAt}) => CartPackage(
         id: id,
         routeId: routeId,
         name: name,
-        price: price,
+        price: price ?? this.price,
         isRoutine: isRoutine,
         coverUrl: coverUrl,
         items: items,
         sets: sets ?? this.sets,
+        isActive: isActive ?? this.isActive,
+        endsAt: endsAt ?? this.endsAt,
       );
 
   Map<String, dynamic> toJson() => {
@@ -58,6 +71,8 @@ class CartPackage {
         'coverUrl': coverUrl,
         'items': items,
         'sets': sets,
+        'isActive': isActive,
+        if (endsAt != null) 'endsAt': endsAt!.toUtc().toIso8601String(),
       };
 
   factory CartPackage.fromJson(Map<String, dynamic> j) => CartPackage(
@@ -70,6 +85,8 @@ class CartPackage {
         items: Map<String, dynamic>.from(j['items'] as Map? ?? const {})
             .map((k, v) => MapEntry(k, (v as num?)?.toInt() ?? 1)),
         sets: (j['sets'] as num?)?.toInt() ?? 1,
+        isActive: j['isActive'] != false,
+        endsAt: DateTime.tryParse(j['endsAt']?.toString() ?? '')?.toLocal(),
       );
 }
 
@@ -90,18 +107,28 @@ class CartPackageStatus {
   bool get complete => completeSets > 0;
 }
 
+/// كم قطعة من منتج في السلة (كل تدرجاته معاً) — لإكمال باقة بما ينقصها فقط.
+int quantityForProduct(CartState c, String productId) =>
+    c.items.where((e) => e.productId == productId).fold(0, (s, e) => s + e.quantity);
+
 class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
-  CartPackagesNotifier() : super(const []) {
+  CartPackagesNotifier(this._ref) : super(const []) {
     _load();
   }
+
+  final Ref _ref;
 
   static const _key = 'cart_packages_v1';
 
   Future<void> _load() async {
     try {
       final raw = (await SharedPreferences.getInstance()).getString(_key);
-      if (raw == null) return;
-      state = (jsonDecode(raw) as List).map((e) => CartPackage.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      if (raw == null || !mounted) return;
+      final saved = (jsonDecode(raw) as List).map((e) => CartPackage.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      // ما أُضيف قبل اكتمال التحميل يبقى مع المحفوظ.
+      final added = state;
+      state = [...saved.where((p) => !added.any((e) => e.id == p.id)), ...added];
+      if (added.isNotEmpty) _persist();
     } catch (_) {}
   }
 
@@ -111,8 +138,9 @@ class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
 
   void add(BeautyPackage p) {
     final i = state.indexWhere((e) => e.id == p.id);
+    // نسخة إضافية تأخذ سعر الباقة وصلاحيتها كما وصلت الآن.
     state = i >= 0
-        ? [for (final e in state) e.id == p.id ? e.copyWith(sets: e.sets + 1) : e]
+        ? [for (final e in state) e.id == p.id ? CartPackage.from(p).copyWith(sets: e.sets + 1) : e]
         : [...state, CartPackage.from(p)];
     _persist();
   }
@@ -126,12 +154,64 @@ class CartPackagesNotifier extends StateNotifier<List<CartPackage>> {
     state = const [];
     _persist();
   }
+
+  /// يُستدعى مع تحقق السلة: يجدّد سعر كل باقة وصلاحيتها من السيرفر، ويزيل ما انتهى أو
+  /// أُوقف (السيرفر يعيد 404 لهما). يعيد أسماء الباقات المُزالة، ولا يرمي خطأً أبداً:
+  /// ما تعذّر الوصول إليه يبقى كما هو إلا إن انتهى وقته على الجهاز.
+  Future<List<String>> revalidate() async {
+    if (state.isEmpty) return const [];
+    final api = _ref.read(apiServiceProvider);
+    // null = لم تعد متاحة؛ غياب المفتاح = تعذّر الوصول.
+    final fresh = <String, BeautyPackage?>{};
+    await Future.wait(state.map((p) async {
+      try {
+        fresh[p.id] = await api.getPackage(p.routeId);
+      } on ApiException catch (e) {
+        if (e.status == 404) fresh[p.id] = null;
+      } catch (_) {}
+    }));
+    if (!mounted) return const [];
+    final dropped = <String>[];
+    final next = <CartPackage>[];
+    for (final p in state) {
+      final CartPackage current;
+      if (!fresh.containsKey(p.id)) {
+        current = p;
+      } else {
+        final live = fresh[p.id];
+        current = live == null
+            ? p.copyWith(isActive: false)
+            : CartPackage(
+                id: p.id,
+                routeId: p.routeId,
+                name: p.name,
+                price: live.price,
+                isRoutine: p.isRoutine,
+                coverUrl: p.coverUrl,
+                items: p.items,
+                sets: p.sets,
+                endsAt: live.endsAt,
+              );
+      }
+      if (current.isLive) {
+        next.add(current);
+      } else {
+        dropped.add(current.name);
+      }
+    }
+    if (jsonEncode(next.map((e) => e.toJson()).toList()) != jsonEncode(state.map((e) => e.toJson()).toList())) {
+      state = next;
+      _persist();
+    }
+    return dropped;
+  }
 }
 
 final cartPackagesProvider =
-    StateNotifierProvider<CartPackagesNotifier, List<CartPackage>>((ref) => CartPackagesNotifier());
+    StateNotifierProvider<CartPackagesNotifier, List<CartPackage>>((ref) => CartPackagesNotifier(ref));
 
-/// حالة كل باقة في السلة — بنفس قاعدة السيرفر: القطعة لا تُحسب لباقتين.
+/// حالة كل باقة في السلة — بنفس قاعدة السيرفر: القطعة لا تُحسب لباقتين، والباقة
+/// الموقوفة أو المنتهية لا توفير لها.
 final cartPackageStatusProvider = Provider<List<CartPackageStatus>>((ref) {
   final cart = ref.watch(cartProvider);
   final packs = ref.watch(cartPackagesProvider);
@@ -144,6 +224,8 @@ final cartPackageStatusProvider = Provider<List<CartPackageStatus>>((ref) {
   }
   final out = <CartPackageStatus>[];
   for (final p in packs) {
+    // انتهت أو أُوقفت (قبل أن يزيلها التحقق التالي): لا تحجز قطعاً ولا توفير لها.
+    if (!p.isLive) continue;
     var sets = p.sets;
     final missing = <String>[];
     p.items.forEach((pid, need) {

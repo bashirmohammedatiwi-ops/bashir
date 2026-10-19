@@ -1,12 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/models/home_feed.dart';
 import 'image_cache.dart';
 
-/// يحمّل مسبقاً صور البنرات وأغلفة المنتجات الظاهرة في الرئيسية.
+/// مهلة الدفعة الثانية — بعد أن تأخذ صور أول شاشة حقّها من الشبكة.
+const _deferredDelay = Duration(milliseconds: 1500);
+
+Timer? _deferred;
+
+/// يسخّن كاش القرص لصور الرئيسية دون فكّها: أول 4 بنرات وأول صف منتجات فوراً،
+/// والباقي بعد 1.5 ثانية — بطابور لا يتجاوز 4 تنزيلات متزامنة.
 void precacheHomeFeedImages(BuildContext context, HomeFeed feed) {
-  final screenW = MediaQuery.sizeOf(context).width;
   final bannerUrls = <String>[];
+  final firstRail = <String>[];
   final productUrls = <String>[];
   final otherUrls = <String>[];
 
@@ -22,8 +30,10 @@ void precacheHomeFeedImages(BuildContext context, HomeFeed feed) {
     for (final cat in section.categories) {
       addUnique(otherUrls, cat.imageUrl);
     }
+    // أول صف منتجات بالترتيب هو ما يظهر أولاً تحت البنر.
+    final rail = firstRail.isEmpty ? firstRail : productUrls;
     for (final product in section.products.take(8)) {
-      addUnique(productUrls, product.coverUrl);
+      addUnique(rail, product.coverUrl);
     }
     for (final brand in section.brands) {
       addUnique(otherUrls, brand.logoUrl);
@@ -33,32 +43,24 @@ void precacheHomeFeedImages(BuildContext context, HomeFeed feed) {
   for (final banner in feed.banners) {
     addUnique(bannerUrls, banner.imageUrl);
   }
-  for (final product in [
-    ...feed.flashSale.products.take(6),
-    ...feed.bestSellers.take(6),
-    ...feed.featured.take(6),
+  for (final list in [
+    feed.flashSale.products.take(6),
+    feed.bestSellers.take(6),
+    feed.featured.take(6),
   ]) {
-    addUnique(productUrls, product.coverUrl);
+    final rail = firstRail.isEmpty ? firstRail : productUrls;
+    for (final product in list) {
+      addUnique(rail, product.coverUrl);
+    }
   }
 
-  var count = 0;
-  for (final url in bannerUrls) {
-    if (count >= 8) break;
-    precacheAppImage(context, url, layoutWidth: screenW);
-    count++;
-  }
+  final banners = bannerUrls.take(8).toList();
+  final products = productUrls.where((u) => !firstRail.contains(u)).take(24 - firstRail.length).toList();
 
-  count = 0;
-  for (final url in productUrls) {
-    if (count >= 24) break;
-    precacheAppImage(context, url, layoutWidth: 156);
-    count++;
-  }
-
-  count = 0;
-  for (final url in otherUrls) {
-    if (count >= 12) break;
-    precacheAppImage(context, url, layoutWidth: 96);
-    count++;
-  }
+  _deferred?.cancel();
+  warmImageDiskCache([...banners.take(4), ...firstRail]);
+  _deferred = Timer(_deferredDelay, () {
+    _deferred = null;
+    warmImageDiskCache([...banners.skip(4), ...products, ...otherUrls.take(12)]);
+  });
 }

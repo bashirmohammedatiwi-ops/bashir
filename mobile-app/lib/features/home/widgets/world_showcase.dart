@@ -13,7 +13,6 @@ import '../../../core/utils/support_links.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/store_world.dart';
 import '../../auth/auth_provider.dart';
-import '../../catalog/catalog_providers.dart';
 import '../../profile/profile_providers.dart';
 import '../../shell/nav_tabs.dart';
 import '../../worlds/world_icon.dart';
@@ -40,7 +39,7 @@ class WorldHeroBand extends ConsumerWidget {
     final unread = auth.isAuthenticated
         ? ref.watch(unreadNotificationsCountProvider)
         : 0;
-    final whatsapp = ref.watch(activeHomeFeedProvider).valueOrNull?.settings.whatsapp;
+    final whatsapp = ref.watch(storeSettingsProvider)?.whatsapp;
     final firstName = (auth.user?.name ?? '').trim().split(' ').first;
     final base = worldBandColor(world);
 

@@ -48,7 +48,7 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
   @override
   void initState() {
     super.initState();
-    _open = widget.applied != null || widget.error != null;
+    _open = widget.applied != null || widget.error != null || ref.read(appliedCouponRejectProvider) != null;
   }
 
   @override
@@ -71,6 +71,10 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
   Widget build(BuildContext context) {
     final s = ref.s;
     final t = context.worldTheme;
+    // سبب إزالة الكود تلقائياً (انتهى، لأول طلب فقط…) يظهر مكان خطأ الحقل.
+    final reject = ref.watch(appliedCouponRejectProvider);
+    final error = widget.error ?? reject;
+    if (reject != null) _open = true;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 240),
@@ -137,7 +141,7 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(AppCorners.sm),
                               borderSide: BorderSide(
-                                color: widget.error != null ? AppColors.sale.withValues(alpha: 0.6) : t.accentSoft,
+                                color: error != null ? AppColors.sale.withValues(alpha: 0.6) : t.accentSoft,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -182,10 +186,10 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
                   ),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: widget.error == null
+                    child: error == null
                         ? const SizedBox(width: double.infinity)
                         : Padding(
-                            key: ValueKey(widget.error),
+                            key: ValueKey(error),
                             padding: const EdgeInsetsDirectional.only(top: 8, start: 4),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,7 +198,7 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    widget.error!,
+                                    error,
                                     style: AppText.caption.copyWith(color: AppColors.sale, fontWeight: FontWeight.w600),
                                   ),
                                 ),
@@ -234,7 +238,7 @@ class _AppliedCoupon extends ConsumerWidget {
               children: [
                 Text(coupon.code, maxLines: 1, style: AppText.title3.copyWith(color: t.ink, letterSpacing: 0.8)),
                 Text(
-                  'أضيفي ${formatPrice(missing)} ويتفعّل ${coupon.benefitLabel(formatPrice: formatPrice)}',
+                  s.couponAddToUnlock(formatPrice(missing, lang: s.lang), coupon.benefitLabelFor(s)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.caption.copyWith(color: t.accentDark, fontWeight: FontWeight.w700),
@@ -272,7 +276,7 @@ class _AppliedCoupon extends ConsumerWidget {
                 style: AppText.title3.copyWith(color: t.ink, letterSpacing: 0.8),
               ),
               Text(
-                discount > 0 ? s.youSaved(formatPrice(discount)) : coupon.benefitLabel(formatPrice: formatPrice),
+                discount > 0 ? s.youSaved(formatPrice(discount, lang: s.lang)) : coupon.benefitLabelFor(s),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.caption.copyWith(color: AppColors.success, fontWeight: FontWeight.w700),

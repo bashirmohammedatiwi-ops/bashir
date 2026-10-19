@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/navigation/product_nav.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/utils/formatters.dart';
@@ -208,7 +209,7 @@ class _CountdownState extends State<_Countdown> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
         child: Text(
-          'باقي ${left.inDays} ${left.inDays == 1 ? 'يوم' : left.inDays == 2 ? 'يومين' : 'أيام'}',
+          AppStrings(AppLocale.current).daysLeft(left.inDays),
           style: AppText.label.copyWith(color: const Color(0xFFC92E63)),
         ),
       );

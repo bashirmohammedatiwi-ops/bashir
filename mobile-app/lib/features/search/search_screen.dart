@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/navigation/app_navigation.dart';
+import '../../core/navigation/product_nav.dart';
 import '../../core/utils/barcode_util.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
@@ -48,8 +50,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void initState() {
     super.initState();
     final api = ref.read(apiServiceProvider);
-    _instant = InstantSearchController(api);
-    _results = SearchResultsV2Controller(api);
+    _instant = InstantSearchController(api, lang: () => _lang);
+    _results = SearchResultsV2Controller(api, lang: () => _lang);
     _controller.addListener(_onText);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -154,6 +156,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (q.length >= 2) ref.read(recentSearchesProvider.notifier).add(q);
   }
 
+  /// مسح «شاهدتِها مؤخراً» مع «تراجع» يعيدها كما كانت.
+  void _clearRecentlyViewed() {
+    final prev = ref.read(recentlyViewedProvider);
+    if (prev.isEmpty) return;
+    final notifier = ref.read(recentlyViewedProvider.notifier);
+    notifier.clear();
+    final s = ref.s;
+    AppSnackbar.action(
+      context,
+      message: s.isAr ? 'مُسحت المنتجات التي شاهدتِها' : 'Recently viewed cleared',
+      actionLabel: s.undo,
+      onAction: () => notifier.restore(prev),
+    );
+  }
+
   void _go(String location) {
     _rememberQuery();
     _focus.unfocus();
@@ -249,7 +266,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             loading: _instant.loading,
             onSearch: _runTerm,
             onFill: _fill,
-            onProduct: (p) => _go(p.route),
+            onProduct: (p) {
+              // الصفحة تظهر فوراً ببيانات الاقتراح؛ «مختصرة» فلا تُضاف للسلة قبل التفاصيل.
+              ProductSeeds.put(p.toSeed(), lite: true);
+              _go(p.route);
+            },
             onBrand: (b) => _go(b.slug.isNotEmpty ? '/brand/${b.slug}' : '/products?brandId=${b.id}&title=${Uri.encodeComponent(b.name)}'),
             onCategory: (c) => _go('/category/${c.slug}'),
           ),
@@ -275,7 +296,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             onRecentRemove: (v) => ref.read(recentSearchesProvider.notifier).remove(v),
             onClearRecent: () => ref.read(recentSearchesProvider.notifier).clear(),
             onCategoryTap: _openCategory,
-            onClearRecentProducts: () => ref.read(recentlyViewedProvider.notifier).clear(),
+            onClearRecentProducts: _clearRecentlyViewed,
             worlds: ref.watch(worldsProvider).valueOrNull ?? const [],
             trends: _trends(cats, lang),
             brands: _topBrands(brands),

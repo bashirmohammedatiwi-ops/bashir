@@ -177,18 +177,9 @@ void _pushAppPath(BuildContext context, String rawPath) {
   final path = rawPath.trim();
   if (path.isEmpty) return;
 
-  if (path == '/categories-tab' || path == '/categories') {
-    openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
-    return;
-  }
-  if (path == '/cart') {
-    openCartTab(context, ProviderScope.containerOf(context, listen: false));
-    return;
-  }
-  if (path == '/offers' || path.startsWith('/offers')) {
-    openOffersTab(context, ProviderScope.containerOf(context, listen: false));
-    return;
-  }
+  // مسارات التبويبات (/، /cart، /offers، /categories، /brands?q=، /account) تبدّل
+  // التبويب بدل دفع نسخة ثانية من الـ shell.
+  if (openTabPath(context, path)) return;
 
   final uri = Uri.tryParse(path);
   if (uri != null && uri.path == '/products') {

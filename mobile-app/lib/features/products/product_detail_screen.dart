@@ -10,7 +10,10 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
 import '../../core/navigation/product_nav.dart';
+import '../../core/push/push_service.dart';
 import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/ds_strings.dart';
+import '../cart/cart_strings.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -112,7 +115,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 product: seed,
                 quantity: _quantity,
                 shade: _shade,
-                onAdd: () => _addToCart(seed),
+                // نسخة البطاقة المختصرة لا تعرف الدرجات بعد: الإضافة تنتظر التفاصيل
+                // حتى لا يُضاف منتج متعدد الدرجات بلا درجة.
+                onAdd: ProductSeeds.isLite(widget.idOrSlug) || (seed.shades.isEmpty && seed.shadeCount > 1)
+                    ? null
+                    : () => _addToCart(seed),
               ),
         orElse: () => null,
       ),
@@ -127,18 +134,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       return;
     }
     HapticFeedback.mediumImpact();
-    final added =
-        ref.read(cartProvider.notifier).add(product, quantity: _quantity, shade: shade);
-    if (!added) {
+    // ما أُضيف فعلاً — قد يكون أقل من المطلوب إن لم يكفِ المخزون.
+    final added = ref.read(cartProvider.notifier).addCounted(product, quantity: _quantity, shade: shade);
+    if (added <= 0) {
       AppSnackbar.error(context, s.maxStockReached);
       return;
+    }
+    if (added < _quantity) {
+      AppSnackbar.show(context, s.onlyAddedInStock(added));
     }
     // تأكيد واضح + ما يكمّله + كم يبقى للتوصيل المجاني (بدل إشعار عابر).
     showAddedToCartSheet(
       context,
       product: product,
       shade: shade,
-      quantity: _quantity,
+      quantity: added,
       lang: ref.read(languageCodeProvider),
       onViewCart: () {
         context.go('/');
@@ -245,7 +255,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         shades: shades,
                         selected: _shade,
                         strings: ref.s,
-                        onSelect: (s) => setState(() => _shade = s),
+                        // الكمية لا تتجاوز مخزون الدرجة الجديدة.
+                        onSelect: (s) => setState(() {
+                          _shade = s;
+                          if (s.stock > 0 && _quantity > s.stock) _quantity = s.stock;
+                          if (_quantity < 1) _quantity = 1;
+                        }),
                       ),
                     ),
                   ],
@@ -363,7 +378,14 @@ class _GalleryAppBar extends ConsumerWidget {
                   context.push('/login');
                   return;
                 }
-                await ref.read(wishlistProvider.notifier).toggle(product);
+                try {
+                  final saved = await ref.read(wishlistProvider.notifier).toggle(product);
+                  if (saved && context.mounted) {
+                    PushService.maybeSoftAsk(context, reason: ref.s.dsWishlistPushReason);
+                  }
+                } catch (e) {
+                  if (context.mounted) AppSnackbar.error(context, ref.friendly(e));
+                }
               },
             ),
         const SizedBox(width: 10),
@@ -1080,9 +1102,8 @@ class _DeliveryWhen extends ConsumerWidget {
     final w = ref.watch(deliveryHintProvider);
     if (w == null) return const SizedBox.shrink();
     final t = context.worldTheme;
-    final text = w.governorate == null
-        ? 'التوصيل لكل المحافظات خلال ${w.minDays == w.maxDays ? '${w.minDays}' : '${w.minDays}–${w.maxDays}'} ${w.maxDays <= 2 ? 'يوم' : 'أيام'}'
-        : w.label();
+    final s = ref.s;
+    final text = w.governorate == null ? s.deliveryAllIn(w.minDays, w.maxDays) : w.labelFor(s);
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Row(
@@ -1106,7 +1127,7 @@ class _FreeDeliveryHint extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final threshold = ref.watch(activeHomeFeedProvider).valueOrNull?.settings.freeShippingThreshold ?? 0;
+    final threshold = ref.watch(storeSettingsProvider)?.freeShippingThreshold ?? 0;
     if (threshold <= 0) return const SizedBox.shrink();
     final cart = ref.watch(cartProvider);
     final inCart = cart.items.any((e) => e.productId == productId);
@@ -1436,6 +1457,10 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             _commentCtrl.text.trim(),
           );
       ref.invalidate(productReviewsProvider(widget.product.id));
+      // التقييم والعدد تغيّرا على السيرفر: نسخة جديدة بدل المحفوظة قبل إعادة البناء.
+      try {
+        await ref.read(apiServiceProvider).getProduct(widget.idOrSlug, forceRefresh: true);
+      } catch (_) {}
       ref.invalidate(productDetailProvider(widget.idOrSlug));
       if (mounted) {
         setState(() {
@@ -1447,7 +1472,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.show(context, friendlyError(e));
+        AppSnackbar.error(context, ref.friendly(e));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -1627,8 +1652,8 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             child: Center(
                 child: CircularProgressIndicator(color: context.worldTheme.accent, strokeWidth: 2)),
           ),
-          error: (e, _) => ErrorView(
-            message: friendlyError(e),
+          error: (e, _) => ErrorView.from(
+            e,
             onRetry: () => ref.invalidate(productReviewsProvider(widget.product.id)),
           ),
           data: (reviews) {
@@ -1654,13 +1679,15 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
   }
 }
 
-class _ReviewTile extends StatelessWidget {
+class _ReviewTile extends ConsumerWidget {
   final Review review;
   const _ReviewTile({required this.review});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
+    final s = ref.s;
+    final name = review.userNameFor(s.lang);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(13),
@@ -1691,7 +1718,7 @@ class _ReviewTile extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  review.userName.isNotEmpty ? review.userName[0] : '·',
+                  name.isNotEmpty ? name.characters.first : '·',
                   style: TextStyle(color: t.accentDark, fontWeight: FontWeight.w800, fontSize: 13),
                 ),
               ),
@@ -1700,11 +1727,28 @@ class _ReviewTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(review.userName,
+                    Text(name,
                         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: t.ink)),
                     const SizedBox(height: 1),
-                    Text(review.dateLabel,
-                        style: TextStyle(fontSize: 10.5, color: t.inkMuted)),
+                    Wrap(
+                      spacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(review.dateLabelFor(s.lang), style: TextStyle(fontSize: 10.5, color: t.inkMuted)),
+                        if (review.verified)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.verified_rounded, size: 12, color: AppColors.success),
+                              const SizedBox(width: 3),
+                              Text(
+                                s.verifiedBuyer,
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.success),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -1885,7 +1929,9 @@ class _BottomBar extends ConsumerWidget {
   final Product product;
   final int quantity;
   final ProductShade? shade;
-  final VoidCallback onAdd;
+
+  /// null = التفاصيل لم تصل بعد (الزر ظاهر لكن معطّل).
+  final VoidCallback? onAdd;
 
   const _BottomBar({
     required this.product,
@@ -1986,7 +2032,9 @@ class _BottomBar extends ConsumerWidget {
               child: enabled
                   ? SizedBox(
                       height: narrow ? 46 : 50,
-                      child: DecoratedBox(
+                      child: Opacity(
+                        opacity: onAdd == null ? 0.55 : 1,
+                        child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: context.worldTheme.signatureGradient,
                           borderRadius: BorderRadius.circular(999),
@@ -2026,6 +2074,7 @@ class _BottomBar extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      ),
                     )
                   : _NotifyMeButton(productId: product.id, height: narrow ? 46 : 50),
             ),
@@ -2064,7 +2113,7 @@ class _NotifyMeButton extends ConsumerWidget {
           );
         }
       } catch (e) {
-        if (context.mounted) AppSnackbar.error(context, friendlyError(e));
+        if (context.mounted) AppSnackbar.error(context, ref.friendly(e));
       }
     }
 

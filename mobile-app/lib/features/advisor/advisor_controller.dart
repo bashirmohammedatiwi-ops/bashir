@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/l10n/locale_provider.dart';
 import '../../core/utils/barcode_util.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/utils/json.dart';
@@ -129,7 +130,7 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
       _persist();
     } catch (e) {
       if (gen != _gen || !mounted) return;
-      state = state.copyWith(thinking: false, error: friendlyError(e));
+      state = state.copyWith(thinking: false, error: friendlyError(e, lang: _ref.read(languageCodeProvider)));
     }
   }
 
@@ -266,6 +267,20 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
     _welcome();
   }
 
+  /// تبدّل الحساب (دخول، خروج، حساب آخر): محادثة الحساب السابق وملفه لا تُعرض لغيره.
+  /// تبدأ «ديما» من جديد عند فتحها التالي.
+  void onAuthChanged() {
+    _gen++;
+    _pending = null;
+    _beforeReset = null;
+    _restoredOnce = true;
+    _saveTimer?.cancel();
+    state = const AdvisorSession();
+    _clearStored();
+  }
+
+  String? get _uid => _ref.read(authProvider).user?.id;
+
   void undoReset() {
     final prev = _beforeReset;
     if (prev == null) return;
@@ -320,7 +335,7 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
       _persist();
     } catch (e) {
       if (gen != _gen || !mounted) return;
-      state = state.copyWith(thinking: false, error: friendlyError(e));
+      state = state.copyWith(thinking: false, error: friendlyError(e, lang: _ref.read(languageCodeProvider)));
     }
   }
 
@@ -345,6 +360,8 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
         final keep = [if (all.isNotEmpty && tail.first != all.first) all.first, ...tail];
         final data = {
           'at': DateTime.now().millisecondsSinceEpoch,
+          // صاحبة المحادثة — لا تُستعاد لحساب آخر على الجهاز نفسه.
+          'uid': _uid,
           'state': state.state,
           'prompts': state.prompts,
           'entries': [
@@ -368,7 +385,7 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
       if (raw == null) return;
       final j = Map<String, dynamic>.from(jsonDecode(raw) as Map);
       final at = DateTime.fromMillisecondsSinceEpoch(asInt(j['at']));
-      if (DateTime.now().difference(at) > _keepFor) {
+      if (DateTime.now().difference(at) > _keepFor || j['uid']?.toString() != _uid) {
         await prefs.remove(_storeKey);
         return;
       }
@@ -401,6 +418,12 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
   }
 }
 
-final advisorProvider = StateNotifierProvider<AdvisorController, AdvisorSession>(
-  (ref) => AdvisorController(ref),
-);
+final advisorProvider = StateNotifierProvider<AdvisorController, AdvisorSession>((ref) {
+  final ctl = AdvisorController(ref);
+  ref.listen<AuthState>(authProvider, (prev, next) {
+    // أول معرفة بالجلسة (من «غير معروف») ليست تبديلاً للحساب.
+    if (prev == null || prev.status == AuthStatus.unknown) return;
+    if (prev.user?.id != next.user?.id) ctl.onAuthChanged();
+  });
+  return ctl;
+});
