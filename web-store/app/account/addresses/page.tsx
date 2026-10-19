@@ -35,10 +35,10 @@ function AddressModal({ initial, onClose }: { initial: Draft; onClose: () => voi
         phone: normalizePhone(d.phone),
         city: d.area || d.governorate,
         governorate: d.governorate,
-        area: d.area || undefined,
+        area: d.area || null,
         street: d.street.trim(),
-        house: d.house.trim() || undefined,
-        notes: d.notes.trim() || undefined,
+        house: d.house.trim() || null,
+        notes: d.notes.trim() || null,
         isDefault: d.isDefault,
       };
       if (d.id) await api(`/addresses/${d.id}`, { method: "PATCH", body });

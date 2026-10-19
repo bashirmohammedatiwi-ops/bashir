@@ -30,7 +30,9 @@ export default function ProfilePage() {
     if (next.length < 6) return toast({ text: "كلمة المرور الجديدة 6 أحرف على الأقل", tone: "error" });
     setBusy("pass");
     try {
-      await api("/auth/change-password", { method: "POST", body: { currentPassword: cur, newPassword: next } });
+      // السيرفر يلغي الجلسات القديمة ويعيد مفاتيح جديدة — نحفظها حتى تبقى الزبونة داخل حسابها.
+      const t = await api<{ accessToken?: string; refreshToken?: string }>("/auth/change-password", { method: "POST", body: { currentPassword: cur, newPassword: next } });
+      if (t?.accessToken) useAuth.getState().setTokens({ accessToken: t.accessToken, refreshToken: t.refreshToken });
       setCur("");
       setNext("");
       toast({ text: "تم تغيير كلمة المرور", tone: "success" });

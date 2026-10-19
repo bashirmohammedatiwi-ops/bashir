@@ -152,9 +152,9 @@ export default function CheckoutPage() {
         phone: normalizePhone(form.phone),
         city: form.area || form.governorate,
         governorate: form.governorate,
-        area: form.area || undefined,
-        street: form.street.trim() || undefined,
-        house: form.house.trim() || undefined,
+        area: form.area || null,
+        street: form.street.trim() || null,
+        house: form.house.trim() || null,
         isDefault: true,
       };
       const address = pickup ? null : addressId ? await api<Address>(`/addresses/${addressId}`, { method: "PATCH", body: payload }) : await api<Address>("/addresses", { method: "POST", body: payload });
