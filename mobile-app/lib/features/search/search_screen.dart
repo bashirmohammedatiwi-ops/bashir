@@ -36,6 +36,12 @@ import 'widgets/search_idle_view.dart';
 import 'widgets/search_instant_panel.dart';
 import 'widgets/search_results_page.dart';
 
+/// الأكثر بحثاً فعلاً بلغة الواجهة (من سجل الخادم المجهول، مع ذاكرة مؤقتة في [ApiService]).
+/// فارغة إن لم يتجمّع سجل كافٍ أو تعذّر الاتصال — الشاشة تعرض «أفكار للبحث» بدلها.
+final trendingSearchesProvider = FutureProvider.autoDispose.family<List<String>, String>(
+  (ref, lang) => ref.read(apiServiceProvider).getTrendingSearches(lang: lang),
+);
+
 /// البحث — محرك جديد في الذاكرة على الخادم (أجزاء من الثانية) وواجهة لا تُعاد بناؤها
 /// مع كل حرف: الحقل ثابت، وما تحته فقط يتحدث حين تصل النتائج.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -196,7 +202,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final top = _instant.data?.completions.firstOrNull;
     // كتبت اسم البراند نفسه: صفحته أنفع من نتائج مفلترة.
     if (typed == normalizeQuery(b.name) || top?.type == 'brand') {
-      _go(b.slug.isNotEmpty ? '/brand/${b.slug}' : brandLocation(b.id, b.name));
+      _go(brandLocation(id: b.id, slug: b.slug));
       return;
     }
     _searchWithFilter(SearchFilters(brandIds: {b.id}));
@@ -285,7 +291,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     openHomeTab(context, container);
   }
 
-  /// «الأكثر طلباً»: الأقسام الفرعية والدقيقة الأغنى بالمنتجات (تُحسب مرة لكل تحديث للأقسام).
+  /// «أقسام غنية بالمنتجات»: الأقسام الفرعية والدقيقة الأكثر منتجات (تُحسب مرة لكل تحديث للأقسام).
+  /// ترتيبها بعدد المنتجات — لا ندّعي أنها الأكثر بحثاً؛ ذلك من [trendingSearchesProvider].
   List<Category>? _trendsFor;
   String? _trendsLang;
   List<SearchTrend> _trendsCache = const [];
@@ -341,8 +348,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final lang = ref.watch(languageCodeProvider);
     final t = context.worldTheme;
     final cats = ref.watch(categoriesProvider).valueOrNull ?? const <Category>[];
-    // تلميحات متبدّلة في الحقل الفارغ: «ابحثي عن سيروم…».
-    final hints = [s.searchFieldHint, for (final tr in _trends(cats, lang).take(5)) s.searchHintFor(tr.label)];
+    final trending = ref.watch(trendingSearchesProvider(lang)).valueOrNull ?? const <String>[];
+    // تلميحات متبدّلة في الحقل الفارغ: «ابحثي عن سيروم…» — مما يُبحث عنه فعلاً، وإلا الأقسام.
+    final hintTerms = trending.isNotEmpty ? trending : [for (final tr in _trends(cats, lang)) tr.label];
+    final hints = [s.searchFieldHint, for (final term in hintTerms.take(5)) s.searchHintFor(term)];
     return Scaffold(
       backgroundColor: t.canvas,
       body: Column(
@@ -405,6 +414,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           final lang = ref.watch(languageCodeProvider);
           final cats = ref.watch(categoriesProvider).valueOrNull ?? const <Category>[];
           final brands = ref.watch(brandsProvider).valueOrNull ?? const <Brand>[];
+          final trending = ref.watch(trendingSearchesProvider(lang)).valueOrNull ?? const <String>[];
           return SearchIdleView(
             s: s,
             lang: lang,
@@ -419,6 +429,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             onClearRecentProducts: _clearRecentlyViewed,
             worlds: ref.watch(worldsProvider).valueOrNull ?? const [],
             trends: _trends(cats, lang),
+            trendingSearches: trending.take(10).toList(),
+            searchIdeas: s.searchPopularTerms,
+            onSearch: _runTerm,
             brands: _topBrands(brands),
             onWorldTap: _openWorld,
             onLocation: (loc) {
@@ -431,7 +444,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             },
             onBrandTap: (b) {
               _focus.unfocus();
-              context.push(brandLocation(b.id, b.localizedName(lang)));
+              context.push(brandLocation(id: b.id, slug: b.slug));
             },
           );
         });

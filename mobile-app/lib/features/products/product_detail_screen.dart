@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/cache/image_cache.dart';
@@ -19,8 +20,6 @@ import '../../core/widgets/ds_strings.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../core/utils/friendly_error.dart';
@@ -28,12 +27,14 @@ import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/fullscreen_image_viewer.dart';
 import '../../core/widgets/horizontal_product_list.dart';
+import '../../core/widgets/quick_shade_sheet.dart';
 import '../../core/widgets/product_detail_skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/paginated.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
 import '../../data/services/api_service.dart';
+import '../advisor/widgets/advisor_ask_card.dart';
 import '../alerts/restock_watch_provider.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
@@ -68,6 +69,21 @@ extension _PdpStringsX on AppStrings {
   String starsCount(int n) => isAr
       ? arCount(n, one: 'نجمة واحدة', two: 'نجمتان', few: 'نجوم', many: 'نجمة')
       : enCount(n, 'star', 'stars');
+
+  String get copyLinkHint => isAr ? 'نسخ الرابط' : 'Copy link';
+  String get recentlyViewedTitle => isAr ? 'شاهدتِها مؤخراً' : 'Recently viewed';
+
+  // ─── «اشتريها معاً» ───
+  String get buyTogetherTitle => isAr ? 'اشتريها معاً' : 'Buy them together';
+  String get thisItem => isAr ? 'هذا المنتج' : 'This item';
+  String get chooseShadeShort => isAr ? 'اختاري اللون' : 'Choose shade';
+  String bundleSave(String amount) => isAr ? 'توفّرين $amount' : 'You save $amount';
+  String addSelected(int n) => isAr ? 'أضيفي المحدد (\u2066$n\u2069)' : 'Add selected ($n)';
+  String bundleAdded(int n) => isAr
+      ? (n == 1 ? 'أُضيف منتج واحد للسلة' : n == 2 ? 'أُضيف منتجان للسلة' : 'أُضيفت ${arProducts(n)} للسلة')
+      : 'Added ${enCount(n, 'item', 'items')} to your bag';
+  String bundleIncluded(String name) => isAr ? '$name، مشمول' : '$name, included';
+  String bundleExcluded(String name) => isAr ? '$name، غير مشمول' : '$name, not included';
 }
 
 /// أول صفحة تقييمات (الأحدث) مع تقييم الزبونة نفسها — تتجدد حين تسجّل الدخول أو تخرج.
@@ -107,6 +123,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   bool _initialShadeHandled = false;
   final _pageCtrl = PageController();
   String? _precachedGalleryStamp;
+
+  /// وسم صورة البطاقة التي فُتحت منها الصفحة — الصورة الأولى في المعرض تطير منها.
+  String? _heroTag;
+
+  @override
+  void initState() {
+    super.initState();
+    _heroTag = ProductSeeds.takeHeroTag(widget.idOrSlug);
+  }
 
   @override
   void dispose() {
@@ -326,6 +351,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       slivers: [
         _GalleryAppBar(
           collapsed: _collapsed,
+          heroTag: _heroTag,
           product: product,
           gallery: gallery,
           zoomableUrls: zoomableUrls,
@@ -349,7 +375,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       height: 3.5,
                       decoration: BoxDecoration(
                         color: context.worldTheme.accentSoft,
-                        borderRadius: BorderRadius.circular(99),
+                        borderRadius: BorderRadius.circular(AppCorners.pill),
                       ),
                     ),
                   ),
@@ -385,6 +411,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     },
                   ),
                   const _TrustStrip(),
+                  // لحظة التردد: «هل يناسبني؟ بديل أرخص؟» — «ديما» بالعربية فقط (البطاقة تخفي نفسها).
+                  if (ref.watch(languageCodeProvider) == 'ar')
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        ProductDetailTheme.padH,
+                        ProductDetailTheme.sectionGap,
+                        ProductDetailTheme.padH,
+                        0,
+                      ),
+                      child: AdvisorAskCard(productId: product.id),
+                    ),
                   if (product.localizedDescription(ref.watch(languageCodeProvider)).isNotEmpty ||
                       product.howToUse.isNotEmpty ||
                       product.ingredients.isNotEmpty)
@@ -392,15 +429,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       padding: EdgeInsets.zero,
                       child: _InfoSections(product: product),
                     ),
-                  _BoughtTogether(product: product),
+                  _BoughtTogether(
+                    product: product,
+                    shade: shade,
+                    canAddCurrent: complete || _seedCanAdd,
+                  ),
                   _SectionCard(
                     child: _ReviewsSection(product: product, idOrSlug: widget.idOrSlug),
                   ),
-                  if (product.category != null)
-                    _SimilarProducts(
-                      categoryId: product.category!.id,
-                      excludeId: product.id,
-                    ),
+                  if (product.category != null || product.subcategoryId != null || product.tertiaryCategoryId != null)
+                    _SimilarProducts(product: product),
                   _RecentlyViewed(excludeId: product.id),
                   const SizedBox(height: 24),
                 ],
@@ -455,7 +493,7 @@ class _RefreshFailedPill extends ConsumerWidget {
                             TextSpan(text: '${s.detailsRefreshFailed} · '),
                             TextSpan(
                               text: s.retryAction,
-                              style: TextStyle(color: t.accentDark, fontWeight: FontWeight.w800),
+                              style: AppText.caption.copyWith(color: t.accentDark),
                             ),
                           ]),
                           style: AppText.caption.copyWith(color: t.inkSoft, fontWeight: FontWeight.w700),
@@ -523,6 +561,9 @@ class _GoneView extends ConsumerWidget {
 /// معرض الصور — خلفية بيضاء، أزرار عائمة، مصغّرات أسفل الصورة.
 class _GalleryAppBar extends ConsumerWidget {
   final ValueListenable<bool> collapsed;
+
+  /// وسم صورة البطاقة التي فُتحت منها الصفحة (null = بلا انتقال مشترك).
+  final String? heroTag;
   final Product product;
   final List<String> gallery;
   final List<String> zoomableUrls;
@@ -533,6 +574,7 @@ class _GalleryAppBar extends ConsumerWidget {
 
   const _GalleryAppBar({
     required this.collapsed,
+    this.heroTag,
     required this.product,
     required this.gallery,
     required this.zoomableUrls,
@@ -564,6 +606,58 @@ class _GalleryAppBar extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) AppSnackbar.error(context, ref.friendly(e));
     }
+  }
+
+  String get _shareUrl => AppConfig.productShareUrl(product.slug.isNotEmpty ? product.slug : product.id);
+
+  /// ورقة المشاركة في النظام (واتساب، إنستغرام، تيليغرام…) — وإن تعذّرت نُسخ الرابط.
+  Future<void> _share(BuildContext buttonContext, AppStrings s) async {
+    HapticFeedback.selectionClick();
+    final name = product.localizedName(s.lang);
+    // آيباد يحتاج مكان الزر ليفتح ورقة المشاركة بجانبه.
+    final box = buttonContext.findRenderObject() as RenderBox?;
+    final origin = box != null && box.hasSize ? box.localToGlobal(Offset.zero) & box.size : null;
+    try {
+      await SharePlus.instance.share(
+        ShareParams(text: '$name\n$_shareUrl', subject: name, sharePositionOrigin: origin),
+      );
+    } catch (_) {
+      if (buttonContext.mounted) await _copyLink(buttonContext, s);
+    }
+  }
+
+  /// ضغطة مطوّلة على زر المشاركة: نسخ الرابط مباشرة.
+  Future<void> _copyLink(BuildContext context, AppStrings s) async {
+    HapticFeedback.selectionClick();
+    await Clipboard.setData(ClipboardData(text: _shareUrl));
+    if (context.mounted) AppSnackbar.success(context, s.linkCopied);
+  }
+
+  /// أثناء طيران الصورة: صورة الغلاف كاملة (لا مقصوصة) على الأبيض — مثل البطاقة والمعرض.
+  Widget _heroShuttle(
+    BuildContext flightContext,
+    Animation<double> animation,
+    HeroFlightDirection direction,
+    BuildContext fromContext,
+    BuildContext toContext,
+  ) {
+    final url = product.coverUrl.isNotEmpty ? product.coverUrl : gallery.first;
+    return ColoredBox(
+      color: Colors.white,
+      child: ProductCoverImage(url: url, fit: BoxFit.contain),
+    );
+  }
+
+  /// الصورة الأولى داخل `Hero` بوسم البطاقة — يُعطَّل حين ينطوي المعرض (لا تطير الصورة
+  /// من خارج الشاشة عند الرجوع) ومع «تقليل الحركة».
+  Widget _withHero(BuildContext context, Widget image) {
+    final tag = heroTag;
+    if (tag == null || MediaQuery.disableAnimationsOf(context)) return image;
+    return ValueListenableBuilder<bool>(
+      valueListenable: collapsed,
+      builder: (_, isCollapsed, child) => HeroMode(enabled: !isCollapsed, child: child!),
+      child: Hero(tag: tag, flightShuttleBuilder: _heroShuttle, child: image),
+    );
   }
 
   @override
@@ -601,15 +695,14 @@ class _GalleryAppBar extends ConsumerWidget {
         ),
       ),
       actions: [
-        _CircleAction(
-          icon: Icons.ios_share_rounded,
-          tooltip: s.shareProduct,
-          onTap: () {
-            final slug = product.slug.isNotEmpty ? product.slug : product.id;
-            final url = AppConfig.productShareUrl(slug);
-            Clipboard.setData(ClipboardData(text: url));
-            AppSnackbar.success(context, s.linkCopied);
-          },
+        Builder(
+          builder: (buttonContext) => _CircleAction(
+            icon: Icons.ios_share_rounded,
+            tooltip: s.shareProduct,
+            onTap: () => _share(buttonContext, s),
+            onLongPress: () => _copyLink(buttonContext, s),
+            longPressHint: s.copyLinkHint,
+          ),
         ),
         _CircleAction(
           icon: wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
@@ -647,11 +740,12 @@ class _GalleryAppBar extends ConsumerWidget {
                                 ),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(20, 56, 20, 8),
-                          child: ProductCoverImage(
-                            url: gallery[i],
-                            width: galleryWidth,
-                            fit: BoxFit.contain,
-                          ),
+                          child: i == 0
+                              ? _withHero(
+                                  context,
+                                  ProductCoverImage(url: gallery[i], width: galleryWidth, fit: BoxFit.contain),
+                                )
+                              : ProductCoverImage(url: gallery[i], width: galleryWidth, fit: BoxFit.contain),
                         ),
                       ),
                     ),
@@ -685,7 +779,7 @@ class _GalleryAppBar extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                           decoration: BoxDecoration(
                             color: context.worldTheme.ink.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(99),
+                            borderRadius: BorderRadius.circular(AppCorners.pill),
                           ),
                           // الأرقام تُقرأ دائماً من اليسار: 1 / 20 لا 20 / 1.
                           child: Directionality(
@@ -695,19 +789,13 @@ class _GalleryAppBar extends ConsumerWidget {
                             children: [
                               Text(
                                 '${imageIndex + 1}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1,
-                                ),
+                                style: AppText.micro.copyWith(color: Colors.white, height: 1),
                               ),
                               Text(
                                 ' / ${gallery.length}',
-                                style: TextStyle(
+                                style: AppText.micro.copyWith(
                                   color: Colors.white.withValues(alpha: 0.65),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w500,
                                   height: 1,
                                 ),
                               ),
@@ -762,7 +850,7 @@ class _GalleryAppBar extends ConsumerWidget {
                           width: 54,
                           decoration: BoxDecoration(
                             color: context.worldTheme.blush,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppCorners.sm),
                             border: Border.all(
                               color: active ? context.worldTheme.accent : context.worldTheme.hairline,
                               width: active ? 1.8 : 0.8,
@@ -823,7 +911,7 @@ class _GalleryShadeAccent extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(99),
+        borderRadius: BorderRadius.circular(AppCorners.pill),
         child: SizedBox(
           height: 5,
           child: DecoratedBox(
@@ -852,12 +940,18 @@ class _CircleAction extends StatelessWidget {
   /// زر بحالتين (المفضلة): يُعلن «مفعّل/غير مفعّل».
   final bool? toggled;
 
+  /// ضغطة مطوّلة (نسخ رابط المشاركة) — مع وصفها لقارئ الشاشة [longPressHint].
+  final VoidCallback? onLongPress;
+  final String? longPressHint;
+
   const _CircleAction({
     required this.icon,
     required this.onTap,
     required this.tooltip,
     this.color = AppColors.ink,
     this.toggled,
+    this.onLongPress,
+    this.longPressHint,
   });
 
   @override
@@ -866,16 +960,22 @@ class _CircleAction extends StatelessWidget {
       child: Tooltip(
         message: tooltip,
         excludeFromSemantics: true,
+        // الضغطة المطوّلة لها عمل خاص — لا تلميح يسرقها.
+        triggerMode: onLongPress != null ? TooltipTriggerMode.manual : null,
         child: Semantics(
           button: true,
           label: tooltip,
           toggled: toggled,
+          onTap: onTap,
+          onLongPress: onLongPress,
+          onLongPressHint: longPressHint,
           excludeSemantics: true,
           // الدائرة 40 والمساحة القابلة للمس 44 — الهامش يلتقط الضغطة دون تكبير الشكل.
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             excludeFromSemantics: true,
             onTap: onTap,
+            onLongPress: onLongPress,
             child: SizedBox(
             width: kMinTapTarget,
             height: kMinTapTarget,
@@ -890,6 +990,7 @@ class _CircleAction extends StatelessWidget {
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: onTap,
+                  onLongPress: onLongPress,
                   child: SizedBox(
                     width: 40,
                     height: 40,
@@ -917,7 +1018,7 @@ class _GalleryBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        borderRadius: BorderRadius.circular(AppCorners.pill),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.3),
@@ -928,12 +1029,7 @@ class _GalleryBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          height: 1,
-        ),
+        style: AppText.micro.copyWith(color: Colors.white, height: 1),
       ),
     );
   }
@@ -985,13 +1081,7 @@ class _ProductTitleBlock extends ConsumerWidget {
           ],
           Text(
             product.localizedName(lang),
-            style: AppTypography.sectionTitle.copyWith(
-              fontSize: 21,
-              height: 1.3,
-              letterSpacing: -0.45,
-              fontWeight: FontWeight.w800,
-              color: t.ink,
-            ),
+            style: AppText.title1.copyWith(color: t.ink),
           ),
           _QuickFacts(product: product, lang: lang),
           const SizedBox(height: 10),
@@ -1001,7 +1091,7 @@ class _ProductTitleBlock extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
               decoration: BoxDecoration(
                 color: t.canvasWarm,
-                borderRadius: BorderRadius.circular(99),
+                borderRadius: BorderRadius.circular(AppCorners.pill),
                 border: Border.all(color: t.hairline.withValues(alpha: 0.7)),
               ),
               child: Row(
@@ -1012,13 +1102,13 @@ class _ProductTitleBlock extends ConsumerWidget {
                     const SizedBox(width: 3),
                     Text(
                       product.rating.toStringAsFixed(1),
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: t.ink),
+                      style: AppText.label.copyWith(color: t.ink),
                     ),
                     if (product.reviewCount > 0) ...[
                       const SizedBox(width: 5),
                       Text(
                         '(${product.reviewCount})',
-                        style: TextStyle(color: t.inkMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
+                        style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ],
@@ -1033,7 +1123,7 @@ class _ProductTitleBlock extends ConsumerWidget {
                         '${formatNumber(product.soldCount)}+ ${s.sales}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: t.inkMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
+                        style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w600),
                       ),
                     ),
                 ],
@@ -1104,14 +1194,14 @@ class _QuickFacts extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
                 color: t.accentLight.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(99),
+                borderRadius: BorderRadius.circular(AppCorners.pill),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(f.icon, size: 14, color: t.accentDark),
                   const SizedBox(width: 4),
-                  Text(f.label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.accentDark)),
+                  Text(f.label, style: AppText.micro.copyWith(color: t.accentDark)),
                 ],
               ),
             ),
@@ -1171,7 +1261,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
                         ? [AppColors.sale, AppColors.sale.withValues(alpha: 0.35)]
                         : [t.accent, t.accent.withValues(alpha: 0.35)],
                   ),
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
                 ),
               ),
               Expanded(
@@ -1182,10 +1272,8 @@ class _ProductCommerceBlock extends ConsumerWidget {
                   children: [
                     Text(
                       formatPrice(price),
-                      style: AppTypography.priceLarge.copyWith(
+                      style: AppText.priceLarge.copyWith(
                         fontSize: Responsive.priceDisplaySize(context),
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.6,
                         color: discounted ? AppColors.sale : t.ink,
                       ),
                     ),
@@ -1194,10 +1282,9 @@ class _ProductCommerceBlock extends ConsumerWidget {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
                           formatPrice(product.origFor(shade)),
-                          style: TextStyle(
+                          style: AppText.caption.copyWith(
                             color: t.inkMuted,
                             decoration: TextDecoration.lineThrough,
-                            fontSize: 12.5,
                           ),
                         ),
                       ),
@@ -1213,16 +1300,12 @@ class _ProductCommerceBlock extends ConsumerWidget {
                                 AppColors.sale.withValues(alpha: 0.05),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(99),
+                            borderRadius: BorderRadius.circular(AppCorners.pill),
                             border: Border.all(color: AppColors.sale.withValues(alpha: 0.35)),
                           ),
                           child: Text(
                             s.savePercent(product.pctFor(shade)),
-                            style: const TextStyle(
-                              color: AppColors.sale,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                            ),
+                            style: AppText.micro.copyWith(color: AppColors.sale),
                           ),
                         ),
                       ),
@@ -1240,7 +1323,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
               if (stock > 0)
                 Text(
                   s.quantity,
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: t.inkMuted),
+                  style: AppText.caption.copyWith(fontWeight: FontWeight.w700, color: t.inkMuted),
                 ),
               if (stock > 0) const SizedBox(width: 10),
               if (stock > 0)
@@ -1266,7 +1349,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
                     t.accentLight.withValues(alpha: 0.25),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppCorners.sm),
                 border: Border.all(color: t.accentSoft.withValues(alpha: 0.6)),
               ),
               child: Row(
@@ -1277,7 +1360,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
                     child: Text(
                       // 1% من السعر (من إعدادات المتجر) — لا القيمة المخزنة القديمة على المنتج.
                       s.earnPoints(ref.watch(loyaltyRulesProvider).pointsFor(price * quantity)),
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5, color: t.inkSoft),
+                      style: AppText.caption.copyWith(fontWeight: FontWeight.w700, color: t.inkSoft),
                     ),
                   ),
                 ],
@@ -1308,7 +1391,7 @@ class _BrandChip extends StatelessWidget {
       padding: EdgeInsetsDirectional.fromSTEB(logo.isNotEmpty ? 4 : 10, 4, 8, 4),
       decoration: BoxDecoration(
         color: t.accentLight,
-        borderRadius: BorderRadius.circular(99),
+        borderRadius: BorderRadius.circular(AppCorners.pill),
         border: Border.all(color: t.accentSoft.withValues(alpha: 0.7)),
       ),
       child: Row(
@@ -1338,11 +1421,10 @@ class _BrandChip extends StatelessWidget {
               name.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppText.micro.copyWith(
                 color: t.accentDark,
-                fontWeight: FontWeight.w800,
-                fontSize: 11,
-                letterSpacing: 0.5,
+                // تباعد للاسم اللاتيني فقط — أي تباعد يقطع وصل الحروف العربية.
+                letterSpacing: RegExp('[\u0600-\u06FF]').hasMatch(name) ? 0 : 0.5,
               ),
             ),
           ),
@@ -1387,7 +1469,7 @@ class _DeliveryWhen extends ConsumerWidget {
           Icon(Icons.schedule_rounded, size: 17, color: t.accentDark),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.inkSoft)),
+            child: Text(text, style: AppText.caption.copyWith(fontWeight: FontWeight.w700, color: t.inkSoft)),
           ),
         ],
       ),
@@ -1435,11 +1517,11 @@ class _FreeDeliveryHint extends ConsumerWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.inkSoft),
+                  style: AppText.caption.copyWith(fontWeight: FontWeight.w700, color: t.inkSoft),
                 ),
                 const SizedBox(height: 6),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
                   child: SizedBox(
                     height: 5,
                     width: double.infinity,
@@ -1493,12 +1575,7 @@ class _StockBadge extends ConsumerWidget {
           child: Text(
             label,
             maxLines: 1,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-              height: 1.2,
-            ),
+            style: AppText.micro.copyWith(color: color),
           ),
         ),
       ),
@@ -1564,12 +1641,7 @@ class _TrustChip extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: t.inkSoft,
-              height: 1.25,
-            ),
+            style: AppText.micro.copyWith(color: t.inkSoft, height: 1.25),
           ),
         ],
       ),
@@ -1650,7 +1722,7 @@ class _InfoExpandableState extends State<_InfoExpandable> {
                   height: 32,
                   decoration: BoxDecoration(
                     color: context.worldTheme.accentLight,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppCorners.sm),
                   ),
                   child: Icon(widget.icon, size: 17, color: context.worldTheme.accent),
                 ),
@@ -1658,7 +1730,7 @@ class _InfoExpandableState extends State<_InfoExpandable> {
                 Expanded(
                   child: Text(
                     widget.title,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    style: AppText.title3.copyWith(fontSize: 14, color: context.worldTheme.ink),
                   ),
                 ),
                 AnimatedRotation(
@@ -1682,11 +1754,7 @@ class _InfoExpandableState extends State<_InfoExpandable> {
               child: _ReadableTextScale(
                 child: Text(
                   widget.body,
-                  style: TextStyle(
-                    height: 1.7,
-                    color: context.worldTheme.inkSoft,
-                    fontSize: 13.5,
-                  ),
+                  style: AppText.bodySmall.copyWith(height: 1.7, color: context.worldTheme.inkSoft),
                 ),
               ),
             ),
@@ -1836,7 +1904,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
               ),
               label: Text(
                 _showForm ? s.cancel : (mine != null ? s.editYourReview : s.addReview),
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+                style: AppText.label,
               ),
             ),
           ],
@@ -1854,7 +1922,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                   t.canvasWarm,
                 ],
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppCorners.md),
               border: Border.all(color: t.accentSoft.withValues(alpha: 0.6)),
             ),
             child: Row(
@@ -1864,13 +1932,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                   children: [
                     Text(
                       product.rating.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        height: 1,
-                        letterSpacing: -0.8,
-                        color: t.ink,
-                      ),
+                      style: AppText.display.copyWith(height: 1, color: t.ink),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -1897,17 +1959,13 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                     children: [
                       Text(
                         s.fromReviews(product.reviewCount),
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: t.inkSoft,
-                        ),
+                        style: AppText.caption.copyWith(fontWeight: FontWeight.w700, color: t.inkSoft),
                       ),
                       if (product.soldCount > 0) ...[
                         const SizedBox(height: 3),
                         Text(
                           '${formatNumber(product.soldCount)}+ ${s.sales}',
-                          style: TextStyle(fontSize: 11, color: t.inkMuted, fontWeight: FontWeight.w600),
+                          style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ],
@@ -1946,12 +2004,12 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: context.worldTheme.signatureGradient,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppCorners.md),
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppCorners.md),
                   onTap: _submitting ? null : _submit,
                   child: Center(
                     child: _submitting
@@ -1961,7 +2019,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Text(
                             mine != null ? s.updateReview : s.submitReview,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                            style: AppText.label.copyWith(color: Colors.white, fontSize: 14),
                           ),
                   ),
                 ),
@@ -1988,7 +2046,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   authed ? s.beFirstToReview : s.loginToReview,
-                  style: TextStyle(color: context.worldTheme.inkMuted, fontSize: 13),
+                  style: AppText.bodySmall.copyWith(color: context.worldTheme.inkMuted),
                 ),
               );
             }
@@ -2016,7 +2074,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                       ),
                       child: Text(
                         s.seeAllReviews(total),
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                        style: AppText.label,
                       ),
                     ),
                   ),
@@ -2113,7 +2171,7 @@ class _InlineRetryRow extends ConsumerWidget {
             foregroundColor: t.accentDark,
             minimumSize: const Size(kMinTapTarget, kMinTapTarget),
           ),
-          child: Text(ref.s.retryAction, style: const TextStyle(fontWeight: FontWeight.w800)),
+          child: Text(ref.s.retryAction, style: AppText.label),
         ),
       ],
     );
@@ -2284,7 +2342,7 @@ class _ReviewTile extends ConsumerWidget {
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: t.canvas,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppCorners.md),
         border: Border.all(color: t.hairline.withValues(alpha: 0.55)),
       ),
       child: Column(
@@ -2310,7 +2368,7 @@ class _ReviewTile extends ConsumerWidget {
                 alignment: Alignment.center,
                 child: Text(
                   name.isNotEmpty ? name.characters.first : '·',
-                  style: TextStyle(color: t.accentDark, fontWeight: FontWeight.w800, fontSize: 13),
+                  style: AppText.label.copyWith(color: t.accentDark),
                 ),
               ),
               const SizedBox(width: 10),
@@ -2319,13 +2377,13 @@ class _ReviewTile extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name,
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: t.ink)),
+                        style: AppText.label.copyWith(color: t.ink)),
                     const SizedBox(height: 1),
                     Wrap(
                       spacing: 6,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text(review.dateLabelFor(s.lang), style: TextStyle(fontSize: 10.5, color: t.inkMuted)),
+                        Text(review.dateLabelFor(s.lang), style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w500)),
                         if (review.verified)
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -2334,7 +2392,7 @@ class _ReviewTile extends ConsumerWidget {
                               const SizedBox(width: 3),
                               Text(
                                 s.verifiedBuyer,
-                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.success),
+                                style: AppText.micro.copyWith(color: AppColors.success),
                               ),
                             ],
                           ),
@@ -2347,7 +2405,7 @@ class _ReviewTile extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: t.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
                   border: Border.all(color: t.hairline, width: 0.7),
                 ),
                 child: Row(
@@ -2357,7 +2415,7 @@ class _ReviewTile extends ConsumerWidget {
                     const SizedBox(width: 2),
                     Text(
                       review.rating.toStringAsFixed(1),
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: t.ink),
+                      style: AppText.micro.copyWith(color: t.ink),
                     ),
                   ],
                 ),
@@ -2367,8 +2425,7 @@ class _ReviewTile extends ConsumerWidget {
           if (review.comment.isNotEmpty) ...[
             const SizedBox(height: 9),
             Text(review.comment,
-                style: TextStyle(
-                    height: 1.6, color: t.inkSoft, fontSize: 13)),
+                style: AppText.bodySmall.copyWith(height: 1.6, color: t.inkSoft)),
           ],
         ],
       ),
@@ -2376,22 +2433,31 @@ class _ReviewTile extends ConsumerWidget {
   }
 }
 
-/// منتجات مشابهة من نفس القسم.
+/// «قد يعجبكِ أيضاً»: الأكثر مبيعاً المتوفر من أعمق قسم للمنتج (يُكمَل من القسم الأب)،
+/// بلا ما يظهر أصلاً في «يُشترى معه غالباً».
 class _SimilarProducts extends ConsumerWidget {
-  final String categoryId;
-  final String excludeId;
+  final Product product;
 
-  const _SimilarProducts({required this.categoryId, required this.excludeId});
+  const _SimilarProducts({required this.product});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(
-      similarProductsProvider((categoryId: categoryId, excludeId: excludeId)),
+      similarProductsProvider((
+        categoryId: product.category?.id,
+        subcategoryId: product.subcategoryId,
+        tertiaryCategoryId: product.tertiaryCategoryId,
+        excludeId: product.id,
+      )),
     );
+    final paired = {
+      for (final p in ref.watch(boughtTogetherProvider(product.id)).valueOrNull?.items ?? const <Product>[]) p.id,
+    };
 
     final s = ref.s;
     return async.maybeWhen(
-      data: (products) {
+      data: (all) {
+        final products = all.where((p) => !paired.contains(p.id)).take(10).toList();
         if (products.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2410,6 +2476,7 @@ class _SimilarProducts extends ConsumerWidget {
             ),
             HorizontalProductList(
               products: products,
+              heroScope: 'pdp-${product.id}-similar',
               padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
             ),
           ],
@@ -2435,12 +2502,13 @@ class _RecentlyViewed extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, 22, ProductDetailTheme.padH, 12),
           child: Text(
-            ref.s.isAr ? 'شاهدتِها مؤخراً' : 'Recently viewed',
+            ref.s.recentlyViewedTitle,
             style: ProductDetailTheme.sectionTitleStyle(context),
           ),
         ),
         HorizontalProductList(
           products: items,
+          heroScope: 'pdp-$excludeId-recent',
           padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
         ),
       ],
@@ -2448,10 +2516,21 @@ class _RecentlyViewed extends ConsumerWidget {
   }
 }
 
-/// «يُشترى معه غالباً» — اختيارات الزبونات مع هذا المنتج.
+/// «يُشترى معه غالباً» — اختيارات الزبونات مع هذا المنتج: صندوق «اشتريها معاً» لإضافة
+/// المنتج وأول قطعتين متوفرتين بلمسة، ثم بقية الاقتراحات في شريط.
 class _BoughtTogether extends ConsumerWidget {
   final Product product;
-  const _BoughtTogether({required this.product});
+
+  /// الدرجة المختارة في الصفحة — تُضاف بها القطعة الحالية ويُحسب سعرها.
+  final ProductShade? shade;
+
+  /// التفاصيل الكاملة وصلت (أو بذرة تعرف درجاتها) — وإلا لا تُضاف القطعة الحالية بعد.
+  final bool canAddCurrent;
+
+  const _BoughtTogether({required this.product, required this.shade, required this.canAddCurrent});
+
+  /// أقصى عدد قطع مع المنتج في الصندوق (مثل الموقع).
+  static const _bundlePairs = 2;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2463,6 +2542,10 @@ class _BoughtTogether extends ConsumerWidget {
       data: (r) {
         final items = r.items.where((p) => p.id != product.id).toList();
         if (items.isEmpty) return const SizedBox.shrink();
+        final pairs = items.where((p) => p.inStock).take(_bundlePairs).toList();
+        final paired = {for (final p in pairs) p.id};
+        // ما في الصندوق لا يتكرر في الشريط تحته.
+        final rest = items.where((p) => !paired.contains(p.id)).toList();
         final subtitle = r.fromOrders
             ? (ar ? 'اختيارات زبوناتنا مع هذا المنتج' : 'What customers pair with this')
             : (ar
@@ -2503,14 +2586,395 @@ class _BoughtTogether extends ConsumerWidget {
                 ],
               ),
             ),
-            HorizontalProductList(
-              products: items,
-              padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
-            ),
+            if (pairs.isNotEmpty)
+              _BuyTogetherBox(
+                product: product,
+                shade: shade,
+                pairs: pairs,
+                canAddCurrent: canAddCurrent,
+              ),
+            if (rest.isNotEmpty) ...[
+              if (pairs.isNotEmpty) const SizedBox(height: 14),
+              HorizontalProductList(
+                products: rest,
+                heroScope: 'pdp-${product.id}-pairs',
+                padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
+              ),
+            ],
           ],
         );
       },
       orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// قطعة في صندوق «اشتريها معاً»: المنتج بالدرجة التي تُضاف بها وسعرها.
+typedef _BundleLine = ({Product product, ProductShade? shade, bool current, bool needsShade, bool available});
+
+/// «اشتريها معاً»: هذا المنتج + قطعتان متوفرتان كصور متجاورة بينها «+»، لكل قطعة علامة
+/// اختيار (مفعّلة افتراضياً)، المجموع والتوفير، و«أضيفي المحدد» بلمسة واحدة.
+///
+/// قطعة بعدة درجات لا تُضاف بلا درجة: تعرض «اختاري اللون» وتفتح ورقة الدرجات السريعة.
+class _BuyTogetherBox extends ConsumerStatefulWidget {
+  final Product product;
+  final ProductShade? shade;
+  final List<Product> pairs;
+  final bool canAddCurrent;
+
+  const _BuyTogetherBox({
+    required this.product,
+    required this.shade,
+    required this.pairs,
+    required this.canAddCurrent,
+  });
+
+  @override
+  ConsumerState<_BuyTogetherBox> createState() => _BuyTogetherBoxState();
+}
+
+class _BuyTogetherBoxState extends ConsumerState<_BuyTogetherBox> {
+  /// ما ألغت الزبونة اختياره — البقية مختارة (الافتراضي: الكل).
+  final _off = <String>{};
+
+  static bool _needsShade(Product p) =>
+      p.hasMultipleDisplayableShades || (p.displayableShades.isEmpty && p.shadeCount > 1);
+
+  List<_BundleLine> _lines() {
+    final current = widget.product;
+    final shade = current.shadeForCart(selected: widget.shade);
+    final currentStock = shade?.stock ?? current.stock;
+    return [
+      (
+        product: current,
+        shade: shade,
+        current: true,
+        needsShade: false,
+        // بلا درجة معروفة بعد (بذرة) أو نافدة: لا تُضاف — شريط الشراء يتولّاها.
+        available: widget.canAddCurrent && currentStock > 0 && !(current.hasMultipleDisplayableShades && shade == null),
+      ),
+      for (final p in widget.pairs)
+        (
+          product: p,
+          shade: _needsShade(p) ? null : p.shadeForCart(),
+          current: false,
+          needsShade: _needsShade(p),
+          available: p.inStock && !_needsShade(p),
+        ),
+    ];
+  }
+
+  bool _selected(_BundleLine l) => l.available && !_off.contains(l.product.id);
+
+  static int _unit(_BundleLine l) => l.product.unitFor(l.shade);
+
+  /// السعر قبل الخصم (أو السعر نفسه بلا خصم) — للتوفير الإجمالي.
+  static int _orig(_BundleLine l) {
+    final orig = l.product.origFor(l.shade);
+    final unit = _unit(l);
+    return orig > unit ? orig : unit;
+  }
+
+  void _toggle(_BundleLine l) {
+    if (!l.available) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (!_off.remove(l.product.id)) _off.add(l.product.id);
+    });
+  }
+
+  Future<void> _chooseShade(Product p) async {
+    HapticFeedback.selectionClick();
+    await showQuickShadeSheet(context, ref, p);
+  }
+
+  void _addSelected(List<_BundleLine> picked) {
+    final s = ref.read(stringsProvider);
+    final cart = ref.read(cartProvider.notifier);
+    HapticFeedback.mediumImpact();
+    var added = 0;
+    for (final l in picked) {
+      if (cart.addCounted(l.product, shade: l.shade) > 0) added++;
+    }
+    if (added == 0) {
+      AppSnackbar.error(context, s.maxStockReached);
+      return;
+    }
+    final container = ProviderScope.containerOf(context, listen: false);
+    AppSnackbar.cartAdded(
+      context,
+      title: s.bundleAdded(added),
+      viewCartLabel: s.viewCart,
+      onViewCart: () => openCartTab(context, container),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final lang = ref.watch(languageCodeProvider);
+    final lines = _lines();
+    final picked = lines.where(_selected).toList();
+    final total = picked.fold<int>(0, (n, l) => n + _unit(l));
+    final original = picked.fold<int>(0, (n, l) => n + _orig(l));
+    final saving = original - total;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: ProductDetailTheme.padH),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: ProductDetailTheme.heroCardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(s.buyTogetherTitle, style: ProductDetailTheme.sectionTitleStyle(context)),
+          const SizedBox(height: 12),
+          // الصور متجاورة بينها «+» — تتقلّص على الشاشات الضيقة بدل أن تفيض.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < lines.length; i++) ...[
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(Icons.add_rounded, size: 18, color: t.inkMuted),
+                    ),
+                  _BundleTile(
+                    line: lines[i],
+                    selected: _selected(lines[i]),
+                    onTap: lines[i].current
+                        ? () => _toggle(lines[i])
+                        : () => openProduct(context, lines[i].product),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final l in lines)
+            _BundleRow(
+              name: l.current ? '${s.thisItem}: ${l.product.localizedName(lang)}' : l.product.localizedName(lang),
+              shadeName: l.current && l.product.hasMultipleDisplayableShades ? l.shade?.name : null,
+              price: _unit(l),
+              selected: _selected(l),
+              enabled: l.available,
+              chooseShadeLabel: l.needsShade ? s.chooseShadeShort : null,
+              onTap: l.needsShade ? () => _chooseShade(l.product) : () => _toggle(l),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Divider(height: 1, thickness: 0.6, color: t.divider),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.total, style: AppText.caption.copyWith(color: t.inkMuted)),
+                    Wrap(
+                      spacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      children: [
+                        Text(formatPrice(total), style: AppText.price.copyWith(color: t.ink)),
+                        if (saving > 0)
+                          Text(
+                            formatPrice(original),
+                            style: AppText.caption.copyWith(
+                              color: t.inkMuted,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (saving > 0)
+                      Text(
+                        s.bundleSave(formatPrice(saving)),
+                        style: AppText.micro.copyWith(color: AppColors.sale),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: FilledButton.icon(
+                  onPressed: picked.isEmpty ? null : () => _addSelected(picked),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: t.accent,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, kMinTapTarget),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: const StadiumBorder(),
+                  ),
+                  icon: const Icon(Icons.shopping_bag_rounded, size: 18),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(s.addSelected(picked.length), style: AppText.label),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// صورة 72 لقطعة في الصندوق مع علامة الاختيار (أو لوحة الألوان لقطعة تحتاج درجة).
+class _BundleTile extends StatelessWidget {
+  final _BundleLine line;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _BundleTile({required this.line, required this.selected, required this.onTap});
+
+  static const _side = 72.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final image = line.shade?.image?.thumb ?? '';
+    final motion = MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180);
+    // الصفوف تحتها تحمل الوصف والاختيار لقارئ الشاشة — الصورة لمسة إضافية فقط.
+    return ExcludeSemantics(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox.square(
+          dimension: _side + 6,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              PositionedDirectional(
+                top: 6,
+                start: 0,
+                child: AnimatedOpacity(
+                  duration: motion,
+                  opacity: selected || line.needsShade ? 1 : 0.45,
+                  child: Container(
+                    width: _side,
+                    height: _side,
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppCorners.sm),
+                      border: Border.all(
+                        color: selected ? t.accent.withValues(alpha: 0.6) : t.hairline,
+                        width: selected ? 1.4 : 1,
+                      ),
+                    ),
+                    child: ProductCoverImage(
+                      url: image.isNotEmpty ? image : line.product.coverUrl,
+                      width: _side - 12,
+                      height: _side - 12,
+                    ),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                top: 0,
+                end: 0,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: line.needsShade ? t.accentLight : (selected ? t.accent : t.surface),
+                    border: Border.all(color: selected ? t.surface : t.hairline, width: 1.5),
+                  ),
+                  child: Icon(
+                    line.needsShade ? Icons.palette_outlined : Icons.check_rounded,
+                    size: 13,
+                    color: line.needsShade ? t.accentDark : (selected ? Colors.white : t.inkMuted),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// سطر قطعة في الصندوق: علامة اختيار + الاسم + السعر — أو «اختاري اللون» لقطعة بعدة درجات.
+class _BundleRow extends ConsumerWidget {
+  final String name;
+  final String? shadeName;
+  final int price;
+  final bool selected;
+  final bool enabled;
+
+  /// غير null: القطعة تحتاج درجة — الزر يفتح ورقة الدرجات بدل الاختيار.
+  final String? chooseShadeLabel;
+  final VoidCallback onTap;
+
+  const _BundleRow({
+    required this.name,
+    required this.shadeName,
+    required this.price,
+    required this.selected,
+    required this.enabled,
+    required this.chooseShadeLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    final s = ref.s;
+    final needsShade = chooseShadeLabel != null;
+    final label = shadeName == null ? name : '$name · $shadeName';
+    return Semantics(
+      button: needsShade,
+      checked: needsShade ? null : selected,
+      enabled: needsShade || enabled,
+      label: needsShade
+          ? '$label${s.isAr ? '، ' : ', '}$chooseShadeLabel'
+          : (selected ? s.bundleIncluded(label) : s.bundleExcluded(label)),
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: needsShade || enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: kMinTapTarget),
+          child: Row(
+            children: [
+              if (!needsShade)
+                Icon(
+                  selected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                  size: 22,
+                  color: enabled ? (selected ? t.accent : t.inkMuted) : t.hairline,
+                )
+              else
+                Icon(Icons.palette_outlined, size: 22, color: t.accentDark),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.bodySmall.copyWith(
+                    color: enabled || needsShade ? t.ink : t.inkMuted,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (needsShade)
+                Text(chooseShadeLabel!, style: AppText.label.copyWith(color: t.accentDark))
+              else
+                Text(
+                  formatPrice(price),
+                  style: AppText.label.copyWith(color: selected ? t.ink : t.inkMuted),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2561,15 +3025,11 @@ class _BottomBar extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: context.worldTheme.accentLight,
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: BorderRadius.circular(AppCorners.pill),
                     ),
                     child: Text(
                       s.isAr ? 'في سلتك ×$inCartQty' : 'In bag ×$inCartQty',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: context.worldTheme.accentDark,
-                      ),
+                      style: AppText.micro.copyWith(color: context.worldTheme.accentDark),
                     ),
                   )
                 else if (shade != null && product.hasMultipleDisplayableShades)
@@ -2595,7 +3055,7 @@ class _BottomBar extends ConsumerWidget {
                             quantity > 1 ? '${shade!.name} ×$quantity' : shade!.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 10.5, color: context.worldTheme.inkSoft, fontWeight: FontWeight.w700),
+                            style: AppText.micro.copyWith(color: context.worldTheme.inkSoft),
                           ),
                         ),
                       ],
@@ -2604,15 +3064,12 @@ class _BottomBar extends ConsumerWidget {
                 else
                   Text(
                     quantity > 1 ? s.totalWithQty(quantity) : s.total,
-                    style: TextStyle(fontSize: 10.5, color: context.worldTheme.inkMuted, fontWeight: FontWeight.w600),
+                    style: AppText.micro.copyWith(color: context.worldTheme.inkMuted, fontWeight: FontWeight.w600),
                   ),
                 const SizedBox(height: 2),
                 Text(
                   formatPrice(total),
-                  style: AppTypography.price.copyWith(
-                    fontSize: narrow ? 17 : 19,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.4,
+                  style: (narrow ? AppText.price.copyWith(fontSize: 17) : AppText.title2).copyWith(
                     color: context.worldTheme.ink,
                   ),
                 ),
@@ -2628,7 +3085,7 @@ class _BottomBar extends ConsumerWidget {
                         child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: context.worldTheme.signatureGradient,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppCorners.pill),
                           boxShadow: [
                             BoxShadow(
                               color: context.worldTheme.accent.withValues(alpha: 0.28),
@@ -2641,7 +3098,7 @@ class _BottomBar extends ConsumerWidget {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: onAdd,
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppCorners.pill),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -2660,8 +3117,7 @@ class _BottomBar extends ConsumerWidget {
                                     fit: BoxFit.scaleDown,
                                     child: Text(
                                       s.addToCartBtn,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w800,
+                                      style: AppText.label.copyWith(
                                         fontSize: narrow ? 13 : 14,
                                         color: Colors.white,
                                       ),
@@ -2723,7 +3179,7 @@ class _NotifyMeButton extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: watching ? null : t.signatureGradient,
         color: watching ? t.accentLight : null,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppCorners.pill),
         border: watching ? Border.all(color: t.accent, width: 1.4) : null,
         boxShadow: watching
             ? null
@@ -2733,7 +3189,7 @@ class _NotifyMeButton extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppCorners.pill),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -2755,9 +3211,8 @@ class _NotifyMeButton extends ConsumerWidget {
                     watching
                         ? (ar ? 'سننبهك فور توفره' : "We'll notify you")
                         : (ar ? 'أعلميني عند التوفر' : 'Notify me when back'),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13.5,
+                    style: AppText.label.copyWith(
+                      fontSize: 14,
                       color: watching ? t.accentDark : Colors.white,
                     ),
                   ),

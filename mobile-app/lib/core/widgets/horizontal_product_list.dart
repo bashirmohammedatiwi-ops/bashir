@@ -15,6 +15,10 @@ class HorizontalProductList extends StatelessWidget {
   final double? height;
   final EdgeInsetsGeometry? padding;
 
+  /// نطاق وسوم صور البطاقات (`شاشة-قسم`) للانتقال المشترك إلى صفحة المنتج؛
+  /// إن لم يُمرّر فبصمة القائمة نفسها (فريدة على الشاشة).
+  final String? heroScope;
+
   const HorizontalProductList({
     super.key,
     required this.products,
@@ -23,12 +27,14 @@ class HorizontalProductList extends StatelessWidget {
     this.itemWidth,
     this.height,
     this.padding,
+    this.heroScope,
   });
 
   @override
   Widget build(BuildContext context) {
     final width = itemWidth ?? Responsive.productCardWidth(context);
     final listHeight = height ?? Responsive.productRowHeight(context);
+    final scope = productHeroScope(context, 'row', heroScope);
     return AppHorizontalList(
       height: listHeight,
       padding: padding ??
@@ -43,6 +49,7 @@ class HorizontalProductList extends StatelessWidget {
         child: ProductCard(
           key: ValueKey(products[i].id),
           product: products[i],
+          heroTag: productHeroTag(scope, products[i]),
           width: width,
           showRating: showRating,
           showPromoBadge: showPromoBadge,

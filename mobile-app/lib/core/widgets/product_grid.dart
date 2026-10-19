@@ -26,6 +26,10 @@ class ProductGrid extends StatelessWidget {
   /// يظهر بعد آخر عنصر (خطأ «تعذّر تحميل المزيد» مع إعادة المحاولة مثلاً).
   final Widget? footer;
 
+  /// نطاق وسوم صور البطاقات (`شاشة-قسم`) للانتقال المشترك إلى صفحة المنتج؛
+  /// إن لم يُمرّر فبصمة الشبكة نفسها (فريدة على الشاشة).
+  final String? heroScope;
+
   final bool _sliver;
 
   const ProductGrid({
@@ -39,6 +43,7 @@ class ProductGrid extends StatelessWidget {
     this.listingStyle = false,
     this.header,
     this.footer,
+    this.heroScope,
   }) : _sliver = false;
 
   /// الشبكة كـ sliver (مع [footer] بعدها) — بلا متحكّم تمرير ولا رأس: يضعهما الأب.
@@ -51,6 +56,7 @@ class ProductGrid extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.md),
     this.listingStyle = false,
     this.footer,
+    this.heroScope,
   })  : controller = null,
         header = null,
         _sliver = true;
@@ -73,13 +79,14 @@ class ProductGrid extends StatelessWidget {
     return index >= 0 ? index : null;
   }
 
-  Widget _itemBuilder(BuildContext context, int i) {
+  Widget _itemBuilder(BuildContext context, String scope, int i) {
     if (i >= products.length) return const ProductCardSkeleton();
     final product = products[i];
     return RepaintBoundary(
       child: ProductCard(
         key: ValueKey(product.id),
         product: product,
+        heroTag: productHeroTag(scope, product),
         showPromoBadge: showPromoBadge,
         showRating: showRating,
         lite: !listingStyle,
@@ -89,13 +96,13 @@ class ProductGrid extends StatelessWidget {
   }
 
   /// الشبكة وتذييلها كقائمة slivers.
-  List<Widget> _slivers(BuildContext context) => [
+  List<Widget> _slivers(BuildContext context, String scope) => [
         SliverPadding(
           padding: padding,
           sliver: SliverGrid(
             gridDelegate: delegateFor(context, listing: listingStyle),
             delegate: SliverChildBuilderDelegate(
-              _itemBuilder,
+              (context, i) => _itemBuilder(context, scope, i),
               childCount: products.length + extraSlots,
               addAutomaticKeepAlives: false,
               addRepaintBoundaries: true,
@@ -108,7 +115,8 @@ class ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (_sliver) return SliverMainAxisGroup(slivers: _slivers(context));
+    final scope = productHeroScope(context, 'grid', heroScope);
+    if (_sliver) return SliverMainAxisGroup(slivers: _slivers(context, scope));
 
     if (header != null || footer != null) {
       return CustomScrollView(
@@ -117,7 +125,7 @@ class ProductGrid extends StatelessWidget {
         cacheExtent: AppScrollPerf.gridCacheExtent,
         slivers: [
           if (header != null) SliverToBoxAdapter(child: header!),
-          ..._slivers(context),
+          ..._slivers(context, scope),
         ],
       );
     }
@@ -132,7 +140,7 @@ class ProductGrid extends StatelessWidget {
       gridDelegate: delegateFor(context, listing: listingStyle),
       itemCount: products.length + extraSlots,
       findChildIndexCallback: _indexForKey,
-      itemBuilder: _itemBuilder,
+      itemBuilder: (context, i) => _itemBuilder(context, scope, i),
     );
   }
 }

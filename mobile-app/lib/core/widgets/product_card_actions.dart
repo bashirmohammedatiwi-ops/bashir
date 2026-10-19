@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,6 +11,7 @@ import '../../features/cart/cart_provider.dart';
 import '../../features/wishlist/wishlist_provider.dart';
 import '../../features/worlds/world_theme.dart';
 import '../l10n/app_strings.dart';
+import '../motion/app_motion.dart';
 import '../navigation/app_navigation.dart';
 import '../navigation/product_nav.dart';
 import '../push/push_service.dart';
@@ -37,7 +38,8 @@ class ProductCardWishButton extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ProductCardWishButton> createState() => _ProductCardWishButtonState();
+  ConsumerState<ProductCardWishButton> createState() =>
+      _ProductCardWishButtonState();
 }
 
 class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
@@ -50,11 +52,17 @@ class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
   /// نبضة الإضافة: يكبر القلب قليلاً ثم يستقر بارتداد ناعم.
   late final Animation<double> _scale = TweenSequence<double>([
     TweenSequenceItem(
-      tween: Tween(begin: 1.0, end: 1.22).chain(CurveTween(curve: Curves.easeOut)),
+      tween: Tween(
+        begin: 1.0,
+        end: 1.22,
+      ).chain(CurveTween(curve: Curves.easeOut)),
       weight: 35,
     ),
     TweenSequenceItem(
-      tween: Tween(begin: 1.22, end: 1.0).chain(CurveTween(curve: Curves.easeOutBack)),
+      tween: Tween(
+        begin: 1.22,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeOutBack)),
       weight: 65,
     ),
   ]).animate(_pop);
@@ -70,14 +78,20 @@ class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
     _pop.forward(from: 0);
   }
 
+  /// لحظة الحفظ: نبضة القلب واهتزاز النجاح معاً.
+  void _savedPop() {
+    AppHaptics.success();
+    _celebrate();
+  }
+
   Future<void> _onTap() async {
-    HapticFeedback.lightImpact();
     final product = widget.product;
     final s = ref.read(stringsProvider);
     // الحاوية لا العنصر: البطاقة قد تُعاد بناؤها أثناء صفحة الدخول.
     final container = ProviderScope.containerOf(context, listen: false);
     try {
       if (!container.read(authProvider).isAuthenticated) {
+        AppHaptics.select();
         await context.push('/login');
         if (!container.read(authProvider).isAuthenticated) return;
         // نحمّل المفضلة أولاً ونضيف فقط إن لم يكن محفوظاً — قلب أعمى قد يزيل
@@ -85,7 +99,7 @@ class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
         final wishlist = container.read(wishlistProvider.notifier);
         await wishlist.load();
         if (!wishlist.isWishlisted(product.id)) {
-          _celebrate();
+          _savedPop();
           await wishlist.setWished(product, true);
         }
         if (mounted) AppSnackbar.success(context, s.dsSavedToWishlist);
@@ -93,7 +107,12 @@ class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
         return;
       }
       final wishlist = container.read(wishlistProvider.notifier);
-      if (!wishlist.isWishlisted(product.id)) _celebrate();
+      // الإضافة تحتفل، والإزالة لمسة اختيار هادئة.
+      if (wishlist.isWishlisted(product.id)) {
+        AppHaptics.select();
+      } else {
+        _savedPop();
+      }
       if (await wishlist.toggle(product)) _softAskPush(s);
     } catch (e) {
       if (mounted) AppSnackbar.error(context, friendlyError(e, lang: s.lang));
@@ -103,7 +122,9 @@ class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
   /// بعد الحفظ: دعوة لطيفة لتفعيل الإشعارات (تنبيه السعر والتوفّر). تقيّد نفسها
   /// بمرة كل 14 يوماً ولا تظهر إن كان الإذن ممنوحاً.
   void _softAskPush(AppStrings s) {
-    if (mounted) PushService.maybeSoftAsk(context, reason: s.dsWishlistPushReason);
+    if (mounted) {
+      PushService.maybeSoftAsk(context, reason: s.dsWishlistPushReason);
+    }
   }
 
   @override
@@ -132,7 +153,9 @@ class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
             child: ScaleTransition(
               scale: _scale,
               child: AnimatedContainer(
-                duration: still ? Duration.zero : const Duration(milliseconds: 200),
+                duration: still
+                    ? Duration.zero
+                    : const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
                 width: size,
                 height: size,
@@ -147,15 +170,17 @@ class _ProductCardWishButtonState extends ConsumerState<ProductCardWishButton>
                   boxShadow: AppShadows.raised(t),
                 ),
                 child: AnimatedSwitcher(
-                  duration: still ? Duration.zero : const Duration(milliseconds: 260),
+                  duration: still ? Duration.zero : MotionDurations.bump,
                   transitionBuilder: (child, a) => ScaleTransition(
                     scale: Tween(begin: 0.4, end: 1.0).animate(
-                      CurvedAnimation(parent: a, curve: Curves.easeOutBack),
+                      CurvedAnimation(parent: a, curve: MotionCurves.pop),
                     ),
                     child: child,
                   ),
                   child: Icon(
-                    wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    wished
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
                     key: ValueKey(wished),
                     size: size * 0.5,
                     color: wished ? AppColors.sale : t.inkSoft,
@@ -180,7 +205,10 @@ enum ProductCardCartStyle {
 }
 
 /// زر إضافة أو عدّاد كمية على بطاقة المنتج.
-class ProductCardCartControl extends ConsumerWidget {
+///
+/// بعد الإضافة السريعة تتحوّل أيقونة الحقيبة إلى علامة صح لحظة قصيرة
+/// ([MotionDurations.confirm]) ثم يعود الزر لحالته (عدّاد أو شارة).
+class ProductCardCartControl extends ConsumerStatefulWidget {
   final Product product;
   final bool compact;
   final ProductCardCartStyle style;
@@ -191,6 +219,46 @@ class ProductCardCartControl extends ConsumerWidget {
     this.compact = false,
     this.style = ProductCardCartStyle.stepper,
   });
+
+  @override
+  ConsumerState<ProductCardCartControl> createState() =>
+      _ProductCardCartControlState();
+}
+
+class _ProductCardCartControlState
+    extends ConsumerState<ProductCardCartControl> {
+  /// علامة «أُضيف» ظاهرة الآن.
+  bool _confirming = false;
+  Timer? _confirmTimer;
+
+  Product get product => widget.product;
+
+  @override
+  void didUpdateWidget(covariant ProductCardCartControl oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // البطاقة أُعيد استعمالها لمنتج آخر (قائمة تُعاد تعبئتها): لا نحمل تأكيد غيره.
+    if (oldWidget.product.id != widget.product.id) _endConfirm();
+  }
+
+  @override
+  void dispose() {
+    _confirmTimer?.cancel();
+    super.dispose();
+  }
+
+  void _confirm() {
+    _confirmTimer?.cancel();
+    setState(() => _confirming = true);
+    _confirmTimer = Timer(MotionDurations.confirm, () {
+      if (mounted) setState(() => _confirming = false);
+    });
+  }
+
+  void _endConfirm() {
+    _confirmTimer?.cancel();
+    _confirmTimer = null;
+    _confirming = false;
+  }
 
   /// المنتج يحتاج اختيار درجة — لا إضافة سريعة أبداً. يشمل نسخة مختصرة وصلت
   /// بعدد درجات بلا الدرجات نفسها (لقطة «شاهدتِ مؤخراً» مثلاً): الإضافة هنا
@@ -213,8 +281,8 @@ class ProductCardCartControl extends ConsumerWidget {
 
   /// درجات معروفة: ورقة الاختيار السريعة فوق الصفحة الحالية. بلا درجات في
   /// البيانات: صفحة المنتج (بياناتها الكاملة تجلب الدرجات).
-  void _chooseShade(BuildContext context, WidgetRef ref) {
-    HapticFeedback.lightImpact();
+  void _chooseShade() {
+    AppHaptics.select();
     if (product.hasDisplayableShades) {
       showQuickShadeSheet(context, ref, product);
     } else {
@@ -222,16 +290,18 @@ class ProductCardCartControl extends ConsumerWidget {
     }
   }
 
-  void _addFirst(BuildContext context, WidgetRef ref) {
+  void _addFirst() {
     final s = ref.read(stringsProvider);
-    HapticFeedback.mediumImpact();
     final ok = ref
         .read(cartProvider.notifier)
         .add(product, shade: product.soleDisplayableShade);
     if (!ok) {
+      AppHaptics.warn();
       AppSnackbar.show(context, s.maxStockReached);
       return;
     }
+    AppHaptics.add();
+    _confirm();
     final container = ProviderScope.containerOf(context, listen: false);
     AppSnackbar.cartAdded(
       context,
@@ -242,17 +312,17 @@ class ProductCardCartControl extends ConsumerWidget {
     );
   }
 
-  void _increment(BuildContext context, WidgetRef ref) {
-    HapticFeedback.selectionClick();
+  void _increment() {
+    AppHaptics.select();
     final ok = ref.read(cartProvider.notifier).incrementProduct(product);
-    if (!ok && context.mounted) {
+    if (!ok && mounted) {
       AppSnackbar.show(context, ref.read(stringsProvider).maxStockReached);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final side = compact ? 34.0 : 36.0;
+  Widget build(BuildContext context) {
+    final side = widget.compact ? 34.0 : 36.0;
     if (!product.inStock) return const SizedBox.shrink();
     final s = ref.s;
 
@@ -261,36 +331,70 @@ class ProductCardCartControl extends ConsumerWidget {
         side: side,
         icon: Icons.palette_outlined,
         label: s.dsChooseShade,
-        onTap: () => _chooseShade(context, ref),
+        onTap: _chooseShade,
       );
     }
 
     final qty = ref.watch(cartProvider.select(_qty));
+    final homeBadge = widget.style == ProductCardCartStyle.homeBadge;
+    // أُزيل من مكان آخر أثناء التأكيد: لا نُبقي علامة صح على سلة فارغة.
+    final confirming = _confirming && qty > 0;
 
-    if (style == ProductCardCartStyle.homeBadge || qty <= 0) {
-      return _RoundCartButton(
+    final Widget control;
+    if (confirming || homeBadge || qty <= 0) {
+      control = _RoundCartButton(
+        key: const ValueKey('round'),
         side: side,
-        icon: qty > 0
+        icon: confirming
+            ? Icons.check_rounded
+            : qty > 0
             ? Icons.shopping_bag_rounded
             : Icons.add_shopping_cart_rounded,
-        label: qty > 0 ? s.dsIncreaseQty : s.dsAddToCart,
+        label: confirming
+            ? s.addedToCart
+            : qty > 0
+            ? s.dsIncreaseQty
+            : s.dsAddToCart,
         filled: qty > 0,
-        badge: style == ProductCardCartStyle.homeBadge ? qty : 0,
-        onTap: () =>
-            qty <= 0 ? _addFirst(context, ref) : _increment(context, ref),
+        badge: homeBadge ? qty : 0,
+        // لمسة أثناء التأكيد تزيد الكمية كما بعده — لا لمسة ضائعة.
+        onTap: qty <= 0 ? _addFirst : _increment,
+      );
+    } else {
+      control = _CartQtyPill(
+        key: const ValueKey('pill'),
+        height: side,
+        quantity: qty,
+        increaseLabel: s.dsIncreaseQty,
+        decreaseLabel: qty <= 1 ? s.dsRemoveFromCart : s.dsDecreaseQty,
+        onIncrement: _increment,
+        onDecrement: () {
+          AppHaptics.select();
+          ref.read(cartProvider.notifier).decrementProduct(product.id);
+        },
       );
     }
 
-    return _CartQtyPill(
-      height: side,
-      quantity: qty,
-      increaseLabel: s.dsIncreaseQty,
-      decreaseLabel: qty <= 1 ? s.dsRemoveFromCart : s.dsDecreaseQty,
-      onIncrement: () => _increment(context, ref),
-      onDecrement: () {
-        HapticFeedback.selectionClick();
-        ref.read(cartProvider.notifier).decrementProduct(product.id);
-      },
+    // الزر الدائري يتفتّح إلى العدّاد (وبالعكس) من طرف البطاقة لا بقفزة.
+    return AnimatedSwitcher(
+      duration: MotionPrefs.of(context, MotionDurations.base),
+      switchInCurve: MotionCurves.standard,
+      switchOutCurve: MotionCurves.exit,
+      layoutBuilder: (current, previous) => Stack(
+        alignment: AlignmentDirectional.centerEnd,
+        children: [...previous, if (current != null) current],
+      ),
+      transitionBuilder: (child, a) => FadeTransition(
+        opacity: a,
+        child: ScaleTransition(
+          alignment: AlignmentDirectional.centerEnd.resolve(
+            Directionality.of(context),
+          ),
+          scale: Tween(begin: 0.85, end: 1.0).animate(a),
+          child: child,
+        ),
+      ),
+      child: control,
     );
   }
 }
@@ -304,6 +408,7 @@ class _RoundCartButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _RoundCartButton({
+    super.key,
     required this.side,
     required this.icon,
     required this.label,
@@ -333,7 +438,9 @@ class _RoundCartButton extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   AnimatedContainer(
-                    duration: still ? Duration.zero : const Duration(milliseconds: 200),
+                    duration: still
+                        ? Duration.zero
+                        : const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                     width: side,
                     height: side,
@@ -342,38 +449,61 @@ class _RoundCartButton extends StatelessWidget {
                       // buttonFill/onAccent: تباين 4.5:1 مضمون حتى مع ألوان العوالم الفاتحة.
                       color: filled ? t.buttonFill : t.surface,
                       border: Border.all(
-                        color: filled ? t.buttonFill : t.hairline.withValues(alpha: 0.9),
+                        color: filled
+                            ? t.buttonFill
+                            : t.hairline.withValues(alpha: 0.9),
                       ),
-                      boxShadow: filled ? AppShadows.floating(t) : AppShadows.raised(t),
+                      boxShadow: filled
+                          ? AppShadows.floating(t)
+                          : AppShadows.raised(t),
                     ),
-                    child: Icon(
-                      icon,
-                      size: side * 0.5,
-                      color: filled ? t.onAccent : t.accentDark,
+                    // تبدّل الأيقونة (حقيبة ← صح ← حقيبة) بتلاشٍ وتكبير ناعم.
+                    child: AnimatedSwitcher(
+                      duration: still ? Duration.zero : MotionDurations.base,
+                      switchInCurve: MotionCurves.pop,
+                      switchOutCurve: MotionCurves.exit,
+                      transitionBuilder: (child, a) => FadeTransition(
+                        opacity: a,
+                        child: ScaleTransition(
+                          scale: Tween(begin: 0.5, end: 1.0).animate(a),
+                          child: child,
+                        ),
+                      ),
+                      child: Icon(
+                        icon,
+                        key: ValueKey(icon),
+                        size: side * 0.5,
+                        color: filled ? t.onAccent : t.accentDark,
+                      ),
                     ),
                   ),
                   if (badge > 0)
                     PositionedDirectional(
                       top: -4,
                       end: -4,
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 17,
-                          minHeight: 17,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.sale,
-                          borderRadius: BorderRadius.circular(AppCorners.pill),
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        child: Text(
-                          badge > 99 ? '99+' : '$badge',
-                          style: AppText.micro.copyWith(
-                            color: Colors.white,
-                            fontSize: 9.5,
-                            height: 1,
+                      child: BadgeBump(
+                        value: badge,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 17,
+                            minHeight: 17,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.sale,
+                            borderRadius: BorderRadius.circular(
+                              AppCorners.pill,
+                            ),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            badge > 99 ? '99+' : '$badge',
+                            style: AppText.micro.copyWith(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              height: 1,
+                            ),
                           ),
                         ),
                       ),
@@ -399,6 +529,7 @@ class _CartQtyPill extends StatelessWidget {
   final VoidCallback onDecrement;
 
   const _CartQtyPill({
+    super.key,
     required this.height,
     required this.quantity,
     required this.increaseLabel,
@@ -414,18 +545,18 @@ class _CartQtyPill extends StatelessWidget {
     final inset = math.max(0.0, (kMinTapTarget - height) / 2);
 
     Widget btn(IconData icon, String label, VoidCallback onTap) => Semantics(
-          container: true,
-          button: true,
-          label: label,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onTap,
-            child: SizedBox.square(
-              dimension: kMinTapTarget,
-              child: Icon(icon, size: 17, color: t.onAccent),
-            ),
-          ),
-        );
+      container: true,
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox.square(
+          dimension: kMinTapTarget,
+          child: Icon(icon, size: 17, color: t.onAccent),
+        ),
+      ),
+    );
 
     return SizedBox(
       height: math.max(kMinTapTarget, height),
@@ -460,15 +591,15 @@ class _CartQtyPill extends StatelessWidget {
                 container: true,
                 liveRegion: true,
                 child: AnimatedSwitcher(
-                  duration: still ? Duration.zero : const Duration(milliseconds: 160),
-                  transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+                  duration: still
+                      ? Duration.zero
+                      : const Duration(milliseconds: 160),
+                  transitionBuilder: (c, a) =>
+                      ScaleTransition(scale: a, child: c),
                   child: Text(
                     '$quantity',
                     key: ValueKey(quantity),
-                    style: AppText.label.copyWith(
-                      color: t.onAccent,
-                      height: 1,
-                    ),
+                    style: AppText.label.copyWith(color: t.onAccent, height: 1),
                   ),
                 ),
               ),

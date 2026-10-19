@@ -11,12 +11,16 @@ class HomeProductCard extends StatelessWidget {
   final double height;
   final bool showPromoBadge;
 
+  /// نطاق وسم الصورة (`home-قسم`) للانتقال المشترك؛ إن لم يُمرّر فبصمة البطاقة نفسها.
+  final String? heroScope;
+
   const HomeProductCard({
     super.key,
     required this.product,
     this.width = HomeTheme.productCardWidth,
     this.height = HomeTheme.productCardHeight,
     this.showPromoBadge = false,
+    this.heroScope,
   });
 
   @override
@@ -26,6 +30,7 @@ class HomeProductCard extends StatelessWidget {
       height: height,
       child: ProductCard(
         product: product,
+        heroTag: productHeroTag(productHeroScope(context, 'home', heroScope), product),
         width: width,
         lite: true,
         showPromoBadge: showPromoBadge,

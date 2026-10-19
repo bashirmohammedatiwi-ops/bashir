@@ -341,15 +341,14 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     } catch (_) {}
   }
 
+  /// صفحة البراند (/brand/:slug) — الـ id بديلاً حين لا slug له.
   void _openBrand(Brand brand) {
     HapticFeedback.selectionClick();
-    final q = StringBuffer(
-      'brandId=${brand.id}&title=${Uri.encodeComponent(brand.label)}',
-    );
+    final key = brand.slug.isNotEmpty ? brand.slug : brand.id;
     // القسم يقيّد البراند فقط حين تتصفّح الدليل — نتائج البحث من كل البراندات.
     final scope = _query.isEmpty ? _selectedCategoryId : null;
-    if (scope != null) q.write('&categoryId=$scope');
-    context.push('/products?${q.toString()}');
+    final query = scope == null ? '' : '?categoryId=${Uri.encodeQueryComponent(scope)}';
+    context.push('/brand/${Uri.encodeComponent(key)}$query');
   }
 
   @override

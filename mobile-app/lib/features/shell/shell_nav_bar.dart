@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/motion/app_motion.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/utils/responsive.dart';
@@ -74,6 +74,7 @@ class ShellNavBar extends StatelessWidget {
         HugeIcons.strokeRoundedShoppingBag02,
         strings.navCart,
         badge: cartCount,
+        hasBadge: true,
         semanticValue: cartCount > 0 ? strings.cartItemsCount(cartCount) : null,
       ),
       _NavItem(
@@ -167,7 +168,7 @@ class ShellNavBar extends StatelessWidget {
                           still: still,
                           onTap: () {
                             if (item.index != currentIndex) {
-                              HapticFeedback.selectionClick();
+                              AppHaptics.select();
                             }
                             onSelect(item.index);
                           },
@@ -190,6 +191,10 @@ class _NavItem {
   final String label;
   final int badge;
 
+  /// التبويب يحمل شارة عدد (السلة) — تبقى مركّبة حتى حين يكون العدد صفراً
+  /// لتنبض عند ظهورها الأول كما عند كل زيادة.
+  final bool hasBadge;
+
   /// ما يقرؤه قارئ الشاشة بعد الاسم — عدد قطع السلة.
   final String? semanticValue;
   const _NavItem(
@@ -197,6 +202,7 @@ class _NavItem {
     this.icon,
     this.label, {
     this.badge = 0,
+    this.hasBadge = false,
     this.semanticValue,
   });
 }
@@ -242,12 +248,17 @@ class _NavTab extends StatelessWidget {
             strokeWidth: selected ? 1.8 : 1.6,
           ),
         ),
-        if (item.badge > 0)
+        if (item.hasBadge)
           // على الطرف الخارجي للأيقونة — لا يغطي الاسم داخل الحبّة المختارة.
           PositionedDirectional(
             top: -6,
             start: -8,
-            child: _Badge(count: item.badge, still: still),
+            child: BadgeBump(
+              value: item.badge,
+              child: item.badge > 0
+                  ? _Badge(count: item.badge)
+                  : const SizedBox.shrink(),
+            ),
           ),
       ],
     );
@@ -272,81 +283,82 @@ class _NavTab extends StatelessWidget {
                 ? math.max(0.0, (width - ShellNavBar._minTabW) / 2)
                 : 0,
           ),
-          child: AnimatedContainer(
+          // الحبّة المختارة تكبر بنعومة إلى مكانها (والبقية أصغر قليلاً) بدل أن تظهر دفعة واحدة.
+          child: AnimatedScale(
+            scale: selected ? 1.0 : 0.95,
             duration: dur,
-            curve: ShellNavBar._curve,
-            height: double.infinity,
-            padding: EdgeInsets.symmetric(
-              horizontal: selected && showLabel ? 14 : 0,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: selected
-                    ? [Color.lerp(pill, Colors.white, 0.18)!, pill]
-                    : [pill.withValues(alpha: 0), pill.withValues(alpha: 0)],
+            curve: MotionCurves.pop,
+            child: AnimatedContainer(
+              duration: dur,
+              curve: ShellNavBar._curve,
+              height: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: selected && showLabel ? 14 : 0,
               ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: pill.withValues(alpha: 0.36),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ]
-                  : const [],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedScale(
-                  scale: selected ? 1.0 : 0.96,
-                  duration: dur,
-                  curve: Curves.easeOutBack,
-                  child: icon,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: selected
+                      ? [Color.lerp(pill, Colors.white, 0.18)!, pill]
+                      : [pill.withValues(alpha: 0), pill.withValues(alpha: 0)],
                 ),
-                // الاسم ينفتح بجانب الأيقونة داخل الحبّة.
-                Flexible(
-                  child: ClipRect(
-                    child: AnimatedSize(
-                      duration: dur,
-                      curve: ShellNavBar._curve,
-                      alignment: AlignmentDirectional.centerStart,
-                      child: selected && showLabel
-                          ? Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                start: 7,
-                              ),
-                              child: TweenAnimationBuilder<double>(
-                                tween: Tween(begin: still ? 1 : 0, end: 1),
-                                duration: still
-                                    ? Duration.zero
-                                    : const Duration(milliseconds: 380),
-                                curve: Curves.easeOut,
-                                builder: (_, v, child) => Opacity(
-                                  opacity: v,
-                                  child: Transform.translate(
-                                    offset: Offset(0, (1 - v) * 4),
-                                    child: child,
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: pill.withValues(alpha: 0.36),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : const [],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  icon,
+                  // الاسم ينفتح بجانب الأيقونة داخل الحبّة.
+                  Flexible(
+                    child: ClipRect(
+                      child: AnimatedSize(
+                        duration: dur,
+                        curve: ShellNavBar._curve,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: selected && showLabel
+                            ? Padding(
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 7,
+                                ),
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween(begin: still ? 1 : 0, end: 1),
+                                  duration: still
+                                      ? Duration.zero
+                                      : const Duration(milliseconds: 380),
+                                  curve: Curves.easeOut,
+                                  builder: (_, v, child) => Opacity(
+                                    opacity: v,
+                                    child: Transform.translate(
+                                      offset: Offset(0, (1 - v) * 4),
+                                      child: child,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    item.label,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    style: labelStyle,
                                   ),
                                 ),
-                                child: Text(
-                                  item.label,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  overflow: TextOverflow.fade,
-                                  style: labelStyle,
-                                ),
-                              ),
-                            )
-                          : const SizedBox(height: 0, width: 0),
+                              )
+                            : const SizedBox(height: 0, width: 0),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -355,37 +367,29 @@ class _NavTab extends StatelessWidget {
   }
 }
 
-/// شارة السلة — تنبض عند تغيّر العدد.
+/// شارة السلة — نبضتها عند الزيادة من [BadgeBump] الموحّد.
 class _Badge extends StatelessWidget {
   final int count;
-  final bool still;
-  const _Badge({required this.count, required this.still});
+  const _Badge({required this.count});
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(count),
-      tween: Tween(begin: still ? 1.0 : 1.45, end: 1.0),
-      duration: still ? Duration.zero : const Duration(milliseconds: 520),
-      curve: Curves.elasticOut,
-      builder: (_, s, child) => Transform.scale(scale: s, child: child),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.sale,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white, width: 1.6),
-        ),
-        child: Text(
-          count > 9 ? '9+' : '$count',
-          style: AppText.micro.copyWith(
-            color: Colors.white,
-            fontSize: 9.5,
-            height: 1,
-            fontWeight: FontWeight.w800,
-          ),
+    return Container(
+      constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.sale,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white, width: 1.6),
+      ),
+      child: Text(
+        count > 9 ? '9+' : '$count',
+        style: AppText.micro.copyWith(
+          color: Colors.white,
+          fontSize: 9.5,
+          height: 1,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

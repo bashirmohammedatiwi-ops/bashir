@@ -15,6 +15,9 @@ abstract final class ProductSeeds {
   /// دقيق، فلا تُتاح الإضافة للسلة منها حتى تصل تفاصيل المنتج الكاملة.
   static final Set<String> _lite = {};
 
+  /// وسم صورة البطاقة التي فُتح منها المنتج (للانتقال المشترك) — يُستهلك مرة واحدة.
+  static final Map<String, String> _heroTags = {};
+
   static void put(Product p, {bool lite = false}) {
     for (final key in {if (p.id.isNotEmpty) p.id, if (p.slug.isNotEmpty) p.slug}) {
       final existing = _seeds.remove(key);
@@ -34,7 +37,26 @@ abstract final class ProductSeeds {
       final oldest = _seeds.keys.first;
       _seeds.remove(oldest);
       _lite.remove(oldest);
+      _heroTags.remove(oldest);
     }
+  }
+
+  /// يحفظ وسم الصورة لفتح المنتج القادم (أو يمسح وسماً قديماً حين يكون null).
+  static void putHeroTag(Product p, String? tag) {
+    for (final key in {if (p.id.isNotEmpty) p.id, if (p.slug.isNotEmpty) p.slug}) {
+      if (tag == null) {
+        _heroTags.remove(key);
+      } else {
+        _heroTags[key] = tag;
+      }
+    }
+  }
+
+  /// وسم الصورة لهذا الفتح — يُمسح بعد قراءته حتى لا يطير فتح لاحق من بطاقة قديمة.
+  static String? takeHeroTag(String idOrSlug) {
+    final tag = _heroTags.remove(idOrSlug);
+    if (tag != null) _heroTags.removeWhere((_, v) => v == tag);
+    return tag;
   }
 
   static Product? get(String idOrSlug) => _seeds[idOrSlug];
@@ -44,7 +66,11 @@ abstract final class ProductSeeds {
 }
 
 /// يفتح صفحة المنتج من بطاقة: يحفظ بياناتها أولاً ليظهر المنتج بلا انتظار.
-void openProduct(BuildContext context, Product p) {
+///
+/// [heroTag]: وسم `Hero` حول صورة البطاقة — تطير الصورة منها إلى معرض الصفحة.
+/// يجب أن يكون فريداً في المسار كله (الشاشة + القسم + المنتج).
+void openProduct(BuildContext context, Product p, {String? heroTag}) {
   ProductSeeds.put(p);
+  ProductSeeds.putHeroTag(p, heroTag);
   context.push('/product/${p.slug.isNotEmpty ? p.slug : p.id}');
 }

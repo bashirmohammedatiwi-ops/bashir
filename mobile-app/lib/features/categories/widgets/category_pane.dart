@@ -743,7 +743,6 @@ class _BrandsRow extends ConsumerWidget {
     final async = entry.level == CategoryLevel.root
         ? ref.watch(categoryBrandsProvider(id))
         : ref.watch(subcategoryBrandsProvider(id));
-    final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
     return async.when(
       loading: () => Padding(
@@ -819,8 +818,10 @@ class _BrandsRow extends ConsumerWidget {
                         final scope = entry.level == CategoryLevel.root
                             ? 'categoryId'
                             : 'subcategoryId';
+                        // صفحة البراند مقيّدة بهذا القسم: منتجاته هنا أولاً ثم الباقي.
+                        final key = b.slug.isNotEmpty ? b.slug : b.id;
                         context.push(
-                          '/products?brandId=${b.id}&$scope=$id&title=${Uri.encodeComponent(b.localizedName(lang))}',
+                          '/brand/${Uri.encodeComponent(key)}?$scope=${Uri.encodeQueryComponent(id)}',
                         );
                       },
                     );

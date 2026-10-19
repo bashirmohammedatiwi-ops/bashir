@@ -28,6 +28,15 @@ import 'ui/price_view.dart';
 /// يبقى الـ enum للتوافق مع الاستدعاءات القديمة.
 enum ProductCardStyle { standard, listing }
 
+/// نطاق وسوم `Hero` لقائمة بطاقات: [scope] الصريح (`شاشة-قسم`) إن مُرّر، وإلا بصمة
+/// عنصر القائمة نفسه — فريدة لكل قائمة مركّبة، فلا يتكرر وسم بين قسمين يعرضان المنتج
+/// نفسه ولا بين تبويبات MainShell المخفية (HeroController يفحصها أيضاً).
+String productHeroScope(BuildContext context, String kind, [String? scope]) =>
+    scope ?? '$kind-${identityHashCode(context)}';
+
+/// وسم صورة بطاقة: `${screenKey}-${sectionKey}-${id}`.
+String productHeroTag(String scope, Product product) => '$scope-${product.id}';
+
 /// بطاقة المنتج الموحّدة:
 /// صورة داخل إطار ناعم + شارة خصم/جديد + قلب + زر سلة (أو جرس توفّر للنافد)،
 /// ثم البراند، الاسم (سطران ثابتان)، التقييم، السعر، ودرجات الألوان.
@@ -39,6 +48,10 @@ class ProductCard extends ConsumerWidget {
   final bool lite;
   final ProductCardStyle style;
 
+  /// وسم `Hero` لصورة البطاقة — تطير الصورة إلى معرض صفحة المنتج. فريد في الشاشة
+  /// (انظري [productHeroTag])؛ null = بلا انتقال مشترك.
+  final String? heroTag;
+
   const ProductCard({
     super.key,
     required this.product,
@@ -47,6 +60,7 @@ class ProductCard extends ConsumerWidget {
     this.showRating = false,
     this.lite = false,
     this.style = ProductCardStyle.standard,
+    this.heroTag,
   });
 
   static const radius = AppCorners.lg;
@@ -61,6 +75,8 @@ class ProductCard extends ConsumerWidget {
     final spokenName = brand.isNotEmpty && !name.toLowerCase().contains(brand.toLowerCase())
         ? '$brand $name'
         : name;
+    // «تقليل الحركة»: لا طيران للصورة — الصفحة تظهر بانتقالها العادي.
+    final hero = MediaQuery.disableAnimationsOf(context) ? null : heroTag;
 
     return Semantics(
       button: true,
@@ -77,7 +93,7 @@ class ProductCard extends ConsumerWidget {
         shadows: AppShadows.card(t),
         splashColor: t.accent.withValues(alpha: 0.06),
         highlightColor: t.accent.withValues(alpha: 0.06),
-        onTap: () => openProduct(context, product),
+        onTap: () => openProduct(context, product, heroTag: hero),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -86,6 +102,7 @@ class ProductCard extends ConsumerWidget {
                 product: product,
                 showPromoBadge: showPromoBadge,
                 lite: lite,
+                heroTag: hero,
               ),
             ),
             _CardInfo(product: product, showRating: showRating),
@@ -166,11 +183,13 @@ class _CardImage extends ConsumerWidget {
   final Product product;
   final bool showPromoBadge;
   final bool lite;
+  final String? heroTag;
 
   const _CardImage({
     required this.product,
     required this.showPromoBadge,
     required this.lite,
+    this.heroTag,
   });
 
   @override
@@ -203,9 +222,8 @@ class _CardImage extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
               child: LayoutBuilder(
-                builder: (context, c) => Opacity(
-                  opacity: product.inStock ? 1 : 0.45,
-                  child: ProductCoverImage(
+                builder: (context, c) {
+                  final image = ProductCoverImage(
                     url: product.coverUrl,
                     width: c.maxWidth,
                     height: c.maxHeight,
@@ -213,8 +231,12 @@ class _CardImage extends ConsumerWidget {
                     filterQuality: lite
                         ? FilterQuality.low
                         : FilterQuality.medium,
-                  ),
-                ),
+                  );
+                  return Opacity(
+                    opacity: product.inStock ? 1 : 0.45,
+                    child: heroTag == null ? image : Hero(tag: heroTag!, child: image),
+                  );
+                },
               ),
             ),
           ),

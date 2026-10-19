@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_text.dart';
 import '../../worlds/world_theme.dart';
 
 /// ثيم صفحة تفاصيل المنتج — يتبع العالم النشط.
 abstract final class ProductDetailTheme {
-  static const sheetRadius = 26.0;
+  static const sheetRadius = AppCorners.xl;
   static const overlap = 20.0;
   static const padH = 18.0;
   static const sectionGap = 14.0;
@@ -31,14 +32,14 @@ abstract final class ProductDetailTheme {
     final t = context.worldTheme;
     return BoxDecoration(
       color: t.surface,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppCorners.lg),
       border: Border.all(color: t.hairline.withValues(alpha: 0.55)),
     );
   }
 
   static BoxDecoration sectionDecoration(BuildContext context) => BoxDecoration(
         color: context.worldTheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppCorners.lg),
         border: Border.all(color: context.worldTheme.hairline.withValues(alpha: 0.6)),
       );
 
@@ -46,7 +47,7 @@ abstract final class ProductDetailTheme {
     final t = context.worldTheme;
     return BoxDecoration(
       color: t.surface,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(AppCorners.lg),
       border: Border.all(color: t.accentSoft.withValues(alpha: 0.55)),
     );
   }
@@ -55,7 +56,7 @@ abstract final class ProductDetailTheme {
     final t = context.worldTheme;
     return BoxDecoration(
       color: active ? t.accentLight : t.canvasWarm,
-      borderRadius: BorderRadius.circular(99),
+      borderRadius: BorderRadius.circular(AppCorners.pill),
       border: Border.all(
         color: active ? t.accent.withValues(alpha: 0.25) : t.hairline,
       ),
@@ -64,7 +65,7 @@ abstract final class ProductDetailTheme {
 
   static BoxDecoration stockPillDecoration(Color color) => BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(99),
+        borderRadius: BorderRadius.circular(AppCorners.pill),
         border: Border.all(color: color.withValues(alpha: 0.22)),
       );
 
@@ -83,10 +84,7 @@ abstract final class ProductDetailTheme {
     );
   }
 
-  static TextStyle sectionTitleStyle(BuildContext context) => TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-        color: context.worldTheme.ink,
-        letterSpacing: -0.3,
-      );
+  /// عنوان قسم داخل الصفحة — من سلّم الخطوط الموحّد بلون حبر العالم.
+  static TextStyle sectionTitleStyle(BuildContext context) =>
+      AppText.title3.copyWith(color: context.worldTheme.ink);
 }

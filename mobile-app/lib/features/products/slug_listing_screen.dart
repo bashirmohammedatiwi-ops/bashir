@@ -8,7 +8,6 @@ import '../../core/widgets/ui/ui.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/category_tree.dart';
 import '../worlds/world_theme.dart';
-import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
 import '../../data/services/api_service.dart';
 import 'product_listing_screen.dart';
@@ -107,24 +106,6 @@ class _ErrorScaffold extends StatelessWidget {
   }
 }
 
-class BrandSlugListingScreen extends ConsumerWidget {
-  final String slug;
-  const BrandSlugListingScreen({super.key, required this.slug});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(brandBySlugProvider(slug));
-    return async.when(
-      loading: () => const _LoadingScaffold(),
-      error: (e, _) => _ErrorScaffold(error: e, onRetry: () => ref.invalidate(brandBySlugProvider(slug))),
-      data: (brand) => ProductListingScreen(
-        title: brand.localizedName(ref.read(languageCodeProvider)),
-        brandId: brand.id,
-      ),
-    );
-  }
-}
-
 /// القسم ومستواه (0 رئيسي، 1 فرعي، 2 ثالث) لـ slug غير موجود في الشجرة المحفوظة.
 ///
 /// فلتر الخادم `categoryId` يطابق القسم الرئيسي وما تحته فقط — تمرير قسم فرعي به يعيد
@@ -156,7 +137,3 @@ int _depthFromParent(Category category, List<Category>? roots) {
   if (parent == null) return 1;
   return parent.parentId == null || parent.parentId!.isEmpty ? 1 : 2;
 }
-
-final brandBySlugProvider = FutureProvider.autoDispose.family<Brand, String>((ref, slug) {
-  return ref.read(apiServiceProvider).getBrandBySlug(slug);
-});

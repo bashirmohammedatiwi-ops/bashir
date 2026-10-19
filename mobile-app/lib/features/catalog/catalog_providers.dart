@@ -165,19 +165,64 @@ final buyAgainProvider = FutureProvider.autoDispose<List<Product>>((ref) {
   return keepAliveFor(ref, _shelfTtl, () => ref.read(apiServiceProvider).getBuyAgain());
 });
 
-/// منتجات مشابهة من نفس القسم (يستثني المنتج الحالي).
+/// «يُشترى معه غالباً»: من طلبات الزبونات، وإلا من البراند نفسه (المتوفر فقط).
 final boughtTogetherProvider = FutureProvider.autoDispose
     .family<({List<Product> items, bool fromOrders}), String>((ref, productId) {
   return ref.read(apiServiceProvider).getBoughtTogether(productId);
 });
 
-final similarProductsProvider = FutureProvider.autoDispose
-    .family<List<Product>, ({String categoryId, String excludeId})>((ref, args) async {
-  final page = await ref
-      .read(apiServiceProvider)
-      .getProducts(categoryId: args.categoryId, limit: 10, sort: 'brand');
-  return page.items.where((p) => p.id != args.excludeId).take(8).toList();
+/// مفتاح [similarProductsProvider]: أقسام المنتج الثلاثة (الأعمق أولاً عند الطلب) والمنتج المستثنى.
+typedef SimilarProductsKey = ({
+  String? categoryId,
+  String? subcategoryId,
+  String? tertiaryCategoryId,
+  String excludeId,
 });
+
+/// أقل عدد يُعرض من القسم الأعمق قبل أن نكمل من القسم الأب.
+const _similarMin = 4;
+const _similarLimit = 12;
+
+/// «قد يعجبكِ أيضاً»: الأكثر مبيعاً المتوفر من أعمق قسم للمنتج (الثالث ← الفرعي ←
+/// الرئيسي)، ويُكمَل من القسم الأب حين يرجع أقل من 4 — لا قائمة واحدة عامة لكل منتجات
+/// القسم الرئيسي. تبقى 5 دقائق (الرجوع للصفحة بلا انتظار)؛ الخطأ لا يبقى.
+final similarProductsProvider =
+    FutureProvider.autoDispose.family<List<Product>, SimilarProductsKey>((ref, args) {
+  return keepAliveFor(ref, _shelfTtl, () async {
+    final api = ref.read(apiServiceProvider);
+    final levels = <({String? tertiary, String? sub, String? root})>[
+      if (_present(args.tertiaryCategoryId)) (tertiary: args.tertiaryCategoryId, sub: null, root: null),
+      if (_present(args.subcategoryId)) (tertiary: null, sub: args.subcategoryId, root: null),
+      if (_present(args.categoryId)) (tertiary: null, sub: null, root: args.categoryId),
+    ];
+    final out = <Product>[];
+    final seen = <String>{args.excludeId};
+    Object? firstError;
+    for (final level in levels) {
+      try {
+        final page = await api.getProducts(
+          categoryId: level.root,
+          subcategoryId: level.sub,
+          tertiaryCategoryId: level.tertiary,
+          sort: 'popular',
+          inStock: true,
+          limit: _similarLimit,
+        );
+        for (final p in page.items) {
+          if (p.inStock && seen.add(p.id)) out.add(p);
+        }
+      } catch (e) {
+        // مستوى واحد فشل: نجرّب الأب — ولا نُظهر خطأً إن رجع أي شيء.
+        firstError ??= e;
+      }
+      if (out.length >= _similarMin) break;
+    }
+    if (out.isEmpty && firstError != null) throw firstError;
+    return out.take(_similarLimit).toList(growable: false);
+  });
+});
+
+bool _present(String? id) => id != null && id.trim().isNotEmpty;
 
 /// قواعد نقاط الولاء الحالية (آخر إعدادات متجر معروفة — تبقى حتى بلا اتصال).
 final loyaltyRulesProvider = Provider<LoyaltyRules>((ref) {

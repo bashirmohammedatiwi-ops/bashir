@@ -15,7 +15,7 @@ import '../../home/widgets/world_showcase.dart';
 import '../../worlds/world_theme.dart';
 import '../search_strings.dart';
 
-/// عنصر في "الأكثر طلباً": اسم القسم ومساره.
+/// قسم في «أقسام غنية بالمنتجات»: اسمه ومساره.
 class SearchTrend {
   final String label;
   final String location;
@@ -23,7 +23,8 @@ class SearchTrend {
 }
 
 /// الحالة الافتراضية قبل الكتابة — صفحة اكتشاف كاملة:
-/// بحثك الأخير، العوالم، الأكثر طلباً (مرقّم)، الأقسام كدوائر، البراندات، وشاهدتِ مؤخراً.
+/// بحثك الأخير، العوالم، الأكثر بحثاً (مرقّم، من سجل الخادم) أو أفكار للبحث،
+/// الأقسام الأغنى بالمنتجات، الأقسام كدوائر، البراندات، وشاهدتِ مؤخراً.
 class SearchIdleView extends StatelessWidget {
   final AppStrings s;
   final String lang;
@@ -35,6 +36,15 @@ class SearchIdleView extends StatelessWidget {
   final List<Product> recentProducts;
   final List<StoreWorld> worlds;
   final List<SearchTrend> trends;
+
+  /// العبارات الأكثر بحثاً فعلاً — فارغة إن لم يتجمّع سجل كافٍ بعد.
+  final List<String> trendingSearches;
+
+  /// اقتراحات ثابتة تُعرض بدل [trendingSearches] حين تكون فارغة.
+  final List<String> searchIdeas;
+
+  /// يملأ الحقل ويبحث في الشاشة نفسها (بلا انتقال صفحة).
+  final ValueChanged<String> onSearch;
   final List<Brand> brands;
   final ValueChanged<String> onRecentTap;
   final ValueChanged<String> onRecentRemove;
@@ -60,6 +70,9 @@ class SearchIdleView extends StatelessWidget {
     required this.onClearRecentProducts,
     this.worlds = const [],
     this.trends = const [],
+    this.trendingSearches = const [],
+    this.searchIdeas = const [],
+    required this.onSearch,
     this.brands = const [],
     required this.onWorldTap,
     required this.onLocation,
@@ -117,13 +130,40 @@ class SearchIdleView extends StatelessWidget {
             onSelect: onWorldTap,
           ),
         ],
-        if (trends.isNotEmpty) ...[
+        if (trendingSearches.isNotEmpty) ...[
           AppSectionTitle(
             title: s.searchTrendingTitle,
             subtitle: s.searchTrendingSubtitle,
             padding: const EdgeInsetsDirectional.fromSTEB(16, 26, 16, 10),
           ),
-          _TrendingGrid(trends: trends, onTap: (tr) => onLocation(tr.location)),
+          _TrendingGrid(
+            terms: trendingSearches,
+            onTap: (i) => onSearch(trendingSearches[i]),
+          ),
+        ] else if (searchIdeas.isNotEmpty) ...[
+          AppSectionTitle(
+            title: s.searchIdeasTitle,
+            subtitle: s.searchIdeasSubtitle,
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 26, 16, 10),
+          ),
+          _ChipsWrap(
+            labels: searchIdeas,
+            icon: Icons.search_rounded,
+            onTap: (i) => onSearch(searchIdeas[i]),
+          ),
+        ],
+        if (trends.isNotEmpty) ...[
+          AppSectionTitle(
+            title: s.searchPopularCategories,
+            subtitle: s.searchPopularCategoriesSubtitle,
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 26, 16, 10),
+          ),
+          _ChipsWrap(
+            labels: [for (final tr in trends) tr.label],
+            icon: Icons.grid_view_rounded,
+            showChevron: true,
+            onTap: (i) => onLocation(trends[i].location),
+          ),
         ],
         if (categories.isNotEmpty) ...[
           AppSectionTitle(
@@ -162,24 +202,62 @@ class SearchIdleView extends StatelessWidget {
   }
 }
 
-/// "الأكثر طلباً": قائمة مرقّمة بعمودين — أرقام كبيرة متدرّجة بلون العالم.
+/// شرائح بأيقونة — أفكار البحث والأقسام الأغنى بالمنتجات.
+class _ChipsWrap extends StatelessWidget {
+  final List<String> labels;
+  final IconData icon;
+  final bool showChevron;
+  final ValueChanged<int> onTap;
+  const _ChipsWrap({
+    required this.labels,
+    required this.icon,
+    required this.onTap,
+    this.showChevron = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (var i = 0; i < labels.length; i++)
+              AppChoiceChip(
+                label: labels[i],
+                icon: icon,
+                showChevron: showChevron,
+                selected: false,
+                onTap: () => onTap(i),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «الأكثر بحثاً الآن»: قائمة مرقّمة بعمودين — أرقام كبيرة متدرّجة بلون العالم.
 class _TrendingGrid extends StatelessWidget {
-  final List<SearchTrend> trends;
-  final ValueChanged<SearchTrend> onTap;
-  const _TrendingGrid({required this.trends, required this.onTap});
+  final List<String> terms;
+  final ValueChanged<int> onTap;
+  const _TrendingGrid({required this.terms, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    final half = (trends.length / 2).ceil();
+    final half = (terms.length / 2).ceil();
     Widget column(int from, int to) => Expanded(
       child: Column(
         children: [
           for (var i = from; i < to; i++)
             _TrendRow(
               rank: i + 1,
-              trend: trends[i],
-              onTap: () => onTap(trends[i]),
+              label: terms[i],
+              onTap: () => onTap(i),
             ),
         ],
       ),
@@ -213,7 +291,7 @@ class _TrendingGrid extends StatelessWidget {
                 height: half * 50.0,
                 color: t.hairline.withValues(alpha: 0.6),
               ),
-              column(half, trends.length),
+              column(half, terms.length),
             ],
           ),
         ),
@@ -224,11 +302,11 @@ class _TrendingGrid extends StatelessWidget {
 
 class _TrendRow extends StatelessWidget {
   final int rank;
-  final SearchTrend trend;
+  final String label;
   final VoidCallback onTap;
   const _TrendRow({
     required this.rank,
-    required this.trend,
+    required this.label,
     required this.onTap,
   });
 
@@ -277,7 +355,7 @@ class _TrendRow extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  trend.label,
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.label.copyWith(

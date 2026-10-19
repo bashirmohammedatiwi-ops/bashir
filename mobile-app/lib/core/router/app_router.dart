@@ -11,6 +11,7 @@ import '../../features/advisor/advisor_screen.dart';
 import '../../features/alerts/restock_alerts_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
+import '../../features/brands/brand_screen.dart';
 import '../../features/brands/brands_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
 import '../../features/checkout/order_success_screen.dart';
@@ -183,8 +184,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => CategorySlugListingScreen(slug: s.pathParameters['slug']!),
       ),
       GoRoute(
+        // المقطع قد يكون slug أو id (ماركات بلا slug)؛ النطاق الاختياري يأتي من الاستعلام.
         path: '/brand/:slug',
-        builder: (_, s) => BrandSlugListingScreen(slug: s.pathParameters['slug']!),
+        builder: (_, s) => BrandScreen(
+          s.pathParameters['slug']!,
+          categoryId: s.uri.queryParameters['categoryId'],
+          subcategoryId: s.uri.queryParameters['subcategoryId'],
+        ),
       ),
       GoRoute(
         path: '/products',

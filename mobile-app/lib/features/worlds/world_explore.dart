@@ -609,7 +609,7 @@ class _BrandName extends StatelessWidget {
         customBorder: shape,
         onTap: () {
           HapticFeedback.selectionClick();
-          context.push('/products?brandId=${brand.id}&title=${Uri.encodeComponent(name)}');
+          context.push('/brand/${Uri.encodeComponent(brand.slug.isNotEmpty ? brand.slug : brand.id)}');
         },
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: kMinTapTarget),

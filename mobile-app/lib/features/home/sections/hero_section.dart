@@ -20,6 +20,7 @@ import '../widgets/world_showcase.dart';
 import '../widgets/home_banner_stage.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/motion/app_motion.dart';
 import '../widgets/home_category_grid.dart';
 import '../widgets/home_quick_dock.dart';
 import '../widgets/home_theme.dart';
@@ -107,57 +108,65 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                     current: bandWorld,
                   ),
                   const SizedBox(height: 16),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 360),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    layoutBuilder: (current, previous) => Stack(
-                      alignment: Alignment.topCenter,
-                      children: [...previous, if (current != null) current],
-                    ),
-                    transitionBuilder: (child, animation) {
-                      final rtl =
-                          Directionality.of(context) == TextDirection.rtl;
-                      final travel = (rtl ? -_slide : _slide) * 0.1;
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position:
-                              Tween<Offset>(
-                                begin: Offset(travel, 0),
-                                end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeOutCubic,
-                                ),
-                              ),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Column(
-                      key: ValueKey(slug ?? 'world'),
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const WorldBannerCarousel(),
-                        const SizedBox(height: 4),
-                        if (worldCategories.isNotEmpty)
-                          HomeHeroCategoryStrip(
-                            categories: worldCategories,
-                            wash: world == null
-                                ? t.accentLight
-                                : Color.alphaBlend(
-                                    world.accent.withValues(alpha: 0.10),
-                                    t.surface,
-                                  ),
-                            accent: world?.accent,
-                            worldSections: true,
+                  // تبديل العالم: الطبقة الخارجة تبقى بمحتوى عالمها (البنرات تأخذ
+                  // [slug] صريحاً) وتنزلق 12 نقطة عكس اتجاه الداخلة وهي تختفي.
+                  // الطبقتان مكدّستان من الأعلى، والارتفاع يتبدّل بنعومة لا بقفزة.
+                  AnimatedSize(
+                    duration: MotionPrefs.of(context, MotionDurations.slow),
+                    curve: MotionCurves.standard,
+                    alignment: Alignment.topCenter,
+                    clipBehavior: Clip.none,
+                    child: AnimatedSwitcher(
+                      duration: MotionPrefs.of(context, MotionDurations.slow),
+                      switchInCurve: MotionCurves.standard,
+                      switchOutCurve: MotionCurves.exit,
+                      layoutBuilder: (current, previous) => Stack(
+                        alignment: Alignment.topCenter,
+                        children: [...previous, if (current != null) current],
+                      ),
+                      transitionBuilder: (child, animation) {
+                        final rtl =
+                            Directionality.of(context) == TextDirection.rtl;
+                        final incoming = child.key == ValueKey(slug ?? 'world');
+                        // الداخلة تأتي من جهة الانتقال، والخارجة تمضي إلى الجهة الأخرى.
+                        final travel =
+                            (rtl ? -_slide : _slide) *
+                            (incoming ? 12.0 : -12.0);
+                        return FadeTransition(
+                          opacity: animation,
+                          child: AnimatedBuilder(
+                            animation: animation,
+                            child: child,
+                            builder: (_, child) => Transform.translate(
+                              offset: Offset(travel * (1 - animation.value), 0),
+                              child: child,
+                            ),
                           ),
-                        // الرفوف الشخصية (السلة، الكوبونات، المفضلة…) فتحات مستقلة
-                        // في قائمة الرئيسية — لا تُنسخ هنا مرتين أثناء تبديل العالم.
-                        const SizedBox(height: 18),
-                      ],
+                        );
+                      },
+                      child: Column(
+                        key: ValueKey(slug ?? 'world'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          WorldBannerCarousel(slug: slug),
+                          const SizedBox(height: 4),
+                          if (worldCategories.isNotEmpty)
+                            HomeHeroCategoryStrip(
+                              categories: worldCategories,
+                              wash: world == null
+                                  ? t.accentLight
+                                  : Color.alphaBlend(
+                                      world.accent.withValues(alpha: 0.10),
+                                      t.surface,
+                                    ),
+                              accent: world?.accent,
+                              worldSections: true,
+                            ),
+                          // الرفوف الشخصية (السلة، الكوبونات، المفضلة…) فتحات مستقلة
+                          // في قائمة الرئيسية — لا تُنسخ هنا مرتين أثناء تبديل العالم.
+                          const SizedBox(height: 18),
+                        ],
+                      ),
                     ),
                   ),
                 ],

@@ -148,7 +148,8 @@ String? _routeFor(String type, String value) {
     'category' when has => '/products?categoryId=$v',
     'subcategory' when has => '/products?subcategoryId=$v',
     'tertiary' when has => '/products?tertiaryCategoryId=$v',
-    'brand' when has => _isUuid(value) ? '/products?brandId=$v' : '/brand/$v',
+    // الخادم يقبل المعرّف أو الـ slug: صفحة البراند في الحالتين.
+    'brand' when has => '/brand/$v',
     'package' when has => '/package/$v',
     'skinConcern' when has => '/skin-guide/$v',
     'skinGuide' => '/skin-guide',
@@ -382,17 +383,11 @@ void openCategoryLink(BuildContext context, Category category) {
 }
 
 void openBrandLink(BuildContext context, Brand brand) {
-  final lang = ProviderScope.containerOf(
-    context,
-    listen: false,
-  ).read(languageCodeProvider);
   openSectionLink(
     context,
     linkType: 'brand',
     linkValue: brand.id,
-    legacyLink:
-        brand.link ??
-        '/products?brandId=${brand.id}&title=${Uri.encodeComponent(brand.localizedName(lang))}',
+    legacyLink: brand.link ?? '/brand/${Uri.encodeComponent(brand.slug.isNotEmpty ? brand.slug : brand.id)}',
   );
 }
 

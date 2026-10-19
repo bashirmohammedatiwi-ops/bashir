@@ -89,14 +89,15 @@ export class SearchService {
   }
 
   /**
-   * الأكثر بحثاً فعلاً (عبارات وجدت نتائج، بحثت عنها 3 مرات على الأقل خلال 30 يوماً) —
-   * لاقتراحات شاشة البحث. تُحفظ 10 دقائق.
+   * الأكثر بحثاً فعلاً — لاقتراحات شاشة البحث: عبارات وجدت نتائج في آخر بحث، بُحث عنها
+   * خلال 14 يوماً، و3 مرات على الأقل (عبارة نادرة قد تكون شخصية فلا تُعرض لغير صاحبتها).
+   * تُحفظ 10 دقائق.
    */
-  async trending(lang: SearchLang, limit = 10) {
+  async trending(lang: SearchLang, limit = 12) {
     const key = `search:trending:${lang}:${limit}`;
     const hit = getCached<{ items: { q: string; count: number }[] }>(key);
     if (hit) return hit;
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60_000);
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60_000);
     const rows = await this.prisma.searchQueryStat
       .findMany({
         where: { lang, lastTotal: { gt: 0 }, count: { gte: 3 }, lastAt: { gte: since } },

@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/motion/app_motion.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/store_world.dart';
@@ -19,8 +19,13 @@ const _interval = Duration(seconds: 5);
 
 /// بنرات العالم: بطاقات بزوايا كبيرة مع لمحة من التالية، عنوان + وصف + سهم دائري،
 /// ونقاط أسفلها (النشطة ممتدّة بلون العالم).
+///
+/// [slug] يثبّت العالم المعروض: أثناء تبديل العالم تبقى الطبقة الخارجة ببنراتها
+/// حتى تختفي بدل أن تقفز لبنرات العالم الجديد. بدونه: العالم المختار.
 class WorldBannerCarousel extends ConsumerStatefulWidget {
-  const WorldBannerCarousel({super.key});
+  final String? slug;
+
+  const WorldBannerCarousel({super.key, this.slug});
 
   @override
   ConsumerState<WorldBannerCarousel> createState() => _WorldBannerCarouselState();
@@ -61,11 +66,13 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
   @override
   Widget build(BuildContext context) {
     final worlds = ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
-    final slug = resolveWorldSlug(selected: ref.watch(selectedWorldSlugProvider), worlds: worlds);
+    final slug =
+        widget.slug ?? resolveWorldSlug(selected: ref.watch(selectedWorldSlugProvider), worlds: worlds);
     if (slug == null) return const SizedBox.shrink();
     final world =
         ref.watch(worldDetailProvider(slug)).valueOrNull ??
-        worlds.firstWhere((w) => w.slug == slug);
+        worlds.where((w) => w.slug == slug).firstOrNull;
+    if (world == null) return const SizedBox.shrink();
     final banners =
         ref.watch(worldFeedProvider(slug)).valueOrNull?.banners.where((b) => b.hasImage).toList() ??
         const <AppBanner>[];
@@ -108,7 +115,8 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
               controller: _page,
               itemCount: banners.length,
               onPageChanged: (i) {
-                HapticFeedback.selectionClick();
+                // اهتزاز للسحب باليد فقط — التقليب التلقائي يمرّ بصمت.
+                if (_touching) AppHaptics.select();
                 setState(() => _index = i);
               },
               itemBuilder: (context, i) {

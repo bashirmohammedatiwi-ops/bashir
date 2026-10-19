@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
+import '../../core/motion/app_motion.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/theme/app_fonts.dart';
 import '../../core/widgets/app_network_image.dart';
@@ -26,8 +26,13 @@ const List<({int? min, int? max})> _defaultGiftTiers = [
 
 /// بطاقة عالم الهدايا أسفل الرئيسية: لمسة البطاقة تنقل إليه وتعود لأعلى الصفحة
 /// (حتى يُرى العالم من بدايته)، وشرائح الميزانية تفتح الهدايا بنطاق السعر مباشرة.
+///
+/// [currentSlug] العالم الذي تُعرض فيه البطاقة (تختفي داخل عالم الهدايا نفسه)؛
+/// يثبّته للطبقة الخارجة أثناء تبديل العالم. بدونه: العالم المختار.
 class GiftWorldHomeCard extends ConsumerWidget {
-  const GiftWorldHomeCard({super.key});
+  final String? currentSlug;
+
+  const GiftWorldHomeCard({super.key, this.currentSlug});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,7 +41,8 @@ class GiftWorldHomeCard extends ConsumerWidget {
     final worlds = ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
     final gift = worlds.where((world) => world.isGift).firstOrNull;
     if (gift == null) return const SizedBox.shrink();
-    if (ref.watch(selectedWorldSlugProvider) == gift.slug) return const SizedBox.shrink();
+    final current = currentSlug ?? ref.watch(selectedWorldSlugProvider);
+    if (current == gift.slug) return const SizedBox.shrink();
 
     final detailTiers = ref.watch(worldDetailProvider(gift.slug)).valueOrNull?.budgetTiers ?? const [];
     final tiers = (detailTiers.isNotEmpty
@@ -49,14 +55,14 @@ class GiftWorldHomeCard extends ConsumerWidget {
     final tagline = gift.localizedTagline(lang);
 
     void openGiftWorld() {
-      HapticFeedback.selectionClick();
+      AppHaptics.select();
       ref.read(selectedWorldSlugProvider.notifier).state = gift.slug;
       // البطاقة في آخر الصفحة: نعود لأعلاها فيظهر العالم الجديد من بدايته.
       ref.read(homeScrollToTopProvider.notifier).state++;
     }
 
     void openBudget(({int? min, int? max}) tier) {
-      HapticFeedback.selectionClick();
+      AppHaptics.select();
       final q = <String>[
         if (tier.min != null) 'minPrice=${tier.min}',
         if (tier.max != null) 'maxPrice=${tier.max}',
@@ -271,14 +277,17 @@ class _GiftBudgetChip extends StatelessWidget {
 }
 
 /// براندات العالم تحت الأقسام، ببطاقات بيضاء مثل المرجع.
+///
+/// [slug] يثبّت العالم (للطبقة الخارجة أثناء التبديل). بدونه: العالم المختار.
 class WorldHomeBrands extends ConsumerWidget {
-  const WorldHomeBrands({super.key});
+  final String? slug;
+
+  const WorldHomeBrands({super.key, this.slug});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final slug = ref.watch(selectedWorldSlugProvider);
+    final slug = this.slug ?? ref.watch(selectedWorldSlugProvider);
     if (slug == null) return const SizedBox.shrink();
-    final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
     final theme = ref.watch(activeWorldThemeProvider);
     final brands =
@@ -302,14 +311,13 @@ class WorldHomeBrands extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) {
               final brand = brands[i];
-              final name = brand.localizedName(lang);
               return _HomeBrandPill(
                 name: brand.label,
                 logoUrl: brand.logoUrl,
                 ring: theme.hairline,
                 ink: theme.ink,
                 onTap: () => context.push(
-                  '/products?brandId=${brand.id}&title=${Uri.encodeComponent(name)}',
+                  '/brand/${Uri.encodeComponent(brand.slug.isNotEmpty ? brand.slug : brand.id)}',
                 ),
               );
             },

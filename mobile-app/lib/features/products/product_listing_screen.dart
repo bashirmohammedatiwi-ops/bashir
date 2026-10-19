@@ -34,7 +34,8 @@ import 'widgets/listing_filters_section.dart';
 import 'widgets/listing_page_header.dart';
 import 'widgets/listing_theme.dart';
 
-class ProductListingScreen extends ConsumerStatefulWidget {
+/// صفحة قائمة المنتجات العامة: رأس مدمج بالعنوان والفلاتر السريعة فوق [ProductListingBody].
+class ProductListingScreen extends StatelessWidget {
   final String title;
   final String? categoryId;
   final String? subcategoryId;
@@ -90,7 +91,91 @@ class ProductListingScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ProductListingScreen> createState() => _ProductListingScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.worldTheme.canvas,
+      body: ProductListingBody(
+        title: title,
+        categoryId: categoryId,
+        subcategoryId: subcategoryId,
+        tertiaryCategoryId: tertiaryCategoryId,
+        brandId: brandId,
+        search: search,
+        isNew: isNew,
+        isBestSeller: isBestSeller,
+        isPromo: isPromo,
+        isFeatured: isFeatured,
+        concernSlug: concernSlug,
+        initialMinPrice: initialMinPrice,
+        initialMaxPrice: initialMaxPrice,
+        world: world,
+        ids: ids,
+        minDiscount: minDiscount,
+        skinType: skinType,
+        titleExplicit: titleExplicit,
+      ),
+    );
+  }
+}
+
+/// جسم قائمة المنتجات القابل لإعادة الاستخدام: التحميل والصفحات والفلاتر والشبكة.
+///
+/// بلا [leadingSlivers] يرسم رأس القائمة المدمج (رجوع، عنوان، فلاتر سريعة) فوق التمرير —
+/// هذا شكل [ProductListingScreen]. مع [leadingSlivers] (رأس صفحة البراند مثلاً) تُوضع
+/// الشرائح أولاً داخل نفس التمرير، ويصير شريط الفلاتر سطراً مثبّتاً تحتها.
+/// تغيّر أي فلتر من الخارج ([isNew]، [isBestSeller]، [isPromo]…) يعيد التحميل من الأول.
+class ProductListingBody extends ConsumerStatefulWidget {
+  final String title;
+  final String? categoryId;
+  final String? subcategoryId;
+  final String? tertiaryCategoryId;
+  final String? brandId;
+  final String? search;
+  final bool isNew;
+  final bool isBestSeller;
+  final bool isPromo;
+  final bool isFeatured;
+  final String? concernSlug;
+  final int? initialMinPrice;
+  final int? initialMaxPrice;
+  final String? world;
+  final List<String>? ids;
+  final int? minDiscount;
+  final String? skinType;
+  final bool titleExplicit;
+
+  /// شرائح تسبق القائمة في نفس التمرير. null = رأس القائمة المدمج المعتاد.
+  final List<Widget>? leadingSlivers;
+
+  /// يُنتظر مع السحب للتحديث بجانب إعادة تحميل القائمة (عدد منتجات الرأس…).
+  final Future<void> Function()? onRefresh;
+
+  const ProductListingBody({
+    super.key,
+    required this.title,
+    this.categoryId,
+    this.subcategoryId,
+    this.tertiaryCategoryId,
+    this.brandId,
+    this.search,
+    this.isNew = false,
+    this.isBestSeller = false,
+    this.isPromo = false,
+    this.isFeatured = false,
+    this.concernSlug,
+    this.initialMinPrice,
+    this.initialMaxPrice,
+    this.world,
+    this.ids,
+    this.minDiscount,
+    this.skinType,
+    this.titleExplicit = false,
+    this.leadingSlivers,
+    this.onRefresh,
+  });
+
+  @override
+  ConsumerState<ProductListingBody> createState() => _ProductListingBodyState();
 }
 
 enum _BrandListingPhase { inCategory, otherBrand, done }
@@ -112,7 +197,7 @@ class _SplitPages {
   List<Product> get visible => [...inCategory, ...other];
 }
 
-class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
+class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
   final _scroll = ScrollController();
   final List<Product> _items = [];
   int _page = 1;
@@ -187,7 +272,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant ProductListingScreen oldWidget) {
+  void didUpdateWidget(covariant ProductListingBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.search != widget.search) _barcodeTried = false;
     if (oldWidget.categoryId != widget.categoryId ||
@@ -309,8 +394,11 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   }
 
   Future<void> _refresh() async {
-    await refreshStorefrontCatalog(ref);
-    await _fetch(reset: true, keepItems: true, force: true);
+    final extra = widget.onRefresh;
+    await Future.wait([
+      refreshStorefrontCatalog(ref).then((_) => _fetch(reset: true, keepItems: true, force: true)),
+      if (extra != null) extra(),
+    ]);
   }
 
   Future<void> _fetchStandardListing(int gen, {required bool reset, required bool force}) async {
@@ -563,42 +651,52 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
       subcategoryId: widget.subcategoryId,
       tertiaryCategoryId: widget.tertiaryCategoryId,
     );
-    return Scaffold(
-      backgroundColor: context.worldTheme.canvas,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ListingPageHeader(
-            title: title,
-            subtitle: crumb,
-            filters: ListingQuickFilters(
-              sortLabel: s.sortShortFor(_sort),
-              sortActive: _sort != 'default',
-              priceLabel: _priceLabel(s),
-              inStock: _inStock,
-              onSale: _onSale || widget.isPromo,
-              showOnSale: !widget.isPromo,
-              ratingLabel: _minRating == null ? null : s.lfRatingAtLeast(_fmtRating(_minRating!)),
-              activeCount: _activeFilterCount,
-              total: _total,
-            ),
-            onSort: _openSort,
-            onPrice: _openPrice,
-            onRating: _openRating,
-            onAllFilters: _openFilter,
-            onToggleInStock: () => _applyAndFetch(() => _inStock = !_inStock),
-            onToggleSale: () => _applyAndFetch(() => _onSale = !_onSale),
-            onClearAll: _clearFilters,
-          ),
-          Expanded(child: _buildBody(s, lang, roots, title)),
-        ],
-      ),
+    final filters = ListingQuickFilters(
+      sortLabel: s.sortShortFor(_sort),
+      sortActive: _sort != 'default',
+      priceLabel: _priceLabel(s),
+      inStock: _inStock,
+      onSale: _onSale || widget.isPromo,
+      showOnSale: !widget.isPromo,
+      ratingLabel: _minRating == null ? null : s.lfRatingAtLeast(_fmtRating(_minRating!)),
+      activeCount: _activeFilterCount,
+      total: _total,
+    );
+    // رأس خارجي (صفحة البراند): الفلاتر سطر مثبّت داخل التمرير تحت شرائحه.
+    if (widget.leadingSlivers != null) {
+      return _buildBody(s, lang, roots, title, inlineFilters: filters);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListingPageHeader(
+          title: title,
+          subtitle: crumb,
+          filters: filters,
+          onSort: _openSort,
+          onPrice: _openPrice,
+          onRating: _openRating,
+          onAllFilters: _openFilter,
+          onToggleInStock: () => _applyAndFetch(() => _inStock = !_inStock),
+          onToggleSale: () => _applyAndFetch(() => _onSale = !_onSale),
+          onClearAll: _clearFilters,
+        ),
+        Expanded(child: _buildBody(s, lang, roots, title)),
+      ],
     );
   }
 
   /// الجسم تمرير واحد: الفلاتر (أشرطة الأقسام والبراندات) أولاً وتبقى مركّبة في كل
   /// الحالات — تحميل، فراغ، خطأ — فلا تقفز ولا يضيع موضعها، ثم المحتوى تحتها.
-  Widget _buildBody(AppStrings s, String lang, List<Category> roots, String title) {
+  ///
+  /// [inlineFilters]: شريط الفلاتر السريع كسطر مثبّت بعد [ProductListingBody.leadingSlivers].
+  Widget _buildBody(
+    AppStrings s,
+    String lang,
+    List<Category> roots,
+    String title, {
+    ListingQuickFilters? inlineFilters,
+  }) {
     final t = context.worldTheme;
     final items = _visibleItems;
     final hasItems = items.isNotEmpty;
@@ -674,6 +772,25 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
             physics: AppScrollPerf.physics,
             cacheExtent: AppScrollPerf.gridCacheExtent,
             slivers: [
+              ...?widget.leadingSlivers,
+              if (inlineFilters != null)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _InlineFiltersDelegate(
+                    background: t.canvas,
+                    divider: t.hairline,
+                    child: _InlineFilterBar(
+                      filters: inlineFilters,
+                      onSort: _openSort,
+                      onPrice: _openPrice,
+                      onRating: _openRating,
+                      onAllFilters: _openFilter,
+                      onToggleInStock: () => _applyAndFetch(() => _inStock = !_inStock),
+                      onToggleSale: () => _applyAndFetch(() => _onSale = !_onSale),
+                      onClearAll: _clearFilters,
+                    ),
+                  ),
+                ),
               if (filtersSection != null) SliverToBoxAdapter(child: filtersSection),
               content,
             ],
@@ -681,7 +798,8 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         ),
         if (_resetting && hasItems)
           PositionedDirectional(
-            top: 0,
+            // تحت شريط الحالة حين يكون الرأس جزءاً من التمرير.
+            top: widget.leadingSlivers != null ? MediaQuery.paddingOf(context).top : 0,
             start: 0,
             end: 0,
             child: LinearProgressIndicator(
@@ -1037,6 +1155,145 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
 
 /// مسودة ورقة الفلاتر قبل «عرض النتائج».
 typedef _FilterDraft = ({int? minP, int? maxP, bool inStock, bool onSale, double? minR});
+
+/// ارتفاع سطر الفلاتر المثبّت: صف لمس 44 وهامش 6 فوقه وتحته.
+const double _inlineFiltersExtent = kMinTapTarget + 12;
+
+/// سطر الفلاتر المثبّت تحت رأس خارجي — يبقى ظاهراً أثناء التمرير.
+class _InlineFiltersDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final Color background;
+  final Color divider;
+
+  const _InlineFiltersDelegate({required this.child, required this.background, required this.divider});
+
+  @override
+  double get minExtent => _inlineFiltersExtent;
+
+  @override
+  double get maxExtent => _inlineFiltersExtent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        // خط رفيع فقط حين تمر المنتجات تحته.
+        border: overlapsContent || shrinkOffset > 0 ? Border(bottom: BorderSide(color: divider)) : null,
+      ),
+      child: Center(child: child),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _InlineFiltersDelegate old) =>
+      old.child != child || old.background != background || old.divider != divider;
+}
+
+/// نفس فلاتر رأس القائمة في سطر أفقي واحد: فلترة، ترتيب، سعر، متوفر، عروض، تقييم.
+class _InlineFilterBar extends ConsumerWidget {
+  final ListingQuickFilters filters;
+  final VoidCallback onSort;
+  final VoidCallback onPrice;
+  final VoidCallback onToggleInStock;
+  final VoidCallback onToggleSale;
+  final VoidCallback onRating;
+  final VoidCallback onAllFilters;
+  final VoidCallback onClearAll;
+
+  const _InlineFilterBar({
+    required this.filters,
+    required this.onSort,
+    required this.onPrice,
+    required this.onToggleInStock,
+    required this.onToggleSale,
+    required this.onRating,
+    required this.onAllFilters,
+    required this.onClearAll,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
+    final t = context.worldTheme;
+    final f = filters;
+    // الارتفاع ثابت (رأس مثبّت): تكبير الخط يتوقف عند حدّ يتسع له الصف.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.25,
+      child: SizedBox(
+        height: kMinTapTarget,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: ListingTheme.padH),
+          children: [
+            AppChoiceChip(
+              label: s.filter,
+              icon: Icons.tune_rounded,
+              selected: f.activeCount > 0,
+              count: f.activeCount,
+              onTap: onAllFilters,
+            ),
+            const SizedBox(width: 8),
+            AppChoiceChip(
+              label: f.sortLabel,
+              icon: Icons.swap_vert_rounded,
+              selected: f.sortActive,
+              showChevron: true,
+              onTap: onSort,
+            ),
+            const SizedBox(width: 8),
+            AppChoiceChip(
+              label: f.priceLabel ?? s.lfPrice,
+              selected: f.priceLabel != null,
+              showChevron: true,
+              onTap: onPrice,
+            ),
+            const SizedBox(width: 8),
+            AppChoiceChip(
+              label: s.lfInStock,
+              icon: f.inStock ? Icons.check_rounded : null,
+              selected: f.inStock,
+              onTap: onToggleInStock,
+            ),
+            if (f.showOnSale) ...[
+              const SizedBox(width: 8),
+              AppChoiceChip(
+                label: s.lfOffers,
+                icon: f.onSale ? Icons.check_rounded : Icons.local_offer_outlined,
+                selected: f.onSale,
+                onTap: onToggleSale,
+              ),
+            ],
+            const SizedBox(width: 8),
+            AppChoiceChip(
+              label: f.ratingLabel ?? s.lfRating,
+              icon: Icons.star_rounded,
+              selected: f.ratingLabel != null,
+              showChevron: true,
+              onTap: onRating,
+            ),
+            if (f.activeCount > 0) ...[
+              const SizedBox(width: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: onClearAll,
+                  icon: const Icon(Icons.close_rounded, size: 16),
+                  label: Text(s.lfClearAll, style: AppText.label),
+                  style: TextButton.styleFrom(
+                    foregroundColor: t.accentDark,
+                    minimumSize: const Size(44, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// تذييل «تعذّر تحميل المزيد» مع إعادة المحاولة — بدل هياكل تحميل لا تنتهي.
 class _LoadMoreFailed extends ConsumerWidget {

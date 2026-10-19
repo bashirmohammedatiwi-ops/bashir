@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/motion/app_motion.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
@@ -84,7 +84,7 @@ class HomeCartReminder extends ConsumerWidget {
     final summary = '${s.itemsCount(cart.count)} • ${formatPrice(cart.subtotal, lang: s.lang)}';
 
     void openCart() {
-      HapticFeedback.lightImpact();
+      AppHaptics.select();
       openMainTab(
         context,
         ProviderScope.containerOf(context, listen: false),
@@ -94,7 +94,7 @@ class HomeCartReminder extends ConsumerWidget {
 
     /// «أكملي الفرق»: قائمة كاملة بنطاق سعر الاقتراحات نفسه.
     void openFillers() {
-      HapticFeedback.selectionClick();
+      AppHaptics.select();
       final band = freeShippingBand(remaining);
       final q = [
         'minPrice=${(band * 0.8).round()}',
@@ -397,12 +397,20 @@ class _ShelfSkeleton extends StatelessWidget {
 // ─── كوبونات لكِ ─────────────────────────────────────────────────────────────
 
 /// بطاقات الكوبونات المختارة من لوحة التحكم — «استخدمي الكود» يفعّله للسلة بلمسة.
+///
+/// [slug] يثبّت عالم الكوبونات (تبقى الطبقة الخارجة بكوبوناتها أثناء تبديل
+/// العالم). بدونه: كوبونات العالم المختار.
 class HomeCouponsShelf extends ConsumerWidget {
-  const HomeCouponsShelf({super.key});
+  final String? slug;
+
+  const HomeCouponsShelf({super.key, this.slug});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final coupons = ref.watch(featuredCouponsProvider).valueOrNull ?? const [];
+    final coupons = ref
+            .watch(slug == null ? featuredCouponsProvider : featuredCouponsForWorldProvider(slug))
+            .valueOrNull ??
+        const [];
     if (coupons.isEmpty) return const SizedBox.shrink();
     final s = ref.s;
     // تبديل التبويب داخل نفس الواجهة — لا دفع نسخة ثانية منها.
@@ -524,17 +532,22 @@ _Budget _budgetFor(({int? min, int? max}) r, AppStrings s, {required bool last})
 
 /// أربع بطاقات أسعار بتدرّج يتصاعد مع الميزانية — والأخيرة "فاخر" بلون العالم الكامل.
 /// اللمسة تفتح منتجات العالم الحالي بنطاق السعر مباشرة (لا المتجر كله).
+///
+/// [slug] يثبّت العالم (للطبقة الخارجة أثناء التبديل). بدونه: العالم المختار.
 class HomeBudgetShelf extends ConsumerWidget {
-  const HomeBudgetShelf({super.key});
+  final String? slug;
+
+  const HomeBudgetShelf({super.key, this.slug});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
     final s = ref.s;
-    final slug = resolveWorldSlug(
-      selected: ref.watch(selectedWorldSlugProvider),
-      worlds: ref.watch(worldsProvider).valueOrNull,
-    );
+    final slug = this.slug ??
+        resolveWorldSlug(
+          selected: ref.watch(selectedWorldSlugProvider),
+          worlds: ref.watch(worldsProvider).valueOrNull,
+        );
     final custom = slug == null
         ? const <({int? min, int? max})>[]
         : ref.watch(worldDetailProvider(slug)).valueOrNull?.budgetTiers ?? const [];
@@ -580,7 +593,7 @@ class HomeBudgetShelf extends ConsumerWidget {
                         ? Colors.white.withValues(alpha: 0.8)
                         : t.inkMuted,
                     onTap: () {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.select();
                       final q = <String>[
                         if (tiers[i].min != null) 'minPrice=${tiers[i].min}',
                         if (tiers[i].max != null) 'maxPrice=${tiers[i].max}',

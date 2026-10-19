@@ -19,8 +19,9 @@ String categoryLocation({
   return b.toString();
 }
 
-/// مسار قائمة منتجات براند بعنوانه.
-String brandLocation(String id, String title) => '/products?brandId=$id&title=${Uri.encodeComponent(title)}';
+/// مسار صفحة البراند: الـ slug إن وُجد وإلا المعرّف (الخادم يقبل الاثنين).
+String brandLocation({required String id, String slug = ''}) =>
+    '/brand/${Uri.encodeComponent(slug.isNotEmpty ? slug : id)}';
 
 /// هل يستحق التصحيح الإملائي الظهور؟ فقط إن اختلف عمّا كُتب **وكان قريباً منه فعلاً**.
 /// (تصحيح الخادم أحياناً بعيد تماماً — "maskara" ← "PHYTO Color" — فلا نعرضه.)

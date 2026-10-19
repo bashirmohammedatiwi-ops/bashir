@@ -106,8 +106,17 @@ extension SearchStringsX on AppStrings {
       : 'Search in Arabic or English — by product, brand, or barcode.';
   String get searchWorldsTitle => isAr ? 'ابحثي في عالم' : 'Explore a world';
   String get searchWorldsSubtitle => isAr ? 'كل عالم بأقسامه ومختاراته' : 'Each world with its own picks';
-  String get searchTrendingTitle => isAr ? 'الأكثر طلباً' : 'Trending now';
-  String get searchTrendingSubtitle => isAr ? 'أقسام يكثر البحث فيها' : 'What everyone is browsing';
+  /// عبارات يبحث عنها الزبائن فعلاً (من سجل البحث المجهول على الخادم).
+  String get searchTrendingTitle => isAr ? 'الأكثر بحثاً الآن' : 'Trending searches';
+  String get searchTrendingSubtitle => isAr ? 'ما تبحث عنه صديقاتكِ هذه الأيام' : 'What shoppers are searching for lately';
+
+  /// قبل أن يتجمّع سجل كافٍ (أو بلا اتصال): اقتراحات ثابتة — لا ندّعي أنها «الأكثر بحثاً».
+  String get searchIdeasTitle => isAr ? 'أفكار للبحث' : 'Search ideas';
+  String get searchIdeasSubtitle => isAr ? 'ابدئي بواحدة منها' : 'Start with one of these';
+
+  /// الأقسام الأغنى بالمنتجات — ترتيبها بعدد المنتجات لا بعدد مرات البحث.
+  String get searchPopularCategories => isAr ? 'أقسام غنية بالمنتجات' : 'Popular categories';
+  String get searchPopularCategoriesSubtitle => isAr ? 'أكبر تشكيلة في المتجر' : 'Our widest selections';
   String get searchShopByCategory => isAr ? 'تسوّقي حسب القسم' : 'Shop by category';
   String get searchTopBrands => isAr ? 'أبرز البراندات' : 'Top brands';
   String get searchViewAll => isAr ? 'عرض الكل' : 'View all';

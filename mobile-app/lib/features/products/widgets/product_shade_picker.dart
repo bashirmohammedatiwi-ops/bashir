@@ -144,7 +144,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
     final viewport = _scroll.position.viewportDimension;
     final target = (index * (_tileWidth + _tileGap)) - (viewport - _tileWidth) / 2;
     final clamped = target.clamp(0.0, _scroll.position.maxScrollExtent);
-    if (animate) {
+    if (animate && !MediaQuery.disableAnimationsOf(context)) {
       _scroll.animateTo(
         clamped,
         duration: const Duration(milliseconds: 320),
@@ -265,7 +265,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
                 children: [
                   Text(
                     widget.strings.selectShade,
-                    style: ProductDetailTheme.sectionTitleStyle(context).copyWith(fontSize: 15),
+                    style: ProductDetailTheme.sectionTitleStyle(context),
                   ),
                   if (selected != null) ...[
                     const SizedBox(height: 4),
@@ -273,8 +273,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
                       selected.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.5,
+                      style: AppText.caption.copyWith(
                         fontWeight: FontWeight.w600,
                         color: t.inkSoft,
                         height: 1.2,
@@ -301,7 +300,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
                         const SizedBox(width: 5),
                         Text(
                           widget.strings.isAr ? 'كل الدرجات (${shades.length})' : 'All shades (${shades.length})',
-                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: t.accentDark),
+                          style: AppText.micro.copyWith(color: t.accentDark),
                         ),
                       ],
                     ),
@@ -313,14 +312,12 @@ class _ProductShadePickerState extends State<ProductShadePicker>
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: t.accentLight,
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
                   border: Border.all(color: t.accentSoft),
                 ),
                 child: Text(
                   widget.strings.shadePosition(_currentVisibleIndex, shades.length),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                  style: AppText.micro.copyWith(
                     color: t.accentDark,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -407,8 +404,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
               Expanded(
                 child: Text(
                   widget.strings.scrollAllShades,
-                  style: TextStyle(
-                    fontSize: 11.5,
+                  style: AppText.caption.copyWith(
                     fontWeight: FontWeight.w700,
                     color: t.inkSoft,
                   ),
@@ -451,12 +447,12 @@ class _ShadeScrollTrack extends StatelessWidget {
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: track,
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
                 ),
                 child: const SizedBox.expand(),
               ),
               AnimatedPositionedDirectional(
-                duration: const Duration(milliseconds: 180),
+                duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
                 start: maxLeft * progress,
                 top: 0,
@@ -465,7 +461,7 @@ class _ShadeScrollTrack extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: accent,
-                    borderRadius: BorderRadius.circular(99),
+                    borderRadius: BorderRadius.circular(AppCorners.pill),
                     boxShadow: [
                       BoxShadow(
                         color: accent.withValues(alpha: 0.35),
@@ -534,6 +530,7 @@ class _ShadeGradientTile extends StatelessWidget {
     final t = context.worldTheme;
     final colors = shadeGradientColors(shade);
     final soldOut = !shade.inStock;
+    final motion = MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 220);
 
     return Semantics(
       button: true,
@@ -545,16 +542,16 @@ class _ShadeGradientTile extends StatelessWidget {
       onTap: onTap,
       child: AnimatedScale(
         scale: active ? 1.03 : 1,
-        duration: const Duration(milliseconds: 220),
+        duration: motion,
         curve: Curves.easeOutCubic,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: motion,
           curve: Curves.easeOutCubic,
           width: width,
           padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
           decoration: BoxDecoration(
             color: active ? t.accentLight.withValues(alpha: 0.65) : t.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppCorners.lg),
             border: Border.all(
               color: active ? t.accent : t.hairline.withValues(alpha: 0.85),
               width: active ? 2 : 1,
@@ -577,7 +574,7 @@ class _ShadeGradientTile extends StatelessWidget {
                   children: [
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppCorners.sm),
                         gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
@@ -596,7 +593,7 @@ class _ShadeGradientTile extends StatelessWidget {
                     if (active)
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(AppCorners.sm),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 1),
                         ),
                         child: Center(
@@ -615,7 +612,7 @@ class _ShadeGradientTile extends StatelessWidget {
                       DecoratedBox(
                         decoration: BoxDecoration(
                           color: t.ink.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(AppCorners.sm),
                         ),
                         child: Center(
                           child: Icon(Icons.block_rounded, color: t.surface, size: 18),
@@ -630,9 +627,8 @@ class _ShadeGradientTile extends StatelessWidget {
                 maxLines: soldOut ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                style: AppText.micro.copyWith(
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                   height: 1.2,
                   color: soldOut ? t.inkMuted : (active ? t.accentDark : t.inkSoft),
                 ),
@@ -641,7 +637,7 @@ class _ShadeGradientTile extends StatelessWidget {
                 Text(
                   strings.soldOutShort,
                   maxLines: 1,
-                  style: AppText.micro.copyWith(fontSize: 10, color: AppColors.sale),
+                  style: AppText.micro.copyWith(color: AppColors.sale),
                 ),
             ],
           ),
