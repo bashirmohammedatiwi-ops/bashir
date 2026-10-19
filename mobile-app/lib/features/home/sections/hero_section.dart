@@ -21,6 +21,7 @@ import '../widgets/home_banner_stage.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/motion/app_motion.dart';
+import '../../../core/perf/device_perf.dart';
 import '../widgets/home_category_grid.dart';
 import '../widgets/home_quick_dock.dart';
 import '../widgets/home_theme.dart';
@@ -34,9 +35,16 @@ class HeroHomeSection extends ConsumerStatefulWidget {
 }
 
 class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
-  int _bannerIndex = 0;
+  /// فهرس البنر الحالي — يعيد بناء المؤشر وحده لا الرأس كله كل 5 ثوانٍ.
+  final _bannerIndex = ValueNotifier<int>(0);
   String? _lastSlug;
   int _slide = 1;
+
+  @override
+  void dispose() {
+    _bannerIndex.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,10 +101,11 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                   bottom: Radius.circular(32),
                 ),
                 boxShadow: [
+                  // الأجهزة البسيطة: ظل أقصر (التمويه الكبير يُعاد مع كل إطار تمرير).
                   BoxShadow(
                     color: t.accentDark.withValues(alpha: 0.06),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
+                    blurRadius: DevicePerf.isLow ? 8 : 24,
+                    offset: Offset(0, DevicePerf.isLow ? 4 : 10),
                   ),
                 ],
               ),
@@ -179,7 +188,6 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
             section: widget.section,
             banners: banners,
             index: _bannerIndex,
-            onChanged: (i) => setState(() => _bannerIndex = i),
           ),
           if (cats.isNotEmpty) ...[
             const HomeSectionDivider(),
@@ -195,14 +203,12 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
 class _HeroBannerCarousel extends StatelessWidget {
   final HomeSection section;
   final List<AppBanner> banners;
-  final int index;
-  final ValueChanged<int> onChanged;
+  final ValueNotifier<int> index;
 
   const _HeroBannerCarousel({
     required this.section,
     required this.banners,
     required this.index,
-    required this.onChanged,
   });
 
   double _bannerWidth(BuildContext context) =>
@@ -248,7 +254,7 @@ class _HeroBannerCarousel extends StatelessWidget {
             autoPlayInterval: const Duration(seconds: 5),
             autoPlayAnimationDuration: const Duration(milliseconds: 700),
             autoPlayCurve: Curves.easeOut,
-            onPageChanged: (i, _) => onChanged(i),
+            onPageChanged: (i, _) => index.value = i,
           ),
           items: banners.asMap().entries.map((e) {
             return _wrapBanner(
@@ -264,16 +270,19 @@ class _HeroBannerCarousel extends StatelessWidget {
           }).toList(),
         ),
         const SizedBox(height: 4),
-        AnimatedSmoothIndicator(
-          activeIndex: index,
-          count: banners.length,
-          effect: ExpandingDotsEffect(
-            dotHeight: 5,
-            dotWidth: 5,
-            expansionFactor: 3,
-            spacing: 6,
-            activeDotColor: context.worldTheme.accent,
-            dotColor: context.worldTheme.divider,
+        ValueListenableBuilder<int>(
+          valueListenable: index,
+          builder: (context, active, _) => AnimatedSmoothIndicator(
+            activeIndex: active.clamp(0, banners.length - 1),
+            count: banners.length,
+            effect: ExpandingDotsEffect(
+              dotHeight: 5,
+              dotWidth: 5,
+              expansionFactor: 3,
+              spacing: 6,
+              activeDotColor: context.worldTheme.accent,
+              dotColor: context.worldTheme.divider,
+            ),
           ),
         ),
       ],

@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/motion/offscreen_pause.dart';
+import '../../../core/perf/device_perf.dart';
 import '../home_link.dart';
 import 'gallery_photo_card.dart';
 import 'home_theme.dart';
@@ -98,7 +100,8 @@ class HomeMarqueeImage {
   }
 }
 
-class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerProviderStateMixin {
+class _HomeImageMarqueeState extends State<HomeImageMarquee>
+    with SingleTickerProviderStateMixin, MotionGateMixin {
   final GlobalKey _periodKey = GlobalKey();
   late final AnimationController _ctrl;
 
@@ -113,6 +116,9 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   static const _dragSlop = 8.0;
 
   double get _pxPerSec => 24 + widget.speed.clamp(1, 10) * 10;
+
+  /// الحركة الدائمة مسموحة؟ «تقليل الحركة» والأجهزة البسيطة: شريط ثابت يُسحب باليد.
+  bool get _autoMotion => !_reduceMotion && !DevicePerf.isLow;
 
   double _estimatePeriodWidth() {
     if (widget.images.isEmpty) return 1;
@@ -187,8 +193,8 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
       ..stop()
       ..duration = Duration(milliseconds: ms)
       ..value = progress;
-    // «تقليل الحركة»: شريط ثابت يُسحب باليد فقط.
-    if (!_reduceMotion) _ctrl.repeat();
+    // «تقليل الحركة»/جهاز بسيط/خارج الشاشة: شريط ثابت يُسحب باليد فقط.
+    if (_autoMotion && motionAllowed) _ctrl.repeat();
   }
 
   void _measureAndStart() {
@@ -212,7 +218,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
     if (!_started) {
       _started = true;
       _applyLoopDuration(period: measured, startValue: _initialValue(measured));
-    } else if (periodChanged || (!_ctrl.isAnimating && !_reduceMotion)) {
+    } else if (periodChanged || (!_ctrl.isAnimating && _autoMotion && motionAllowed)) {
       _applyLoopDuration(period: measured);
     }
   }
@@ -222,7 +228,8 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   }
 
   void _resumeMotion() {
-    if (!mounted || _periodWidth <= 0 || _userDragging || _reduceMotion) return;
+    if (!mounted || _periodWidth <= 0 || _userDragging || !_autoMotion) return;
+    if (!motionAllowed) return;
     if (!_ctrl.isAnimating) _ctrl.repeat();
   }
 
@@ -305,6 +312,15 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   }
 
   @override
+  void onMotionGateChanged(bool allowed) {
+    if (!allowed) {
+      _pauseMotion();
+    } else if (_started) {
+      _resumeMotion();
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final reduce = MediaQuery.disableAnimationsOf(context);
@@ -332,6 +348,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
       _releaseScrollHold();
       _ctrl.stop();
       _scheduleMeasure();
+      scheduleMotionGateCheck();
     }
   }
 

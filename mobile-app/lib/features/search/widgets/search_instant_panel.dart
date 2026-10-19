@@ -332,11 +332,23 @@ class _ProductRow extends StatelessWidget {
               height: 58,
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(color: t.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: t.divider)),
-              child: Opacity(
-                opacity: p.inStock ? 1 : 0.5,
-                // العرض فقط: الارتفاع يُترك ليحفظ نسبة الصورة عند فك ترميزها.
-                child: AppNetworkImage(url: p.image, width: 50, fit: BoxFit.contain, radius: BorderRadius.circular(10)),
-              ),
+              // العرض فقط: الارتفاع يُترك ليحفظ نسبة الصورة عند فك ترميزها.
+              child: p.inStock
+                  ? AppNetworkImage(url: p.image, width: 50, fit: BoxFit.contain, radius: BorderRadius.circular(10))
+                  // النافد باهت بغطاء بلون الخلفية نصف شفاف — نفس مظهر Opacity(0.5)
+                  // بلا طبقة saveLayer لكل صف.
+                  : Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        AppNetworkImage(
+                          url: p.image,
+                          width: 50,
+                          fit: BoxFit.contain,
+                          radius: BorderRadius.circular(10),
+                        ),
+                        ColoredBox(color: t.surface.withValues(alpha: 0.5)),
+                      ],
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -461,25 +473,31 @@ class _Skeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        for (var i = 0; i < 3; i++)
-          const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: ShimmerBox(height: 14, width: 180, radius: 7)),
-        const SizedBox(height: 10),
-        for (var i = 0; i < 4; i++)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                ShimmerBox(width: 58, height: 58, radius: 14),
-                SizedBox(width: 12),
-                Expanded(child: ShimmerBox(height: 14, radius: 7)),
-              ],
+    // وميض واحد يعبر الهيكل كله (بدل متحكّم حركة لكل كتلة).
+    return Skeleton(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          for (var i = 0; i < 3; i++)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: SkeletonBlock(height: 14, width: 180, radius: 7),
             ),
-          ),
-      ],
+          const SizedBox(height: 10),
+          for (var i = 0; i < 4; i++)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  SkeletonBlock(width: 58, height: 58, radius: 14),
+                  SizedBox(width: 12),
+                  Expanded(child: SkeletonBlock(height: 14, radius: 7)),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

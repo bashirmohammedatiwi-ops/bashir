@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../core/perf/device_perf.dart';
 import '../../data/models/product.dart';
 import '../../data/models/search_instant.dart';
 import '../../data/services/api_service.dart';
@@ -12,21 +13,38 @@ import 'smart_query.dart';
 bool _isCancel(Object e) =>
     (e is DioException && CancelToken.isCancel(e)) || (e is ApiException && e.transportType == DioExceptionType.cancel);
 
-/// اقتراحات فورية: تأخير قصير جداً، إلغاء الطلب السابق، كاش صغير، والإبقاء على
-/// آخر نتيجة ظاهرة أثناء التحميل ما دامت الكلمة الجديدة تكمل السابقة.
+/// اقتراحات فورية: تأخير قصير بحسب الجهاز، كاش صغير، والإبقاء على آخر نتيجة ظاهرة
+/// أثناء التحميل ما دامت الكلمة الجديدة تكمل السابقة.
+///
+/// طلب واحد على الأكثر في الطريق: حرف جديد لا يلغي الطلب الجاري (الإلغاء يقطع الاتصال
+/// فيدفع الطلب التالي مصافحة جديدة على شبكة بطيئة) — ينتظر ردّه ثم تُرسل آخر كلمة فقط.
+/// الردّ القديم يُهمل بالرقم التسلسلي، إلا إن كانت الكلمة الحالية تكمله فيُعرض مؤقتاً.
+/// طلب علق أكثر من [stallAfter] يُلغى ولا تنتظره الكلمة الجديدة.
 class InstantSearchController extends ChangeNotifier {
   final ApiService api;
 
   /// لغة الواجهة — أسماء المنتجات والأقسام والإكمالات تأتي بها (جزء من مفتاح الكاش).
   final String Function() lang;
 
-  InstantSearchController(this.api, {required this.lang, Duration debounce = const Duration(milliseconds: 110)})
-      : _debounce = debounce;
+  InstantSearchController(
+    this.api, {
+    required this.lang,
+    Duration? debounce,
+    Duration stallAfter = const Duration(milliseconds: 2500),
+  })  : _debounce = debounce ?? Duration(milliseconds: DevicePerf.pick(low: 260, mid: 200)),
+        _stallAfter = stallAfter;
 
   final Duration _debounce;
+  final Duration _stallAfter;
   final _cache = <String, SearchInstant>{};
   Timer? _timer;
+
+  /// الطلب الجاري (واحد على الأكثر) ومتى بدأ.
   CancelToken? _token;
+  DateTime? _sentAt;
+
+  /// كلمة تنتظر انتهاء الطلب الجاري — تُرسل حين يعود.
+  String? _pending;
   int _seq = 0;
   bool _disposed = false;
 
@@ -50,7 +68,7 @@ class InstantSearchController extends ChangeNotifier {
     _timer?.cancel();
     _failed = false;
     if (q.trim().length < 2) {
-      _cancel();
+      _supersede();
       _data = null;
       _loading = false;
       _notify();
@@ -58,7 +76,7 @@ class InstantSearchController extends ChangeNotifier {
     }
     final hit = _cache[_key(q)];
     if (hit != null) {
-      _cancel();
+      _supersede();
       _data = hit;
       _loading = false;
       _notify();
@@ -66,7 +84,7 @@ class InstantSearchController extends ChangeNotifier {
     }
     // كلمة لا تكمل السابقة: نتائجها القديمة لا تخصّها — هيكل تحميل بدل نتائج قابلة للضغط.
     final prev = _data;
-    if (prev != null && !normalizeQuery(q).startsWith(normalizeQuery(prev.query))) _data = null;
+    if (prev != null && !_extends(q, prev.query)) _data = null;
     _loading = true;
     _notify();
     _timer = Timer(_debounce, () => _run(q));
@@ -76,44 +94,98 @@ class InstantSearchController extends ChangeNotifier {
   void retry() {
     if (_query.trim().length < 2) return;
     _timer?.cancel();
-    unawaited(_run(_query));
+    _run(_query);
   }
 
-  Future<void> _run(String q) async {
-    _cancel();
-    final seq = ++_seq;
-    final token = CancelToken();
-    _token = token;
+  void _run(String q) {
     _failed = false;
     if (!_loading) {
       _loading = true;
       _notify();
     }
+    final token = _token;
+    if (token != null) {
+      final sentAt = _sentAt;
+      if (sentAt != null && DateTime.now().difference(sentAt) < _stallAfter) {
+        _pending = q; // يُرسل حين يعود الجاري.
+        return;
+      }
+      // علق الطلب (شبكة متوقفة): لا تنتظره الكلمة الجديدة.
+      if (!token.isCancelled) token.cancel('stalled');
+      _token = null;
+      _sentAt = null;
+    }
+    unawaited(_send(q));
+  }
+
+  Future<void> _send(String q) async {
+    _pending = null;
+    final seq = ++_seq;
+    final token = CancelToken();
+    _token = token;
+    _sentAt = DateTime.now();
     final l = lang();
+    SearchInstant? reply;
+    Object? error;
     try {
-      final r = await api.searchInstant(q, cancelToken: token, lang: l);
-      _cache['$l|$q'] = r;
+      reply = await api.searchInstant(q, cancelToken: token, lang: l);
+      _cache['$l|$q'] = reply;
       if (_cache.length > 80) _cache.remove(_cache.keys.first);
-      if (_disposed || seq != _seq) return;
-      _data = r;
-      // ردّ لحرف سابق وصل أثناء مهلة الحرف الجديد: نعرضه، لكن التحميل مستمر.
+    } catch (e) {
+      error = e;
+    }
+    if (identical(_token, token)) {
+      _token = null;
+      _sentAt = null;
+    }
+    if (_disposed) return;
+
+    // آخر كلمة انتظرت هذا الردّ: تُرسل الآن (أو تُعرض من الكاش إن كانت هي نفسها).
+    final next = _pending;
+    _pending = null;
+    final current = seq == _seq;
+    if (next != null && _token == null) {
+      final hit = _cache[_key(next)];
+      if (hit == null) {
+        // ردّ لكلمة تكملها الكلمة الحالية يُعرض مؤقتاً، والتحميل مستمر.
+        if (current && reply != null && _extends(_query, q)) {
+          _data = reply;
+          _notify();
+        }
+        unawaited(_send(next));
+        return;
+      }
+      if (next == _query) {
+        _data = hit;
+        _loading = _timer?.isActive ?? false;
+        _failed = false;
+        _notify();
+        return;
+      }
+    }
+    if (!current) return; // ردّ قديم (أُعيد الضبط أو ظهرت النتيجة من الكاش): يُهمل.
+    if (reply != null) {
+      // ردّ لحرف سابق وصل أثناء مهلة الحرف الجديد: نعرضه إن كانت الكلمة تكمله، والتحميل مستمر.
+      if (q == _query || _extends(_query, q)) _data = reply;
       _loading = _query != q || (_timer?.isActive ?? false);
       _notify();
-    } catch (e) {
-      if (_disposed || seq != _seq || _isCancel(e)) return;
-      _failed = true;
-      _loading = false;
-      _notify();
+      return;
     }
+    if (_isCancel(error!)) return;
+    _failed = true;
+    _loading = false;
+    _notify();
   }
+
+  /// هل [q] تكمل [shown]؟ (فتبقى نتائج [shown] ظاهرة أثناء تحميلها)
+  static bool _extends(String q, String shown) => normalizeQuery(q).startsWith(normalizeQuery(shown));
 
   String _key(String q) => '${lang()}|$q';
 
-  void _cancel() {
+  /// ما في الطريق لم يعد يخصّ الكلمة الظاهرة: ردّه يُهمل (لكنه يصل ويُحفظ في الكاش).
+  void _supersede() {
     _seq++;
-    final t = _token;
-    if (t != null && !t.isCancelled) t.cancel('superseded');
-    _token = null;
+    _pending = null;
   }
 
   void _notify() {
@@ -124,7 +196,9 @@ class InstantSearchController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _timer?.cancel();
-    _cancel();
+    final t = _token;
+    if (t != null && !t.isCancelled) t.cancel('disposed');
+    _token = null;
     super.dispose();
   }
 }

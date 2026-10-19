@@ -8,9 +8,9 @@ export '../../../core/widgets/scroll_perf.dart'
 
 /// إعدادات تمرير الرئيسية — للتوافق مع الملفات الحالية.
 abstract final class HomeScrollPerf {
-  static const verticalCacheExtent = AppScrollPerf.verticalCacheExtent;
-  static const horizontalCacheExtent = AppScrollPerf.horizontalCacheExtent;
-  static const gridCacheExtent = AppScrollPerf.gridCacheExtent;
+  static double get verticalCacheExtent => AppScrollPerf.vertical;
+  static double get horizontalCacheExtent => AppScrollPerf.horizontal;
+  static double get gridCacheExtent => AppScrollPerf.grid;
   static ScrollPhysics get physics => AppScrollPerf.physics;
 }
 

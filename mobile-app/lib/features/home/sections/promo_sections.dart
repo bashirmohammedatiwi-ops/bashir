@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/perf/device_perf.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
 import '../../../data/models/home_section.dart';
@@ -26,8 +27,9 @@ class PromoStripSection extends ConsumerWidget {
     if (variant == 'news') return _NewsTicker(strip: strip, lang: lang);
     if (variant == 'ticker') return _SlimTicker(strip: strip, lang: lang);
     // عبارة تحريرية + شرائح — تُظهر العبارة التي كانت تختفي خلف شريط متحرك.
-    if (strip.textForLang(lang).trim().isNotEmpty)
+    if (strip.textForLang(lang).trim().isNotEmpty) {
       return _EditorialBand(strip: strip, lang: lang);
+    }
     return _PromoCard(strip: strip, lang: lang);
   }
 }
@@ -358,10 +360,13 @@ class _EditorialBand extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             boxShadow: boldBand
                 ? [
+                    // الأجهزة البسيطة: ظل أقصر بكثير (كلفة التمويه تتناسب مع نصف قطره).
                     BoxShadow(
-                      color: bg.withValues(alpha: 0.28),
-                      blurRadius: 22,
-                      offset: const Offset(0, 10),
+                      color: bg.withValues(
+                        alpha: DevicePerf.pick(low: 0.22, mid: 0.28),
+                      ),
+                      blurRadius: DevicePerf.pick(low: 6.0, mid: 22.0),
+                      offset: Offset(0, DevicePerf.pick(low: 4.0, mid: 10.0)),
                     ),
                   ]
                 : null,

@@ -129,7 +129,7 @@ class ProductGrid extends StatelessWidget {
       return CustomScrollView(
         controller: controller,
         physics: AppScrollPerf.physics,
-        cacheExtent: AppScrollPerf.gridCacheExtent,
+        cacheExtent: AppScrollPerf.grid,
         slivers: [
           if (header != null) SliverToBoxAdapter(child: header!),
           ..._slivers(context, scope, firstIndex),
@@ -141,7 +141,7 @@ class ProductGrid extends StatelessWidget {
       controller: controller,
       padding: padding,
       physics: AppScrollPerf.physics,
-      cacheExtent: AppScrollPerf.gridCacheExtent,
+      cacheExtent: AppScrollPerf.grid,
       addAutomaticKeepAlives: false,
       addRepaintBoundaries: true,
       gridDelegate: delegateFor(context, listing: listingStyle),

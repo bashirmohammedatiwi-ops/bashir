@@ -251,7 +251,9 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
   void _onScroll() {
     // بعد خطأ صفحة تالية: إعادة المحاولة بزرّها في التذييل، لا مع كل حركة تمرير.
     if (_paginationQueued || _loading || _error != null || !_effectiveHasMore) return;
-    if (_scroll.position.pixels < _scroll.position.maxScrollExtent - 480) return;
+    // الصفحة التالية قبل ~شاشة ونصف من النهاية: على شبكة 300ms تصل قبل أن تبلغها الزبونة.
+    final position = _scroll.position;
+    if (position.pixels < position.maxScrollExtent - position.viewportDimension * 1.5) return;
     _paginationQueued = true;
     _fetch().whenComplete(() => _paginationQueued = false);
   }
@@ -770,7 +772,7 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
           child: CustomScrollView(
             controller: _scroll,
             physics: AppScrollPerf.physics,
-            cacheExtent: AppScrollPerf.gridCacheExtent,
+            cacheExtent: AppScrollPerf.grid,
             slivers: [
               ...?widget.leadingSlivers,
               if (inlineFilters != null)

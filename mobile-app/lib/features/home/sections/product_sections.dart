@@ -6,6 +6,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/motion/offscreen_pause.dart';
+import '../../../core/perf/device_perf.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
@@ -100,7 +102,8 @@ class ProductFilmStrip extends StatefulWidget {
   State<ProductFilmStrip> createState() => _ProductFilmStripState();
 }
 
-class _ProductFilmStripState extends State<ProductFilmStrip> with SingleTickerProviderStateMixin {
+class _ProductFilmStripState extends State<ProductFilmStrip>
+    with SingleTickerProviderStateMixin, MotionGateMixin {
   static const _gap = 12.0;
 
   /// مهلة الاستئناف بعد أن تترك العميلة الشريط.
@@ -133,9 +136,18 @@ class _ProductFilmStripState extends State<ProductFilmStrip> with SingleTickerPr
     _syncTicker();
   }
 
-  /// «تقليل الحركة»: شريط عادي يُمرَّر باليد فقط.
+  @override
+  void onMotionGateChanged(bool allowed) => _syncTicker();
+
+  /// المؤقّت يعمل فقط والشريط ظاهر، والصفحة لا تُمرَّر، والعميلة لا تسحبه —
+  /// إيقاف فعلي للمؤقّت (لا خروج مبكر من كل إطار) فلا إطارات فارغة.
+  /// «تقليل الحركة» والأجهزة البسيطة: شريط عادي يُمرَّر باليد فقط.
   void _syncTicker() {
-    final shouldRun = !_reduceMotion && widget.products.length >= 2;
+    final shouldRun = !_reduceMotion &&
+        !DevicePerf.isLow &&
+        widget.products.length >= 2 &&
+        !_userScrolling &&
+        motionAllowed;
     if (shouldRun && !_ticker.isActive) {
       _last = Duration.zero;
       _ticker.start();
@@ -147,25 +159,17 @@ class _ProductFilmStripState extends State<ProductFilmStrip> with SingleTickerPr
   @override
   void didUpdateWidget(ProductFilmStrip old) {
     super.didUpdateWidget(old);
-    if (old.products.length != widget.products.length) _syncTicker();
-  }
-
-  /// هل الشريط داخل الشاشة فعلاً؟ (يبقى مبنياً ضمن cacheExtent الرئيسية وهو خارجها.)
-  bool _onScreen() {
-    final box = context.findRenderObject();
-    if (box is! RenderBox || !box.hasSize || !box.attached) return false;
-    final top = box.localToGlobal(Offset.zero).dy;
-    final screenH = MediaQuery.sizeOf(context).height;
-    return top < screenH && top + box.size.height > 0;
+    if (old.products.length != widget.products.length) {
+      _syncTicker();
+      scheduleMotionGateCheck();
+    }
   }
 
   void _onTick(Duration elapsed) {
+    // elapsed يبدأ من صفر مع كل start — أول إطار بعد الاستئناف لا يقفز.
     final dt = (elapsed - _last).inMicroseconds / 1000000;
     _last = elapsed;
-    if (!_scroll.hasClients || _userScrolling || widget.products.length < 2) return;
-    // أول إطار بعد توقف (dt كبير) لا يقفز.
-    if (dt <= 0 || dt > 0.08) return;
-    if (!_onScreen()) return;
+    if (!_scroll.hasClients || dt <= 0 || dt > 0.08) return;
     final period = _period;
     final position = _scroll.position;
     if (period <= 0 || position.maxScrollExtent < _padStart + period) return;
@@ -182,12 +186,13 @@ class _ProductFilmStripState extends State<ProductFilmStrip> with SingleTickerPr
       // سحب من العميلة: نتوقف ونترك القذف (fling) يكمل دون أن نقطعه.
       _resumeTimer?.cancel();
       _userScrolling = true;
+      _syncTicker();
     } else if (n is ScrollEndNotification && _userScrolling) {
       _resumeTimer?.cancel();
       _resumeTimer = Timer(_resumeDelay, () {
         if (!mounted) return;
         _userScrolling = false;
-        _last = Duration.zero;
+        _syncTicker();
       });
     }
     return false;

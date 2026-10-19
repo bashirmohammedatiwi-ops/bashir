@@ -9,10 +9,15 @@ import '../shell/nav_tabs.dart';
 import '../worlds/worlds_provider.dart';
 import 'catalog_providers.dart';
 
+/// آخر جلب حديث للمتجر — يُضبط عند الإقلاع (warmupAppData) وبعد كل تحديث، ويشترك
+/// فيه التجديد عند العودة للتطبيق وعند عودة الاتصال.
 DateTime? _lastStorefrontRefresh;
 
-/// أقل مدة بين تحديثين عند العودة للتطبيق.
+/// أقل مدة بين تحديثين عند العودة للتطبيق أو عودة الاتصال.
 const _resumeThrottle = Duration(minutes: 3);
+
+/// البيانات وصلت للتو (إقلاع التطبيق): أول عودة للتطبيق خلال 3 دقائق لا تعيد جلبها.
+void markStorefrontFresh() => _lastStorefrontRefresh = DateTime.now();
 
 /// كاش القوائم بكل إصداراته (products_v2 / v3 / v4…) وكاش تفاصيل المنتجات.
 const _listingsCachePrefix = 'products_v';
@@ -113,4 +118,34 @@ Future<bool> refreshStorefrontCatalogOnResume(WidgetRef ref) async {
     // أُغلق صاحب ref أثناء الجلب — الكاش محدَّث ويُقرأ عند البناء التالي.
   }
   return true;
+}
+
+/// عاد الاتصال: نعيد فقط ما فشل أثناء الانقطاع (المزوّدات في حالة خطأ) — بلا جلب
+/// إجباري ولا مسح كاش. المزوّد الذي لم يُنشأ بعد لا يُلمس (لا نبدأ طلباً لم يُطلب).
+///
+/// يُرجع true إن أُعيد شيء.
+bool retryFailedStorefront(WidgetRef ref) {
+  var retried = false;
+  void retry(ProviderBase<AsyncValue<Object?>> provider) {
+    if (!ref.exists(provider)) return;
+    final value = ref.read(provider);
+    if (!value.hasError || value.isLoading) return;
+    ref.invalidate(provider);
+    retried = true;
+  }
+
+  retry(worldsProvider);
+  final slug = resolveWorldSlug(
+    selected: ref.read(selectedWorldSlugProvider),
+    worlds: ref.read(worldsProvider).valueOrNull,
+  );
+  if (slug != null) {
+    retry(worldDetailProvider(slug));
+    retry(worldFeedProvider(slug));
+  }
+  retry(homeFeedProvider);
+  retry(categoriesProvider);
+  retry(brandsProvider);
+  retry(offersFeedProvider);
+  return retried;
 }

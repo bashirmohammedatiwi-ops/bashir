@@ -9,7 +9,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/motion/offscreen_pause.dart';
 import '../../../core/navigation/app_navigation.dart';
+import '../../../core/perf/device_perf.dart';
 import '../../../core/utils/support_links.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/store_world.dart';
@@ -47,12 +49,12 @@ class WorldHeroBand extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
     final top = MediaQuery.paddingOf(context).top;
-    final auth = ref.watch(authProvider);
-    final unread = auth.isAuthenticated
-        ? ref.watch(unreadNotificationsCountProvider)
-        : 0;
+    // الاسم والحالة فقط — لا إعادة بناء للكتلة مع كل تحديث آخر لحالة الحساب.
+    final signedIn = ref.watch(authProvider.select((a) => a.isAuthenticated));
+    final userName = ref.watch(authProvider.select((a) => a.user?.name));
+    final unread = signedIn ? ref.watch(unreadNotificationsCountProvider) : 0;
     final whatsapp = ref.watch(storeSettingsProvider)?.whatsapp;
-    final firstName = (auth.user?.name ?? '').trim().split(' ').first;
+    final firstName = (userName ?? '').trim().split(' ').first;
     final base = worldBandColor(world);
 
     return AnimatedContainer(
@@ -318,23 +320,40 @@ class _RotatingHint extends StatefulWidget {
   State<_RotatingHint> createState() => _RotatingHintState();
 }
 
-class _RotatingHintState extends State<_RotatingHint> {
+class _RotatingHintState extends State<_RotatingHint> with MotionGateMixin {
   Timer? _timer;
+  bool _still = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final still = MediaQuery.disableAnimationsOf(context);
-    if (still) {
+    _still = MediaQuery.disableAnimationsOf(context);
+    if (_still) widget.index.value = 0;
+    _sync();
+  }
+
+  @override
+  void onMotionGateChanged(bool allowed) => _sync();
+
+  @override
+  void didUpdateWidget(_RotatingHint old) {
+    super.didUpdateWidget(old);
+    if (old.hints.length != widget.hints.length) _sync();
+  }
+
+  /// المؤقّت يعمل فقط والحقل ظاهر، والتبويب ظاهر، والشاشة في الأعلى، والصفحة
+  /// ساكنة — لا تبديل (ولا إطارات انتقال) والرأس خارج الشاشة أو تحت شاشة أخرى.
+  void _sync() {
+    final run = !_still && motionAllowed && widget.hints.length >= 2;
+    if (!run) {
       _timer?.cancel();
       _timer = null;
-      widget.index.value = 0;
-    } else {
-      _timer ??= Timer.periodic(const Duration(milliseconds: 3200), (_) {
-        if (!mounted || widget.hints.length < 2) return;
-        widget.index.value = (widget.index.value + 1) % widget.hints.length;
-      });
+      return;
     }
+    _timer ??= Timer.periodic(const Duration(milliseconds: 3200), (_) {
+      if (!mounted || widget.hints.length < 2 || !motionAllowed) return;
+      widget.index.value = (widget.index.value + 1) % widget.hints.length;
+    });
   }
 
   @override
@@ -346,6 +365,9 @@ class _RotatingHintState extends State<_RotatingHint> {
   @override
   Widget build(BuildContext context) {
     final still = MediaQuery.disableAnimationsOf(context);
+    // الأجهزة البسيطة: انزلاق كامل بلا تلاشٍ (لا طبقة شفافية لكل تبديل).
+    final low = DevicePerf.isLow;
+    final travel = low ? 1.0 : 0.6;
     return ValueListenableBuilder<int>(
       valueListenable: widget.index,
       builder: (context, i, _) {
@@ -362,10 +384,10 @@ class _RotatingHintState extends State<_RotatingHint> {
             transitionBuilder: (child, a) {
               final incoming = child.key == ValueKey(text);
               return FadeTransition(
-                opacity: a,
+                opacity: low ? kAlwaysCompleteAnimation : a,
                 child: SlideTransition(
                   position: Tween<Offset>(
-                    begin: Offset(0, incoming ? 0.6 : -0.6),
+                    begin: Offset(0, incoming ? travel : -travel),
                     end: Offset.zero,
                   ).animate(a),
                   child: child,
@@ -723,7 +745,9 @@ class StickyWorldsBar extends ConsumerWidget {
         .where((w) => !w.isGift || w.slug == currentSlug)
         .toList();
     // ضبابية الخلفية مكلفة على أندرويد أثناء التمرير: هناك سطح شبه مصمت بلا ضبابية.
-    final blur = defaultTargetPlatform == TargetPlatform.iOS;
+    // وكذلك على أي جهاز بسيط.
+    final blur =
+        defaultTargetPlatform == TargetPlatform.iOS && !DevicePerf.isLow;
 
     final bar = Container(
       padding: EdgeInsets.fromLTRB(12, top + 2, 12, 8),

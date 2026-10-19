@@ -147,33 +147,52 @@ class RecentlyViewedNotifier extends StateNotifier<List<Product>> {
   }
 
   /// السعر والمخزون في النسخ المحفوظة قد يكونان قديمين: نحدّث أول البطاقات بهدوء
-  /// من السيرفر (واحدة تلو الأخرى، بعد أن تأخذ الشاشة الأولى حاجتها من الشبكة)،
-  /// ونحذف ما لم يعد في المتجر.
+  /// من السيرفر بطلب واحد (بعد أن تأخذ الشاشة الأولى حاجتها من الشبكة)، ونحذف ما لم
+  /// يعد في المتجر.
   Future<void> _refreshSnapshots(List<String> ids) async {
+    // النسخ المحفوظة نفسها: ما فتحته الزبونة في الأثناء يصبح نسخة جديدة كاملة فلا نلمسه.
+    final saved = {for (final p in state) p.id: p};
     await Future<void>.delayed(const Duration(seconds: 3));
     if (!mounted) return;
     final api = _ref.read(apiServiceProvider);
-    var changed = false;
-    for (final id in ids) {
-      // قد تكون الزبونة فتحته (فصار أول القائمة بنسخة كاملة) أو مسحت السجل في الأثناء.
-      final p = state.where((e) => e.id == id).firstOrNull;
-      if (p == null) continue;
-      try {
-        final fresh = await api.getProduct(p.slug.isNotEmpty ? p.slug : p.id);
-        if (!mounted) return;
-        if (fresh.id != p.id) continue;
-        state = [for (final e in state) e.id == p.id ? fresh : e];
-        changed = true;
-      } on ApiException catch (e) {
-        if (!mounted) return;
-        // حُذف من المتجر أو أُوقف: لا نعرض بطاقة لا تفتح.
-        if (e.status == 404 || e.status == 410) {
-          state = state.where((x) => x.id != p.id).toList();
-          changed = true;
-        }
-      } catch (_) {}
+    final List<Product> batch;
+    try {
+      // staleOnError: false — بلا اتصال لا نعدّ نسخة محفوظة تحققاً (ولا غياباً عنها حذفاً).
+      batch = await api.getProductsByIds(ids, staleOnError: false);
+    } catch (_) {
+      return; // بلا اتصال: تبقى النسخ كما هي حتى التشغيل القادم.
     }
-    if (changed && mounted) await _persist();
+    if (!mounted) return;
+    final fresh = {for (final p in batch) p.id: p};
+    // الغائب عن الدفعة: حُذف أو أُوقف — أو أخفته إعدادات القوائم (نافد، بلا صورة)، فصفحته
+    // وحدها تفصل (عادة لا شيء هنا).
+    final gone = <String>{};
+    for (final id in ids.where((id) => !fresh.containsKey(id))) {
+      try {
+        final p = await api.getProduct(id);
+        if (p.id == id) fresh[id] = p;
+      } on ApiException catch (e) {
+        if (e.status == 404 || e.status == 410) gone.add(id);
+      } catch (_) {}
+      if (!mounted) return;
+    }
+    // قد تكون الزبونة فتحت أحدها (فصار أول القائمة بنسخة كاملة) أو مسحت السجل في الأثناء:
+    // نحدّث ما بقي من النسخ المحفوظة فقط.
+    var changed = false;
+    final next = <Product>[];
+    for (final e in state) {
+      final untouched = identical(saved[e.id], e);
+      if (untouched && gone.contains(e.id)) {
+        changed = true; // لا نعرض بطاقة لا تفتح.
+        continue;
+      }
+      final update = untouched ? fresh[e.id] : null;
+      if (update != null) changed = true;
+      next.add(update ?? e);
+    }
+    if (!changed) return;
+    state = next;
+    await _persist();
   }
 
   Future<void> _persist() async {

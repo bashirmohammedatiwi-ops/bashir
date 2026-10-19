@@ -253,7 +253,8 @@ class _Highlighted extends StatelessWidget {
     final normChars = <String>[];
     final map = <int>[];
     for (var i = 0; i < text.length; i++) {
-      final n = normalizeQuery(text[i]);
+      // تطبيع الحرف من جدول مخزّن (بدل تعابير منتظمة لكل حرف).
+      final n = normalizeChar(text, i);
       if (n.isEmpty && text[i] != ' ') continue;
       normChars.add(n.isEmpty ? ' ' : n);
       map.add(i);

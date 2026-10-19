@@ -353,7 +353,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> with WidgetsBinding
                   child: CustomScrollView(
                     controller: _scroll,
                     physics: AppScrollPerf.physics,
-                    cacheExtent: AppScrollPerf.verticalCacheExtent,
+                    cacheExtent: AppScrollPerf.vertical,
                     slivers: [
                       SliverToBoxAdapter(
                         child: OffersHero(

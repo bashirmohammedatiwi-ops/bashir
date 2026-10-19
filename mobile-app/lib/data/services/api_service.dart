@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
@@ -42,6 +43,29 @@ class ApiService {
   }
 
   Map<String, dynamic> _body(Response r) => asMap(r.data);
+
+  /// GET عام يُرجع نص الجسم كما وصل — للكاش ([ApiCache.getOrFetchJson]): يُحفظ على القرص
+  /// بلا إعادة ترميز، والكبير يُفكّ ويُبنى نموذجه خارج خيط الواجهة.
+  /// رد الخطأ يُفكّ هنا ليقرأ [_throw] رسالة الخادم ورمزه كالعادة.
+  Future<String> _getRaw(String path, {Map<String, dynamic>? query}) async {
+    try {
+      final r = await _dio.get<String>(
+        path,
+        queryParameters: query,
+        options: Options(responseType: ResponseType.plain, extra: {'auth': false}),
+      );
+      return r.data ?? '';
+    } on DioException catch (e) {
+      final res = e.response;
+      final body = res?.data;
+      if (res != null && body is String && body.isNotEmpty) {
+        try {
+          res.data = jsonDecode(body);
+        } catch (_) {}
+      }
+      rethrow;
+    }
+  }
 
   static String? _nonEmpty(String? v) {
     final t = v?.trim();
@@ -101,11 +125,30 @@ class ApiService {
   /// وقت النسخة المعروضة من الواجهة («آخر تحديث قبل …»).
   DateTime? homeFetchedAt({String? worldSlug}) => _cache.fetchedAt(_homeKey(worldSlug));
 
+  /// هل حُفظت واجهة هذا العالم خلال [within]؟ يقرأ وقت النسخة المحفوظة على القرص أيضاً
+  /// (التجهيز المسبق لا يعيد تنزيل ما وصل قبل دقائق في تشغيل سابق).
+  Future<bool> isHomeCachedWithin({String? worldSlug, required Duration within}) =>
+      _cache.isStoredWithin(_homeKey(worldSlug), within);
+
+  // ---- محوّلات الردود: ثابتة لا تلتقط شيئاً، فتُرسل إلى isolate مع الردود الكبيرة ----
+  static HomeFeed _homeFeedFrom(dynamic data) => HomeFeed.fromJson(asMap(data));
+  static List<Category> _categoriesFrom(dynamic data) =>
+      asList(data).map((e) => Category.fromJson(asMap(e))).toList();
+  static List<Brand> _brandsFrom(dynamic data) => asList(data).map((e) => Brand.fromJson(asMap(e))).toList();
+  static Paginated<Product> _productPageFrom(dynamic data) => Paginated.fromJson(asMap(data), Product.fromJson);
+  static Product _productFrom(dynamic data) => Product.fromJson(asMap(data));
+
+  /// بيانات الكتالوج (الأقسام، البراندات، مناطق الشحن، الباقات، مشاكل البشرة) تتغير نادراً:
+  /// المحفوظة تُعرض فوراً حتى عمر يوم تقريباً (5 دقائق × 288) وتُحدَّث في الخلفية —
+  /// لا انتظار للشبكة عند كل فتح بارد للتطبيق.
+  static const _catalogStaleFactor = 288;
+
   /// [staleOnError] = false (سحب للتحديث): فشل الشبكة يُرمى بدل إعادة النسخة المحفوظة،
   /// فيعرف المستدعي أن التحديث لم يتم.
   Future<HomeFeed> getHome({bool forceRefresh = false, String? worldSlug, bool staleOnError = true}) async {
     try {
-      final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+      // الواجهة كبيرة (مئات KB): تُفكّ ويُبنى نموذجها في isolate، ونصها يُحفظ كما وصل.
+      return await _cache.getOrFetchJson<HomeFeed>(
         key: _homeKey(worldSlug),
         ttl: AppConfig.homeCacheTtl,
         // الواجهة المحفوظة تُعرض فوراً حتى عمر يوم تقريباً (90ث × 960) وتُحدَّث في الخلفية —
@@ -113,18 +156,10 @@ class ApiService {
         maxStaleFactor: 960,
         forceRefresh: forceRefresh,
         staleOnError: staleOnError,
-        fetch: () async {
-          final r = await _dio.get(
-            '/home',
-            queryParameters: worldSlug == null ? null : {'world': worldSlug},
-            options: Options(extra: {'auth': false}),
-          );
-          return asMap(_data(r));
-        },
-        parse: (json) => asMap(json),
-        serialize: (m) => m,
+        unwrapData: true,
+        fetchRaw: () => _getRaw('/home', query: worldSlug == null ? null : {'world': worldSlug}),
+        parse: _homeFeedFrom,
       );
-      return HomeFeed.fromJson(raw);
     } catch (e) {
       _throw(e);
     }
@@ -173,16 +208,19 @@ class ApiService {
     }
   }
 
+  /// لا ترمي أبداً: بعد الفشل تُعاد المحاولة مرة واحدة فقط إن سقط الاتصال نفسه (لا بعد
+  /// انتهاء مهلة — انتظرنا 25 ثانية أصلاً)، ثم عروض الواجهة الرئيسية المحفوظة.
   Future<HomeFeed> getOffers({bool forceRefresh = false}) async {
     try {
       return await _fetchOffers(forceRefresh: forceRefresh);
-    } catch (_) {
-      try {
-        await Future<void>.delayed(const Duration(milliseconds: 400));
-        return await _fetchOffers(forceRefresh: true);
-      } catch (_) {
-        return _offersFallbackFromHome();
+    } catch (e) {
+      if (e is ApiException && e.transportType == DioExceptionType.connectionError) {
+        try {
+          await Future<void>.delayed(const Duration(milliseconds: 400));
+          return await _fetchOffers(forceRefresh: true);
+        } catch (_) {}
       }
+      return _offersFallbackFromHome();
     }
   }
 
@@ -204,40 +242,40 @@ class ApiService {
 
   Future<HomeFeed> _fetchOffers({bool forceRefresh = false}) async {
     try {
-      final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+      return await _cache.getOrFetchJson<HomeFeed>(
         key: 'offers_v1',
         ttl: AppConfig.homeCacheTtl,
+        // حتى ساعة تقريباً (90ث × 40) تُعرض فوراً وتُحدَّث في الخلفية.
+        maxStaleFactor: 40,
         forceRefresh: forceRefresh,
-        fetch: () async {
-          final r = await _dio.get('/offers', options: Options(extra: {'auth': false}));
-          return asMap(_data(r));
-        },
-        parse: (json) => asMap(json),
-        serialize: (m) => m,
+        unwrapData: true,
+        fetchRaw: () => _getRaw('/offers'),
+        parse: _homeFeedFrom,
       );
-      return HomeFeed.fromJson(raw);
     } catch (e) {
       _throw(e);
     }
   }
 
   // ---- CATEGORIES ----
+  static const _categoriesKey = 'categories_all_v4';
+
+  /// هل وصلت شجرة الأقسام (من الشبكة أو من نسخة محفوظة بهذا العمر) خلال [within]؟
+  bool categoriesFresh({Duration within = AppConfig.catalogCacheTtl}) => _cache.isFresh(_categoriesKey, within);
+
   /// شجرة الأقسام النشطة فقط (بلا all=1: القسم الموقوف من لوحة التحكم يختفي من التطبيق).
   Future<List<Category>> getCategories({bool forceRefresh = false, bool staleOnError = true}) async {
     try {
-      final raw = await _cache.getOrFetch<List<dynamic>>(
-        key: 'categories_all_v4',
+      return await _cache.getOrFetchJson<List<Category>>(
+        key: _categoriesKey,
         ttl: AppConfig.catalogCacheTtl,
+        maxStaleFactor: _catalogStaleFactor,
         forceRefresh: forceRefresh,
         staleOnError: staleOnError,
-        fetch: () async {
-          final r = await _dio.get('/categories', options: Options(extra: {'auth': false}));
-          return asList(_data(r));
-        },
-        parse: (json) => asList(json),
-        serialize: (list) => list,
+        unwrapData: true,
+        fetchRaw: () => _getRaw('/categories'),
+        parse: _categoriesFrom,
       );
-      return raw.map((e) => Category.fromJson(asMap(e))).toList();
     } catch (e) {
       _throw(e);
     }
@@ -272,24 +310,21 @@ class ApiService {
           : subcategoryId != null
               ? 'brands_sub_$subcategoryId'
               : 'brands_f${featured ? 1 : 0}_a${all ? 1 : 0}';
-      final raw = await _cache.getOrFetch<List<dynamic>>(
+      return await _cache.getOrFetchJson<List<Brand>>(
         key: key,
         ttl: AppConfig.catalogCacheTtl,
+        maxStaleFactor: _catalogStaleFactor,
         forceRefresh: forceRefresh,
         staleOnError: staleOnError,
-        fetch: () async {
-          final r = await _dio.get('/brands', queryParameters: {
-            if (featured) 'featured': '1',
-            if (all) 'all': '1',
-            if (categoryId != null) 'categoryId': categoryId,
-            if (subcategoryId != null) 'subcategoryId': subcategoryId,
-          }, options: Options(extra: {'auth': false}));
-          return asList(_data(r));
-        },
-        parse: (json) => asList(json),
-        serialize: (list) => list,
+        unwrapData: true,
+        fetchRaw: () => _getRaw('/brands', query: {
+          if (featured) 'featured': '1',
+          if (all) 'all': '1',
+          if (categoryId != null) 'categoryId': categoryId,
+          if (subcategoryId != null) 'subcategoryId': subcategoryId,
+        }),
+        parse: _brandsFrom,
       );
-      return raw.map((e) => Brand.fromJson(asMap(e))).toList();
     } catch (e) {
       _throw(e);
     }
@@ -337,6 +372,7 @@ class ApiService {
     String? skinType,
     bool lite = true,
     bool forceRefresh = false,
+    bool staleOnError = true,
   }) async {
     try {
       final worldSlug = _nonEmpty(world);
@@ -369,47 +405,44 @@ class ApiService {
         lite: lite,
       );
 
-      Future<Map<String, dynamic>> fetch() async {
-        final r = await _dio.get('/products', queryParameters: {
-          'page': page,
-          'limit': limit,
-          'lite': lite,
-          if (search != null && search.isNotEmpty) 'search': search,
-          if (categoryId != null) 'categoryId': categoryId,
-          if (subcategoryId != null) 'subcategoryId': subcategoryId,
-          if (tertiaryCategoryId != null) 'tertiaryCategoryId': tertiaryCategoryId,
-          if (brandId != null) 'brandId': brandId,
-          if (sort != null) 'sort': sort,
-          if (minPrice != null) 'minPrice': minPrice,
-          if (maxPrice != null) 'maxPrice': maxPrice,
-          if (minRating != null) 'minRating': minRating,
-          if (inStock == true) 'inStock': '1',
-          if (isNew == true) 'isNew': '1',
-          if (isBestSeller == true) 'isBestSeller': '1',
-          if (isPromo == true) 'isPromo': '1',
-          if (isFeatured == true) 'isFeatured': '1',
-          if (concernSlug != null && concernSlug.isNotEmpty) 'concernSlug': concernSlug,
-          if (worldSlug != null) 'world': worldSlug,
-          if (idList != null && idList.isNotEmpty) 'ids': idList.join(','),
-          if (discount != null) 'minDiscount': discount,
-          if (skin != null) 'skinType': skin,
-        }, options: Options(extra: {'auth': false}));
-        return _body(r);
-      }
+      final query = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+        'lite': lite,
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (categoryId != null) 'categoryId': categoryId,
+        if (subcategoryId != null) 'subcategoryId': subcategoryId,
+        if (tertiaryCategoryId != null) 'tertiaryCategoryId': tertiaryCategoryId,
+        if (brandId != null) 'brandId': brandId,
+        if (sort != null) 'sort': sort,
+        if (minPrice != null) 'minPrice': minPrice,
+        if (maxPrice != null) 'maxPrice': maxPrice,
+        if (minRating != null) 'minRating': minRating,
+        if (inStock == true) 'inStock': '1',
+        if (isNew == true) 'isNew': '1',
+        if (isBestSeller == true) 'isBestSeller': '1',
+        if (isPromo == true) 'isPromo': '1',
+        if (isFeatured == true) 'isFeatured': '1',
+        if (concernSlug != null && concernSlug.isNotEmpty) 'concernSlug': concernSlug,
+        if (worldSlug != null) 'world': worldSlug,
+        if (idList != null && idList.isNotEmpty) 'ids': idList.join(','),
+        if (discount != null) 'minDiscount': discount,
+        if (skin != null) 'skinType': skin,
+      };
 
       if (cacheKey != null) {
-        final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+        return await _cache.getOrFetchJson<Paginated<Product>>(
           key: cacheKey,
           ttl: AppConfig.listingCacheTtl,
           forceRefresh: forceRefresh,
-          fetch: fetch,
-          parse: (json) => asMap(json),
-          serialize: (m) => m,
+          staleOnError: staleOnError,
+          fetchRaw: () => _getRaw('/products', query: query),
+          parse: _productPageFrom,
         );
-        return Paginated.fromJson(raw, Product.fromJson);
       }
 
-      return Paginated.fromJson(await fetch(), Product.fromJson);
+      final r = await _dio.get('/products', queryParameters: query, options: Options(extra: {'auth': false}));
+      return Paginated.fromJson(_body(r), Product.fromJson);
     } catch (e) {
       _throw(e);
     }
@@ -417,7 +450,14 @@ class ApiService {
 
   /// منتجات بعينها بترتيب [ids] (تابعي التسوق، المقارنة، تنبيهات التوفّر) — السعر والمخزون
   /// والتدرجات الحالية من الخادم. ما حُذف أو أُوقف يسقط من النتيجة.
-  Future<List<Product>> getProductsByIds(List<String> ids, {bool forceRefresh = false}) async {
+  ///
+  /// [staleOnError] = false: فشل الشبكة يُرمى بدل النسخة المحفوظة — للمستدعي الذي يبني على
+  /// غياب منتج من النتيجة (السلة، «شاهدتِها مؤخراً») فلا يعدّ نسخة قديمة تحققاً.
+  Future<List<Product>> getProductsByIds(
+    List<String> ids, {
+    bool forceRefresh = false,
+    bool staleOnError = true,
+  }) async {
     final wanted = <String>[];
     for (final raw in ids) {
       final id = raw.trim();
@@ -430,7 +470,12 @@ class ApiService {
         wanted.sublist(i, math.min(i + _idsPerRequest, wanted.length)),
     ];
     final pages = await Future.wait(
-      batches.map((batch) => getProducts(ids: batch, limit: batch.length, forceRefresh: forceRefresh)),
+      batches.map((batch) => getProducts(
+            ids: batch,
+            limit: batch.length,
+            forceRefresh: forceRefresh,
+            staleOnError: staleOnError,
+          )),
     );
     final byId = {for (final page in pages) for (final p in page.items) p.id: p};
     return [for (final id in wanted) ?byId[id]];
@@ -530,19 +575,14 @@ class ApiService {
 
   Future<Product> getProduct(String idOrSlug, {bool forceRefresh = false}) async {
     try {
-      final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+      return await _cache.getOrFetchJson<Product>(
         key: 'product_v2_$idOrSlug',
         ttl: AppConfig.productCacheTtl,
         forceRefresh: forceRefresh,
-        fetch: () async {
-          final r =
-              await _dio.get('/products/$idOrSlug', options: Options(extra: {'auth': false}));
-          return asMap(_data(r));
-        },
-        parse: (json) => asMap(json),
-        serialize: (m) => m,
+        unwrapData: true,
+        fetchRaw: () => _getRaw('/products/$idOrSlug'),
+        parse: _productFrom,
       );
-      return Product.fromJson(raw);
     } catch (e) {
       _throw(e);
     }
@@ -782,6 +822,7 @@ class ApiService {
       return await _cache.getOrFetch<List<Map<String, dynamic>>>(
         key: 'shipping_zones_v1',
         ttl: AppConfig.catalogCacheTtl,
+        maxStaleFactor: _catalogStaleFactor,
         forceRefresh: forceRefresh,
         staleOnError: staleOnError,
         fetch: () async {
@@ -862,6 +903,7 @@ class ApiService {
       final raw = await _cache.getOrFetch<List<dynamic>>(
         key: key,
         ttl: AppConfig.catalogCacheTtl,
+        maxStaleFactor: _catalogStaleFactor,
         forceRefresh: forceRefresh,
         fetch: () async {
           final r = await _dio.get('/packages', queryParameters: {
@@ -887,6 +929,7 @@ class ApiService {
       final raw = await _cache.getOrFetch<List<dynamic>>(
         key: 'skin_concerns_v2_${world ?? '-'}',
         ttl: AppConfig.catalogCacheTtl,
+        maxStaleFactor: _catalogStaleFactor,
         forceRefresh: forceRefresh,
         fetch: () async {
           final r = await _dio.get('/skin-concerns',

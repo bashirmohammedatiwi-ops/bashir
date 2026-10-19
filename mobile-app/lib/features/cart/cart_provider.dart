@@ -90,8 +90,8 @@ class CartNotifier extends StateNotifier<CartState> {
   /// لا نتحقق أكثر من مرة في الدقيقة (العودة للتطبيق وفتح السلة والدفع متقاربة).
   static const _revalidateEvery = Duration(seconds: 60);
 
-  /// منتجات تُسأل عنها معاً — السلة قد تطول والشبكة بطيئة أحياناً.
-  static const _revalidateBatch = 4;
+  /// معرّفات في طلب واحد (حد الخادم 50) — سلة أطول تُقسم إلى طلبات متوازية.
+  static const _revalidateBatch = 50;
 
   DateTime? _lastRevalidated;
   Future<void>? _revalidating;
@@ -293,18 +293,37 @@ class CartNotifier extends StateNotifier<CartState> {
     final ids = {for (final e in state.items) e.productId}.toList();
     // null = لم يعد في المتجر (404)؛ غياب المفتاح = تعذّر الوصول فيبقى السطر كما هو.
     final fresh = <String, Product?>{};
-    for (var i = 0; i < ids.length; i += _revalidateBatch) {
-      await Future.wait(ids.skip(i).take(_revalidateBatch).map((id) async {
-        try {
-          final product = await api.getProduct(id, forceRefresh: true);
-          // بلا اتصال يعيد الكاش نسخته القديمة: ليست تحققاً، فلا نبني عليها.
-          if (api.isProductFresh(id)) fresh[id] = product;
-        } on ApiException catch (e) {
-          if (e.status == 404 || e.status == 410) fresh[id] = null;
-        } catch (_) {}
-      }));
-      if (!mounted) return;
-    }
+    // طلب واحد لكل 50 منتجاً (بطاقات خفيفة فيها السعر والمخزون وكل التدرجات بأسعارها
+    // ومخزونها) بدل طلب لكل سطر.
+    final missing = <String>[];
+    await Future.wait([
+      for (var i = 0; i < ids.length; i += _revalidateBatch)
+        () async {
+          final batch = ids.skip(i).take(_revalidateBatch).toList();
+          try {
+            // staleOnError: false — بلا اتصال يُرمى الخطأ بدل نسخة قديمة ليست تحققاً.
+            final products = await api.getProductsByIds(batch, forceRefresh: true, staleOnError: false);
+            for (final p in products) {
+              fresh[p.id] = p;
+            }
+            // الدفعة نجحت: الغائب عنها إما حُذف أو أُوقف، أو أخفته إعدادات القوائم (النافد،
+            // بلا صورة) — صفحته وحدها تفصل بينهما.
+            missing.addAll(batch.where((id) => !fresh.containsKey(id)));
+          } catch (_) {
+            // تعذّر الوصول: أسطر هذه الدفعة تبقى كما هي.
+          }
+        }(),
+    ]);
+    if (!mounted) return;
+    await Future.wait(missing.map((id) async {
+      try {
+        final product = await api.getProduct(id, forceRefresh: true);
+        if (api.isProductFresh(id)) fresh[id] = product;
+      } on ApiException catch (e) {
+        if (e.status == 404 || e.status == 410) fresh[id] = null;
+      } catch (_) {}
+    }));
+    if (!mounted) return;
     final packs = await packages;
     if (!mounted) return;
     _unreportedPackages.addAll(packs.dropped);

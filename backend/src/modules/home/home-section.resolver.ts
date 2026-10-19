@@ -842,7 +842,8 @@ export class HomeSectionResolver {
 
     return rows.map((item, idx) => {
       const media = item.imageId ? mediaMap.get(item.imageId) : null;
-      const imageUrl = media ? this.mediaPublicUrl(media) : null;
+      // الدوائر أيقونات (~70pt في التطبيق، ~120px في الموقع): small يكفي بدل medium.
+      const imageUrl = media ? this.mediaPublicUrl(media, "small") : null;
       const size = resolveCardSize(payload, `circle-${idx}`, idx, item.cardSize);
       return withCardSize(
         withResolvedLink({
@@ -1044,13 +1045,17 @@ export class HomeSectionResolver {
     });
   }
 
-  private mediaPublicUrl(media: {
-    publicUrlBase?: string | null;
-    filename?: string | null;
-    variants?: unknown;
-  }): string | null {
+  private mediaPublicUrl(
+    media: {
+      publicUrlBase?: string | null;
+      filename?: string | null;
+      variants?: unknown;
+    },
+    prefer: "medium" | "small" = "medium",
+  ): string | null {
     const variants = media.variants as Record<string, { formats?: Record<string, string> }> | undefined;
     const rel =
+      (prefer === "small" ? variants?.small?.formats?.webp ?? variants?.small?.formats?.jpg : undefined) ??
       variants?.medium?.formats?.webp ??
       variants?.medium?.formats?.jpg ??
       variants?.thumb?.formats?.webp ??

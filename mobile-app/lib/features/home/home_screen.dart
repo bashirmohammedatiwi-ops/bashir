@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/cache/home_image_precache.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/perf/device_perf.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/card_sizes.dart';
@@ -40,10 +41,6 @@ import 'widgets/home_scroll_perf.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/world_showcase.dart';
 
-/// مدى البناء المسبق تحت الشاشة: يكفي لتمرير سلس دون بناء الدوّارات وأشرطة الفيلم
-/// البعيدة مبكراً (ولا تنتهي حركة الظهور قبل أن تُرى).
-const double _homeCacheExtent = 1000;
-
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -73,6 +70,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// تجاوز محدّد العوالم الكبير: يظهر شريط العوالم المصغّر.
   final _showWorldsBar = ValueNotifier<bool>(false);
+
+  /// مقدار السحب للأسفل فوق أعلى الصفحة (0 في التمرير العادي) — يتغيّر فقط
+  /// أثناء السحب، فلا يُعاد بناء/تخطيط شريط اللون مع كل إطار تمرير.
+  final _pull = ValueNotifier<double>(0);
+
+  /// بدأ التمرير (أكثر من 2 نقطة): غطاء شريط الحالة يظهر.
+  final _scrolled = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -160,6 +164,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (past != _pastHero.value) _pastHero.value = past;
     final bar = offset > 250;
     if (bar != _showWorldsBar.value) _showWorldsBar.value = bar;
+    final scrolled = offset > 2;
+    if (scrolled != _scrolled.value) _scrolled.value = scrolled;
+    final pull = offset < 0 ? -offset : 0.0;
+    if (pull != _pull.value) _pull.value = pull;
   }
 
   /// بصمة محتوى الواجهة للصور: نفس الأقسام والصور لا تعيد التسخين بعد كل إبطال
@@ -182,6 +190,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _scroll.dispose();
     _pastHero.dispose();
     _showWorldsBar.dispose();
+    _pull.dispose();
+    _scrolled.dispose();
     super.dispose();
   }
 
@@ -224,6 +234,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // الجديد من أعلاه، والشريطان يعودان لحالة أعلى الصفحة فوراً.
       _pastHero.value = false;
       _showWorldsBar.value = false;
+      _scrolled.value = false;
+      _pull.value = 0;
       if (_scroll.hasClients) _scroll.jumpTo(0);
       setState(() {
         _heldFeed = null;
@@ -367,7 +379,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final dir = Directionality.of(context);
     // زجاج شريط الحالة بالتمويه على iOS فقط — على أندرويد سطح شبه معتم بلا كلفة
     // إعادة التمويه مع كل إطار تمرير.
-    final blur = defaultTargetPlatform == TargetPlatform.iOS;
+    // (والأجهزة البسيطة بلا تمويه على أي منصة.)
+    final blur =
+        defaultTargetPlatform == TargetPlatform.iOS && !DevicePerf.isLow;
 
     Widget slotBuilder(BuildContext context, int index) {
       if (index >= slots.length) {
@@ -388,17 +402,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final section = slot.section;
           final Widget child;
           if (section.id == spotlightId) {
-            child = Padding(
-              padding: EdgeInsets.only(
-                top: sectionPadding(section.paddingTop, 10),
-                bottom: sectionPadding(section.paddingBottom, 0),
-              ),
-              child: ProductSpotlightSection(
-                section: section,
-                compactTop: slot.isFirstAfterHero,
+            child = RepaintBoundary(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top: sectionPadding(section.paddingTop, 10),
+                  bottom: sectionPadding(section.paddingBottom, 0),
+                ),
+                child: ProductSpotlightSection(
+                  section: section,
+                  compactTop: slot.isFirstAfterHero,
+                ),
               ),
             );
           } else {
+            // HomeSectionWidget يلفّ نفسه بحدّ رسم — لا حدّ ثانٍ فوقه.
             child = HomeSectionWidget(
               section: section,
               isFirstAfterHero: slot.isFirstAfterHero,
@@ -407,7 +424,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           return HomeReveal(
             key: key,
             id: '$worldSlug/${section.id}',
-            child: RepaintBoundary(child: child),
+            child: child,
           );
         case HomeSlotKind.flashSale:
           return HomeReveal(
@@ -428,31 +445,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Stack(
       children: [
         // لون العالم يملأ فراغ السحب للأسفل فوق الكتلة.
+        // يتبع السحب فقط (لا كل إطار تمرير)، وداخل Positioned.fill بقيود ثابتة
+        // فتغيّر ارتفاعه لا يعيد تخطيط الـStack كلها، وحدّ الرسم يعزله.
         if (hasBand)
-          AnimatedBuilder(
-            animation: _scroll,
-            builder: (context, _) {
-              final pull = _scroll.hasClients ? -_scroll.offset : 0.0;
-              return Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: (pull + topPad + 40).clamp(0.0, double.infinity),
-                child: DecoratedBox(
-                  // نفس اتجاه ضوء الكتلة: أفتح من جهة البداية.
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: AlignmentDirectional.centerStart.resolve(dir),
-                      end: AlignmentDirectional.centerEnd.resolve(dir),
-                      colors: [
-                        Color.lerp(bandBase, Colors.white, 0.13)!,
-                        Color.lerp(bandBase, Colors.white, 0.03)!,
-                      ],
+          Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _pull,
+                  child: DecoratedBox(
+                    // نفس اتجاه ضوء الكتلة: أفتح من جهة البداية.
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: AlignmentDirectional.centerStart.resolve(dir),
+                        end: AlignmentDirectional.centerEnd.resolve(dir),
+                        colors: [
+                          Color.lerp(bandBase, Colors.white, 0.13)!,
+                          Color.lerp(bandBase, Colors.white, 0.03)!,
+                        ],
+                      ),
+                    ),
+                  ),
+                  builder: (context, pull, band) => Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: pull + topPad + 40,
+                      child: band,
                     ),
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
         RefreshIndicator(
           color: world?.accent ?? t.accent,
@@ -465,7 +489,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             heroCategoryIds: data == null ? null : homeHeroCategoryIds(data),
             child: CustomScrollView(
               controller: _scroll,
-              cacheExtent: _homeCacheExtent,
+              // مدى البناء المسبق بحسب الجهاز: يكفي لتمرير سلس دون بناء الدوّارات
+              // وأشرطة الفيلم البعيدة مبكراً (ولا تنتهي حركة الظهور قبل أن تُرى).
+              cacheExtent: AppScrollPerf.home,
               physics: HomeScrollPerf.physics,
               slivers: [
                 SliverList(
@@ -501,12 +527,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           right: 0,
           height: topPad,
           child: IgnorePointer(
+            // يُبنى عند عبور العتبات فقط (بدء التمرير، تجاوز الكتلة) لا كل إطار.
             child: AnimatedBuilder(
-              animation: Listenable.merge([_scroll, _pastHero]),
+              animation: Listenable.merge([_scrolled, _pastHero]),
               builder: (context, _) {
-                final offset = _scroll.hasClients ? _scroll.offset : 0.0;
                 final past = _pastHero.value;
-                if (offset <= 2) return const SizedBox.shrink();
+                if (!_scrolled.value) return const SizedBox.shrink();
                 if (!past && hasBand) {
                   return ColoredBox(
                     color: Color.lerp(bandBase, Colors.white, 0.06)!,

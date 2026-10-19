@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../perf/device_perf.dart';
 import 'app_network_image.dart';
 
 /// عارض صور بملء الشاشة: تكبير بالقرص أو بالنقر المزدوج، تمرير بين الصور،
@@ -107,8 +108,11 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    // دقة أعلى من الشاشة حتى يبقى التكبير حاداً (حتى 2.5×) دون حجز ذاكرة بلا حدّ.
-    final decodeWidth = math.min(2400, (size.width * dpr * 2.5).round());
+    // دقة أعلى من الشاشة حتى يبقى التكبير حاداً (حتى 2.5×) دون حجز ذاكرة بلا حدّ —
+    // فيُنزَّل مقاس large (1600) لا medium المعروض في الصفحة. الجهاز البسيط أقل (ذاكرة).
+    final decodeWidth = math.min(DevicePerf.pick(low: 1280, mid: 2400), (size.width * dpr * 2.5).round());
+    // بديل التحميل: الصورة كما ظهرت في الصفحة (مفكوكة في الذاكرة غالباً) — بلا شاشة سوداء.
+    final previewWidth = math.min(1600, (size.width * dpr).round());
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -140,6 +144,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
             width: size.width,
             height: size.height,
             decodeWidth: decodeWidth,
+            previewWidth: previewWidth,
             onZoomChanged: _onZoomChanged,
             onDismissDrag: _onDismissDrag,
             onDismissEnd: _onDismissEnd,
@@ -213,6 +218,9 @@ class _ZoomableImage extends StatefulWidget {
   final double width;
   final double height;
   final int decodeWidth;
+
+  /// عرض فكّ البديل إن لم تظهر الصورة في هذه الجلسة بعد.
+  final int previewWidth;
   final ValueChanged<bool> onZoomChanged;
 
   /// سحب عمودي بإصبع واحد والصورة غير مكبّرة — يحرّك العارض نحو الإغلاق.
@@ -226,6 +234,7 @@ class _ZoomableImage extends StatefulWidget {
     required this.width,
     required this.height,
     required this.decodeWidth,
+    required this.previewWidth,
     required this.onZoomChanged,
     required this.onDismissDrag,
     required this.onDismissEnd,
@@ -245,9 +254,13 @@ class _ZoomableImageState extends State<_ZoomableImage> with SingleTickerProvide
   bool _zoomed = false;
   bool _dismissing = false;
 
+  /// عرض فكّ البديل — يُقرأ مرة قبل أن تسجّل الصورة الكبيرة عرضها هي لنفس الرابط.
+  late final int _previewDecode;
+
   @override
   void initState() {
     super.initState();
+    _previewDecode = lastImageDecodeWidth(widget.url) ?? widget.previewWidth;
     _zoom = AnimationController(vsync: this, duration: const Duration(milliseconds: 240))
       ..addListener(() {
         final value = _zoomAnimation?.value;
@@ -340,11 +353,26 @@ class _ZoomableImageState extends State<_ZoomableImage> with SingleTickerProvide
               fit: BoxFit.contain,
               decodeWidth: widget.decodeWidth,
               fallbackColor: Colors.black,
-              placeholder: const Center(
-                child: SizedBox.square(
-                  dimension: 26,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                ),
+              placeholder: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // نفس الرابط وعرض الفكّ اللذين ظهرت بهما في الصفحة = نفس النسخة في الذاكرة.
+                  AppNetworkImage(
+                    url: widget.url,
+                    width: widget.width,
+                    height: widget.height,
+                    fit: BoxFit.contain,
+                    decodeWidth: _previewDecode,
+                    backgroundColor: Colors.transparent,
+                    fallbackColor: Colors.black,
+                  ),
+                  const Center(
+                    child: SizedBox.square(
+                      dimension: 26,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

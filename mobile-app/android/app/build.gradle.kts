@@ -61,8 +61,11 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // تقليص الكود والموارد: حجم أصغر وتشغيل أسرع على الهواتف البسيطة.
+            // قواعد الإبقاء (حزمة الدفع ومكتباتها) في proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

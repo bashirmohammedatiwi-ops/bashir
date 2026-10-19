@@ -341,17 +341,34 @@ class _FadedRailState extends State<_FadedRail> {
       );
     }
 
+    // تلاشي الحافة بتدرّج بلون الخلفية فوق الشريط (بدل ShaderMask التي تفرض
+    // طبقة رسم كاملة saveLayer في كل إطار تمرير).
+    final canvas = context.worldTheme.canvas;
     return SizedBox(
       height: widget.height,
-      child: ShaderMask(
-        blendMode: BlendMode.dstIn,
-        shaderCallback: (rect) => LinearGradient(
-          begin: rtl ? Alignment.centerRight : Alignment.centerLeft,
-          end: rtl ? Alignment.centerLeft : Alignment.centerRight,
-          colors: const [Colors.white, Colors.white, Colors.transparent],
-          stops: const [0, 0.93, 1],
-        ).createShader(rect),
-        child: rail,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          rail,
+          Align(
+            alignment: rtl ? Alignment.centerLeft : Alignment.centerRight,
+            child: IgnorePointer(
+              child: FractionallySizedBox(
+                widthFactor: 0.07,
+                heightFactor: 1,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: rtl ? Alignment.centerRight : Alignment.centerLeft,
+                      end: rtl ? Alignment.centerLeft : Alignment.centerRight,
+                      colors: [canvas.withValues(alpha: 0), canvas],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

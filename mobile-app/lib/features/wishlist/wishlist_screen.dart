@@ -153,7 +153,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
         onRefresh: _reload,
         child: CustomScrollView(
           physics: AppScrollPerf.physics,
-          cacheExtent: AppScrollPerf.gridCacheExtent,
+          cacheExtent: AppScrollPerf.grid,
           slivers: [
             SliverToBoxAdapter(
               child: _WishlistSummary(products: wishlist.products, onAddAll: _addAllToCart),

@@ -46,8 +46,8 @@ class SectionGroupSection extends ConsumerWidget {
     final padTop = section.paddingTop ?? 24;
     final padBottom = section.paddingBottom ?? 24;
     final innerH = section.framePaddingH ?? 12;
-    final mq = MediaQuery.of(context);
-    final innerW = mq.size.width - innerH * 2;
+    // الحجم وحده — لا إعادة بناء للمجموعة كلها مع كل تغيّر في MediaQuery.
+    final innerW = MediaQuery.sizeOf(context).width - innerH * 2;
     final hasPattern = (section.pattern ?? 'none') != 'none';
 
     return Container(
@@ -61,19 +61,25 @@ class SectionGroupSection extends ConsumerWidget {
       ),
       child: Stack(
         children: [
+          // النقش (مئات الدوائر/الخطوط) في طبقة مستقلة تُسجَّل مرة واحدة:
+          // إعادة رسم ما فوقه (نبض، صور تُحمَّل) لا تعيد رسمه.
           if (hasPattern)
             Positioned.fill(
               child: IgnorePointer(
-                child: CustomPaint(
-                  painter: _GroupPatternPainter(section.pattern!, bg),
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    isComplex: true,
+                    willChange: false,
+                    painter: _GroupPatternPainter(section.pattern!, bg),
+                  ),
                 ),
               ),
             ),
           Padding(
             padding: EdgeInsets.fromLTRB(innerH, padTop, innerH, padBottom),
             // العناصر الداخلية تقيس عرضها من داخل الشريط لا من الشاشة.
-            child: MediaQuery(
-              data: mq.copyWith(size: Size(innerW, mq.size.height)),
+            child: _InnerWidth(
+              width: innerW,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -113,6 +119,25 @@ class SectionGroupSection extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// العناصر الداخلية تقيس عرضها من داخل الشريط: MediaQuery بعرض [width].
+/// الاعتماد على MediaQuery كاملة هنا وحده — وعند تغيّرها يُعاد بناء هذا الغلاف
+/// فقط ([child] نفس الكائن فلا يُعاد بناؤه)، والأبناء يُبلَّغون بحسب ما يقرؤونه.
+class _InnerWidth extends StatelessWidget {
+  final double width;
+  final Widget child;
+
+  const _InnerWidth({required this.width, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    return MediaQuery(
+      data: mq.copyWith(size: Size(width, mq.size.height)),
+      child: child,
     );
   }
 }

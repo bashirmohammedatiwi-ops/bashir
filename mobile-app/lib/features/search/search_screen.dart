@@ -586,12 +586,23 @@ class _RotatingHintState extends State<_RotatingHint> {
   int _i = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 3200), (_) {
-      if (!mounted || widget.hints.length < 2 || MediaQuery.disableAnimationsOf(context)) return;
-      setState(() => _i = (_i + 1) % widget.hints.length);
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // المؤقّت يعمل فقط والصفحة ظاهرة فعلاً: لا تحت صفحة منتج مفتوحة فوقها،
+    // ولا في تبويب مخفي (TickerMode)، ولا مع «تقليل الحركة» — كان يبني ويرسم
+    // كل 3.2 ثانية حتى والصفحة مغطّاة.
+    final visible = TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.of(context)?.isCurrent ?? true) &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (visible && _timer == null) {
+      _timer = Timer.periodic(const Duration(milliseconds: 3200), (_) {
+        if (!mounted || widget.hints.length < 2) return;
+        setState(() => _i = (_i + 1) % widget.hints.length);
+      });
+    } else if (!visible) {
+      _timer?.cancel();
+      _timer = null;
+    }
   }
 
   @override
@@ -605,24 +616,27 @@ class _RotatingHintState extends State<_RotatingHint> {
     final hints = widget.hints;
     final text = hints.isEmpty ? '' : hints[_i % hints.length];
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return ClipRect(
-      child: AnimatedSwitcher(
-        duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 420),
-        layoutBuilder: (current, previous) => Stack(
-          alignment: AlignmentDirectional.centerStart,
-          children: [...previous, if (current != null) current],
-        ),
-        transitionBuilder: (child, a) => FadeTransition(
-          opacity: a,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: Offset(0, child.key == ValueKey(text) ? 0.6 : -0.6),
-              end: Offset.zero,
-            ).animate(a),
-            child: child,
+    // طبقة مستقلة: انزلاق التلميح لا يعيد رسم شريط البحث كله.
+    return RepaintBoundary(
+      child: ClipRect(
+        child: AnimatedSwitcher(
+          duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 420),
+          layoutBuilder: (current, previous) => Stack(
+            alignment: AlignmentDirectional.centerStart,
+            children: [...previous, if (current != null) current],
           ),
+          transitionBuilder: (child, a) => FadeTransition(
+            opacity: a,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset(0, child.key == ValueKey(text) ? 0.6 : -0.6),
+                end: Offset.zero,
+              ).animate(a),
+              child: child,
+            ),
+          ),
+          child: Text(text, key: ValueKey(text), maxLines: 1, overflow: TextOverflow.ellipsis, style: widget.style),
         ),
-        child: Text(text, key: ValueKey(text), maxLines: 1, overflow: TextOverflow.ellipsis, style: widget.style),
       ),
     );
   }

@@ -64,7 +64,7 @@ class SearchResultsPage extends StatelessWidget {
       child: CustomScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         physics: AppScrollPerf.physics,
-        cacheExtent: AppScrollPerf.gridCacheExtent,
+        cacheExtent: AppScrollPerf.grid,
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
@@ -172,6 +172,15 @@ class SearchResultsPage extends StatelessWidget {
                 ),
               ),
             )
+          else if (skeleton)
+            // هيكل التحميل بنفس هندسة الشبكة تحت وميض واحد (بدل متحكّم لكل خانة).
+            const SliverToBoxAdapter(
+              child: ProductGridSkeleton(
+                count: 6,
+                listing: true,
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+              ),
+            )
           else ...[
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -179,19 +188,18 @@ class SearchResultsPage extends StatelessWidget {
                 gridDelegate: ProductGrid.delegateFor(context, listing: true),
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
-                    if (skeleton) return const ShimmerBox(height: double.infinity, radius: ProductCard.radius);
                     final p = r.items[i];
                     return RepaintBoundary(
                       child: ProductCard(key: ValueKey(p.id), product: p, showRating: true, showPromoBadge: true, style: ProductCardStyle.listing),
                     );
                   },
-                  childCount: skeleton ? 6 : r.items.length,
+                  childCount: r.items.length,
                   addAutomaticKeepAlives: false,
                   addRepaintBoundaries: false,
                 ),
               ),
             ),
-            if (!skeleton) SliverToBoxAdapter(child: _Footer(s: s, results: r)),
+            SliverToBoxAdapter(child: _Footer(s: s, results: r)),
           ],
           const SliverToBoxAdapter(child: SizedBox(height: 28)),
         ],
@@ -456,13 +464,19 @@ Widget _option(BuildContext ctx, String label, bool selected, VoidCallback onTap
   );
 }
 
+/// فوق هذا العدد تصير القائمة كسولة في ورقة بارتفاع ثابت: shrinkWrap كان يبني
+/// ويخطّط كل الخيارات (عشرات البراندات) دفعة واحدة وعند كل لمسة.
+const _lazySheetThreshold = 12;
+
 /// ورقة اختيار واحد: كل ضغطة تطبّق وتغلق.
-void _pickOne(BuildContext context, String title, List<Widget> Function(BuildContext ctx) options) {
+void _pickOne(BuildContext context, String title, List<Widget> Function(BuildContext ctx) options, {int count = 0}) {
+  final lazy = count > _lazySheetThreshold;
   showAppSheet<void>(
     context: context,
     title: title,
+    expand: lazy,
     builder: (ctx) => ListView(
-      shrinkWrap: true,
+      shrinkWrap: !lazy,
       padding: const EdgeInsets.only(bottom: 8),
       children: options(ctx),
     ),
@@ -491,7 +505,7 @@ void _pickKind(BuildContext context, AppStrings s, SearchResultsV2Controller r) 
             Navigator.pop(ctx);
             r.setFilters(r.filters.copyWith(kind: k.id));
           }, count: k.count),
-      ]);
+      ], count: kinds.length + 1);
 }
 
 void _pickCategory(BuildContext context, AppStrings s, SearchResultsV2Controller r) {
@@ -506,33 +520,37 @@ void _pickCategory(BuildContext context, AppStrings s, SearchResultsV2Controller
             Navigator.pop(ctx);
             r.setFilters(r.filters.copyWith(categoryId: c.id));
           }, count: c.count),
-      ]);
+      ], count: cats.length + 1);
 }
 
 void _pickBrands(BuildContext context, AppStrings s, SearchResultsV2Controller r) {
   final brands = r.meta?.brands ?? const <SearchFacet>[];
   // الجسم والتذييل يتشاركان الاختيار — التطبيق لا يحدث إلا بـ«عرض النتائج».
   final picked = ValueNotifier<Set<String>>({...r.filters.brandIds});
+  // قائمة طويلة: كسولة (تُبنى الصفوف الظاهرة فقط) في ورقة بارتفاع ثابت.
+  final lazy = brands.length > _lazySheetThreshold;
   showAppSheet<void>(
     context: context,
     title: s.searchFilterBrand,
+    expand: lazy,
     builder: (ctx) {
       final t = ctx.worldTheme;
       return ValueListenableBuilder<Set<String>>(
         valueListenable: picked,
-        builder: (ctx, sel, _) => ListView(
-          shrinkWrap: true,
-          children: [
-            for (final b in brands)
-              CheckboxListTile(
-                value: sel.contains(b.id),
-                onChanged: (v) => picked.value = v == true ? {...sel, b.id} : ({...sel}..remove(b.id)),
-                activeColor: t.accent,
-                controlAffinity: ListTileControlAffinity.trailing,
-                title: Text(b.name, style: AppText.body.copyWith(color: t.ink, fontWeight: sel.contains(b.id) ? FontWeight.w700 : FontWeight.w500)),
-                subtitle: b.count > 0 ? Text(s.productsN(b.count), style: AppText.caption.copyWith(color: t.inkMuted)) : null,
-              ),
-          ],
+        builder: (ctx, sel, _) => ListView.builder(
+          shrinkWrap: !lazy,
+          itemCount: brands.length,
+          itemBuilder: (ctx, i) {
+            final b = brands[i];
+            return CheckboxListTile(
+              value: sel.contains(b.id),
+              onChanged: (v) => picked.value = v == true ? {...sel, b.id} : ({...sel}..remove(b.id)),
+              activeColor: t.accent,
+              controlAffinity: ListTileControlAffinity.trailing,
+              title: Text(b.name, style: AppText.body.copyWith(color: t.ink, fontWeight: sel.contains(b.id) ? FontWeight.w700 : FontWeight.w500)),
+              subtitle: b.count > 0 ? Text(s.productsN(b.count), style: AppText.caption.copyWith(color: t.inkMuted)) : null,
+            );
+          },
         ),
       );
     },

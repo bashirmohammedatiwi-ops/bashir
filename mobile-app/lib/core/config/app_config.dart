@@ -139,9 +139,9 @@ class AppConfig {
   static String packageShareUrl(String slug) =>
       webUrl('/package/${Uri.encodeComponent(slug)}');
 
-  /// صورة بديلة للمنتجات بدون صور (من السيرفر).
-  static String get productPlaceholderUrl =>
-      '$mediaBaseUrl/placeholder/product.webp';
+  /// صورة بديلة للمنتجات بدون صور: فارغة عمداً — الويدجت تعرض البديل المضمَّن في
+  /// التطبيق (يعمل بلا إنترنت، بلا تنزيل ولا مكان في الكاش).
+  static String get productPlaceholderUrl => '';
 
   /// روابط قانونية — للمتاجر وداخل التطبيق.
   static String privacyPolicyUrlFor(String lang) =>

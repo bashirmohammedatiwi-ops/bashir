@@ -186,14 +186,25 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   bool _isGone(Object e) => e is ApiException && (e.status == 404 || e.status == 410);
 
+  /// آخر حدّ كمية بُنيت به الصفحة — لنعرف إن غيّرته السلة.
+  int? _builtMaxQty;
+
+  void _onCartChanged() {
+    if (!mounted) return;
+    final product = ref.read(productDetailProvider(widget.idOrSlug)).valueOrNull ?? ProductSeeds.get(widget.idOrSlug);
+    if (product == null) return;
+    if (_maxQtyFor(product, _shadeOf(product)) != _builtMaxQty) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(productDetailProvider(widget.idOrSlug));
     ref.listen(productDetailProvider(widget.idOrSlug), (prev, next) {
       next.whenData((p) => ref.read(recentlyViewedProvider.notifier).add(p));
     });
-    // السلة تحدد أقصى كمية للدرجة — نعيد البناء حين تتغيّر.
-    ref.watch(cartProvider.select((c) => c.count));
+    // السلة تحدد أقصى كمية للدرجة: نعيد بناء الصفحة فقط إن تغيّر هذا الحد فعلاً
+    // (كان كل تغيير في السلة — من أي صفحة أو من «اشتري معه» — يعيد بناء الصفحة كلها).
+    ref.listen(cartProvider.select((c) => c.count), (_, __) => _onCartChanged());
     // فُتح من بطاقة: نعرض المنتج فوراً ببياناتها، والتفاصيل تكتمل حين تصل.
     final seed = ProductSeeds.get(widget.idOrSlug);
     final failure = async.hasError && !async.isLoading ? async.error : null;
@@ -339,6 +350,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final shade = _shadeOf(product);
     // الكمية لا تتجاوز ما يمكن إضافته من هذه الدرجة الآن (المخزون ناقص ما في السلة).
     final maxQty = _maxQtyFor(product, shade);
+    _builtMaxQty = maxQty;
     if (_quantity > maxQty) _quantity = maxQty;
     _precacheGallery(context, product);
     final gallery = _galleryUrls(product, shade);
@@ -371,91 +383,117 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           selectedShade: shade,
           onPageChanged: (i) => _imageIndex.value = i,
         ),
+        // الورقة العليا (العنوان، الدرجات، الشراء، المعلومات) ترتفع فوق المعرض كما
+        // كانت، في طبقة رسم مستقلة؛ والأقسام السفلى slivers كسولة منفصلة تحتها.
         SliverToBoxAdapter(
-          child: Transform.translate(
-            offset: const Offset(0, -ProductDetailTheme.overlap),
-            child: DecoratedBox(
-              decoration: ProductDetailTheme.sheetDecoration(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Container(
-                      width: 32,
-                      height: 3.5,
-                      decoration: BoxDecoration(
-                        color: context.worldTheme.accentSoft,
-                        borderRadius: BorderRadius.circular(AppCorners.pill),
+          child: ProductDetailSheetLift(
+            lift: ProductDetailTheme.overlap,
+            child: ClipRect(
+              clipper: const ProductDetailClipBelow(),
+              child: RepaintBoundary(
+                child: DecoratedBox(
+                  decoration: ProductDetailTheme.sheetDecoration(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Container(
+                          width: 32,
+                          height: 3.5,
+                          decoration: BoxDecoration(
+                            color: context.worldTheme.accentSoft,
+                            borderRadius: BorderRadius.circular(AppCorners.pill),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _ProductTitleBlock(product: product),
-                  if (onRefreshFailed != null) _RefreshFailedPill(onRetry: onRefreshFailed),
-                  if (product.hasMultipleDisplayableShades) ...[
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(
-                        ProductDetailTheme.padH,
-                        ProductDetailTheme.sectionGap,
-                        ProductDetailTheme.padH,
-                        0,
+                      const SizedBox(height: 16),
+                      _ProductTitleBlock(product: product),
+                      if (onRefreshFailed != null) _RefreshFailedPill(onRetry: onRefreshFailed),
+                      if (product.hasMultipleDisplayableShades) ...[
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(
+                            ProductDetailTheme.padH,
+                            ProductDetailTheme.sectionGap,
+                            ProductDetailTheme.padH,
+                            0,
+                          ),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                          decoration: ProductDetailTheme.shadeSectionDecoration(context),
+                          child: ProductShadePicker(
+                            shades: shades,
+                            selected: shade,
+                            strings: ref.s,
+                            onSelect: (s) => _onShadeSelected(product, s),
+                          ),
+                        ),
+                      ],
+                      _ProductCommerceBlock(
+                        product: product,
+                        shade: shade,
+                        quantity: _quantity,
+                        maxQuantity: maxQty,
+                        onQuantityChanged: (v) {
+                          HapticFeedback.selectionClick();
+                          setState(() => _quantity = v.clamp(1, maxQty));
+                        },
                       ),
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                      decoration: ProductDetailTheme.shadeSectionDecoration(context),
-                      child: ProductShadePicker(
-                        shades: shades,
-                        selected: shade,
-                        strings: ref.s,
-                        onSelect: (s) => _onShadeSelected(product, s),
-                      ),
-                    ),
-                  ],
-                  _ProductCommerceBlock(
-                    product: product,
-                    shade: shade,
-                    quantity: _quantity,
-                    maxQuantity: maxQty,
-                    onQuantityChanged: (v) {
-                      HapticFeedback.selectionClick();
-                      setState(() => _quantity = v.clamp(1, maxQty));
-                    },
+                      const _TrustStrip(),
+                      // لحظة التردد: «هل يناسبني؟ بديل أرخص؟» — «ديما» بالعربية فقط (البطاقة تخفي نفسها).
+                      if (ref.watch(languageCodeProvider) == 'ar')
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            ProductDetailTheme.padH,
+                            ProductDetailTheme.sectionGap,
+                            ProductDetailTheme.padH,
+                            0,
+                          ),
+                          child: AdvisorAskCard(productId: product.id),
+                        ),
+                      if (product.localizedDescription(ref.watch(languageCodeProvider)).isNotEmpty ||
+                          product.howToUse.isNotEmpty ||
+                          product.ingredients.isNotEmpty)
+                        _SectionCard(
+                          padding: EdgeInsets.zero,
+                          child: _InfoSections(product: product),
+                        ),
+                    ],
                   ),
-                  const _TrustStrip(),
-                  // لحظة التردد: «هل يناسبني؟ بديل أرخص؟» — «ديما» بالعربية فقط (البطاقة تخفي نفسها).
-                  if (ref.watch(languageCodeProvider) == 'ar')
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        ProductDetailTheme.padH,
-                        ProductDetailTheme.sectionGap,
-                        ProductDetailTheme.padH,
-                        0,
-                      ),
-                      child: AdvisorAskCard(productId: product.id),
-                    ),
-                  if (product.localizedDescription(ref.watch(languageCodeProvider)).isNotEmpty ||
-                      product.howToUse.isNotEmpty ||
-                      product.ingredients.isNotEmpty)
-                    _SectionCard(
-                      padding: EdgeInsets.zero,
-                      child: _InfoSections(product: product),
-                    ),
-                  _BoughtTogether(
-                    product: product,
-                    shade: shade,
-                    canAddCurrent: complete || _seedCanAdd,
-                  ),
-                  _SectionCard(
-                    child: _ReviewsSection(product: product, idOrSlug: widget.idOrSlug),
-                  ),
-                  if (product.category != null || product.subcategoryId != null || product.tertiaryCategoryId != null)
-                    _SimilarProducts(product: product),
-                  _RecentlyViewed(excludeId: product.id),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             ),
           ),
+        ),
+        // الأقسام السفلى: تُبنى حين تقترب من الشاشة لا كلها عند فتح الصفحة،
+        // كلٌّ في طبقة رسم مستقلة (addRepaintBoundaries)، ثم تبقى حيّة.
+        SliverList(
+          delegate: SliverChildListDelegate([
+            ProductDetailLazySection(
+              key: const ValueKey('bought-together'),
+              child: _BoughtTogether(
+                product: product,
+                shade: shade,
+                canAddCurrent: complete || _seedCanAdd,
+              ),
+            ),
+            ProductDetailLazySection(
+              key: const ValueKey('reviews'),
+              child: _SectionCard(
+                child: _ReviewsSection(product: product, idOrSlug: widget.idOrSlug),
+              ),
+            ),
+            if (product.category != null || product.subcategoryId != null || product.tertiaryCategoryId != null)
+              ProductDetailLazySection(
+                key: const ValueKey('similar'),
+                child: _SimilarProducts(product: product),
+              ),
+            ProductDetailLazySection(
+              key: const ValueKey('recent'),
+              child: _RecentlyViewed(excludeId: product.id),
+            ),
+            // 24 كما كانت + مساحة الرفع (كان الإزاحة تترك هذا الفراغ أسفل الصفحة).
+            const SizedBox(key: ValueKey('end'), height: 24 + ProductDetailTheme.overlap),
+          ]),
         ),
       ],
       ),
@@ -652,15 +690,24 @@ class _GalleryAppBar extends ConsumerWidget {
     BuildContext fromContext,
     BuildContext toContext,
   ) {
-    final url = product.coverUrl.isNotEmpty ? product.coverUrl : gallery.first;
+    // الطائرة = صورة البطاقة نفسها (الرابط وعرض الفكّ ذاتهما): النسخة المفكوكة في الذاكرة
+    // تظهر فوراً — عرض فكّ مختلف كان يعني فكّاً جديداً (وبياضاً) وسط الطيران.
+    final cardContext = direction == HeroFlightDirection.push ? fromContext : toContext;
+    final cardHero = cardContext.widget;
+    final cardImage = cardHero is Hero && cardHero.child is ProductCoverImage ? cardHero.child as ProductCoverImage : null;
+    final url = cardImage?.url ?? (product.coverUrl.isNotEmpty ? product.coverUrl : gallery.first);
+    final box = cardContext.findRenderObject();
+    final cardWidth = box is RenderBox && box.hasSize ? box.size.width : null;
     return ColoredBox(
       color: Colors.white,
-      // عرض فكّ ثابت = عرض صورة المعرض: لا فكّ جديد مع كل حجم تمر به أثناء الطيران،
-      // والهبوط يستعمل الصورة المفكوكة نفسها.
       child: ProductCoverImage(
         url: url,
         fit: BoxFit.contain,
-        decodeWidth: cachePixelWidth(flightContext, MediaQuery.sizeOf(flightContext).width),
+        decodeWidth: cardImage?.decodeWidth ??
+            (cardWidth != null && cardWidth > 0
+                ? cachePixelWidth(cardContext, cardWidth)
+                : lastImageDecodeWidth(url) ??
+                    cachePixelWidth(flightContext, MediaQuery.sizeOf(flightContext).width)),
       ),
     );
   }
@@ -731,7 +778,8 @@ class _GalleryAppBar extends ConsumerWidget {
         ),
         const SizedBox(width: 6),
       ],
-          flexibleSpace: FlexibleSpaceBar(
+          flexibleSpace: ProductDetailTheme.flexibleSpace(
+        context,
         background: DecoratedBox(
           decoration: BoxDecoration(
             color: ProductDetailTheme.galleryBg(context),
@@ -761,7 +809,13 @@ class _GalleryAppBar extends ConsumerWidget {
                           child: i == 0
                               ? _withHero(
                                   context,
-                                  ProductCoverImage(url: gallery[i], width: galleryWidth, fit: BoxFit.contain),
+                                  // غلاف البطاقة (مفكوك في الذاكرة) يملأ المكان حتى تصل الصورة الكبيرة.
+                                  ProductCoverImage(
+                                    url: gallery[i],
+                                    width: galleryWidth,
+                                    fit: BoxFit.contain,
+                                    placeholderUrl: product.coverUrl,
+                                  ),
                                 )
                               : ProductCoverImage(url: gallery[i], width: galleryWidth, fit: BoxFit.contain),
                         ),
@@ -1231,37 +1285,51 @@ class _ProductTitleBlock extends ConsumerWidget {
   }
 }
 
+// تعابير «الحقائق السريعة» وعلامة البراند — تُبنى مرة واحدة لا مع كل إعادة بناء للصفحة.
+final _reUnisex = RegExp(r'للجنسين|unisex');
+final _reMen = RegExp(r'للرجال|رجالي|pour homme|for men|\bmen\b|homme');
+final _reWomen = RegExp(r'للنساء|نسائي|pour femme|for women|femme|\bwomen\b');
+final _reEdt = RegExp(r'تواليت|toilette|\bedt\b');
+final _reExtrait = RegExp(r'إكستريه|اكستريه|extrait');
+final _reEdp = RegExp(r'(أو|او) د(و|ي) (بارفيوم|بارفان|برفيوم|برفان|بيرفيوم)|eau de parfum|\bedp\b');
+final _reParfum = RegExp(r'بارفان|بارفيوم|\bparfum\b');
+final _reCologne = RegExp(r'كولونيا|cologne');
+final _reSize = RegExp(r'(\d+(?:[.,]\d+)?)\s*(مل|ملل|ml|غم|غرام|جم|gm|g|لتر|l)(?![a-z\u0600-\u06ff])');
+final _reMlUnit = RegExp(r'^(مل|ملل|ml)$');
+final _reLitreUnit = RegExp(r'^(لتر|l)$');
+final _reArabicChar = RegExp('[\u0600-\u06FF]');
+
 /// حقائق سريعة من اسم المنتج: الجنس، تركيز العطر، والحجم — بدل البحث عنها داخل الاسم الطويل.
 List<({IconData icon, String label})> productQuickFacts(Product p, bool ar) {
   final n = ' ${p.name} ${p.nameEn ?? ''} '.toLowerCase();
   final facts = <({IconData icon, String label})>[];
-  if (RegExp(r'للجنسين|unisex').hasMatch(n)) {
+  if (_reUnisex.hasMatch(n)) {
     facts.add((icon: Icons.people_alt_outlined, label: ar ? 'للجنسين' : 'Unisex'));
-  } else if (RegExp(r'للرجال|رجالي|pour homme|for men|\bmen\b|homme').hasMatch(n)) {
+  } else if (_reMen.hasMatch(n)) {
     facts.add((icon: Icons.man_rounded, label: ar ? 'رجالي' : 'For him'));
-  } else if (RegExp(r'للنساء|نسائي|pour femme|for women|femme|\bwomen\b').hasMatch(n)) {
+  } else if (_reWomen.hasMatch(n)) {
     facts.add((icon: Icons.woman_rounded, label: ar ? 'نسائي' : 'For her'));
   }
   String? conc;
-  if (RegExp(r'تواليت|toilette|\bedt\b').hasMatch(n)) {
+  if (_reEdt.hasMatch(n)) {
     conc = ar ? 'أو دو تواليت' : 'Eau de toilette';
-  } else if (RegExp(r'إكستريه|اكستريه|extrait').hasMatch(n)) {
+  } else if (_reExtrait.hasMatch(n)) {
     conc = ar ? 'إكستريه' : 'Extrait';
-  } else if (RegExp(r'(أو|او) د(و|ي) (بارفيوم|بارفان|برفيوم|برفان|بيرفيوم)|eau de parfum|\bedp\b').hasMatch(n)) {
+  } else if (_reEdp.hasMatch(n)) {
     conc = ar ? 'أو دو بارفيوم' : 'Eau de parfum';
-  } else if (RegExp(r'بارفان|بارفيوم|\bparfum\b').hasMatch(n) && (p.category?.name.contains('عطر') ?? false)) {
+  } else if (_reParfum.hasMatch(n) && (p.category?.name.contains('عطر') ?? false)) {
     conc = ar ? 'بارفان' : 'Parfum';
-  } else if (RegExp(r'كولونيا|cologne').hasMatch(n)) {
+  } else if (_reCologne.hasMatch(n)) {
     conc = ar ? 'كولونيا' : 'Cologne';
   }
   if (conc != null) facts.add((icon: Icons.water_drop_outlined, label: conc));
-  final sizes = RegExp(r'(\d+(?:[.,]\d+)?)\s*(مل|ملل|ml|غم|غرام|جم|gm|g|لتر|l)(?![a-z\u0600-\u06ff])').allMatches(n).toList();
+  final sizes = _reSize.allMatches(n).toList();
   if (sizes.isNotEmpty) {
     final m = sizes.last;
     final unit = m.group(2)!;
-    final u = RegExp(r'^(مل|ملل|ml)$').hasMatch(unit)
+    final u = _reMlUnit.hasMatch(unit)
         ? (ar ? 'مل' : 'ml')
-        : RegExp(r'^(لتر|l)$').hasMatch(unit)
+        : _reLitreUnit.hasMatch(unit)
             ? (ar ? 'لتر' : 'L')
             : (ar ? 'غ' : 'g');
     facts.add((icon: Icons.straighten_rounded, label: '${m.group(1)} $u'));
@@ -1520,7 +1588,7 @@ class _BrandChip extends StatelessWidget {
               style: AppText.micro.copyWith(
                 color: t.accentDark,
                 // تباعد للاسم اللاتيني فقط — أي تباعد يقطع وصل الحروف العربية.
-                letterSpacing: RegExp('[\u0600-\u06FF]').hasMatch(name) ? 0 : 0.5,
+                letterSpacing: _reArabicChar.hasMatch(name) ? 0 : 0.5,
               ),
             ),
           ),

@@ -104,7 +104,7 @@ class _BrandLogosRow extends ConsumerWidget {
       height: 72,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        cacheExtent: HomeScrollPerf.horizontalCacheExtent,
+        cacheExtent: AppScrollPerf.horizontal,
         addAutomaticKeepAlives: false,
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         itemCount: brands.length,
@@ -161,7 +161,7 @@ class _BrandCardsRow extends ConsumerWidget {
       height: 120,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        cacheExtent: HomeScrollPerf.horizontalCacheExtent,
+        cacheExtent: AppScrollPerf.horizontal,
         addAutomaticKeepAlives: false,
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         itemCount: brands.length,

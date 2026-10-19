@@ -73,7 +73,7 @@ class MakeupCategoriesSection extends ConsumerWidget {
         height: maxH + 24,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          cacheExtent: HomeScrollPerf.horizontalCacheExtent,
+          cacheExtent: AppScrollPerf.horizontal,
           addAutomaticKeepAlives: false,
           padding: const EdgeInsets.fromLTRB(
             HomeTheme.paddingH,

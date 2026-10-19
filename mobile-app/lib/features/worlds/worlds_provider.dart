@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/perf/device_perf.dart';
 import '../../core/utils/barcode_util.dart';
 import '../../data/models/home_feed.dart';
 import '../../data/models/product.dart';
@@ -33,10 +35,36 @@ final worldDetailProvider = FutureProvider.family<StoreWorld, String>((ref, slug
   return ref.read(apiServiceProvider).getWorld(slug);
 });
 
-final worldFeedProvider = FutureProvider.family<HomeFeed, String>((ref, slug) {
-  ref.keepAlive();
+/// واجهة عالم: تبقى ما دامت معروضة، ثم 5 دقائق بعد آخر من يعرضها (عودة سريعة بلا
+/// تحميل) — لا للأبد: واجهة كل عالم مئات العناصر، ونسختها محفوظة على القرص أصلاً.
+final worldFeedProvider = FutureProvider.autoDispose.family<HomeFeed, String>((ref, slug) {
+  _keepWhileRecentlyUsed(ref, _worldFeedIdle);
   return ref.read(apiServiceProvider).getHome(worldSlug: slug);
 });
+
+const _worldFeedIdle = Duration(minutes: 5);
+
+/// يُبقي المزوّد حياً ما دام له مستمع، ثم [idle] بعد أن يغادر آخرهم. ما قُرئ بلا مستمع
+/// (التجهيز المسبق) يبقى [idle] أيضاً ثم يُغلق.
+void _keepWhileRecentlyUsed(Ref<Object?> ref, Duration idle) {
+  KeepAliveLink? link = ref.keepAlive();
+  Timer? timer;
+  void release() {
+    timer?.cancel();
+    timer = Timer(idle, () {
+      link?.close();
+      link = null;
+    });
+  }
+
+  release();
+  ref.onCancel(() {
+    link ??= ref.keepAlive();
+    release();
+  });
+  ref.onResume(() => timer?.cancel());
+  ref.onDispose(() => timer?.cancel());
+}
 
 /// تفاصيل عالم فشل تحميلها تبقى خطأً حتى يُعاد طلبها (لا تعيد المحاولة وحدها):
 /// يُستدعى عند التبديل إليه أو العودة للتطبيق، فتعود ألوانه وأقسامه بدل لوحة المتجر
@@ -45,11 +73,16 @@ void retryWorldIfErrored(WidgetRef ref, String slug) {
   if (ref.read(worldDetailProvider(slug)).hasError) ref.invalidate(worldDetailProvider(slug));
 }
 
-/// يجهّز العوالم الأخرى في الخلفية حتى يكون التبديل فورياً.
+/// يجهّز العوالم الأخرى في الخلفية حتى يكون التبديل فورياً — بحذر على شبكة بطيئة:
 ///
-/// لا يبدأ قبل أن تصل واجهة العالم الظاهر (لا نزاحمها على الشبكة)، ثم الجارين
-/// (يمين ويسار في المحدّد) ثم البقية بالتتابع. الفشل لا يُحفظ: العالم الذي تعذّر
-/// يُعاد طلبه حين يُفتح، والجولة كلها تُعاد لاحقاً.
+/// - لا يبدأ قبل أن تصل واجهة العالم الظاهر، ثم ~3 ثوانٍ هدوء (صور الواجهة وتفاعل
+///   الزبونة الأول قبل أي تنزيل إضافي).
+/// - الأجهزة البسيطة وبيانات الهاتف: لا تجهيز (الواجهة تُطلب عند فتح العالم وتُعرض
+///   نسختها المحفوظة فوراً). الواي فاي: الجاران في المحدّد (متوسطة) أو الكل (قوية).
+/// - العالم الذي حُفظت واجهته خلال 15 دقيقة يُتخطّى، والبقية واحداً تلو الآخر بانتظار
+///   الشبكة فعلاً (لا موجة تحديثات خلفية متزامنة).
+///
+/// الفشل لا يُحفظ: العالم الذي تعذّر يُطلب حين يُفتح، والجولة كلها تُعاد لاحقاً.
 bool _prefetching = false;
 String? _prefetchedFor;
 DateTime? _prefetchFailedAt;
@@ -57,9 +90,17 @@ DateTime? _prefetchFailedAt;
 /// مهلة قبل إعادة جولة فشلت — بلا إنترنت لا نكرر الطلبات مع كل إعادة بناء.
 const _prefetchRetryAfter = Duration(seconds: 45);
 
+/// هدوء بعد ظهور الواجهة قبل التجهيز.
+const _prefetchIdle = Duration(seconds: 3);
+
+/// واجهة حُفظت خلال هذه المدة لا تُعاد.
+const _prefetchFreshFor = Duration(minutes: 15);
+
 void prefetchWorldContent(dynamic ref, List<StoreWorld> worlds) {
   final signature = worlds.map((w) => w.slug).join('|');
   if (_prefetching || worlds.isEmpty || _prefetchedFor == signature) return;
+  // جهاز بسيط: لا تجهيز إطلاقاً (ذاكرة وشبكة للعالم الظاهر وحده).
+  if (DevicePerf.isLow) return;
   final failedAt = _prefetchFailedAt;
   if (failedAt != null && DateTime.now().difference(failedAt) < _prefetchRetryAfter) return;
   _prefetching = true;
@@ -79,17 +120,22 @@ void prefetchWorldContent(dynamic ref, List<StoreWorld> worlds) {
           return;
         }
       }
-      // لحظة لصور الواجهة الظاهرة قبل أن نبدأ بغيرها.
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      for (final slug in _prefetchOrder(worlds, visible)) {
+      await Future<void>.delayed(_prefetchIdle);
+      if (!await _onUnmeteredNetwork()) return; // بيانات الهاتف: لا تنزيل لما لم يُطلب.
+      final api = ref.read(apiServiceProvider) as ApiService;
+      for (final slug in _prefetchTargets(worlds, visible)) {
+        // مزوّد قائم (فُتح أو جُهّز قبل قليل) يحدّث نفسه بنفسه.
+        if (ref.exists(worldFeedProvider(slug)) as bool) continue;
+        if (await api.isHomeCachedWithin(worldSlug: slug, within: _prefetchFreshFor)) continue;
         try {
-          await ref.read(worldDetailProvider(slug).future);
+          // من الشبكة الآن وبانتظارها — ثم يقرأ المزوّد ما وصل من الكاش بلا طلب ثانٍ.
+          await api.getHome(worldSlug: slug, forceRefresh: true, staleOnError: false);
           await ref.read(worldFeedProvider(slug).future);
         } catch (_) {
           failed = true;
           // لا نُبقي الخطأ محفوظاً: أول من يفتح هذا العالم يطلبه من جديد.
-          ref.invalidate(worldDetailProvider(slug));
           ref.invalidate(worldFeedProvider(slug));
+          break; // الشبكة متعثّرة: لا نكمل بالبقية الآن.
         }
       }
     } catch (_) {
@@ -107,17 +153,27 @@ void prefetchWorldContent(dynamic ref, List<StoreWorld> worlds) {
   });
 }
 
-/// العالم الظاهر أولاً (تفاصيله)، ثم جاراه في المحدّد، ثم البقية بترتيبها.
-List<String> _prefetchOrder(List<StoreWorld> worlds, String? visible) {
+/// واي فاي أو إيثرنت (لا بيانات هاتف). تعذّر الفحص = نفترض أنها محدودة.
+Future<bool> _onUnmeteredNetwork() async {
+  try {
+    final results = await Connectivity().checkConnectivity();
+    return results.any((r) => r == ConnectivityResult.wifi || r == ConnectivityResult.ethernet) &&
+        !results.contains(ConnectivityResult.mobile);
+  } catch (_) {
+    return false;
+  }
+}
+
+/// ما يُجهَّز بعد العالم الظاهر: جاراه في المحدّد (متوسطة)، أو كل العوالم (قوية).
+List<String> _prefetchTargets(List<StoreWorld> worlds, String? visible) {
   final slugs = worlds.map((w) => w.slug).toList();
   final index = visible == null ? -1 : slugs.indexOf(visible);
-  if (index < 0) return slugs;
-  return {
-    visible!,
-    if (index + 1 < slugs.length) slugs[index + 1],
+  final neighbours = <String>{
+    if (index >= 0 && index + 1 < slugs.length) slugs[index + 1],
     if (index - 1 >= 0) slugs[index - 1],
-    ...slugs,
-  }.toList();
+  };
+  if (!DevicePerf.isHigh) return neighbours.toList();
+  return {...neighbours, ...slugs}.where((s) => s != visible).toList();
 }
 
 final worldProductSearchProvider =

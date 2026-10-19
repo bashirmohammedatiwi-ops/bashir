@@ -79,7 +79,7 @@ class ListingBrandSplitGrid extends StatelessWidget {
     return CustomScrollView(
       controller: controller,
       physics: AppScrollPerf.physics,
-      cacheExtent: AppScrollPerf.gridCacheExtent,
+      cacheExtent: AppScrollPerf.grid,
       slivers: [
         if (header != null) SliverToBoxAdapter(child: header!),
         ...slivers,

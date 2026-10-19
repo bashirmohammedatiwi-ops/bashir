@@ -122,7 +122,19 @@ class CategoryIndex {
   final List<IndexedCategory> all;
   final Map<String, IndexedCategory> byId;
 
-  CategoryIndex._(this.all, this.byId);
+  /// حقول البحث لكل عنصر مطبّعة مرة واحدة عند البناء (بنفس ترتيب [all]) —
+  /// كانت تُطبَّع لكل عنصر مع كل حرف يُكتب.
+  final List<List<String>> _searchFields;
+
+  CategoryIndex._(this.all, this.byId)
+    : _searchFields = [
+        for (final e in all)
+          [
+            normalizeQuery(e.category.nameAr ?? e.category.name),
+            normalizeQuery(e.category.nameEn ?? ''),
+            normalizeQuery(e.category.slug.replaceAll('-', ' ')),
+          ],
+      ];
 
   factory CategoryIndex.build(List<Category> roots) {
     final all = <IndexedCategory>[];
@@ -150,16 +162,25 @@ class CategoryIndex {
   /// بحث ثنائي اللغة مع مرادفات (ماسكارا = mascara)، مرتب بالأهمية ثم بعدد المنتجات.
   List<IndexedCategory> search(String query) {
     final q = query.trim();
+    // نفس الكلمة (إعادة بناء الشاشة بلا كتابة جديدة) — النتيجة السابقة.
+    final cached = _lastSearch;
+    if (cached != null && cached.$1 == q) return cached.$2;
+    final result = _search(q);
+    _lastSearch = (q, result);
+    return result;
+  }
+
+  (String, List<IndexedCategory>)? _lastSearch;
+
+  List<IndexedCategory> _search(String q) {
     if (normalizeQuery(q).length < 2) return const [];
+    // الاستعلام يُطبَّع ويُوسَّع بالمرادفات مرة واحدة لكل بحث.
+    final prepared = PreparedQuery(q);
+    if (prepared.isEmpty) return const [];
     final scored = <(IndexedCategory, int)>[];
-    for (final e in all) {
-      final c = e.category;
-      final fields = [
-        c.nameAr ?? c.name,
-        c.nameEn,
-        c.slug.replaceAll('-', ' '),
-      ];
-      final score = matchScore(q, fields);
+    for (var i = 0; i < all.length; i++) {
+      final e = all[i];
+      final score = prepared.scoreNormalized(_searchFields[i]);
       if (score > 0) {
         // الأقسام الأدق (ثانوي) أنفع في البحث، ثم الأكثر منتجات.
         final levelBoost = switch (e.level) {
@@ -189,26 +210,39 @@ final categoryIndexProvider = Provider<CategoryIndex?>((ref) {
   ]);
 });
 
+/// صفحة واحدة تخدم معاينة القسم كلها: الأكثر طلباً ([categoryTopProductsProvider])
+/// والعدد الكلي ([categoryVisibleCountProvider]) — المزوّدان يطلبانها بالمعاملات نفسها
+/// فيشتركان في طلب شبكة واحد ونسخة كاش واحدة (كانا طلبين منفصلين).
+///
+/// بلا فلتر «المتوفر» حتى يبقى العدد نفس رقم صفحة المنتجات؛ النافد يُستبعد من المعاينة
+/// هنا، والزيادة في الحد تعوّض ما يُستبعد.
+Future<Paginated<Product>> _categoryPreviewPage(Ref<Object?> ref, CategoryTarget target) {
+  return ref
+      .read(apiServiceProvider)
+      .getProducts(
+        limit: _categoryPreviewFetch,
+        sort: 'popular',
+        categoryId: target.tertiaryCategoryId == null && target.subcategoryId == null
+            ? target.categoryId
+            : null,
+        subcategoryId: target.subcategoryId,
+        tertiaryCategoryId: target.tertiaryCategoryId,
+      );
+}
+
+const _categoryPreviewFetch = 16;
+const _categoryPreviewShown = 10;
+
 /// الأكثر طلباً داخل قسم — معاينة سريعة في لوحة الأقسام.
 final categoryTopProductsProvider = FutureProvider.autoDispose
     .family<List<Product>, CategoryTarget>((ref, target) {
       // نُبقي النتيجة 5 دقائق للتنقل السريع بين الأقسام بدون إعادة تحميل — والخطأ لا يُبقى.
       return keepAliveFor(ref, const Duration(minutes: 5), () async {
-        final Paginated<Product> page = await ref
-            .read(apiServiceProvider)
-            .getProducts(
-              limit: 10,
-              sort: 'popular',
-              categoryId:
-                  target.tertiaryCategoryId == null &&
-                      target.subcategoryId == null
-                  ? target.categoryId
-                  : null,
-              subcategoryId: target.subcategoryId,
-              tertiaryCategoryId: target.tertiaryCategoryId,
-              inStock: true,
-            );
-        return page.items;
+        final page = await _categoryPreviewPage(ref, target);
+        return page.items
+            .where((p) => p.inStock)
+            .take(_categoryPreviewShown)
+            .toList(growable: false);
       });
     });
 
@@ -217,18 +251,7 @@ final categoryTopProductsProvider = FutureProvider.autoDispose
 final categoryVisibleCountProvider = FutureProvider.autoDispose
     .family<int, CategoryTarget>((ref, target) {
       return keepAliveFor(ref, const Duration(minutes: 5), () async {
-        final page = await ref
-            .read(apiServiceProvider)
-            .getProducts(
-              limit: 1,
-              categoryId:
-                  target.tertiaryCategoryId == null &&
-                      target.subcategoryId == null
-                  ? target.categoryId
-                  : null,
-              subcategoryId: target.subcategoryId,
-              tertiaryCategoryId: target.tertiaryCategoryId,
-            );
+        final page = await _categoryPreviewPage(ref, target);
         return page.total;
       });
     });

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -11,9 +10,9 @@ import 'core/bootstrap/app_warmup.dart';
 import 'core/config/app_config.dart';
 import 'core/connectivity/connectivity_provider.dart';
 import 'core/l10n/locale_provider.dart';
+import 'core/network/api_client.dart';
 import 'core/l10n/localized_text.dart';
 import 'core/navigation/pending_push_navigation.dart';
-import 'core/push/firebase_init.dart';
 import 'core/push/push_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_colors.dart';
@@ -24,7 +23,6 @@ import 'core/widgets/keyboard_dismiss.dart';
 import 'core/widgets/responsive_app.dart';
 import 'core/widgets/scroll_perf.dart';
 import 'features/auth/auth_provider.dart';
-import 'features/catalog/catalog_providers.dart';
 import 'features/catalog/catalog_refresh.dart';
 import 'features/profile/profile_providers.dart';
 import 'features/splash/splash_screen.dart';
@@ -47,7 +45,8 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
   bool _warmedUp = false;
   bool _pushInited = false;
 
-  /// انتهى ما يلزم من مشهد الافتتاح: اكتمل، أو لمسته الزبونة، أو لا داعي له.
+  /// انتهى ما يلزم من مشهد الافتتاح: اكتمل (ووصلت واجهة الرئيسية أو انتهت مهلتها)،
+  /// أو لمسته الزبونة، أو لا داعي له.
   bool _minSplashDone = false;
 
   /// صمّام الأمان انطلق: نتجاوز الافتتاح حتى لو لم تُعرف الجلسة بعد.
@@ -56,14 +55,34 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
 
   late final SplashIntro _intro;
 
+  /// واجهة الرئيسية (العالم الظاهر) وصلت أو فشلت — لا داعي لانتظارها خلف المشهد.
+  bool _feedReady = false;
+
+  /// اكتمل المشهد طبيعياً قبل وصول الواجهة: ننتظرها حتى [_feedGrace] على الأكثر.
+  bool _awaitingFeed = false;
+  Timer? _feedGraceTimer;
+  ProviderSubscription<Object?>? _feedSub;
+
   /// آخر تجديد للطلبات والإشعارات عند العودة للتطبيق.
   DateTime _lastAccountRefresh = DateTime.now();
 
+  /// متى غاب التطبيق فعلاً عن الشاشة (hidden/paused) — null إن لم يغب. «inactive»
+  /// وحده (ستارة الإشعارات، نافذة إذن، شاشة دفع QiCard فوقه لحظةً) لا يُحتسب.
+  DateTime? _hiddenAt;
+
+  /// منذ متى انقطع الاتصال (null والاتصال قائم).
+  DateTime? _offlineSince;
+
   static const _introSeenAtKey = 'intro_seen_at';
   static const _introVersionKey = 'intro_seen_version';
-  static const _fullIntroEvery = Duration(days: 7);
   static const _accountRefreshEvery = Duration(seconds: 60);
   static const _bootTimeout = Duration(seconds: 10);
+
+  /// أقل غياب عن التطبيق (أو انقطاع) يستحق تجديد المتجر عند العودة.
+  static const _awayForRefresh = Duration(seconds: 45);
+
+  /// أقصى انتظار لواجهة الرئيسية بعد اكتمال المشهد — بعدها يظهر هيكل التحميل.
+  static const _feedGrace = Duration(milliseconds: 1200);
 
   static const _locales = [Locale('ar'), Locale('en')];
   static const _delegates = [
@@ -86,30 +105,66 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
       _minSplashDone = true;
     } else {
       _watchLaunchPush();
+      // الرئيسية تُبنى تحت المشهد: نعرف متى وصلت واجهتها كي لا يكشف المشهد هيكل تحميل.
+      _feedSub = ref.listenManual<AsyncValue<Object?>>(activeHomeFeedProvider, (_, next) {
+        if (!next.hasValue && !next.hasError) return;
+        _feedReady = true;
+        if (_awaitingFeed) _endIntro();
+      }, fireImmediately: true);
     }
 
     _bootWatchdog = Timer(_bootTimeout, _forcePastSplash);
 
     ref.listenManual<AsyncValue<bool>>(connectivityProvider, (previous, next) {
-      if (previous?.valueOrNull == false && next.valueOrNull == true) {
-        _onBackOnline();
-      }
+      final online = next.valueOrNull;
+      if (online == false) _offlineSince ??= DateTime.now();
+      if (previous?.valueOrNull == false && online == true) _onBackOnline();
     });
   }
 
   @override
   void dispose() {
     _bootWatchdog?.cancel();
+    _feedGraceTimer?.cancel();
+    _feedSub?.close();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
-    // المسار الوحيد لتجديد المتجر عند العودة (مقيّد بمرة كل 3 دقائق).
-    refreshStorefrontCatalogOnResume(ref);
-    _refreshAccountOnResume();
+    switch (state) {
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+        _hiddenAt ??= DateTime.now();
+      case AppLifecycleState.resumed:
+        final hiddenAt = _hiddenAt;
+        _hiddenAt = null;
+        // inactive ثم resumed فقط: لم يغب التطبيق عن الشاشة — لا تجديد.
+        if (hiddenAt == null) return;
+        // المسار الوحيد لتجديد المتجر عند العودة: بعد غياب حقيقي ≥45 ث، ومرة كل
+        // 3 دقائق على الأكثر (الموعد مشترك مع الإقلاع وعودة الاتصال).
+        if (DateTime.now().difference(hiddenAt) >= _awayForRefresh) {
+          refreshStorefrontCatalogOnResume(ref);
+        }
+        _refreshAccountOnResume();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    // النظام يطلب ذاكرة (هاتف بسيط، تطبيقات كثيرة مفتوحة): نترك الصور المفكوكة
+    // لتُفكّ من جديد عند الحاجة (ملفاتها باقية في كاش القرص) بدل أن يُغلق التطبيق.
+    final images = PaintingBinding.instance.imageCache;
+    images.clear();
+    images.clearLiveImages();
+    // ردود الـ API المفكوكة في الذاكرة — القراءة التالية من ملفات القرص.
+    try {
+      ref.read(apiCacheProvider).trimMemory();
+    } catch (_) {}
   }
 
   @override
@@ -118,21 +173,18 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
     if (mounted) setState(() {});
   }
 
-  /// المشهد كاملاً في أول تشغيل، وبعد كل تحديث للتطبيق، ومرة كل أسبوع؛
-  /// وإلا النسخة المختصرة.
+  /// المشهد كاملاً في أول تشغيل، وأول تشغيل بعد كل تحديث للتطبيق؛ وإلا النسخة
+  /// المختصرة (~1 ث).
   SplashIntro _planIntro() {
     final prefs = appSharedPreferences;
-    final now = DateTime.now();
     final version = widget.appVersion;
-    final seenAt = prefs.getInt(_introSeenAtKey);
-    final due =
-        seenAt == null ||
-        now.difference(DateTime.fromMillisecondsSinceEpoch(seenAt)) >=
-            _fullIntroEvery ||
-        (version.isNotEmpty && prefs.getString(_introVersionKey) != version);
-    if (!due) return SplashIntro.short;
+    final seenBefore =
+        prefs.containsKey(_introSeenAtKey) || prefs.containsKey(_introVersionKey);
+    final newVersion =
+        version.isNotEmpty && prefs.getString(_introVersionKey) != version;
+    if (seenBefore && !newVersion) return SplashIntro.short;
     prefs
-        .setInt(_introSeenAtKey, now.millisecondsSinceEpoch)
+        .setInt(_introSeenAtKey, DateTime.now().millisecondsSinceEpoch)
         .catchError((_) => false);
     if (version.isNotEmpty) {
       prefs.setString(_introVersionKey, version).catchError((_) => false);
@@ -142,37 +194,53 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
 
   /// فُتح التطبيق بلمس إشعار: نتجاوز المشهد ونأخذها لوجهة الإشعار مباشرة.
   ///
-  /// النظام يسلّم إشعار الفتح مرة واحدة فقط، فنضعه هنا في طابور التنقّل مهما
-  /// تأخر وصوله (PushService.init يجده فارغاً بعدها). لا شيء ينتظر هذا الفحص.
+  /// النظام يسلّم إشعار الفتح مرة واحدة فقط: من يأخذه أولاً (هنا عادةً) يفتحه،
+  /// وPushService.init يجده مأخوذاً. لا شيء ينتظر هذا الفحص.
   Future<void> _watchLaunchPush() async {
     if (!AppConfig.pushNotificationsEnabled) return;
+    final message = await PushService.claimLaunchMessage();
+    if (message == null || !mounted) return;
+    _endIntro();
+    // الـ router جاهز من أول إطار، لكن الوجهة (طلب، إشعاراتي…) تحتاج معرفة الجلسة.
+    if (ref.read(authProvider).status == AuthStatus.unknown) {
+      await _whenAuthKnown();
+    }
+    PendingPushNavigation.queue(PushService.payloadOf(message));
+  }
+
+  /// تنتهي حين تُعرف الجلسة (حساب أو زائرة)، أو بعد مهلة صمّام الأمان.
+  Future<void> _whenAuthKnown() async {
+    final known = Completer<void>();
+    final sub = ref.listenManual<AuthStatus>(
+      authProvider.select((a) => a.status),
+      (_, status) {
+        if (status != AuthStatus.unknown && !known.isCompleted) known.complete();
+      },
+    );
     try {
-      await initFirebaseApp();
-      final message = await FirebaseMessaging.instance.getInitialMessage();
-      if (message == null) return;
-      PendingPushNavigation.queue(_launchPayload(message));
-      _endIntro();
-    } catch (e) {
-      debugPrint('[app] launch notification check failed: $e');
+      await known.future.timeout(_bootTimeout, onTimeout: () {});
+    } finally {
+      sub.close();
     }
   }
 
-  /// بيانات الإشعار مع عنوانه ونصه وصورته — بنفس صيغة PushService.
-  static Map<String, dynamic> _launchPayload(RemoteMessage message) {
-    final data = Map<String, dynamic>.from(message.data);
-    final n = message.notification;
-    if (n != null) {
-      data.putIfAbsent('title', () => n.title ?? '');
-      data.putIfAbsent('body', () => n.body ?? '');
-      final image = n.android?.imageUrl ?? n.apple?.imageUrl;
-      if (image != null && image.isNotEmpty) {
-        data.putIfAbsent('imageUrl', () => image);
-      }
+  /// اكتمل المشهد: لمسة ([skipped]) تكشف الرئيسية فوراً؛ أما الاكتمال الطبيعي
+  /// فينتظر واجهتها قليلاً إن لم تصل بعد (من الكاش تصل عادةً قبل نهايته).
+  void _onIntroFinished(bool skipped) {
+    final picking = !ref.read(appLocaleProvider).hasChosen;
+    if (skipped || _feedReady || picking || _minSplashDone) {
+      _endIntro();
+      return;
     }
-    return data;
+    _awaitingFeed = true;
+    _feedGraceTimer ??= Timer(_feedGrace, _endIntro);
   }
 
   void _endIntro() {
+    _awaitingFeed = false;
+    _feedGraceTimer?.cancel();
+    _feedSub?.close();
+    _feedSub = null;
     if (mounted && !_minSplashDone) setState(() => _minSplashDone = true);
   }
 
@@ -183,11 +251,12 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
     final authUnknown = ref.read(authProvider).status == AuthStatus.unknown;
     if (!authUnknown && _minSplashDone) return;
     debugPrint('[app] boot watchdog fired (auth unknown: $authUnknown)');
-    setState(() {
-      _bootTimedOut = true;
-      _minSplashDone = true;
-    });
+    _endIntro();
+    setState(() => _bootTimedOut = true);
   }
+
+  /// انتهى تلاشي المشهد: الواجهة ظاهرة للزبونة.
+  void _onSplashGone() => PushService.uiVisible.value = true;
 
   /// الطلبات والإشعارات تتغيّر من لوحة التحكم (شُحن، وصل…) وتبويب الحساب
   /// يبقى حياً: نجدّدها عند العودة، مرة كل دقيقة على الأكثر.
@@ -200,15 +269,17 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
     ref.invalidate(notificationsProvider);
   }
 
-  /// عاد الاتصال: نجلب أحدث المتجر، ثم نعيد ما بقي فاشلاً من الانقطاع.
-  Future<void> _onBackOnline() async {
-    await refreshStorefrontCatalog(ref);
+  /// عاد الاتصال: نعيد ما فشل أثناء الانقطاع فقط (بلا جلب إجباري ولا مسح كاش).
+  /// إن لم يفشل شيء وطال الانقطاع (≥45 ث) فتجديد خفيف بموعد العودة نفسه (مرة كل
+  /// 3 دقائق) — تذبذب الشبكة لا يكلّف طلباً واحداً.
+  void _onBackOnline() {
+    final offlineSince = _offlineSince;
+    _offlineSince = null;
     if (!mounted) return;
-    final worlds = ref.read(worldsProvider);
-    if (worlds.hasError && !worlds.isLoading) ref.invalidate(worldsProvider);
-    final categories = ref.read(categoriesProvider);
-    if (categories.hasError && !categories.isLoading) {
-      ref.invalidate(categoriesProvider);
+    final retried = retryFailedStorefront(ref);
+    if (retried || offlineSince == null) return;
+    if (DateTime.now().difference(offlineSince) >= _awayForRefresh) {
+      refreshStorefrontCatalogOnResume(ref);
     }
   }
 
@@ -219,7 +290,7 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
       WidgetsBinding.instance.addPostFrameCallback((_) => warmupAppData(ref));
     }
 
-    final authStatus = ref.watch(authProvider).status;
+    final authStatus = ref.watch(authProvider.select((a) => a.status));
     if (AppConfig.pushNotificationsEnabled &&
         !_pushInited &&
         authStatus != AuthStatus.unknown) {
@@ -241,29 +312,6 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
         .accessibilityFeatures
         .disableAnimations;
 
-    if (showSplash) {
-      return _SplashSwitch(
-        showSplash: true,
-        reduceMotion: reduceMotion,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          onGenerateTitle: (_) => AppConfig.displayStoreName(lang),
-          theme: AppTheme.light,
-          scrollBehavior: const AppScrollBehavior(),
-          locale: locale,
-          supportedLocales: _locales,
-          localizationsDelegates: _delegates,
-          builder: (context, child) => ResponsiveApp(
-            child: Directionality(
-              textDirection: direction,
-              child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
-            ),
-          ),
-          home: SplashScreen(intro: _intro, onFinished: _endIntro),
-        ),
-      );
-    }
-
     final router = ref.watch(routerProvider);
     final brightness = ref.watch(effectiveBrightnessProvider);
     // شريطا النظام يتبعان السطوع المطبَّق؛ الشاشات التي تبدأ فوق صورة تضبط
@@ -274,41 +322,52 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
           ? ref.watch(activeWorldThemeProvider).surface
           : null,
     );
-    // بعد ظهور الـ router (انتهاء الـ splash) نفّذ أي إشعار معلّق.
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => PendingPushNavigation.flush(),
-    );
+    // الـ router موجود من أول إطار (تحت المشهد)؛ وجهة إشعار معلّق تُفتح حين تُعرف
+    // الجلسة — فتُبنى تحت المشهد وتظهر لحظة انتهائه.
+    if (!booting || _bootTimedOut) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => PendingPushNavigation.flush(),
+      );
+    }
 
-    return _SplashSwitch(
-      showSplash: false,
-      reduceMotion: reduceMotion,
-      // MaterialApp يحرّك تغيّر الثيم بنفسه (تبديل العالم) — لا AnimatedTheme فوقه.
-      child: MaterialApp.router(
-        onGenerateTitle: (_) => AppConfig.displayStoreName(lang),
-        debugShowCheckedModeBanner: false,
-        theme: ref.watch(appThemeDataProvider),
-        // الليلي لا يُبنى قبل تفعيله؛ وthemeMode من السطوع المحسوب نفسه حتى يتفق
-        // الثيم مع ألوان العالم (context.worldTheme وref.worldTheme) دائماً.
-        darkTheme: AppConfig.darkModeEnabled
-            ? ref.watch(appDarkThemeDataProvider)
-            : null,
-        themeMode: brightness == Brightness.dark
-            ? ThemeMode.dark
-            : ThemeMode.light,
-        themeAnimationDuration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 320),
-        themeAnimationCurve: Curves.easeOutCubic,
-        scrollBehavior: const AppScrollBehavior(),
-        routerConfig: router,
-        locale: locale,
-        supportedLocales: _locales,
-        localizationsDelegates: _delegates,
-        builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-          value: overlay,
-          child: ResponsiveApp(
-            child: Directionality(
-              textDirection: direction,
+    // تطبيق واحد من أول إطار: الرئيسية تُبنى وتُخطَّط تحت طبقة المشهد، فلا يبقى عند
+    // الانتقال إلا تلاشي المشهد نفسه.
+    // MaterialApp يحرّك تغيّر الثيم بنفسه (تبديل العالم) — لا AnimatedTheme فوقه.
+    return MaterialApp.router(
+      onGenerateTitle: (_) => AppConfig.displayStoreName(lang),
+      debugShowCheckedModeBanner: false,
+      theme: ref.watch(appThemeDataProvider),
+      // الليلي لا يُبنى قبل تفعيله؛ وthemeMode من السطوع المحسوب نفسه حتى يتفق
+      // الثيم مع ألوان العالم (context.worldTheme وref.worldTheme) دائماً.
+      darkTheme: AppConfig.darkModeEnabled
+          ? ref.watch(appDarkThemeDataProvider)
+          : null,
+      themeMode: brightness == Brightness.dark
+          ? ThemeMode.dark
+          : ThemeMode.light,
+      themeAnimationDuration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 320),
+      themeAnimationCurve: Curves.easeOutCubic,
+      scrollBehavior: const AppScrollBehavior(),
+      routerConfig: router,
+      locale: locale,
+      supportedLocales: _locales,
+      localizationsDelegates: _delegates,
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlay,
+        child: ResponsiveApp(
+          child: Directionality(
+            textDirection: direction,
+            child: _SplashLayer(
+              visible: showSplash,
+              reduceMotion: reduceMotion,
+              onGone: _onSplashGone,
+              // المشهد بألوانه الثابتة (فاتح) مهما كان مظهر التطبيق.
+              splash: Theme(
+                data: AppTheme.light,
+                child: SplashScreen(intro: _intro, onFinished: _onIntroFinished),
+              ),
               child: _OfflineBanner(
                 // فحص تحديث التطبيق (إجباري/اختياري) من إعدادات لوحة التحكم.
                 child: AppUpdateGate(
@@ -325,52 +384,109 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
   }
 }
 
-/// انتقال الافتتاح: المشهد يتمدّد قليلاً ويتلاشى، والرئيسية تظهر من تحته بهدوء.
-class _SplashSwitch extends StatelessWidget {
-  final bool showSplash;
+/// طبقة المشهد فوق التطبيق: ما دام المشهد ظاهراً كاملاً فالتطبيق تحته مبنيّ
+/// ومُخطَّط لكنه لا يُرسم ولا تتحرك مؤقّتاته (لا يزاحم المشهد على الهواتف البسيطة)،
+/// ولا يُلمس ولا يقرؤه قارئ الشاشة. عند الانتهاء يتلاشى المشهد وحده (شفافية فقط،
+/// في طبقة رسم مستقلة) والتطبيق ظاهر تحته، ثم يُزال المشهد من الشجرة.
+class _SplashLayer extends StatefulWidget {
+  final bool visible;
   final bool reduceMotion;
+  final Widget splash;
   final Widget child;
-  const _SplashSwitch({
-    required this.showSplash,
+
+  /// المشهد زال تماماً (أو لم يظهر أصلاً).
+  final VoidCallback onGone;
+
+  const _SplashLayer({
+    required this.visible,
     required this.reduceMotion,
+    required this.splash,
     required this.child,
+    required this.onGone,
   });
 
   @override
+  State<_SplashLayer> createState() => _SplashLayerState();
+}
+
+class _SplashLayerState extends State<_SplashLayer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fade = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+    value: 1,
+  );
+  late final Animation<double> _opacity = CurvedAnimation(
+    parent: _fade,
+    curve: Curves.easeInCubic,
+  );
+
+  /// المشهد في الشجرة (ظاهر أو يتلاشى).
+  late bool _present = widget.visible;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_present) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => widget.onGone());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SplashLayer old) {
+    super.didUpdateWidget(old);
+    if (old.visible == widget.visible) return;
+    if (widget.visible) {
+      _fade.value = 1;
+      _present = true;
+      return;
+    }
+    if (widget.reduceMotion) {
+      _fade.value = 0;
+      _remove();
+      return;
+    }
+    _fade.reverse().whenCompleteOrCancel(() {
+      if (mounted && !widget.visible) setState(_remove);
+    });
+  }
+
+  void _remove() {
+    if (!_present) return;
+    _present = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.onGone());
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: AnimatedSwitcher(
-        duration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 400),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) {
-          final isSplash = child.key == const ValueKey('splash');
-          if (isSplash) {
-            // الخروج: تكبير خفيف مع التلاشي — كأننا نعبر من خلال الحلقة.
-            return FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 1.12, end: 1).animate(animation),
-                child: child,
-              ),
-            );
-          }
-          return FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
-              child: child,
-            ),
-          );
-        },
-        child: KeyedSubtree(
-          key: ValueKey(showSplash ? 'splash' : 'app'),
-          child: child,
+    // مغطّى بالكامل: المشهد ظاهر ولم يبدأ تلاشيه.
+    final covered = _present && widget.visible;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Offstage(
+          offstage: covered,
+          child: TickerMode(enabled: !covered, child: widget.child),
         ),
-      ),
+        if (_present)
+          IgnorePointer(
+            // أثناء التلاشي اللمس للرئيسية تحته.
+            ignoring: !widget.visible,
+            child: ExcludeSemantics(
+              excluding: !widget.visible,
+              child: FadeTransition(
+                opacity: _opacity,
+                child: RepaintBoundary(child: widget.splash),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

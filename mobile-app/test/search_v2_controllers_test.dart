@@ -101,21 +101,71 @@ void main() {
     });
     tearDown(() => c.dispose());
 
-    test('a late reply for an older query is ignored', () async {
-      api.honorCancel = false;
+    test('one request in flight: a new query waits for it, then only the latest is sent', () async {
       c.update('عطر');
       await _tick();
       c.update('شامبو');
       await _tick();
-      expect(api.instantCalls.map((e) => e.q), ['عطر', 'شامبو']);
-
-      api.instantCalls[1].completer.complete(_instant('شامبو'));
+      c.update('شامبو ل');
       await _tick();
+      expect(api.instantCalls.map((e) => e.q), ['عطر'], reason: 'the in-flight request is not cancelled or doubled');
+      expect(c.loading, isTrue);
+
       api.instantCalls[0].completer.complete(_instant('عطر'));
       await _tick();
+      expect(api.instantCalls.map((e) => e.q), ['عطر', 'شامبو ل'], reason: 'only the latest query goes out');
+      expect(c.data, isNull, reason: 'a reply for a query the new one does not extend is not shown');
+      expect(c.loading, isTrue);
 
+      api.instantCalls[1].completer.complete(_instant('شامبو ل'));
+      await _tick();
+      expect(c.data?.query, 'شامبو ل');
+      expect(c.loading, isFalse);
+    });
+
+    test('a late reply after a reset is ignored (but the waiting query is sent)', () async {
+      c.update('عطر');
+      await _tick();
+      c.update('ع'); // أقصر من حرفين: إعادة ضبط
+      c.update('شامبو');
+      await _tick();
+      expect(api.instantCalls, hasLength(1));
+
+      api.instantCalls[0].completer.complete(_instant('عطر'));
+      await _tick();
+      expect(c.data, isNull);
+      expect(api.instantCalls.last.q, 'شامبو');
+
+      api.instantCalls.last.completer.complete(_instant('شامبو'));
+      await _tick();
       expect(c.data?.query, 'شامبو');
       expect(c.loading, isFalse);
+    });
+
+    test('a stalled request is cancelled for the new query, and that is not a failure', () async {
+      final stalled = InstantSearchController(api, lang: () => lang, debounce: Duration.zero, stallAfter: Duration.zero);
+      addTearDown(stalled.dispose);
+      stalled.update('عطر');
+      await _tick();
+      stalled.update('شامبو');
+      await _tick();
+      expect(api.instantCalls.map((e) => e.q), ['عطر', 'شامبو']);
+      expect(stalled.failed, isFalse);
+
+      api.instantCalls.last.completer.complete(_instant('شامبو'));
+      await _tick();
+      expect(stalled.data?.query, 'شامبو');
+      expect(stalled.loading, isFalse);
+    });
+
+    test('the default debounce follows the device tier (mid: 200ms)', () async {
+      final d = InstantSearchController(api, lang: () => lang);
+      addTearDown(d.dispose);
+      d.update('عطر');
+      await _tick(150);
+      expect(api.instantCalls, isEmpty);
+      await _tick(80);
+      expect(api.instantCalls.single.q, 'عطر');
     });
 
     test('a query that does not extend the shown one drops stale results', () async {
@@ -199,7 +249,7 @@ void main() {
       expect(c.failed, isFalse);
       expect(c.data?.query, 'عطر');
 
-      // حرف جديد يلغي الطلب الجاري — لا يُعدّ فشلاً.
+      // حرف جديد أثناء طلب جارٍ: ينتظر دوره — لا يُعدّ فشلاً.
       c.update('عطر ف');
       await _tick();
       c.update('عطر فر');

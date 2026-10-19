@@ -1,16 +1,32 @@
+// تعابير ثابتة تُبنى مرة واحدة (كانت تُنشأ في كل استدعاء — أي مع كل حرف يُكتب).
+final _diacritics = RegExp(r'[ً-ْٰـ]');
+final _alefs = RegExp(r'[أإآٱ]');
+final _nonWord = RegExp(r'[^\p{L}\p{N}\s]+', unicode: true);
+final _spaces = RegExp(r'\s+');
+
 /// مطابقة ثنائية اللغة: العربي والإنجليزي يعملان معاً مهما كانت لغة التطبيق.
 String normalizeQuery(String raw) {
+  if (raw.isEmpty) return '';
   return raw
       .toLowerCase()
-      .replaceAll(RegExp(r'[\u064B-\u0652\u0670\u0640]'), '')
-      .replaceAll(RegExp(r'[أإآٱ]'), 'ا')
+      .replaceAll(_diacritics, '')
+      .replaceAll(_alefs, 'ا')
       .replaceAll('ؤ', 'و')
       .replaceAll('ئ', 'ي')
       .replaceAll('ى', 'ي')
       .replaceAll('ة', 'ه')
-      .replaceAll(RegExp(r'[^\p{L}\p{N}\s]+', unicode: true), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
+      .replaceAll(_nonWord, ' ')
+      .replaceAll(_spaces, ' ')
       .trim();
+}
+
+final _charNorm = <int, String>{};
+
+/// تطبيع حرف واحد (وحدة UTF-16) — مخزّن مؤقتاً: نفس نتيجة `normalizeQuery(ch)`
+/// بدون تعابير منتظمة لكل حرف (لإبراز التطابق داخل الأسماء).
+String normalizeChar(String text, int i) {
+  final unit = text.codeUnitAt(i);
+  return _charNorm[unit] ??= normalizeQuery(text[i]);
 }
 
 const _groups = <List<String>>[
@@ -54,62 +70,100 @@ const _groups = <List<String>>[
   ['hyaluronic', 'هيالورون'],
 ];
 
-List<String> expandTerm(String raw) {
-  final normalized = normalizeQuery(raw);
+/// المجموعات مطبّعة مرة واحدة (كانت تُطبَّع ~115 كلمة في كل استدعاء).
+final List<(List<String>, Set<String>)> _normGroups = [
+  for (final g in _groups)
+    (() {
+      final norms = g.map(normalizeQuery).toList(growable: false);
+      return (norms, norms.toSet());
+    })(),
+];
+
+final _expandCache = <String, List<String>>{};
+
+/// توسيع كلمة مطبّعة مسبقاً بمرادفاتها (مخزّن مؤقتاً — النتيجة ثابتة لكل كلمة).
+List<String> _expandNormalized(String normalized) {
+  final hit = _expandCache[normalized];
+  if (hit != null) return hit;
   final out = <String>{if (normalized.isNotEmpty) normalized};
-  for (final group in _groups) {
-    final norms = group.map(normalizeQuery).toList();
-    if (norms.contains(normalized)) out.addAll(norms);
-    for (final token in normalized.split(' ')) {
-      if (token.length >= 2 && norms.contains(token)) out.addAll(norms);
+  final tokens = normalized.split(' ');
+  for (final (norms, set) in _normGroups) {
+    if (set.contains(normalized)) out.addAll(norms);
+    for (final token in tokens) {
+      if (token.length >= 2 && set.contains(token)) out.addAll(norms);
     }
   }
-  return out.where((e) => e.length >= 2).toList();
+  final result = List<String>.unmodifiable(out.where((e) => e.length >= 2));
+  if (_expandCache.length > 512) _expandCache.clear();
+  return _expandCache[normalized] = result;
 }
 
-bool textMatchesQuery(String query, List<String?> fields) {
-  final tokens = normalizeQuery(query).split(' ').where((t) => t.length >= 2).toList();
-  if (tokens.isEmpty) return false;
-  final hay = normalizeQuery(fields.whereType<String>().join(' '));
-  if (hay.isEmpty) return false;
-  for (final token in tokens) {
-    final terms = expandTerm(token);
-    if (!terms.any(hay.contains)) return false;
+List<String> expandTerm(String raw) => _expandNormalized(normalizeQuery(raw));
+
+List<String> _tokens(String normalizedQuery) =>
+    normalizedQuery.split(' ').where((t) => t.length >= 2).toList(growable: false);
+
+/// استعلام مُجهّز مرة واحدة (تطبيع + مرادفات لكل كلمة) — يُعاد استعماله على
+/// كل العناصر بدل تطبيع الاستعلام من جديد لكل عنصر.
+class PreparedQuery {
+  /// مرادفات كل كلمة من كلمات الاستعلام (كلمة واحدة على الأقل بحرفين).
+  final List<List<String>> termsPerToken;
+
+  PreparedQuery._(this.termsPerToken);
+
+  factory PreparedQuery(String query) =>
+      PreparedQuery._([for (final t in _tokens(normalizeQuery(query))) _expandNormalized(t)]);
+
+  bool get isEmpty => termsPerToken.isEmpty;
+
+  /// مثل [textMatchesQuery].
+  bool matches(List<String?> fields) {
+    if (termsPerToken.isEmpty) return false;
+    final hay = normalizeQuery(fields.whereType<String>().join(' '));
+    if (hay.isEmpty) return false;
+    for (final terms in termsPerToken) {
+      if (!terms.any(hay.contains)) return false;
+    }
+    return true;
   }
-  return true;
-}
 
-int matchScore(String query, List<String?> fields) {
-  final tokens = normalizeQuery(query).split(' ').where((t) => t.length >= 2).toList();
-  if (tokens.isEmpty) return 0;
-  var score = 0;
-  for (final token in tokens) {
-    final terms = expandTerm(token);
-    var best = 0;
-    for (final field in fields) {
-      final value = normalizeQuery(field ?? '');
-      if (value.isEmpty) continue;
-      for (final term in terms) {
-        if (value == term) {
-          best = 100;
-        } else if (value.startsWith(term) && best < 70) {
-          best = 70;
-        } else if (value.contains(term) && best < 40) {
-          best = 40;
+  /// مثل [matchScore] لكن على حقول مطبّعة مسبقاً بـ [normalizeQuery].
+  int scoreNormalized(List<String> normalizedFields) {
+    var score = 0;
+    for (final terms in termsPerToken) {
+      var best = 0;
+      for (final value in normalizedFields) {
+        if (value.isEmpty) continue;
+        for (final term in terms) {
+          if (value == term) {
+            best = 100;
+          } else if (value.startsWith(term) && best < 70) {
+            best = 70;
+          } else if (value.contains(term) && best < 40) {
+            best = 40;
+          }
         }
       }
+      score += best;
     }
-    score += best;
+    return score;
   }
-  return score;
+}
+
+bool textMatchesQuery(String query, List<String?> fields) => PreparedQuery(query).matches(fields);
+
+int matchScore(String query, List<String?> fields) {
+  final q = PreparedQuery(query);
+  if (q.isEmpty) return 0;
+  return q.scoreNormalized([for (final f in fields) normalizeQuery(f ?? '')]);
 }
 
 /// مرادفات مختلفة عن ما كتبته المستخدمة، لسطر «يطابق أيضاً».
 List<String> synonymHints(String query) {
-  final tokens = normalizeQuery(query).split(' ').where((t) => t.length >= 2);
+  final tokens = _tokens(normalizeQuery(query));
   final extras = <String>[];
   for (final token in tokens) {
-    for (final term in expandTerm(token)) {
+    for (final term in _expandNormalized(token)) {
       if (term != token && !extras.contains(term)) extras.add(term);
     }
   }

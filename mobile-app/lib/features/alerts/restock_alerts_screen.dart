@@ -132,7 +132,7 @@ class _RestockAlertsScreenState extends ConsumerState<RestockAlertsScreen> {
             onRefresh: _refresh,
             child: CustomScrollView(
               physics: AppScrollPerf.physics,
-              cacheExtent: AppScrollPerf.gridCacheExtent,
+              cacheExtent: AppScrollPerf.grid,
               slivers: [
                 SliverToBoxAdapter(child: _AlertsHeader(total: products.length, backInStock: back)),
                 ProductActionGrid(

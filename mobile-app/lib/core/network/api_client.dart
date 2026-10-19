@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show HttpClient;
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,11 +11,19 @@ import '../cache/api_cache.dart';
 import '../config/app_config.dart';
 
 /// مخزن آمن لتوكنات الدخول.
+///
+/// كل قراءة من مخزن المفاتيح (Keystore/EncryptedSharedPreferences) تكلّف
+/// 100–600ms على الهواتف البسيطة: نقرأ كل توكن مرة واحدة ونحفظه في الذاكرة، والطلبات
+/// المتزامنة (أول إطار للرئيسية يطلق عدة طلبات معاً) تنتظر القراءة نفسها.
 class TokenStore {
   static const _accessKey = 'access_token';
   static const _refreshKey = 'refresh_token';
   final FlutterSecureStorage _storage;
-  String? _accessCache;
+  final _access = _SecretSlot(_accessKey);
+  final _refresh = _SecretSlot(_refreshKey);
+
+  /// يزداد مع كل حفظ أو مسح — قراءة بدأت قبله لا تكتب نتيجتها القديمة في الذاكرة.
+  int _generation = 0;
 
   /// يزداد كلما رفض الخادم تجديد الجلسة فمُسحت التوكنات — يستمع له AuthNotifier
   /// ليعود زائراً (بلا اعتماد دائري بين dioProvider و authProvider).
@@ -21,17 +31,27 @@ class TokenStore {
 
   TokenStore(this._storage);
 
-  Future<String?> get access async => _accessCache ??= await _safeRead(_accessKey);
-  Future<String?> get refresh => _safeRead(_refreshKey);
+  Future<String?> get access => _read(_access);
+  Future<String?> get refresh => _read(_refresh);
+
+  /// يبدأ قراءة التوكنين معاً مبكراً (عند الإقلاع) — لا ينتظر ولا يرمي.
+  void preload() {
+    _read(_access).ignore();
+    _read(_refresh).ignore();
+  }
 
   Future<void> save({required String access, required String refresh}) async {
-    _accessCache = access;
+    _generation++;
+    _access.set(access);
+    _refresh.set(refresh);
     await _storage.write(key: _accessKey, value: access);
     await _storage.write(key: _refreshKey, value: refresh);
   }
 
   Future<void> clear() async {
-    _accessCache = null;
+    _generation++;
+    _access.set(null);
+    _refresh.set(null);
     try {
       await _storage.delete(key: _accessKey);
       await _storage.delete(key: _refreshKey);
@@ -45,6 +65,21 @@ class TokenStore {
 
   Future<bool> get hasSession async => (await refresh)?.isNotEmpty ?? false;
 
+  Future<String?> _read(_SecretSlot slot) {
+    if (slot.known) return Future.value(slot.value);
+    final pending = slot.reading;
+    if (pending != null) return pending;
+    final generation = _generation;
+    final reading = _safeRead(slot.key).then((value) {
+      // حُفظت جلسة أو مُسحت أثناء القراءة: الذاكرة هي الأحدث.
+      if (generation != _generation) return slot.known ? slot.value : value;
+      slot.set(value);
+      return value;
+    });
+    slot.reading = reading;
+    return reading;
+  }
+
   /// قراءة لا ترمي أبداً: إن تعطّل مخزن المفاتيح (تحديث نظام، استعادة نسخة احتياطية)
   /// نمسحه ونكمل كزائرة بدل أن تعلق شاشة الافتتاح للأبد.
   Future<String?> _safeRead(String key) async {
@@ -55,6 +90,22 @@ class TokenStore {
       await clear();
       return null;
     }
+  }
+}
+
+/// توكن واحد في الذاكرة: معروف (حتى لو null)، أو قراءة جارية، أو لم يُقرأ بعد.
+class _SecretSlot {
+  final String key;
+  _SecretSlot(this.key);
+
+  bool known = false;
+  String? value;
+  Future<String?>? reading;
+
+  void set(String? v) {
+    value = v;
+    known = true;
+    reading = null;
   }
 }
 
@@ -146,6 +197,17 @@ Future<_RefreshResult> _refreshSession(TokenStore tokens, Dio bare) async {
   }
 }
 
+/// اتصالات تبقى مفتوحة بين الطلبات: HttpClient في Dio يغلق الاتصال الخامل بعد 3 ثوانٍ
+/// (وdart:io بعد 15)، بينما يُبقيه nginx حتى 65 ثانية — فكانت كل ضغطة بعد لحظة سكون
+/// تدفع مصافحة TLS جديدة (~ثانية على شبكة 300ms). 55 ثانية تبقى تحت مهلة الخادم
+/// فلا نرسل على اتصال أغلقه هو. 6 اتصالات لكل خادم تكفي الرئيسية دون إغراق الشبكة.
+HttpClientAdapter _keepAliveAdapter() => IOHttpClientAdapter(
+      createHttpClient: () => HttpClient()
+        ..idleTimeout = const Duration(seconds: 55)
+        ..maxConnectionsPerHost = 6
+        ..connectionTimeout = AppConfig.connectTimeout,
+    );
+
 /// Dio مُهيّأ مع إرفاق التوكن وتجديده تلقائياً عند 401.
 final dioProvider = Provider<Dio>((ref) {
   final tokens = ref.read(tokenStoreProvider);
@@ -161,6 +223,10 @@ final dioProvider = Provider<Dio>((ref) {
       persistentConnection: true,
     ),
   );
+  // التجديد وإعادة الطلب بعده على الاتصالات المفتوحة نفسها (لا مصافحة ثانية).
+  final adapter = _keepAliveAdapter();
+  dio.httpClientAdapter = adapter;
+  bare.httpClientAdapter = adapter;
 
   // تجديد واحد في كل لحظة: طلبات 401 المتزامنة تنتظر النتيجة نفسها، لأن الخادم
   // يدوّر توكن التجديد فيفشل أي تجديد ثانٍ بالتوكن القديم.

@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../perf/device_perf.dart';
 
 /// فشل نقل عابر: لا اتصال، انتهاء مهلة، انقطاع أثناء القراءة، أو خادم متعطّل مؤقتاً
 /// (5xx / 408 / 429). معه فقط تُعرض آخر نسخة محفوظة.
@@ -45,6 +48,10 @@ bool isGoneError(Object error) {
 /// كل تشغيل ويُعاد كتابته كاملاً عند كل حفظ — مع واجهات بالميغابايت كان ذلك يبطئ
 /// الإقلاع ويسبب تقطعاً. فكّ وترميز JSON الكبير يتم خارج خيط الواجهة.
 ///
+/// [getOrFetchJson] يحفظ نص الرد كما وصل (بلا إعادة ترميز)، ويفكّ الكبير ويبني نماذجه
+/// معاً في isolate. الذاكرة تحمل الردود الصغيرة فقط ضمن ميزانية بالبايت بحسب الجهاز؛
+/// الكبيرة (واجهات العوالم) يحملها مزوّدها نموذجاً جاهزاً، وتُقرأ من القرص عند الحاجة.
+///
 /// النسخة المحفوظة تُعرض بعد فشل الشبكة فقط ([isTransientNetworkError])؛ 404/410
 /// يحذفها. الطلبات المتزامنة لنفس المفتاح تشترك في اتصال واحد.
 class ApiCache {
@@ -56,13 +63,33 @@ class ApiCache {
   static const _legacyPrefix = 'api_cache_v1_';
   static const _dirName = 'api_cache_v2';
 
-  /// حد الذاكرة: آخر المفاتيح استخداماً فقط (الواجهة الرئيسية، القوائم، المنتجات).
+  /// حد الذاكرة بالعدد: آخر المفاتيح استخداماً فقط (القوائم، المنتجات، الأقسام).
   static const _memoryLimit = 80;
 
   /// فوق هذا الحجم يُفكّ/يُرمَّز JSON في isolate منفصل.
   static const _isolateThreshold = 48 * 1024;
 
+  /// رد أكبر من هذا لا يُبقى مفكوكاً في الذاكرة (يُقرأ من القرص عند الحاجة).
+  static const _memoryEntryMaxBytes = 48 * 1024;
+
+  /// فوق هذا الحجم يُفكّ الرد ويُبنى نموذجه معاً في isolate ([getOrFetchJson]).
+  static const _parseIsolateThreshold = 60 * 1024;
+
+  /// ميزانية الذاكرة (بحجم JSON الخام) بحسب قدرة الجهاز.
+  static int get _memoryBudget => DevicePerf.pick(low: 3 << 20, mid: 8 << 20, high: 16 << 20);
+
+  /// كم وقت حفظ نتذكّر (لـ [isFresh] و[fetchedAt]) — أرقام صغيرة لا بيانات.
+  static const _stampLimit = 600;
+
   final LinkedHashMap<String, _Entry> _memory = LinkedHashMap();
+  int _memoryBytes = 0;
+
+  /// ما وصل من الشبكة ولم يُكتب على القرص بعد — قراءة في هذه اللحظة لا ترى الملف القديم.
+  final Map<String, _Entry> _pendingWrites = {};
+
+  /// وقت آخر حفظ معروف لكل مفتاح (من الشبكة أو من القرص) — يبقى بعد خروج البيانات من الذاكرة.
+  final LinkedHashMap<String, DateTime> _stamps = LinkedHashMap();
+
   final Set<String> _revalidating = {};
 
   /// طلب شبكة جارٍ لكل مفتاح — من يطلب نفس المفتاح أثناءه ينتظر نفس الرد.
@@ -71,6 +98,7 @@ class ApiCache {
   /// مفاتيح عُرضت آخر مرة من النسخة المحفوظة لأن الشبكة فشلت.
   final Set<String> _staleKeys = {};
   Future<Directory>? _dir;
+  int _tmpSeq = 0;
 
   /// يقرأ [key] من الذاكرة/القرص أو يجلبه من الشبكة.
   ///
@@ -88,57 +116,125 @@ class ApiCache {
     bool forceRefresh = false,
     int maxStaleFactor = 2,
     bool staleOnError = true,
-  }) async {
-    final now = DateTime.now();
-    final entry = _memoryGet(key) ?? await _loadDisk(key);
+  }) {
+    return _read<T>(
+      key: key,
+      ttl: ttl,
+      forceRefresh: forceRefresh,
+      maxStaleFactor: maxStaleFactor,
+      staleOnError: staleOnError,
+      fromEntry: (e) async => parse(await _entryData(e)),
+      fetchAndStore: () async {
+        final value = await fetch();
+        // الحفظ على القرص في الخلفية — لا نؤخّر عرض الصفحة بانتظاره.
+        unawaited(_store(key, serialize(value)));
+        return value;
+      },
+    );
+  }
 
-    if (!forceRefresh && entry != null) {
-      final age = now.difference(entry.storedAt);
-      if (age < ttl) {
-        _memoryPut(key, entry);
-        return parse(entry.data);
-      }
-      final maxStale = ttl * maxStaleFactor;
-      if (age < maxStale) {
-        _memoryPut(key, entry);
-        _revalidate(key, fetch, serialize);
-        return parse(entry.data);
-      }
-    }
-
-    try {
-      return await _fetchOnce(key, fetch, serialize);
-    } catch (e) {
-      // حُذف من الخادم: لا نعرض نسخته القديمة (سعر ومخزون منتهيان) مرة أخرى.
-      if (isGoneError(e)) {
-        await remove(key);
-        rethrow;
-      }
-      // بلا إنترنت: آخر نسخة محفوظة مهما كان عمرها أفضل من شاشة خطأ.
-      if (entry != null && staleOnError && isTransientNetworkError(e)) {
-        _memoryPut(key, entry);
-        _staleKeys.add(key);
-        return parse(entry.data);
-      }
-      rethrow;
-    }
+  /// مثل [getOrFetch] لكن [fetchRaw] يُرجع نص الرد كما وصل من الشبكة:
+  /// - يُكتب على القرص كما هو (لا jsonEncode لخريطة كبيرة على خيط الواجهة).
+  /// - الرد الكبير (> ~60KB) يُفكّ ويُبنى نموذجه بـ [parse] معاً في isolate، وكذلك عند
+  ///   قراءته من القرص — لذلك [parse] دالة عامة/ثابتة لا تلتقط شيئاً (قابلة للإرسال).
+  /// - [unwrapData]: ما يصل لـ [parse] هو `body['data']` إن وُجد (غلاف الخادم)، وإلا الجسم.
+  ///
+  /// النسخ المحفوظة بالصيغة القديمة لنفس المفتاح تُقرأ كما هي.
+  Future<M> getOrFetchJson<M>({
+    required String key,
+    required Duration ttl,
+    required Future<String> Function() fetchRaw,
+    required M Function(dynamic data) parse,
+    bool unwrapData = false,
+    bool forceRefresh = false,
+    int maxStaleFactor = 2,
+    bool staleOnError = true,
+  }) {
+    return _read<M>(
+      key: key,
+      ttl: ttl,
+      forceRefresh: forceRefresh,
+      maxStaleFactor: maxStaleFactor,
+      staleOnError: staleOnError,
+      fromEntry: (e) => _parseEntry(e, parse),
+      fetchAndStore: () async {
+        final raw = await fetchRaw();
+        final now = DateTime.now();
+        final file = '{"ts":${now.millisecondsSinceEpoch},"unwrap":${unwrapData ? 1 : 0},"body":$raw}';
+        M value;
+        dynamic data;
+        var decoded = false;
+        try {
+          if (raw.length > _parseIsolateThreshold) {
+            value = await _parseFile(file, parse);
+          } else {
+            data = _fileData(jsonDecode(file));
+            decoded = true;
+            value = parse(data);
+          }
+        } on FormatException catch (e) {
+          // صفحة غير JSON (بوابة واي فاي، خطأ وسيط): فشل نقل عابر لا محتوى جديد.
+          throw DioException(
+            requestOptions: RequestOptions(path: key),
+            type: DioExceptionType.unknown,
+            error: e,
+            message: 'Invalid JSON response',
+          );
+        }
+        final entry = decoded
+            ? _Entry(data: data, storedAt: now, bytes: raw.length)
+            : _Entry(file: file, storedAt: now, bytes: raw.length);
+        unawaited(_storeFile(key, entry, file));
+        return value;
+      },
+    );
   }
 
   /// هل خُزّن هذا المفتاح من الشبكة خلال [within]؟ (لتجنّب إعادة طلب ما وصل للتو)
   bool isFresh(String key, Duration within) {
-    final e = _memory[key];
-    return e != null && DateTime.now().difference(e.storedAt) < within;
+    final at = _stamps[key];
+    return at != null && DateTime.now().difference(at) < within;
+  }
+
+  /// مثل [isFresh] لكنه يقرأ وقت النسخة المحفوظة على القرص إن لم تُقرأ بعد في هذه الجلسة.
+  Future<bool> isStoredWithin(String key, Duration within) async {
+    var at = _stamps[key];
+    if (at == null) {
+      try {
+        final f = await _file(key);
+        if (await f.exists()) {
+          final raf = await f.open();
+          try {
+            final head = utf8.decode(await raf.read(40), allowMalformed: true);
+            final ts = _leadingTs(head);
+            if (ts != null) at = DateTime.fromMillisecondsSinceEpoch(ts);
+          } finally {
+            await raf.close();
+          }
+        }
+      } catch (_) {}
+    }
+    return at != null && DateTime.now().difference(at) < within;
   }
 
   /// هل عُرضت آخر قراءة لهذا المفتاح من النسخة المحفوظة لأن الشبكة فشلت؟
   /// (لعرض «آخر تحديث قبل …» أو «بلا اتصال — نعرض آخر نسخة محفوظة»)
   bool servedStale(String key) => _staleKeys.contains(key);
 
-  /// وقت آخر جلب ناجح لهذا المفتاح — من الذاكرة فقط (null إن لم يُقرأ بعد في هذه الجلسة).
-  DateTime? fetchedAt(String key) => _memory[key]?.storedAt;
+  /// وقت آخر جلب ناجح لهذا المفتاح (null إن لم يُقرأ بعد في هذه الجلسة).
+  DateTime? fetchedAt(String key) => _stamps[key];
+
+  /// يفرّغ البيانات المفكوكة من الذاكرة (ضغط ذاكرة من النظام). القرص والطلبات الجارية
+  /// كما هي؛ القراءة التالية تأتي من القرص.
+  void trimMemory() {
+    _memory.clear();
+    _memoryBytes = 0;
+  }
 
   Future<void> remove(String key) async {
-    _memory.remove(key);
+    _memoryRemove(key);
+    _pendingWrites.remove(key);
+    _stamps.remove(key);
     _revalidating.remove(key);
     _staleKeys.remove(key);
     try {
@@ -149,7 +245,11 @@ class ApiCache {
 
   /// يمسح كل مفاتيح الكاش التي تبدأ بالبادئة (مثل products_v2).
   Future<void> removePrefix(String prefix) async {
-    _memory.removeWhere((key, _) => key.startsWith(prefix));
+    for (final key in _memory.keys.where((k) => k.startsWith(prefix)).toList()) {
+      _memoryRemove(key);
+    }
+    _pendingWrites.removeWhere((key, _) => key.startsWith(prefix));
+    _stamps.removeWhere((key, _) => key.startsWith(prefix));
     _revalidating.removeWhere((key) => key.startsWith(prefix));
     _staleKeys.removeWhere((key) => key.startsWith(prefix));
     try {
@@ -163,7 +263,9 @@ class ApiCache {
   }
 
   Future<void> clearPublic() async {
-    _memory.clear();
+    trimMemory();
+    _pendingWrites.clear();
+    _stamps.clear();
     _revalidating.clear();
     _staleKeys.clear();
     try {
@@ -175,27 +277,89 @@ class ApiCache {
 
   // ---------------------------------------------------------------- داخلي
 
+  Future<T> _read<T>({
+    required String key,
+    required Duration ttl,
+    required bool forceRefresh,
+    required int maxStaleFactor,
+    required bool staleOnError,
+    required Future<T> Function(_Entry entry) fromEntry,
+    required Future<T> Function() fetchAndStore,
+  }) async {
+    final now = DateTime.now();
+    final entry = _memoryGet(key) ?? await _loadDisk(key);
+
+    // ملف تالف (انقطاع الكتابة، تحديث صيغة): لا نعرضه — نجلب من جديد.
+    Future<T> serve(_Entry e) async {
+      try {
+        return await fromEntry(e);
+      } on FormatException {
+        await remove(key);
+        return _fetchOnce<T>(key, fetchAndStore);
+      }
+    }
+
+    if (!forceRefresh && entry != null) {
+      final age = now.difference(entry.storedAt);
+      if (age < ttl) return serve(entry);
+      if (age < ttl * maxStaleFactor) {
+        _revalidate<T>(key, fetchAndStore);
+        return serve(entry);
+      }
+    }
+
+    try {
+      return await _fetchOnce<T>(key, fetchAndStore);
+    } catch (e) {
+      // حُذف من الخادم: لا نعرض نسخته القديمة (سعر ومخزون منتهيان) مرة أخرى.
+      if (isGoneError(e)) {
+        await remove(key);
+        rethrow;
+      }
+      // بلا إنترنت: آخر نسخة محفوظة مهما كان عمرها أفضل من شاشة خطأ.
+      if (entry != null && staleOnError && isTransientNetworkError(e)) {
+        _staleKeys.add(key);
+        return fromEntry(entry);
+      }
+      rethrow;
+    }
+  }
+
   _Entry? _memoryGet(String key) {
     final e = _memory.remove(key);
-    if (e != null) _memory[key] = e; // الأحدث استخداماً في النهاية
-    return e;
+    if (e != null) {
+      _memory[key] = e; // الأحدث استخداماً في النهاية
+      return e;
+    }
+    return _pendingWrites[key];
+  }
+
+  void _memoryRemove(String key) {
+    final old = _memory.remove(key);
+    if (old != null) _memoryBytes -= old.bytes;
   }
 
   void _memoryPut(String key, _Entry e) {
-    _memory.remove(key);
+    _memoryRemove(key);
+    // الكبير لا يبقى مفكوكاً في الذاكرة — مزوّده يحمل نموذجه، والقرص يحمل نصه.
+    if (e.file != null || e.bytes > _memoryEntryMaxBytes) return;
     _memory[key] = e;
-    while (_memory.length > _memoryLimit) {
-      _memory.remove(_memory.keys.first);
+    _memoryBytes += e.bytes;
+    final budget = _memoryBudget;
+    while (_memory.length > _memoryLimit || (_memoryBytes > budget && _memory.length > 1)) {
+      _memoryRemove(_memory.keys.first);
     }
+  }
+
+  void _stamp(String key, DateTime at) {
+    _stamps.remove(key);
+    _stamps[key] = at;
+    if (_stamps.length > _stampLimit) _stamps.remove(_stamps.keys.first);
   }
 
   /// جلب واحد لكل مفتاح: الطلبات المتزامنة (تحديث خلفي + سحب للتحديث + جلب مسبق)
   /// تنتظر نفس الاتصال بدل تنزيل نفس البيانات مرتين.
-  Future<T> _fetchOnce<T>(
-    String key,
-    Future<T> Function() fetch,
-    dynamic Function(T value) serialize,
-  ) {
+  Future<T> _fetchOnce<T>(String key, Future<T> Function() fetchAndStore) {
     final pending = _inflight[key];
     if (pending is Future<T>) return pending;
     final completer = Completer<T>();
@@ -203,10 +367,8 @@ class ApiCache {
     _inflight[key] = future;
     unawaited(() async {
       try {
-        final value = await fetch();
+        final value = await fetchAndStore();
         _staleKeys.remove(key);
-        // الحفظ على القرص في الخلفية — لا نؤخّر عرض الصفحة بانتظاره.
-        unawaited(_store(key, serialize(value)));
         completer.complete(value);
       } catch (e, st) {
         completer.completeError(e, st);
@@ -217,16 +379,12 @@ class ApiCache {
     return future;
   }
 
-  void _revalidate<T>(
-    String key,
-    Future<T> Function() fetch,
-    dynamic Function(T value) serialize,
-  ) {
+  void _revalidate<T>(String key, Future<T> Function() fetchAndStore) {
     if (_revalidating.contains(key) || _inflight.containsKey(key)) return;
     _revalidating.add(key);
     unawaited(() async {
       try {
-        await _fetchOnce(key, fetch, serialize);
+        await _fetchOnce<T>(key, fetchAndStore);
       } catch (e) {
         if (isGoneError(e)) {
           // حُذف من الخادم: القراءة التالية لا تعرض النسخة القديمة.
@@ -240,18 +398,67 @@ class ApiCache {
     }());
   }
 
+  /// قيمة JSON لمدخل ([getOrFetch]): من الذاكرة، أو بفكّ نص الملف (الكبير في isolate).
+  Future<dynamic> _entryData(_Entry e) async {
+    final file = e.file;
+    if (file == null) return e.data;
+    return _fileData(await _decode(file));
+  }
+
+  /// نموذج لمدخل ([getOrFetchJson]).
+  Future<M> _parseEntry<M>(_Entry e, M Function(dynamic data) parse) async {
+    final file = e.file;
+    if (file == null) return parse(e.data);
+    return _parseFile(file, parse);
+  }
+
+  /// يحفظ قيمة [getOrFetch] (تُرمَّز هنا).
   Future<void> _store(String key, dynamic data) async {
-    final entry = _Entry(data, DateTime.now());
+    final now = DateTime.now();
+    // تقدير أولي للحجم — يُصحَّح بعد الترميز.
+    var entry = _Entry(data: data, storedAt: now, bytes: _isLarge(data) ? _memoryEntryMaxBytes + 1 : 4 * 1024);
+    _stamp(key, now);
     _memoryPut(key, entry);
+    _pendingWrites[key] = entry;
     try {
-      final payload = {'ts': entry.storedAt.millisecondsSinceEpoch, 'data': data};
-      final raw = await _encode(payload);
-      final f = await _file(key);
-      // كتابة ذرّية: ملف مؤقت ثم إعادة تسمية — لا ملف نصف مكتوب عند إغلاق التطبيق.
-      final tmp = File('${f.path}.tmp');
-      await tmp.writeAsString(raw, flush: false);
-      await tmp.rename(f.path);
-    } catch (_) {}
+      final raw = await _encode({'ts': now.millisecondsSinceEpoch, 'data': data});
+      if (identical(_pendingWrites[key], entry)) {
+        final sized = _Entry(data: data, storedAt: now, bytes: raw.length);
+        _memoryPut(key, sized);
+        _pendingWrites[key] = sized;
+        entry = sized;
+      }
+      await _writeFile(key, entry, raw);
+    } catch (_) {
+    } finally {
+      if (identical(_pendingWrites[key], entry)) _pendingWrites.remove(key);
+    }
+  }
+
+  /// يحفظ رد [getOrFetchJson] بنصه كما وصل.
+  Future<void> _storeFile(String key, _Entry entry, String file) async {
+    _stamp(key, entry.storedAt);
+    _memoryPut(key, entry);
+    _pendingWrites[key] = entry;
+    try {
+      await _writeFile(key, entry, file);
+    } catch (_) {
+    } finally {
+      if (identical(_pendingWrites[key], entry)) _pendingWrites.remove(key);
+    }
+  }
+
+  /// كتابة ذرّية: ملف مؤقت ثم إعادة تسمية — لا ملف نصف مكتوب عند إغلاق التطبيق.
+  /// إن وصل رد أحدث أثناء الكتابة لا نكتب فوقه بالأقدم.
+  Future<void> _writeFile(String key, _Entry entry, String raw) async {
+    final f = await _file(key);
+    final tmp = File('${f.path}.${_tmpSeq++}.tmp');
+    await tmp.writeAsString(raw, flush: false);
+    if (!identical(_pendingWrites[key], entry)) {
+      await tmp.delete();
+      return;
+    }
+    await tmp.rename(f.path);
   }
 
   Future<_Entry?> _loadDisk(String key) async {
@@ -259,11 +466,25 @@ class ApiCache {
       final f = await _file(key);
       if (!await f.exists()) return null;
       final raw = await f.readAsString();
-      final json = await _decode(raw);
-      if (json is! Map) return null;
-      final ts = json['ts'];
-      if (ts is! int) return null;
-      final entry = _Entry(json['data'], DateTime.fromMillisecondsSinceEpoch(ts));
+      var ts = _leadingTs(raw);
+      if (ts == null) {
+        // ملف بلا الترتيب المعتاد: نفكّه كاملاً.
+        final json = await _decode(raw);
+        if (json is! Map || json['ts'] is! int) return null;
+        ts = json['ts'] as int;
+        final storedAt = DateTime.fromMillisecondsSinceEpoch(ts);
+        _stamp(key, storedAt);
+        final entry = _Entry(data: _fileData(json), storedAt: storedAt, bytes: raw.length);
+        _memoryPut(key, entry);
+        return entry;
+      }
+      final storedAt = DateTime.fromMillisecondsSinceEpoch(ts);
+      _stamp(key, storedAt);
+      // الكبير يبقى نصاً: يُفكّ (ويُبنى نموذجه) في isolate عند الحاجة فقط.
+      if (raw.length > _memoryEntryMaxBytes) {
+        return _Entry(file: raw, storedAt: storedAt, bytes: raw.length);
+      }
+      final entry = _Entry(data: _fileData(jsonDecode(raw)), storedAt: storedAt, bytes: raw.length);
       _memoryPut(key, entry);
       return entry;
     } catch (_) {
@@ -298,6 +519,20 @@ class ApiCache {
   Future<dynamic> _decode(String raw) =>
       raw.length > _isolateThreshold ? compute(_jsonDecode, raw) : Future.value(jsonDecode(raw));
 
+  /// يفكّ نص ملف ويبني نموذجه — في isolate إن كان كبيراً. إن تعذّر إرسال [parse]
+  /// إلى isolate نبنيه هنا بدل أن نفشل.
+  static Future<M> _parseFile<M>(String file, M Function(dynamic data) parse) async {
+    if (file.length <= _parseIsolateThreshold) return parse(_fileData(jsonDecode(file)));
+    try {
+      return await _parseFileInIsolate(file, parse);
+    } on FormatException {
+      rethrow;
+    } catch (e) {
+      debugPrint('[ApiCache] isolate parse failed, parsing inline: $e');
+      return parse(_fileData(jsonDecode(file)));
+    }
+  }
+
   Future<Directory> _directory() => _dir ??= () async {
         final base = await getApplicationSupportDirectory();
         final d = Directory('${base.path}/$_dirName');
@@ -325,11 +560,40 @@ class ApiCache {
   }
 }
 
+/// دالة عامة (لا تلتقط شيئاً من الكاش) — ما يُرسل إلى isolate هو النص و[parse] فقط.
+Future<M> _parseFileInIsolate<M>(String file, M Function(dynamic data) parse) =>
+    Isolate.run(() => parse(_fileData(jsonDecode(file))));
+
+final _leadingTsPattern = RegExp(r'^\{"ts":(\d+)[,}]');
+
+/// وقت الحفظ من أول الملف (`{"ts":123,...`) بلا فكّ الملف كاملاً.
+int? _leadingTs(String raw) {
+  final m = _leadingTsPattern.firstMatch(raw.length > 40 ? raw.substring(0, 40) : raw);
+  return m == null ? null : int.tryParse(m.group(1)!);
+}
+
+/// القيمة المحفوظة في ملف: `{ts, data}` (الصيغة الأولى) أو `{ts, unwrap, body}` (نص الرد).
+dynamic _fileData(dynamic json) {
+  if (json is! Map) throw const FormatException('Invalid cache entry');
+  if (json.containsKey('body')) {
+    final body = json['body'];
+    if (json['unwrap'] == 1 && body is Map && body.containsKey('data')) return body['data'];
+    return body;
+  }
+  return json['data'];
+}
+
 dynamic _jsonDecode(String raw) => jsonDecode(raw);
 String _jsonEncode(Map<String, dynamic> payload) => jsonEncode(payload);
 
+/// مدخل كاش: [data] مفكوكة (الصغير)، أو [file] نص الملف كما على القرص (الكبير).
 class _Entry {
   final dynamic data;
+  final String? file;
   final DateTime storedAt;
-  const _Entry(this.data, this.storedAt);
+
+  /// حجم JSON الخام بالبايت (تقريباً) — لميزانية الذاكرة.
+  final int bytes;
+
+  const _Entry({this.data, this.file, required this.storedAt, required this.bytes});
 }

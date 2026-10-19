@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/perf/device_perf.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -465,8 +466,12 @@ class _BrowseBody extends StatelessWidget {
               borderRadius: const BorderRadiusDirectional.only(
                 topStart: Radius.circular(AppCorners.xl),
               ).resolve(Directionality.of(context)),
+              // كل لوحة في طبقة رسم مستقلة: أثناء الانتقال تُركَّب الطبقتان
+              // (شفافية/إزاحة) دون إعادة رسم محتواهما في كل إطار.
+              // على الأجهزة البسيطة: تبديل فوري (لوحتان كاملتان بشفافية = طبقتا
+              // saveLayer لكل إطار)؛ وإلا تظهر الجديدة بتلاشٍ وانزلاق خفيف.
               child: AnimatedSwitcher(
-                duration: MediaQuery.disableAnimationsOf(context)
+                duration: MediaQuery.disableAnimationsOf(context) || DevicePerf.isLow
                     ? Duration.zero
                     : const Duration(milliseconds: 260),
                 switchInCurve: Curves.easeOutCubic,
@@ -481,11 +486,13 @@ class _BrowseBody extends StatelessWidget {
                     child: child,
                   ),
                 ),
-                child: CategoryPane(
+                child: RepaintBoundary(
                   key: ValueKey(selected.category.id),
-                  entry: selected,
-                  onRefresh: onRefresh,
-                  controller: pane,
+                  child: CategoryPane(
+                    entry: selected,
+                    onRefresh: onRefresh,
+                    controller: pane,
+                  ),
                 ),
               ),
             ),
@@ -505,22 +512,25 @@ class _BrowseSkeleton extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // وميضان فقط (الشريط واللوحة) بدل متحكّم حركة لكل كتلة.
         SizedBox(
           width: 92,
-          child: Column(
-            children: [
-              for (var i = 0; i < 6; i++)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
-                  child: Column(
-                    children: [
-                      ShimmerBox(width: 50, height: 50, radius: 25),
-                      SizedBox(height: 8),
-                      ShimmerBox(width: 54, height: 10),
-                    ],
+          child: Skeleton(
+            child: Column(
+              children: [
+                for (var i = 0; i < 6; i++)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      children: [
+                        SkeletonBlock(width: 50, height: 50, radius: 25),
+                        SizedBox(height: 8),
+                        SkeletonBlock(width: 54, height: 10),
+                      ],
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
         Expanded(
@@ -532,31 +542,33 @@ class _BrowseSkeleton extends StatelessWidget {
               ).resolve(Directionality.of(context)),
             ),
             padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const ShimmerBox(height: 118, radius: AppCorners.lg),
-                const SizedBox(height: 22),
-                const ShimmerBox(width: 120, height: 14),
-                const SizedBox(height: 14),
-                for (var r = 0; r < 2; r++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Row(
-                      children: [
-                        for (var c = 0; c < 3; c++) ...[
-                          if (c > 0) const SizedBox(width: 10),
-                          const Expanded(
-                            child: ShimmerBox(
-                              height: 86,
-                              radius: AppCorners.md,
+            child: Skeleton(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SkeletonBlock(height: 118, radius: AppCorners.lg),
+                  const SizedBox(height: 22),
+                  const SkeletonBlock(width: 120, height: 14),
+                  const SizedBox(height: 14),
+                  for (var r = 0; r < 2; r++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Row(
+                        children: [
+                          for (var c = 0; c < 3; c++) ...[
+                            if (c > 0) const SizedBox(width: 10),
+                            const Expanded(
+                              child: SkeletonBlock(
+                                height: 86,
+                                radius: AppCorners.md,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

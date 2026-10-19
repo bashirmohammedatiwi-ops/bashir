@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/motion/app_motion.dart';
+import '../../../core/motion/offscreen_pause.dart';
+import '../../../core/perf/device_perf.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/store_world.dart';
@@ -31,36 +33,107 @@ class WorldBannerCarousel extends ConsumerStatefulWidget {
   ConsumerState<WorldBannerCarousel> createState() => _WorldBannerCarouselState();
 }
 
-class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
+class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel>
+    with SingleTickerProviderStateMixin, MotionGateMixin {
   final _page = PageController(viewportFraction: 0.9);
-  Timer? _timer;
+
+  /// زمن بقاء البنر الحالي: يملأ النقطة النشطة، وعند اكتماله يُقلب البنر.
+  /// متحكّم واحد يتوقف خارج الشاشة/أثناء التمرير/في التبويب المخفي — فلا
+  /// إطارات تعمل والرئيسية ساكنة أو مخفية.
+  late final AnimationController _dwell = AnimationController(
+    vsync: this,
+    duration: _interval,
+  )..addStatusListener(_onDwellStatus);
+
+  /// الأجهزة البسيطة: مؤقّت بلا إطارات (نقاط ثابتة) بدل متحكّم يرسم كل vsync.
+  Timer? _lowTimer;
   int _index = 0;
+  int _count = 0;
   String? _key;
   bool _touching = false;
+  bool _reduceMotion = false;
 
-  /// يتغير عند كل إعادة ضبط للمؤقت حتى يبدأ امتلاء النقطة من جديد.
-  int _cycle = 0;
+  bool get _low => DevicePerf.isLow;
+
+  /// «تقليل الحركة»: لا تقليب تلقائي — التنقل بالسحب فقط.
+  bool get _autoPlay => _count >= 2 && !_reduceMotion;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _sync();
+  }
+
+  @override
+  void onMotionGateChanged(bool allowed) => _sync();
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _lowTimer?.cancel();
+    _dwell.dispose();
     _page.dispose();
     super.dispose();
   }
 
-  void _arm(int count) {
-    _timer?.cancel();
-    if (mounted) setState(() => _cycle++);
-    // «تقليل الحركة»: لا تقليب تلقائي — التنقل بالسحب فقط.
-    if (count < 2 || MediaQuery.disableAnimationsOf(context)) return;
-    _timer = Timer.periodic(_interval, (_) {
-      if (!mounted || !_page.hasClients || _touching) return;
-      _page.animateToPage(
-        (_index + 1) % count,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-      );
-    });
+  /// يبدأ العدّ من جديد — بعد كل تقليب أو سحب يدوي تُحسب المهلة كاملة.
+  void _restart() {
+    _lowTimer?.cancel();
+    _lowTimer = null;
+    _dwell.stop();
+    _dwell.value = 0;
+    _sync();
+  }
+
+  /// يشغّل العدّ أو يوقفه بحسب الظهور واللمس — الاستئناف يكمل من حيث توقف.
+  void _sync() {
+    if (!mounted) return;
+    final run = _autoPlay && motionAllowed && !_touching;
+    if (_low) {
+      if (!run) {
+        _lowTimer?.cancel();
+        _lowTimer = null;
+      } else {
+        _lowTimer ??= Timer.periodic(_interval, (_) => _advance());
+      }
+      return;
+    }
+    if (!run) {
+      if (_dwell.isAnimating) _dwell.stop();
+      return;
+    }
+    if (_dwell.isCompleted) {
+      // اكتمل العدّ والبنر خارج الشاشة: نقلب الآن بعد العودة.
+      _advance();
+    } else if (!_dwell.isAnimating) {
+      _dwell.forward();
+    }
+  }
+
+  void _onDwellStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) _advance();
+  }
+
+  void _advance() {
+    if (!mounted || !_page.hasClients || _touching || !motionAllowed || _count < 2) return;
+    _page
+        .animateToPage(
+          (_index + 1) % _count,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+        )
+        .then((_) {
+          // لم يتغيّر الفهرس (عدد البنرات تبدّل مثلاً): لا نعلق على عدّ مكتمل.
+          if (mounted && !_low && _dwell.isCompleted) _restart();
+        });
+  }
+
+  /// قرب الصفحة [i] من المنتصف: 0 للنشطة، 1 للمجاورة.
+  double _delta(int i) {
+    if (_page.hasClients && _page.position.haveDimensions) {
+      return ((_page.page ?? 0) - i).clamp(-1.0, 1.0);
+    }
+    return (i - _index).toDouble().clamp(-1.0, 1.0);
   }
 
   @override
@@ -77,6 +150,7 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
         ref.watch(worldFeedProvider(slug)).valueOrNull?.banners.where((b) => b.hasImage).toList() ??
         const <AppBanner>[];
     final t = context.worldTheme;
+    _count = banners.length;
 
     final key = '$slug-${banners.length}';
     if (_key != key) {
@@ -85,7 +159,8 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (_page.hasClients) _page.jumpToPage(0);
-        _arm(banners.length);
+        _restart();
+        scheduleMotionGateCheck();
       });
     }
     if (banners.isEmpty) return const SizedBox.shrink();
@@ -99,18 +174,42 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
     final lang = ref.watch(languageCodeProvider);
     final s = ref.watch(stringsProvider);
     final color = worldBandColor(world);
+    final low = _low;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    // خفوت المجاورة = طبقة بلون الورقة خلفها (يعادل شفافية 65% بصرياً) — لا
+    // Opacity ولا saveLayer لكل بطاقة مجاورة.
+    final dimColor = t.surface;
+    // ظل ثابت (لا يتبدّل كل إطار)، ولا ظل على الأجهزة البسيطة.
+    final shadow = low
+        ? null
+        : [
+            BoxShadow(
+              color: color.withValues(alpha: 0.18),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+              spreadRadius: -6,
+            ),
+          ];
+    // النقطة النشطة تمتلئ تدريجياً فقط حين يعمل العدّ بالمتحكّم.
+    final animatedDot = !low && _autoPlay;
 
     return Column(
       children: [
         SizedBox(
           height: height,
           child: Listener(
-            onPointerDown: (_) => _touching = true,
+            onPointerDown: (_) {
+              _touching = true;
+              _sync();
+            },
             onPointerUp: (_) {
               _touching = false;
-              _arm(banners.length);
+              _restart();
             },
-            onPointerCancel: (_) => _touching = false,
+            onPointerCancel: (_) {
+              _touching = false;
+              _sync();
+            },
             child: PageView.builder(
               controller: _page,
               itemCount: banners.length,
@@ -118,84 +217,82 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
                 // اهتزاز للسحب باليد فقط — التقليب التلقائي يمرّ بصمت.
                 if (_touching) AppHaptics.select();
                 setState(() => _index = i);
+                _restart();
               },
               itemBuilder: (context, i) {
                 final b = banners[i];
+                final image = AppNetworkImage(
+                  url: b.imageUrl,
+                  fit: BoxFit.cover,
+                  backgroundColor: Color.lerp(color, Colors.white, 0.82),
+                );
                 // صورة نقية بلا أي كتابة: البنر نفسه هو الرسالة.
                 // البطاقة النشطة بحجمها الكامل، والمجاورة تصغر وتخفت قليلاً — عمق راقٍ.
-                return AnimatedBuilder(
-                  animation: _page,
-                  child: AppNetworkImage(
-                    url: b.imageUrl,
-                    fit: BoxFit.cover,
-                    backgroundColor: Color.lerp(color, Colors.white, 0.82),
-                  ),
-                  builder: (context, image) {
-                    var delta = (i - _index).toDouble();
-                    if (_page.hasClients && _page.position.haveDimensions) {
-                      delta = ((_page.page ?? 0) - i).clamp(-1.0, 1.0);
-                    }
-                    final d = delta.abs().clamp(0.0, 1.0);
-                    final rtl = Directionality.of(context) == TextDirection.rtl;
-                    return Semantics(
-                      button: b.hasLink,
-                      image: true,
-                      label: b.titleForLang(lang) ?? s.homeMediaPromotion,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-                        child: Transform.scale(
-                          scale: 1 - d * 0.08,
-                          child: Opacity(
-                            opacity: 1 - d * 0.35,
-                            child: GestureDetector(
-                              onTap: b.hasLink ? () => openBannerLink(context, b) : null,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(HomeTheme.radiusBanner),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: color.withValues(alpha: 0.22 * (1 - d)),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                      spreadRadius: -6,
-                                    ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(HomeTheme.radiusBanner),
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      // اختلاف منظور خفيف: الصورة تتحرك أبطأ من بطاقتها.
-                                      // تكبير 4% يكفي لإزاحة 14 بكسل دون قصّ أطراف البنر.
-                                      ClipRect(
-                                        child: Transform.translate(
-                                          offset: Offset((rtl ? -1 : 1) * delta * 14, 0),
-                                          child: Transform.scale(scale: 1.04, child: image),
-                                        ),
-                                      ),
-                                      // حافة داخلية رفيعة — لمسة زجاجية تحدد البطاقة بأناقة.
-                                      DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            HomeTheme.radiusBanner,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.35),
-                                            width: 1,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                final card = GestureDetector(
+                  onTap: b.hasLink ? () => openBannerLink(context, b) : null,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(HomeTheme.radiusBanner),
+                      boxShadow: shadow,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(HomeTheme.radiusBanner),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // اختلاف منظور خفيف: الصورة تتحرك أبطأ من بطاقتها.
+                          // تكبير 4% يكفي لإزاحة 14 بكسل دون قصّ أطراف البنر.
+                          if (low)
+                            image
+                          else
+                            AnimatedBuilder(
+                              animation: _page,
+                              child: image,
+                              builder: (context, image) => Transform.translate(
+                                offset: Offset((rtl ? -1 : 1) * _delta(i) * 14, 0),
+                                child: Transform.scale(scale: 1.04, child: image),
+                              ),
+                            ),
+                          AnimatedBuilder(
+                            animation: _page,
+                            builder: (context, _) {
+                              final d = _delta(i).abs();
+                              if (d < 0.01) return const SizedBox.shrink();
+                              return ColoredBox(color: dimColor.withValues(alpha: d * 0.35));
+                            },
+                          ),
+                          // حافة داخلية رفيعة — لمسة زجاجية تحدد البطاقة بأناقة.
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(HomeTheme.radiusBanner),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1,
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    );
-                  },
+                    ),
+                  ),
+                );
+                return Semantics(
+                  button: b.hasLink,
+                  image: true,
+                  label: b.titleForLang(lang) ?? s.homeMediaPromotion,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                    child: low
+                        ? card
+                        : AnimatedBuilder(
+                            animation: _page,
+                            child: card,
+                            builder: (context, card) => Transform.scale(
+                              scale: 1 - _delta(i).abs() * 0.08,
+                              child: card,
+                            ),
+                          ),
+                  ),
                 );
               },
             ),
@@ -208,30 +305,27 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
             children: [
               for (var i = 0; i < banners.length; i++)
                 // النقطة النشطة تمتلئ بلون العالم حتى البنر التالي — مؤشر وقت هادئ.
+                // البسيطة و«تقليل الحركة»: النشطة ممتلئة مباشرة.
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
                   margin: const EdgeInsets.symmetric(horizontal: 3),
                   width: i == _index ? 26 : 6,
                   height: 6,
-                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: i == _index ? color.withValues(alpha: 0.25) : t.hairline,
+                    color: i == _index
+                        ? (animatedDot ? color.withValues(alpha: 0.25) : color)
+                        : t.hairline,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  alignment: AlignmentDirectional.centerStart,
-                  child: i == _index
-                      ? TweenAnimationBuilder<double>(
-                          key: ValueKey('dot-$_index-$_cycle'),
-                          tween: Tween(begin: 0, end: 1),
-                          // «تقليل الحركة»: لا تقليب تلقائي، فالنقطة النشطة ممتلئة مباشرة.
-                          duration: banners.length > 1 && !MediaQuery.disableAnimationsOf(context)
-                              ? _interval
-                              : Duration.zero,
-                          builder: (_, v, __) => FractionallySizedBox(
-                            widthFactor: v,
-                            heightFactor: 1,
-                            child: ColoredBox(color: color),
+                  child: i == _index && animatedDot
+                      ? RepaintBoundary(
+                          child: CustomPaint(
+                            painter: _DotFillPainter(
+                              progress: _dwell,
+                              color: color,
+                              rtl: rtl,
+                            ),
                           ),
                         )
                       : null,
@@ -242,4 +336,32 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel> {
       ],
     );
   }
+}
+
+/// امتلاء النقطة النشطة — رسم فقط (بلا بناء ولا تخطيط) مع كل إطار من [progress].
+class _DotFillPainter extends CustomPainter {
+  final Animation<double> progress;
+  final Color color;
+  final bool rtl;
+
+  _DotFillPainter({required this.progress, required this.color, required this.rtl})
+    : super(repaint: progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width * progress.value.clamp(0.0, 1.0);
+    if (w <= 0) return;
+    final left = rtl ? size.width - w : 0.0;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(left, 0, w, size.height),
+        Radius.circular(size.height / 2),
+      ),
+      Paint()..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_DotFillPainter old) =>
+      old.progress != progress || old.color != color || old.rtl != rtl;
 }

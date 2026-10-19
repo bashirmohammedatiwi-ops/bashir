@@ -2,6 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/motion/offscreen_pause.dart';
+import '../../../core/perf/device_perf.dart';
+
 /// شريط نص متحرك — نشرة إخبارية تتبع اتجاه اللغة:
 /// بالعربي يتحرك نحو اليمين (يدخل من اليسار)، وبالإنجليزي نحو اليسار.
 class HomeMarquee extends StatefulWidget {
@@ -24,7 +27,8 @@ class HomeMarquee extends StatefulWidget {
   State<HomeMarquee> createState() => _HomeMarqueeState();
 }
 
-class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStateMixin {
+class _HomeMarqueeState extends State<HomeMarquee>
+    with SingleTickerProviderStateMixin, MotionGateMixin {
   late final AnimationController _ctrl;
   double _loopWidth = 0;
   double _textHeight = 20;
@@ -35,6 +39,9 @@ class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStat
   bool _reduceMotion = false;
 
   String get _segment => '${widget.text}${widget.gap}';
+
+  /// «تقليل الحركة» أو جهاز بسيط: نص ثابت بدل شريط يُعاد رسمه كل إطار.
+  bool get _static => _reduceMotion || DevicePerf.isLow;
 
   /// النمط الفعلي كما سيرسمه Text (مع DefaultTextStyle) — القياس يطابق الرسم.
   TextStyle get _effectiveStyle => (_baseStyle ?? const TextStyle()).merge(widget.style);
@@ -99,15 +106,31 @@ class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStat
     _textHeight = h;
 
     _ctrl.stop();
-    if (_reduceMotion || w <= 0) {
+    if (_static || w <= 0) {
       _ctrl.value = 0;
       return;
     }
     final pxPerSec = 18 + widget.speed.clamp(1, 10) * 8;
     final ms = ((w / pxPerSec) * 1000).round().clamp(4000, 90000);
-    _ctrl
-      ..duration = Duration(milliseconds: ms)
-      ..repeat();
+    _ctrl.duration = Duration(milliseconds: ms);
+    _syncMotion();
+  }
+
+  @override
+  void onMotionGateChanged(bool allowed) => _syncMotion();
+
+  /// يتحرك فقط والشريط ظاهر والصفحة ساكنة؛ الاستئناف يكمل من نفس الموضع.
+  void _syncMotion() {
+    final run = !_static &&
+        _loopWidth > 0 &&
+        _ctrl.duration != null &&
+        widget.text.trim().isNotEmpty &&
+        motionAllowed;
+    if (run && !_ctrl.isAnimating) {
+      _ctrl.repeat();
+    } else if (!run && _ctrl.isAnimating) {
+      _ctrl.stop();
+    }
   }
 
   @override
@@ -120,8 +143,8 @@ class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     if (widget.text.trim().isEmpty) return const SizedBox.shrink();
 
-    // «تقليل الحركة»: نص ثابت بسطر واحد مع «…».
-    if (_reduceMotion) {
+    // «تقليل الحركة»/جهاز بسيط: نص ثابت بسطر واحد مع «…».
+    if (_static) {
       return SizedBox(
         height: _textHeight,
         child: Align(
@@ -157,19 +180,25 @@ class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStat
                 return OverflowBox(
                   alignment: rtl ? Alignment.centerRight : Alignment.centerLeft,
                   maxWidth: double.infinity,
-                  child: AnimatedBuilder(
-                    animation: _ctrl,
-                    builder: (_, child) => Transform.translate(
-                      offset: Offset((rtl ? 1 : -1) * _ctrl.value * _loopWidth, 0),
-                      child: child,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        for (var i = 0; i < copies; i++)
-                          Text(segment, style: widget.style, maxLines: 1, softWrap: false),
-                      ],
+                  // حدّ رسم: الإزاحة كل إطار لا تعيد رسم ما حول الشريط، والنص
+                  // نفسه يُسجَّل مرة واحدة (حدّ داخلي) ثم يُزاح فقط.
+                  child: RepaintBoundary(
+                    child: AnimatedBuilder(
+                      animation: _ctrl,
+                      builder: (_, child) => Transform.translate(
+                        offset: Offset((rtl ? 1 : -1) * _ctrl.value * _loopWidth, 0),
+                        child: child,
+                      ),
+                      child: RepaintBoundary(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            for (var i = 0; i < copies; i++)
+                              Text(segment, style: widget.style, maxLines: 1, softWrap: false),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 );

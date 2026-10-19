@@ -190,18 +190,19 @@ class _FeedSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = Responsive.productCardWidth(context);
     final height = Responsive.productCardHeight(context);
-    return ExcludeSemantics(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 22),
-        child: SizedBox(
-          height: height + 4,
+    // وميض واحد للرف كله (بدل متحكّم لكل بطاقة).
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: SizedBox(
+        height: height + 4,
+        child: Skeleton(
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
             itemCount: 3,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, __) => ShimmerBox(width: width, height: height, radius: AppCorners.md),
+            itemBuilder: (_, __) => SkeletonBlock(width: width, height: height, radius: AppCorners.md),
           ),
         ),
       ),

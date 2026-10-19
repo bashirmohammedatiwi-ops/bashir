@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -35,10 +36,14 @@ final _brandDetailProvider = FutureProvider.autoDispose.family<Brand, String>((r
   );
 });
 
-/// عدد منتجات البراند الظاهرة فعلاً في المتجر (`total` لصفحة بمنتج واحد).
+/// عدد منتجات البراند الظاهرة فعلاً في المتجر: `total` الصفحة الأولى نفسها التي تطلبها
+/// شبكة البراند (رف «الكل»، الترتيب الافتراضي) — نفس المعاملات فنفس طلب الشبكة ونسخة
+/// الكاش، بلا طلب ثانٍ بمنتج واحد.
 final _brandProductCountProvider = FutureProvider.autoDispose.family<int, String>((ref, brandId) {
   return keepAliveFor(ref, const Duration(minutes: 2), () async {
-    final page = await ref.read(apiServiceProvider).getProducts(brandId: brandId, limit: 1);
+    final page = await ref
+        .read(apiServiceProvider)
+        .getProducts(brandId: brandId, limit: AppConfig.pageSize, sort: 'brand');
     return page.total;
   });
 });

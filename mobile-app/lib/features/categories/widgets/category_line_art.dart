@@ -1,13 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/cache/image_cache.dart';
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/shimmer_box.dart';
 import '../../../data/models/category.dart';
 import '../../worlds/world_theme.dart';
 
-/// صورة القسم، وإلا أيقونته بألوان العالم الحالي — مع shimmer أثناء التحميل.
+/// صورة القسم، وإلا أيقونته بألوان العالم الحالي — مع لون ثابت أثناء التحميل.
 ///
 /// [expand]: يملأ المساحة المتاحة كلها (بلاطات وغلاف وشريط الأقسام): الصورة
 /// بالقص، أو أيقونة داكنة على أرضية فاتحة بلون العالم — بدل شعار المتجر المكرّر.
@@ -81,19 +78,14 @@ class _ArtBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     if (category.imageUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: category.imageUrl,
-        cacheManager: AppImageCacheManager.instance,
+      // صندوق ثابت أثناء التحميل (لا shimmer بمتحكّم حركة لكل بلاطة)، ومقاس الصورة
+      // ومفتاح كاشها كبقية الصور.
+      return AppNetworkImage(
+        url: category.imageUrl,
         width: width,
         height: height,
         fit: BoxFit.cover,
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
-        // يُفكّ بحجم ظهوره الفعلي لا بنصف عرض الشاشة.
-        memCacheWidth: cachePixelWidth(context, width),
-        filterQuality: FilterQuality.medium,
-        placeholder: (_, __) => ShimmerBox(width: width, height: height, radius: 4),
-        errorWidget: (_, __, ___) => _glyph(t, faded: true),
+        errorWidget: _glyph(t, faded: true),
       );
     }
     return _glyph(t);

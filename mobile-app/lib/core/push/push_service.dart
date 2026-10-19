@@ -45,6 +45,10 @@ class PushService {
   static bool _softAskOpen = false;
   static AppLifecycleListener? _lifecycle;
 
+  /// انتهى مشهد الافتتاح وظهرت الواجهة للزبونة — يضبطه app.dart. السؤال اللطيف
+  /// لا يظهر قبله (الـ router موجود تحت المشهد من أول إطار).
+  static final ValueNotifier<bool> uiVisible = ValueNotifier(false);
+
   static const _softAskAtKey = 'push_soft_ask_at';
 
   /// رفضت الزبونة نافذة النظام بعد أن اختارت «تفعيل» — لا نعيد السؤال اللطيف بعدها.
@@ -54,6 +58,35 @@ class PushService {
 
   /// توكن FCM لهذا الجهاز (null قبل وصوله) — يلتقطه الخروج لفصل الجهاز عن الحساب.
   static String? get currentToken => _token;
+
+  /// طلب «الإشعار الذي فُتح منه التطبيق» — يُسأل عنه النظام مرة واحدة ويشترك فيه
+  /// فحص الإقلاع (app.dart) وinit هنا.
+  static Future<RemoteMessage?>? _launchMessage;
+
+  /// أخذ أحدهما إشعار الفتح — الثاني يجده فارغاً فلا يُفتح مرتين.
+  static bool _launchClaimed = false;
+
+  /// إشعار الفتح لأول من يطلبه فقط (null لمن بعده، أو إن لم يُفتح التطبيق بإشعار).
+  /// لا يرمي أبداً.
+  static Future<RemoteMessage?> claimLaunchMessage() async {
+    final RemoteMessage? message;
+    try {
+      message = await (_launchMessage ??= initFirebaseApp().then(
+        (_) => FirebaseMessaging.instance.getInitialMessage(),
+      ));
+    } catch (e) {
+      // فشل لا يُحفظ: المحاولة التالية تسأل النظام من جديد.
+      _launchMessage = null;
+      debugPrint('[PushService] initial message failed: $e');
+      return null;
+    }
+    if (message == null || _launchClaimed) return null;
+    _launchClaimed = true;
+    return message;
+  }
+
+  /// بيانات الإشعار مع عنوانه ونصه وصورته — الصيغة التي يفهمها طابور التنقّل.
+  static Map<String, dynamic> payloadOf(RemoteMessage message) => _mergedData(message);
 
   /// يطلب إذن الإشعارات في لحظة لها معنى للمستخدم (بعد إتمام طلب) بدل شاشة البداية.
   static Future<void> requestPermissionInContext() async {
@@ -195,13 +228,9 @@ class PushService {
       debugPrint('[PushService] listeners failed: $e');
     }
 
-    // 2) الإشعار الذي فُتح منه التطبيق وهو مغلق.
-    try {
-      final initial = await messaging.getInitialMessage();
-      if (initial != null) _openFromMessage(ref, initial, launch: true);
-    } catch (e) {
-      debugPrint('[PushService] initial message failed: $e');
-    }
+    // 2) الإشعار الذي فُتح منه التطبيق وهو مغلق — إن لم يأخذه فحص الإقلاع قبلنا.
+    final initial = await claimLaunchMessage();
+    if (initial != null) _openFromMessage(ref, initial, launch: true);
 
     // 3) iOS: بانر التطبيق يعرض الإشعار في الواجهة؛ النظام يضيف الشارة والصوت فقط.
     if (Platform.isIOS) {
@@ -298,11 +327,12 @@ class PushService {
     if (sessions < 2) return;
 
     await WidgetsBinding.instance.endOfFrame;
-    // الـ router يظهر بعد مشهد الافتتاح — ننتظره ثم نترك الرئيسية تستقر قليلاً.
-    for (var i = 0; i < 30 && !_routerReady; i++) {
+    // الـ router يُبنى تحت مشهد الافتتاح: ننتظر انتهاء المشهد وظهور الواجهة، ثم
+    // نترك الرئيسية تستقر قليلاً.
+    for (var i = 0; i < 30 && !(_routerReady && uiVisible.value); i++) {
       await Future<void>.delayed(const Duration(seconds: 1));
     }
-    if (!_routerReady) return;
+    if (!_routerReady || !uiVisible.value) return;
     await Future<void>.delayed(const Duration(seconds: 4));
 
     final context = rootNavigatorKey.currentContext;
@@ -381,7 +411,7 @@ class PushService {
     // عاد التطبيق من الخلفية بإشعار لم يمرّ على onMessage — نحدّث ما يتأثر به.
     if (!launch) _refreshForPush(ref, data);
     ForegroundNotificationBanner.dismiss();
-    // لا نفتح فوراً — الـ splash يستخدم MaterialApp بدون GoRouter.
+    // عبر الطابور: ينتظر جاهزية الـ router ومعرفة الجلسة (app.dart) ثم يفتح.
     PendingPushNavigation.queue(data);
   }
 }

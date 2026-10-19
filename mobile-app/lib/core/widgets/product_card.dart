@@ -179,6 +179,9 @@ class _PressScaleState extends State<_PressScale> {
   }
 }
 
+/// غطاء صورة النافد: أبيض البئر بشفافية 55% = الصورة بعتامة 45% فوقه.
+const Color _soldOutVeil = Color(0x8CFFFFFF);
+
 class _CardImage extends ConsumerWidget {
   final Product product;
   final bool showPromoBadge;
@@ -234,9 +237,13 @@ class _CardImage extends ConsumerWidget {
                         ? FilterQuality.low
                         : FilterQuality.medium,
                   );
-                  return Opacity(
-                    opacity: product.inStock ? 1 : 0.45,
-                    child: heroTag == null ? image : Hero(tag: heroTag!, child: image),
+                  final cover = heroTag == null ? image : Hero(tag: heroTag!, child: image);
+                  if (product.inStock) return cover;
+                  // النافد باهت: غطاء أبيض شفاف فوق الصورة (البئر أبيض دائماً) — نفس
+                  // مظهر Opacity(0.45) بدون طبقة saveLayer لكل بطاقة في كل إطار تمرير.
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [cover, const ColoredBox(color: _soldOutVeil)],
                   );
                 },
               ),

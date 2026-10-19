@@ -14,12 +14,17 @@ Future<void> main() async {
   _registerFontLicenses();
   // يُقرأ بالتوازي مع التهيئة: يقرّر هل يُعرض مشهد الافتتاح كاملاً (إصدار جديد).
   final appVersion = _readAppVersion();
-  await initializeDateFormatting('ar', null);
-  await initializeDateFormatting('en', null);
-  await initAppStorage();
+  // اللغتان معاً، ومعهما التخزين: لا شيء منها ينتظر الآخر.
+  await Future.wait([
+    initializeDateFormatting('ar', null),
+    initializeDateFormatting('en', null),
+    initAppStorage(),
+  ]);
+  // يحتاج التخزين (مستوى خُفّض سابقاً) — قبل runApp كي يقرأه أول إطار.
   await DevicePerf.init();
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // لا ننتظره: رسالة للنظام تُطبَّق مع أول إطار، ولا يعتمد عليها شيء قبله.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge).ignore();
   }
   // الأساس قبل أول إطار فقط (المظهر المحفوظ)؛ بعدها يتبع الشريطان السطوع
   // المطبَّق عبر AnnotatedRegion في جذر التطبيق (app.dart).

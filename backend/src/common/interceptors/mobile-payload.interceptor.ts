@@ -12,6 +12,8 @@ const CARD_LIST_PATHS: RegExp[] = [
   /^\/api\/v1\/offers\/?$/,
   /^\/api\/v1\/products\/?$/,
   /^\/api\/v1\/products\/search\/?$/,
+  /^\/api\/v1\/products\/me\/buy-again\/?$/,
+  /^\/api\/v1\/search\/?$/,
   /^\/api\/v1\/products\/[^/]+\/bought-together\/?$/,
   /^\/api\/v1\/wishlist\/?$/,
   /^\/api\/v1\/packages\/?$/,

@@ -328,29 +328,40 @@ class _TrendRow extends StatelessWidget {
             children: [
               SizedBox(
                 width: 28,
-                child: ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: (r) => LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: top
-                        ? [
+                // تدرّج للمراكز الثلاثة الأولى فقط؛ البقية لون واحد فنصّ عادي
+                // بلا ShaderMask (طبقة رسم saveLayer لكل سطر).
+                child: top
+                    ? ShaderMask(
+                        blendMode: BlendMode.srcIn,
+                        shaderCallback: (r) => LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
                             Color.lerp(t.accent, Colors.white, 0.2)!,
                             t.accentDark,
-                          ]
-                        : [t.inkMuted, t.inkMuted],
-                  ).createShader(r),
-                  child: Text(
-                    '$rank',
-                    textAlign: TextAlign.center,
-                    style: AppText.display.copyWith(
-                      fontSize: top ? 24 : 20,
-                      height: 1,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                          ],
+                        ).createShader(r),
+                        child: Text(
+                          '$rank',
+                          textAlign: TextAlign.center,
+                          style: AppText.display.copyWith(
+                            fontSize: 24,
+                            height: 1,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        '$rank',
+                        textAlign: TextAlign.center,
+                        style: AppText.display.copyWith(
+                          fontSize: 20,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                          color: t.inkMuted,
+                        ),
+                      ),
               ),
               const SizedBox(width: 8),
               Expanded(

@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -231,41 +229,40 @@ class _GlassRoundButton extends StatelessWidget {
   }
 
   Widget _button() {
+    // بلا BackdropFilter: تمويه ما خلف زر 44 نقطة يُعاد كل إطار على Impeller
+    // ولا يكاد يُرى — تعبئة أكثف قليلاً تعطي نفس الحضور الزجاجي.
     return ClipOval(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Material(
-          color: Colors.white.withValues(alpha: 0.22),
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onTap();
-            },
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.18),
-                    Colors.transparent,
-                  ],
-                ),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.26),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.transparent,
+                ],
               ),
-              child: Center(
-                child: Badge(
-                  isLabelVisible: badge > 0,
-                  backgroundColor: AppColors.sale,
-                  label: Text(
-                    badge > 9 ? '9+' : '$badge',
-                    style: const TextStyle(fontSize: 9),
-                  ),
-                  child: Icon(icon, size: 22, color: Colors.white),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
+            ),
+            child: Center(
+              child: Badge(
+                isLabelVisible: badge > 0,
+                backgroundColor: AppColors.sale,
+                label: Text(
+                  badge > 9 ? '9+' : '$badge',
+                  style: const TextStyle(fontSize: 9),
                 ),
+                child: Icon(icon, size: 22, color: Colors.white),
               ),
             ),
           ),
@@ -291,63 +288,61 @@ class _BannerSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
+    // تعبئة 93% معتمة: التمويه خلفها لا يُرى، وكلفته (saveLayer + blur كل إطار) كاملة.
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Material(
-          color: Colors.white.withValues(alpha: 0.93),
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onSearch();
-            },
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 14),
-                  Icon(Icons.search_rounded, size: 21, color: t.inkSoft),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      hint,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: appFont(
-                        fontSize: 13.5,
-                        color: t.inkMuted,
-                        fontWeight: FontWeight.w500,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.93),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onSearch();
+          },
+          child: Container(
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 14),
+                Icon(Icons.search_rounded, size: 21, color: t.inkSoft),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    hint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: appFont(
+                      fontSize: 13.5,
+                      color: t.inkMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Container(width: 1, height: 22, color: t.hairline),
+                Semantics(
+                  button: true,
+                  label: scanLabel,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onScan();
+                    },
+                    customBorder: const CircleBorder(),
+                    child: SizedBox(
+                      width: 46,
+                      height: 46,
+                      child: Icon(
+                        Icons.qr_code_scanner_rounded,
+                        size: 21,
+                        color: t.accentDark,
                       ),
                     ),
                   ),
-                  Container(width: 1, height: 22, color: t.hairline),
-                  Semantics(
-                    button: true,
-                    label: scanLabel,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        onScan();
-                      },
-                      customBorder: const CircleBorder(),
-                      child: SizedBox(
-                        width: 46,
-                        height: 46,
-                        child: Icon(
-                          Icons.qr_code_scanner_rounded,
-                          size: 21,
-                          color: t.accentDark,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

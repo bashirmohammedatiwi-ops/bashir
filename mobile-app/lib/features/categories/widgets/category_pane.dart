@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/navigation/app_navigation.dart';
+import '../../../core/perf/device_perf.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/product_card.dart';
@@ -257,8 +258,9 @@ class _CategoryPaneState extends ConsumerState<CategoryPane> {
       child: CustomScrollView(
         controller: _scroll,
         // عناوين المجموعات slivers تُخطَّط دائماً فيعمل القفز دون بناء كل البلاطات؛
-        // هامش معتدل يجهّز ما تحت الشاشة مباشرة.
-        cacheExtent: 2000,
+        // هامش بحسب قدرة الجهاز يجهّز ما تحت الشاشة مباشرة (2000 كان يبني ويرسم
+        // صفحات من البلاطات والصور خارج الشاشة).
+        cacheExtent: DevicePerf.pick(low: 400.0, mid: 700.0, high: 1000.0),
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
@@ -749,13 +751,16 @@ class _BrandsRow extends ConsumerWidget {
     return async.when(
       loading: () => Padding(
         padding: const EdgeInsets.fromLTRB(12, 18, 12, 0),
-        child: Row(
-          children: [
-            for (var i = 0; i < 4; i++) ...const [
-              ShimmerBox(width: 52, height: 52, radius: 26),
-              SizedBox(width: 12),
+        // وميض واحد للصف كله.
+        child: Skeleton(
+          child: Row(
+            children: [
+              for (var i = 0; i < 4; i++) ...const [
+                SkeletonBlock(width: 52, height: 52, radius: 26),
+                SizedBox(width: 12),
+              ],
             ],
-          ],
+          ),
         ),
       ),
       error: (_, __) => _RetryRow(
@@ -1297,16 +1302,19 @@ class _TopProducts extends ConsumerWidget {
             _GroupHeader(title: title),
             SizedBox(
               height: rowH,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: 3,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (_, __) => const ShimmerBox(
-                  width: cardW,
-                  height: rowH,
-                  radius: AppCorners.md,
+              // وميض واحد للرف كله (بدل متحكّم لكل بطاقة).
+              child: Skeleton(
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: 3,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (_, __) => const SkeletonBlock(
+                    width: cardW,
+                    height: rowH,
+                    radius: AppCorners.md,
+                  ),
                 ),
               ),
             ),

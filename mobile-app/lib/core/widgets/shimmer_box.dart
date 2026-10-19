@@ -3,6 +3,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../features/worlds/world_theme.dart';
 import '../brand/brand_logo.dart';
+import '../perf/device_perf.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text.dart';
 import 'product_grid.dart';
@@ -68,7 +69,8 @@ class SkeletonBlock extends StatelessWidget {
 }
 
 /// كتلة تومض وحدها — للاستدعاءات القديمة. داخل [Skeleton] تصبح [SkeletonBlock] عادية
-/// حتى لا يتراكب وميضان.
+/// حتى لا يتراكب وميضان. على الأجهزة البسيطة تبقى ثابتة (كل كتلة منفردة كانت
+/// تشغّل متحكّم حركة وطبقة تظليل خاصة بها) — المجموعات تُلفّ بـ [Skeleton] واحد.
 class ShimmerBox extends StatelessWidget {
   final double? width;
   final double height;
@@ -78,7 +80,7 @@ class ShimmerBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final block = SkeletonBlock(width: width, height: height, radius: radius);
-    if (_SkeletonScope.active(context)) return block;
+    if (_SkeletonScope.active(context) || DevicePerf.isLow) return block;
     return Skeleton(child: block);
   }
 }

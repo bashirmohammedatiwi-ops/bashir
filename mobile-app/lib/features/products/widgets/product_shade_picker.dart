@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/perf/device_perf.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/ui/ui.dart';
@@ -63,6 +64,9 @@ class _ProductShadePickerState extends State<ProductShadePicker>
   bool _showScrollHint = true;
   int? _selectedIndex;
 
+  /// النبض يُعرض مرة واحدة لكل صفحة (دورتان ثم يسكن السهم).
+  bool _pulsePlayed = false;
+
   @override
   void initState() {
     super.initState();
@@ -117,16 +121,22 @@ class _ProductShadePickerState extends State<ProductShadePicker>
     _syncHintPulse();
   }
 
-  /// يشغّل نبض سهم التلميح فقط وهو ظاهر — وإلا تبقى الصفحة تطلب إطاراً كل لحظة.
+  /// يشغّل نبض سهم التلميح فقط وهو ظاهر، دورتين ذهاباً وإياباً ثم يسكن — كان
+  /// يتكرر بلا نهاية ويطلب إطاراً كل لحظة ما دام التلميح ظاهراً. على الأجهزة
+  /// البسيطة يبقى السهم ثابتاً.
   void _syncHintPulse() {
     final want = _canScrollForward &&
         _showScrollHint &&
         widget.shades.length > 3 &&
+        !DevicePerf.isLow &&
         !MediaQuery.disableAnimationsOf(context);
-    if (want && !_hintPulse.isAnimating) {
-      _hintPulse.repeat(reverse: true);
+    if (want && !_pulsePlayed && !_hintPulse.isAnimating) {
+      _pulsePlayed = true;
+      // كل «فترة» اتجاه واحد: 4 = دورتان كاملتان، وتنتهي عند 0 (السهم في مكانه).
+      _hintPulse.repeat(reverse: true, count: 4);
     } else if (!want && _hintPulse.isAnimating) {
       _hintPulse.stop();
+      _hintPulse.value = 0;
     }
   }
 
@@ -363,29 +373,32 @@ class _ProductShadePickerState extends State<ProductShadePicker>
                   bottom: 0,
                   child: IgnorePointer(
                     child: Center(
-                      child: AnimatedBuilder(
-                        animation: _hintPulse,
-                        builder: (context, child) {
-                          final dx = 4 * math.sin(_hintPulse.value * math.pi);
-                          final isRtl = Directionality.of(context) == TextDirection.rtl;
-                          return Transform.translate(
-                            offset: Offset(isRtl ? -dx : dx, 0),
-                            child: child,
-                          );
-                        },
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: t.surface,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: t.accentSoft),
-                            boxShadow: t.cardShadow,
-                          ),
-                          child: Icon(
-                            Icons.chevron_right_rounded,
-                            size: 20,
-                            color: t.accent,
+                      // طبقة مستقلة: حركة السهم لا تعيد رسم شريط الدرجات ولا الصفحة.
+                      child: RepaintBoundary(
+                        child: AnimatedBuilder(
+                          animation: _hintPulse,
+                          builder: (context, child) {
+                            final dx = 4 * math.sin(_hintPulse.value * math.pi);
+                            final isRtl = Directionality.of(context) == TextDirection.rtl;
+                            return Transform.translate(
+                              offset: Offset(isRtl ? -dx : dx, 0),
+                              child: child,
+                            );
+                          },
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: t.surface,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: t.accentSoft),
+                              boxShadow: t.cardShadow,
+                            ),
+                            child: Icon(
+                              Icons.chevron_right_rounded,
+                              size: 20,
+                              color: t.accent,
+                            ),
                           ),
                         ),
                       ),

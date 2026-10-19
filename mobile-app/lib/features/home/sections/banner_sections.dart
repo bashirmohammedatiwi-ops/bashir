@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
@@ -95,15 +94,14 @@ class BannerFullSection extends ConsumerWidget {
         ? Stack(
             fit: StackFit.expand,
             children: [
-              // خلفية: نفس الصورة مموّهة ومصبوغة بلون العالم — تملأ الفراغ حول التصميم بأناقة.
-              ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                child: AppNetworkImage(
-                  url: banner.imageUrl,
-                  fit: BoxFit.cover,
-                  decodeWidth: 160,
-                  backgroundColor: t.accentLight,
-                ),
+              // خلفية: نفس الصورة مكبّرة من 24 بكسل فتبدو مموّهة — بلا ImageFiltered
+              // (ضبابية sigma 22 تُحسب كل إطار وهي أثقل شيء في الرئيسية)، ومصبوغة بلون العالم.
+              AppNetworkImage(
+                url: banner.imageUrl,
+                fit: BoxFit.cover,
+                decodeWidth: 24,
+                filterQuality: FilterQuality.medium,
+                backgroundColor: t.accentLight,
               ),
               ColoredBox(color: t.accent.withValues(alpha: 0.14)),
               AppNetworkImage(

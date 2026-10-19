@@ -49,14 +49,20 @@ AppNotification _markedRead(AppNotification n) => n.read
         createdAt: n.createdAt,
       );
 
-/// إشعارات الزبونة: الصفحة الأولى عند الفتح، والتالية بـ [loadMore].
+/// إشعارات الزبونة: آخر [peekSize] فقط عند الإقلاع (يكفي الجرس: «9+»)، والقائمة الكاملة
+/// صفحةً صفحة بـ [loadMore] — تطلبها شاشة الإشعارات قرب آخر عنصر.
 ///
 /// القراءة فورية على الجهاز ([markRead] / [markAllRead]) والسيرفر يُبلَّغ في الخلفية —
 /// لا ينتظر فتح الإشعار رحلة شبكة، ولا تُعاد القائمة كلها من أجل علامة واحدة.
 class NotificationsNotifier extends AutoDisposeAsyncNotifier<List<AppNotification>> {
   static const pageSize = 30;
 
-  int _page = 1;
+  /// ما يحتاجه الجرس وأعلى الشاشة — بدل تنزيل 30 إشعاراً مع كل فتح للتطبيق.
+  static const peekSize = 10;
+
+  /// صفحات كاملة ([pageSize]) محمّلة — 0 بعد الإطلالة الأولى، فأول [loadMore] يطلب
+  /// الصفحة الأولى الكاملة (ما سبق منها يُدمج بلا تكرار).
+  int _page = 0;
   bool _hasMore = false;
   bool _loadingMore = false;
 
@@ -71,7 +77,7 @@ class NotificationsNotifier extends AutoDisposeAsyncNotifier<List<AppNotificatio
   FutureOr<List<AppNotification>> build() {
     _epoch++;
     ref.onDispose(() => _epoch++);
-    _page = 1;
+    _page = 0;
     _hasMore = false;
     _loadingMore = false;
     final uid = ref.watch(_signedInUserIdProvider);
@@ -80,8 +86,8 @@ class NotificationsNotifier extends AutoDisposeAsyncNotifier<List<AppNotificatio
   }
 
   Future<List<AppNotification>> _firstPage() async {
-    final items = await ref.read(apiServiceProvider).getNotifications(limit: pageSize);
-    _hasMore = items.length >= pageSize;
+    final items = await ref.read(apiServiceProvider).getNotifications(limit: peekSize);
+    _hasMore = items.length >= peekSize;
     return items;
   }
 

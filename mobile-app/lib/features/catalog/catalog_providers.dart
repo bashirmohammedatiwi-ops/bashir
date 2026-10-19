@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/api_client.dart';
 import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
 import '../../data/models/home_feed.dart';
 import '../../data/models/loyalty_rules.dart';
 import '../../data/models/loyalty_summary.dart';
+import '../../data/models/paginated.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
 import '../../data/services/api_service.dart';
@@ -37,47 +37,39 @@ final homeFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) {
   return ref.read(apiServiceProvider).getHome();
 });
 
-final offersFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) async {
+/// getOffers لا ترمي أبداً (تعود لعروض الواجهة الرئيسية ثم لواجهة فارغة).
+final offersFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) {
   ref.keepAlive();
-  final api = ref.read(apiServiceProvider);
-  try {
-    return await api.getOffers();
-  } catch (_) {
-    return api.getHome().then((home) => HomeFeed(
-          sections: const [],
-          flashSale: home.flashSale,
-          promoProducts: home.promoProducts.isNotEmpty
-              ? home.promoProducts
-              : home.flashSale.products,
-          settings: home.settings,
-        )).catchError((_) => const HomeFeed());
-  }
+  return ref.read(apiServiceProvider).getOffers();
 });
 
 /// تحديث الشجرة من الشبكة مرة واحدة في الجلسة — حارس يمنع حلقة الإبطال.
 bool _categoriesRevalidated = false;
 
-/// مفاتيح كاش الشجرة في ApiService (v4 بلا all=1، وv3 قبلها) — لمعرفة هل وصلت
-/// للتو من الشبكة.
-const _categoriesCacheKeys = ['categories_all_v4', 'categories_all_v3'];
-
-bool _categoriesJustFetched(Ref<Object?> ref) {
-  final cache = ref.read(apiCacheProvider);
-  return _categoriesCacheKeys.any((key) => cache.isFresh(key, const Duration(seconds: 30)));
+/// بصمة ما يظهر من الشجرة — لا نعيد بناء الأقسام (وكل ما يتبعها) إن لم يتغير شيء.
+int _categoriesSignature(List<Category> cats) {
+  int one(Category c) => Object.hash(
+        Object.hash(c.id, c.name, c.nameAr, c.nameEn, c.slug, c.icon, c.parentId, c.cardSize),
+        Object.hash(c.link, c.linkType, c.linkValue, c.description, c.descriptionEn, c.rawImageUrl),
+        Object.hash(c.image?.id, c.image?.updatedAt, c.listingKind, c.productCount),
+        Object.hashAll(c.children.map(one)),
+      );
+  return Object.hashAll(cats.map(one));
 }
 
-/// الأقسام: من الجهاز فوراً، ثم تحديث واحد من الشبكة في الخلفية يُعيد بناء المزوّد
-/// بالشجرة الجديدة (تغييرات لوحة التحكم تظهر دون انتظار الشبكة عند الفتح).
+/// الأقسام: من الجهاز فوراً. إن كانت النسخة أقدم من مدة الكاش نتحقق مرة واحدة في الجلسة
+/// من الشبكة في الخلفية، ونعيد بناء المزوّد فقط إن تغيّرت الشجرة فعلاً (تغييرات لوحة
+/// التحكم تظهر دون انتظار الشبكة عند الفتح، وبلا إعادة بناء بلا جديد).
 final categoriesProvider = FutureProvider<List<Category>>((ref) async {
   final api = ref.read(apiServiceProvider);
   final first = await api.getCategories();
   if (!_categoriesRevalidated) {
     _categoriesRevalidated = true;
-    // وصلت للتو من الشبكة (لا كاش صالح): لا داعي لتنزيلها مرة ثانية.
-    if (!_categoriesJustFetched(ref)) {
-      unawaited(api.getCategories(forceRefresh: true).then((_) {
-        // بلا اتصال يعيد الكاش القديم نفسه: لا إعادة بناء بلا جديد.
-        if (_categoriesJustFetched(ref)) ref.invalidateSelf();
+    // حديثة (وصلت للتو أو حُفظت قبل أقل من مدة الكاش): لا داعي لتنزيلها مرة ثانية.
+    if (!api.categoriesFresh()) {
+      final before = _categoriesSignature(first);
+      unawaited(api.getCategories(forceRefresh: true, staleOnError: false).then((fresh) {
+        if (_categoriesSignature(fresh) != before) ref.invalidateSelf();
       }).catchError((_) {}));
     }
   }
@@ -166,9 +158,10 @@ final buyAgainProvider = FutureProvider.autoDispose<List<Product>>((ref) {
 });
 
 /// «يُشترى معه غالباً»: من طلبات الزبونات، وإلا من البراند نفسه (المتوفر فقط).
+/// تبقى 5 دقائق (الرجوع لصفحة المنتج بلا طلب جديد)؛ الخطأ لا يبقى.
 final boughtTogetherProvider = FutureProvider.autoDispose
     .family<({List<Product> items, bool fromOrders}), String>((ref, productId) {
-  return ref.read(apiServiceProvider).getBoughtTogether(productId);
+  return keepAliveFor(ref, _shelfTtl, () => ref.read(apiServiceProvider).getBoughtTogether(productId));
 });
 
 /// مفتاح [similarProductsProvider]: أقسام المنتج الثلاثة (الأعمق أولاً عند الطلب) والمنتج المستثنى.
@@ -185,7 +178,8 @@ const _similarLimit = 12;
 
 /// «قد يعجبكِ أيضاً»: الأكثر مبيعاً المتوفر من أعمق قسم للمنتج (الثالث ← الفرعي ←
 /// الرئيسي)، ويُكمَل من القسم الأب حين يرجع أقل من 4 — لا قائمة واحدة عامة لكل منتجات
-/// القسم الرئيسي. تبقى 5 دقائق (الرجوع للصفحة بلا انتظار)؛ الخطأ لا يبقى.
+/// القسم الرئيسي. المستويات تُطلب معاً (لا شلال من رحلات متتالية على شبكة بطيئة) وتُدمج
+/// بالترتيب نفسه. تبقى 5 دقائق (الرجوع للصفحة بلا انتظار)؛ الخطأ لا يبقى.
 final similarProductsProvider =
     FutureProvider.autoDispose.family<List<Product>, SimilarProductsKey>((ref, args) {
   return keepAliveFor(ref, _shelfTtl, () async {
@@ -195,25 +189,30 @@ final similarProductsProvider =
       if (_present(args.subcategoryId)) (tertiary: null, sub: args.subcategoryId, root: null),
       if (_present(args.categoryId)) (tertiary: null, sub: null, root: args.categoryId),
     ];
+    final pages = await Future.wait([
+      for (final level in levels)
+        api
+            .getProducts(
+              categoryId: level.root,
+              subcategoryId: level.sub,
+              tertiaryCategoryId: level.tertiary,
+              sort: 'popular',
+              inStock: true,
+              limit: _similarLimit,
+            )
+            .then<Object>((page) => page, onError: (Object e) => e),
+    ]);
     final out = <Product>[];
     final seen = <String>{args.excludeId};
     Object? firstError;
-    for (final level in levels) {
-      try {
-        final page = await api.getProducts(
-          categoryId: level.root,
-          subcategoryId: level.sub,
-          tertiaryCategoryId: level.tertiary,
-          sort: 'popular',
-          inStock: true,
-          limit: _similarLimit,
-        );
+    for (final page in pages) {
+      if (page is Paginated<Product>) {
         for (final p in page.items) {
           if (p.inStock && seen.add(p.id)) out.add(p);
         }
-      } catch (e) {
-        // مستوى واحد فشل: نجرّب الأب — ولا نُظهر خطأً إن رجع أي شيء.
-        firstError ??= e;
+      } else {
+        // مستوى واحد فشل: نكمل من الأب — ولا نُظهر خطأً إن رجع أي شيء.
+        firstError ??= page;
       }
       if (out.length >= _similarMin) break;
     }
@@ -242,24 +241,23 @@ int freeShippingBand(int remaining) => remaining <= 0 ? 0 : ((remaining + 999) ~
 AutoDisposeFutureProvider<List<Product>> freeShippingFillersFor(int remaining) =>
     freeShippingFillersProvider(freeShippingBand(remaining));
 
-/// منتجات محبوبة متوفرة بسعر قريب من الفرق — تُجلب مرة لكل شريحة وتبقى 5 دقائق.
-final _freeShippingPoolProvider =
-    FutureProvider.autoDispose.family<List<Product>, int>((ref, band) {
+/// أعلى سعر في أي شريحة: 1.6 × أكبر فرق نقترح له.
+const _freeShippingPoolMaxPrice = freeShippingFillersMaxBand * 8 ~/ 5;
+
+/// كم منتجاً نعرض لكل شريحة (كما كان طلب الشريحة).
+const _freeShippingPerBand = 12;
+
+/// منتجات محبوبة متوفرة حتى 64,000 د.ع — طلب واحد يخدم كل الشرائح (كان طلباً لكل
+/// 1,000 د.ع يتغير فيها الفرق)، وتبقى 5 دقائق.
+final _freeShippingPoolProvider = FutureProvider.autoDispose<List<Product>>((ref) {
   return keepAliveFor(ref, _shelfTtl, () async {
-    final minPrice = (band * 0.8).round();
-    final maxPrice = (band * 1.6).round();
-    // مفتاح كاش القوائم يميّز حدود السعر — كل شريحة بنسختها المحفوظة.
     final page = await ref.read(apiServiceProvider).getProducts(
-          minPrice: minPrice,
-          maxPrice: maxPrice,
+          maxPrice: _freeShippingPoolMaxPrice,
           sort: 'popular',
           inStock: true,
-          limit: 12,
+          limit: 40,
         );
-    // احتياط إن رجعت نسخة محفوظة لشريحة أخرى (بلا اتصال).
-    return page.items
-        .where((p) => p.price >= minPrice && p.price <= maxPrice)
-        .toList(growable: false);
+    return page.items;
   });
 });
 
@@ -277,9 +275,13 @@ final freeShippingFillersProvider =
         .watch(cartProvider.select((c) => c.items.map((e) => e.productId).toSet().join('\n')))
         .split('\n')
         .toSet();
-    final pool = await ref.watch(_freeShippingPoolProvider(band).future);
+    final pool = await ref.watch(_freeShippingPoolProvider.future);
+    // سعر قريب من الفرق: من 80% منه (يكاد يغلقه) حتى 160% (لا يبدو مبالغاً).
+    final minPrice = (band * 0.8).round();
+    final maxPrice = (band * 1.6).round();
     return pool
-        .where((p) => p.stock > 0 && !inCart.contains(p.id))
+        .where((p) => p.price >= minPrice && p.price <= maxPrice && p.stock > 0 && !inCart.contains(p.id))
+        .take(_freeShippingPerBand)
         .toList(growable: false);
   });
 });

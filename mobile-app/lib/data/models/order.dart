@@ -37,8 +37,12 @@ class OrderItem {
     if (images.isNotEmpty) {
       final media = asMap(images.first['media']);
       final variants = asMap(media['variants']);
-      final medium = asMap(asMap(variants['medium'])['formats']);
-      img = (medium['webp'] ?? medium['jpg'] ?? '').toString();
+      // صور الطلب مصغّرات (38–44pt): thumb يكفي، ثم الأكبر إن لم يتوفر.
+      for (final size in const ['thumb', 'small', 'medium']) {
+        final formats = asMap(asMap(variants[size])['formats']);
+        img = (formats['webp'] ?? formats['jpg'] ?? '').toString();
+        if (img.isNotEmpty) break;
+      }
     }
     final shadeId = json['shadeId']?.toString();
     Map<String, dynamic> shade = const {};

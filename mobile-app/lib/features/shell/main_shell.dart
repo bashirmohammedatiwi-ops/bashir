@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -104,6 +105,13 @@ class _MainShellState extends ConsumerState<MainShell> {
       );
     });
 
+    // تبويب في المكدّس: مؤقّتاته تعمل وهو ظاهر فقط، ولوحة المفاتيح تخصّه وحده.
+    Widget tab(int i, Widget child) => _TabInsets(
+          active: index == i,
+          dock: navHeight,
+          child: TickerMode(enabled: index == i, child: child),
+        );
+
     // ثيم العالم يأتي من جذر التطبيق (appThemeDataProvider) — هنا لون الخلفية فقط.
     return PopScope(
       canPop: index == NavTabs.home && _exitArmed,
@@ -114,6 +122,10 @@ class _MainShellState extends ConsumerState<MainShell> {
         color: theme.canvas,
         child: Scaffold(
           backgroundColor: theme.canvas,
+          // لا نصغّر الهيكل كله مع لوحة المفاتيح: كان كل إطار من حركة اللوحة يعيد
+          // تخطيط كل التبويبات في IndexedStack. التبويب الظاهر وحده يرى ارتفاع
+          // اللوحة (عبر _TabInsets) وتصغّر سقالته جسمه بنفسها.
+          resizeToAvoidBottomInset: false,
           body: Stack(
             fit: StackFit.expand,
             children: [
@@ -125,47 +137,47 @@ class _MainShellState extends ConsumerState<MainShell> {
                   // التبويبات تحجز أسفل محتواها مساحة شريط المقارنة ما دام ظاهراً.
                   child: ShellFloatingReserve(
                     extra: trayOn ? _trayLift : 0,
-                    child: IndexedStack(
-                      index: index,
-                      sizing: StackFit.expand,
-                      children: [
-                        TickerMode(
-                          enabled: index == 0,
-                          child: const HomeScreen(),
-                        ),
-                        TickerMode(
-                          enabled: index == NavTabs.categories,
-                          child: _visited.contains(NavTabs.categories)
-                              ? const _DarkStatusBar(child: CategoriesScreen())
-                              : const SizedBox.shrink(),
-                        ),
-                        TickerMode(
-                          enabled: index == NavTabs.offers,
-                          child: _visited.contains(NavTabs.offers)
-                              ? const _DarkStatusBar(child: OffersScreen())
-                              : const SizedBox.shrink(),
-                        ),
-                        TickerMode(
-                          enabled: index == NavTabs.cart,
-                          child: _visited.contains(NavTabs.cart)
-                              ? const _DarkStatusBar(child: CartScreen())
-                              : const SizedBox.shrink(),
-                        ),
-                        TickerMode(
-                          enabled: index == NavTabs.account,
-                          child: _visited.contains(NavTabs.account)
-                              ? const _DarkStatusBar(child: AccountScreen())
-                              : const SizedBox.shrink(),
-                        ),
-                        TickerMode(
-                          enabled: index == NavTabs.brands,
-                          child: _visited.contains(NavTabs.brands)
-                              ? const _DarkStatusBar(
-                                  child: BrandsScreen(embedded: true),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
+                    // طبقة رسم مستقلة عن الشريط وأزرار الطفو فوقها.
+                    child: RepaintBoundary(
+                      child: IndexedStack(
+                        index: index,
+                        sizing: StackFit.expand,
+                        children: [
+                          tab(NavTabs.home, const HomeScreen()),
+                          tab(
+                            NavTabs.categories,
+                            _visited.contains(NavTabs.categories)
+                                ? const _DarkStatusBar(child: CategoriesScreen())
+                                : const SizedBox.shrink(),
+                          ),
+                          tab(
+                            NavTabs.offers,
+                            _visited.contains(NavTabs.offers)
+                                ? const _DarkStatusBar(child: OffersScreen())
+                                : const SizedBox.shrink(),
+                          ),
+                          tab(
+                            NavTabs.cart,
+                            _visited.contains(NavTabs.cart)
+                                ? const _DarkStatusBar(child: CartScreen())
+                                : const SizedBox.shrink(),
+                          ),
+                          tab(
+                            NavTabs.account,
+                            _visited.contains(NavTabs.account)
+                                ? const _DarkStatusBar(child: AccountScreen())
+                                : const SizedBox.shrink(),
+                          ),
+                          tab(
+                            NavTabs.brands,
+                            _visited.contains(NavTabs.brands)
+                                ? const _DarkStatusBar(
+                                    child: BrandsScreen(embedded: true),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -203,12 +215,15 @@ class _MainShellState extends ConsumerState<MainShell> {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: ShellNavBar(
-                  currentIndex: index,
-                  cartCount: cartCount,
-                  onSelect: _selectTab,
-                  strings: ref.watch(stringsProvider),
-                  theme: theme,
+                // طبقة رسم مستقلة: تمرير التبويبات لا يعيد رسم الشريط ولا العكس.
+                child: RepaintBoundary(
+                  child: ShellNavBar(
+                    currentIndex: index,
+                    cartCount: cartCount,
+                    onSelect: _selectTab,
+                    strings: ref.watch(stringsProvider),
+                    theme: theme,
+                  ),
                 ),
               ),
             ],
@@ -227,6 +242,33 @@ class _MainShellState extends ConsumerState<MainShell> {
           .update((r) => (tab: i, tick: r.tick + 1));
     }
     ref.read(navIndexProvider.notifier).state = i;
+  }
+}
+
+/// لوحة المفاتيح للتبويب الظاهر فقط: ارتفاعها ناقص مساحة الشريط (التبويبات
+/// تنتهي فوقه أصلاً) فتصغّر سقالة التبويب جسمه حتى حافة اللوحة تماماً.
+/// التبويبات المخفية ترى بيانات ثابتة بلا لوحة، فلا تُعاد بناءً ولا تخطيطاً مع
+/// كل إطار من حركتها.
+class _TabInsets extends StatelessWidget {
+  final bool active;
+  final double dock;
+  final Widget child;
+
+  const _TabInsets({required this.active, required this.dock, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final keyboard = mq.viewInsets.bottom;
+    if (keyboard <= 0) return MediaQuery(data: mq, child: child);
+    final data = active
+        ? mq.copyWith(viewInsets: mq.viewInsets.copyWith(bottom: math.max(0.0, keyboard - dock)))
+        // كما لو لا لوحة: بلا إزاحة، والحشوة السفلية كاملة (لا تنقص مع ارتفاع اللوحة).
+        : mq.copyWith(
+            viewInsets: EdgeInsets.zero,
+            padding: mq.padding.copyWith(bottom: mq.viewPadding.bottom),
+          );
+    return MediaQuery(data: data, child: child);
   }
 }
 

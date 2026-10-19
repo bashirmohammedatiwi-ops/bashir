@@ -290,21 +290,30 @@ class _WorldSearchBodyState extends ConsumerState<_WorldSearchBody> {
   /// آخر نتائج وصلت — تبقى ظاهرة أثناء طلب الكلمة التالية بدل وميض مؤشر الانتظار.
   List<Product>? _lastResults;
 
+  /// مطابقة الأقسام مخزّنة بحسب الكلمة والعالم — البناء يتكرر (نتائج المنتجات،
+  /// المؤشر) دون أن تتغير الكلمة، فلا نعيد المطابقة إلا عند تغيّرها.
+  (String, StoreWorld, List<_SectionMatch>)? _sectionsMemo;
+
   List<_SectionMatch> _matchSections() {
     final q = widget.query;
     if (q.isEmpty) return const [];
+    final memo = _sectionsMemo;
+    if (memo != null && memo.$1 == q && identical(memo.$2, widget.world)) return memo.$3;
+    final prepared = PreparedQuery(q);
     final out = <_SectionMatch>[];
     for (final c in widget.world.categories) {
-      if (textMatchesQuery(q, [c.name, c.nameAr, c.nameEn, c.slug])) {
+      if (prepared.matches([c.name, c.nameAr, c.nameEn, c.slug])) {
         out.add((category: c, parent: null));
       }
       for (final child in c.children) {
-        if (textMatchesQuery(q, [child.name, child.nameAr, child.nameEn, child.slug])) {
+        if (prepared.matches([child.name, child.nameAr, child.nameEn, child.slug])) {
           out.add((category: child, parent: c));
         }
       }
     }
-    return out.take(8).toList();
+    final result = out.take(8).toList();
+    _sectionsMemo = (q, widget.world, result);
+    return result;
   }
 
   void _searchEverywhere() {
@@ -716,51 +725,57 @@ class _SectionsPane extends ConsumerWidget {
     final s = ref.s;
     // عمود داخل تمرير (لا ListView كسول): كل الأقسام مبنية، فيصل التمرير إلى
     // أي قسم يُفتح من الاستكشاف حتى لو كان خارج الشاشة.
+    // حدّ رسم حول العمود وحول كل قسم: التمرير يحرّك الطبقة المرسومة دون إعادة
+    // رسم الرسوم والظلال، وفتح قسم لا يعيد رسم الأقسام الأخرى.
     return RefreshIndicator(
       color: world.accent,
       onRefresh: onRefresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsetsDirectional.fromSTEB(20, 18, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              s.worldIndexEyebrow,
-              style: AppText.micro.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: tracking(lang, 1.4),
-                color: world.accent,
+        child: RepaintBoundary(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                s.worldIndexEyebrow,
+                style: AppText.micro.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: tracking(lang, 1.4),
+                  color: world.accent,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              s.worldChooseSection,
-              style: AppText.title1.copyWith(height: 1.15, fontWeight: FontWeight.w800, color: world.ink),
-            ),
-            const SizedBox(height: 8),
-            for (var i = 0; i < parents.length; i++)
-              _IndexEntry(
-                key: entryKey(parents[i].id),
-                world: world,
-                category: parents[i],
-                index: i + 1,
-                lang: lang,
-                open: parents[i].id == selectedId,
-                onTap: () {
-                  final cat = parents[i];
-                  if (cat.children.isEmpty) {
-                    onOpen(cat);
-                  } else if (cat.id == selectedId) {
-                    onSelect(null);
-                  } else {
-                    onSelect(cat.id);
-                  }
-                },
-                onOpen: () => onOpen(parents[i]),
-                onOpenChild: (child) => onOpenChild(child, parents[i]),
+              const SizedBox(height: 6),
+              Text(
+                s.worldChooseSection,
+                style: AppText.title1.copyWith(height: 1.15, fontWeight: FontWeight.w800, color: world.ink),
               ),
-          ],
+              const SizedBox(height: 8),
+              for (var i = 0; i < parents.length; i++)
+                RepaintBoundary(
+                  key: entryKey(parents[i].id),
+                  child: _IndexEntry(
+                    world: world,
+                    category: parents[i],
+                    index: i + 1,
+                    lang: lang,
+                    open: parents[i].id == selectedId,
+                    onTap: () {
+                      final cat = parents[i];
+                      if (cat.children.isEmpty) {
+                        onOpen(cat);
+                      } else if (cat.id == selectedId) {
+                        onSelect(null);
+                      } else {
+                        onSelect(cat.id);
+                      }
+                    },
+                    onOpen: () => onOpen(parents[i]),
+                    onOpenChild: (child) => onOpenChild(child, parents[i]),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -778,7 +793,6 @@ class _IndexEntry extends ConsumerWidget {
   final ValueChanged<Category> onOpenChild;
 
   const _IndexEntry({
-    super.key,
     required this.world,
     required this.category,
     required this.index,

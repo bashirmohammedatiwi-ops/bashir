@@ -46,10 +46,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// أقصى انتظار لـ /auth/me قبل أن نُخرج الواجهة من شاشة الافتتاح.
   static const _meTimeout = Duration(seconds: 6);
 
-  AuthNotifier(this._ref) : super(const AuthState(AuthStatus.unknown)) {
+  /// الحالة الأولى تُقرَّر فوراً من الحساب المحفوظ (SharedPreferences في الذاكرة):
+  /// زبونة سجّلت دخولها من قبل لا تنتظر مخزن المفاتيح (100–600ms على الهواتف
+  /// البسيطة) — التوكنات تُفحص بعدها في الخلفية، وغيابها أو رفض الخادم (401/403)
+  /// يعيدها زائرة كما كان.
+  AuthNotifier(this._ref) : super(_initialState(_ref)) {
     _tokens.sessionExpired.addListener(_onSessionExpired);
     _lifecycle = AppLifecycleListener(onResume: _onResume);
     _bootstrap();
+  }
+
+  static AuthState _initialState(Ref ref) {
+    AppUser? cached;
+    try {
+      cached = _readCachedUserFrom(ref.read(sharedPreferencesProvider));
+    } catch (_) {}
+    return cached == null
+        ? const AuthState(AuthStatus.unknown)
+        : AuthState(AuthStatus.authenticated, cached);
   }
 
   ApiService get _api => _ref.read(apiServiceProvider);
@@ -67,9 +81,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _bootstrap() async {
     final epoch = _epoch;
     try {
+      // التوكنان معاً: أول طلبات الرئيسية تحتاج توكن الوصول بعد لحظات.
+      _tokens.preload();
       final hasSession = await _tokens.hasSession;
       if (!mounted || epoch != _epoch) return;
       if (!hasSession) {
+        // لا توكنات على الجهاز (مخزن المفاتيح مُسح مثلاً): الحساب المحفوظ لا يكفي.
         _pendingCheck = false;
         state = const AuthState(AuthStatus.guest);
         unawaited(_clearCachedUser());
@@ -164,9 +181,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     unawaited(_cacheUser(user));
   }
 
-  AppUser? _readCachedUser() {
+  AppUser? _readCachedUser() => _readCachedUserFrom(_prefs);
+
+  static AppUser? _readCachedUserFrom(SharedPreferences prefs) {
     try {
-      final raw = _prefs.getString(_userKey);
+      final raw = prefs.getString(_userKey);
       if (raw == null || raw.isEmpty) return null;
       final user = AppUser.fromJson(asMap(jsonDecode(raw)));
       return user.id.isEmpty ? null : user;

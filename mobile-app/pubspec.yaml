@@ -66,12 +66,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/worlds/
-    - assets/images/alhayaa_logo.png
-    - assets/images/alhayaa_butterfly.png
     - assets/images/alhayat_butterfly_logo.png
-    - assets/images/nav_butterfly.png
-    - assets/images/app_icon_source.png
-    - assets/images/app_icon_transparent.png
     - assets/images/app_icon_brand_foreground.png
     - assets/fonts/licenses/
 

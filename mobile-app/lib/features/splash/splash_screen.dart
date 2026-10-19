@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/brand/brand_logo_paths.dart';
+import '../../core/perf/device_perf.dart';
 import '../../core/theme/app_fonts.dart';
 
 /// لوحة "أوركيد ووردي" — ألوان الشعار المعتمدة.
@@ -29,10 +30,11 @@ abstract final class SplashTheme {
 /// 5. الختام: "ديما الحياة" بالعربية تحته.
 ///
 /// لمسة في أي مكان تُنهي المشهد فوراً، و[onFinished] يُستدعى مرة واحدة عند
-/// اكتماله (طبيعياً أو باللمس) — التطبيق ينتقل للرئيسية حينها.
+/// اكتماله — `skipped` = true إن أنهته لمسة (أو «تقليل الحركة») لا اكتماله
+/// الطبيعي — فيكشف التطبيق الرئيسية المبنية تحته.
 class SplashScreen extends StatefulWidget {
   final SplashIntro intro;
-  final VoidCallback? onFinished;
+  final ValueChanged<bool>? onFinished;
 
   const SplashScreen({
     super.key,
@@ -43,8 +45,9 @@ class SplashScreen extends StatefulWidget {
   /// مدة المشهد الكامل.
   static const introDuration = Duration(milliseconds: 4300);
 
-  /// بداية النسخة المختصرة (نسبة من المشهد): لحظة انزلاق الرمز المكتمل لمكانه.
-  static const double shortStart = _T.glide / _T.end;
+  /// بداية النسخة المختصرة (نسبة من المشهد): آخر هبوط حروف deema — الشعار
+  /// مكتمل تقريباً، ثم الاستقرار وحزمة الضوء واللمعات (نحو ثانية).
+  static const double shortStart = _T.shortFrom / _T.end;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -52,10 +55,11 @@ class SplashScreen extends StatefulWidget {
 
 /// كيف يُعرض مشهد الافتتاح.
 enum SplashIntro {
-  /// المشهد كله (4.3 ث): أول تشغيل، بعد كل تحديث للتطبيق، ومرة كل أسبوع.
+  /// المشهد كله (4.3 ث): أول تشغيل، وأول تشغيل بعد كل تحديث للتطبيق.
   full,
 
-  /// من انزلاق الرمز لمكانه حتى الختام (نحو ثانيتين) — للزبونة العائدة.
+  /// الختام وحده (~1 ث): الشعار يظهر بتلاشٍ سريع، يستقر، وتمرّ عليه حزمة الضوء —
+  /// للزبونة العائدة.
   short,
 }
 
@@ -69,6 +73,9 @@ class _SplashScreenState extends State<SplashScreen>
   late bool _browHaptic;
   late bool _settleHaptic;
   bool _finished = false;
+
+  /// أنهت المشهد لمسة أو «تقليل الحركة» (لا اكتماله الطبيعي).
+  bool _skipped = false;
 
   @override
   void initState() {
@@ -99,6 +106,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.didChangeDependencies();
     // من فعّلت "تقليل الحركة": المشهد يظهر مكتملاً مباشرة.
     if (MediaQuery.disableAnimationsOf(context) && !_c.isCompleted) {
+      _skipped = true;
       _skipToEnd();
     }
   }
@@ -116,8 +124,9 @@ class _SplashScreenState extends State<SplashScreen>
   void _finish() {
     if (_finished) return;
     _finished = true;
+    final skipped = _skipped;
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => widget.onFinished?.call(),
+      (_) => widget.onFinished?.call(skipped),
     );
   }
 
@@ -130,6 +139,16 @@ class _SplashScreenState extends State<SplashScreen>
   double get _seconds =>
       _c.value * SplashScreen.introDuration.inMilliseconds / 1000;
 
+  void _onTap() {
+    if (_c.isCompleted) {
+      // المشهد اكتمل وينتظر واجهة الرئيسية لحظات: اللمسة تكشفها فوراً.
+      widget.onFinished?.call(true);
+      return;
+    }
+    _skipped = true;
+    _skipToEnd();
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -137,73 +156,80 @@ class _SplashScreenState extends State<SplashScreen>
         statusBarColor: Colors.transparent,
         systemNavigationBarColor: SplashTheme.background,
       ),
-      child: Scaffold(
-        backgroundColor: SplashTheme.background,
-        body: GestureDetector(
+      // Material لا Scaffold: المشهد طبقة فوق التطبيق، ولا يجوز أن يسجّل نفسه لدى
+      // ScaffoldMessenger فتظهر عليه رسائل الرئيسية التي تحته.
+      child: Material(
+        color: SplashTheme.background,
+        child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: _skipToEnd,
-          child: LayoutBuilder(
-            builder: (context, box) {
-              final size = box.biggest;
-              final scale = math.min(
-                (size.width - 56) / BrandLogo.bounds.width,
-                1.2,
-              );
-              final center = Offset(size.width / 2, size.height * 0.44);
-              final logoBottom =
-                  center.dy + BrandLogo.bounds.height * scale / 2;
+          onTap: _onTap,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ضوء أبيض خافت في المركز — عمق بلا ازدحام. ثابت: يُرسم مرة واحدة
+              // في طبقته، لا مع كل إطار من المشهد.
+              const RepaintBoundary(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(0, -0.12),
+                      radius: 0.85,
+                      colors: [Colors.white, SplashTheme.background],
+                    ),
+                  ),
+                ),
+              ),
+              RepaintBoundary(
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    final size = box.biggest;
+                    final scale = math.min(
+                      (size.width - 56) / BrandLogo.bounds.width,
+                      1.2,
+                    );
+                    final center = Offset(size.width / 2, size.height * 0.44);
+                    final logoBottom =
+                        center.dy + BrandLogo.bounds.height * scale / 2;
 
-              return AnimatedBuilder(
-                animation: _c,
-                builder: (context, _) {
-                  final t = _seconds;
-                  // المختصرة تبدأ بالرمز مكتملاً: يظهر بتلاشٍ سريع بدل أن يقفز.
-                  final entrance = _short
-                      ? _ease(t, _T.glide, 0.22, Curves.easeOutCubic)
-                      : 1.0;
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // ضوء أبيض خافت في المركز — عمق بلا ازدحام.
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: Alignment(0, -0.12),
-                            radius: 0.85,
-                            colors: [Colors.white, SplashTheme.background],
-                          ),
-                        ),
-                      ),
-                      Opacity(
-                        opacity: entrance,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // هالة تتنفس بألوان الهوية خلف الشعار.
-                            CustomPaint(
-                              painter: _AuraPainter(t: t, center: center),
-                            ),
-                            CustomPaint(
-                              painter: _LogoMotionPainter(
-                                t: t,
-                                scale: scale,
-                                center: center,
+                    return AnimatedBuilder(
+                      animation: _c,
+                      builder: (context, _) {
+                        final t = _seconds;
+                        // المختصرة تبدأ بالشعار شبه مكتمل: يظهر بتلاشٍ سريع بدل أن يقفز.
+                        final entrance = _short
+                            ? _ease(t, _T.shortFrom, 0.2, Curves.easeOutCubic)
+                            : 1.0;
+                        return Opacity(
+                          opacity: entrance,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // هالة تتنفس بألوان الهوية خلف الشعار.
+                              CustomPaint(
+                                painter: _AuraPainter(t: t, center: center),
                               ),
-                            ),
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              top: logoBottom + 30,
-                              child: _Tagline(t: t),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
+                              CustomPaint(
+                                painter: _LogoMotionPainter(
+                                  t: t,
+                                  scale: scale,
+                                  center: center,
+                                ),
+                              ),
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                top: logoBottom + 30,
+                                child: _Tagline(t: t),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -294,6 +320,9 @@ abstract final class _T {
   static const shine = 3.36;
   static const sparkles = 3.5;
   static const end = 4.3; // = SplashScreen.introDuration
+
+  /// بداية النسخة المختصرة: 1.05 ث قبل النهاية (قبيل الاستقرار وحزمة الضوء).
+  static const shortFrom = 3.25;
 }
 
 class _LogoMotionPainter extends CustomPainter {
@@ -319,13 +348,39 @@ class _LogoMotionPainter extends CustomPainter {
     SplashTheme.ink,
   ];
 
-  Paint _gradient(Rect r, List<Color> colors, [double opacity = 1]) => Paint()
+  /// تدرّجات الحروف والخصل ثابتة (إحداثيات الشعار نفسه، والحركة بتحويل اللوحة):
+  /// كل تدرّج يُبنى مرة واحدة طوال عمر التطبيق بدل shader جديد في كل إطار.
+  /// المفتاح: المستطيل + قائمة الألوان الثابتة (const فهويّتها واحدة).
+  static final _gradientPaints = <(Rect, List<Color>), Paint>{};
+
+  /// فرشاة لون واحدة يُعاد ضبط لونها قبل كل رسمة (اللوحة تنسخ حالتها عند الرسم).
+  static final _fill = Paint()..isAntiAlias = true;
+  static final _stroke = Paint()
     ..isAntiAlias = true
-    ..shader = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [for (final c in colors) c.withValues(alpha: opacity)],
-    ).createShader(r);
+    ..style = PaintingStyle.stroke;
+  static final _glow = Paint()
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+
+  /// وهج الخصل (ضبابية لكل خصلة في كل إطار) يُترك على الهواتف البسيطة.
+  static final _withGlow = !DevicePerf.isLow;
+
+  Paint _gradient(Rect r, List<Color> colors, [double opacity = 1]) {
+    final paint = _gradientPaints.putIfAbsent(
+      (r, colors),
+      () => Paint()
+        ..isAntiAlias = true
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ).createShader(r),
+    );
+    // مع shader يُستعمل من اللون شفافيته فقط: تضرب التدرّج كله.
+    paint.color = Color.fromRGBO(0, 0, 0, opacity);
+    return paint;
+  }
+
+  static Paint _solid(Color color) => _fill..color = color;
 
   Offset _quad(Offset a, Offset c, Offset b, double v) {
     final u = 1 - v;
@@ -375,8 +430,7 @@ class _LogoMotionPainter extends CustomPainter {
         canvas.drawCircle(
           center,
           10 + 80 * ripple,
-          Paint()
-            ..style = PaintingStyle.stroke
+          _stroke
             ..strokeWidth = 1.4 - k * 0.4
             ..color = SplashTheme.orchid.withValues(
               alpha: (0.38 - k * 0.12) * (1 - ripple),
@@ -399,7 +453,7 @@ class _LogoMotionPainter extends CustomPainter {
       canvas.save();
       canvas.translate(center.dx, center.dy);
       canvas.scale(sx, sy);
-      canvas.drawCircle(Offset.zero, r, Paint()..color = SplashTheme.orchid);
+      canvas.drawCircle(Offset.zero, r, _solid(SplashTheme.orchid));
       canvas.restore();
     } else {
       // ── 2: رقصة النقاط حول المركز ثم الانطلاق نحو أماكنها ─────────────
@@ -431,13 +485,13 @@ class _LogoMotionPainter extends CustomPainter {
           canvas.drawCircle(
             back,
             radius * (1 - k * 0.12),
-            Paint()..color = color.withValues(alpha: 0.14 * (1 - k / 7) * fade),
+            _solid(color.withValues(alpha: 0.14 * (1 - k / 7) * fade)),
           );
         }
         canvas.drawCircle(
           p,
           radius,
-          Paint()..color = color.withValues(alpha: fade),
+          _solid(color.withValues(alpha: fade)),
         );
       }
     }
@@ -466,12 +520,10 @@ class _LogoMotionPainter extends CustomPainter {
         );
       }
       final glowA = math.sin(grow * math.pi) * 0.45;
-      if (glowA > 0.01) {
+      if (_withGlow && glowA > 0.01) {
         canvas.drawPath(
           s.path,
-          Paint()
-            ..color = _strandShaders[i][1].withValues(alpha: glowA)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+          _glow..color = _strandShaders[i][1].withValues(alpha: glowA),
         );
       }
       canvas.drawPath(s.path, _gradient(s.bounds, _strandShaders[i]));
@@ -614,7 +666,7 @@ class _LogoMotionPainter extends CustomPainter {
     canvas.translate(p.dx, p.dy);
     canvas.rotate(rot);
     canvas.translate(-p.dx, -p.dy);
-    canvas.drawPath(star, Paint()..color = color);
+    canvas.drawPath(star, _solid(color));
     canvas.restore();
   }
 
@@ -672,23 +724,28 @@ class _AuraPainter extends CustomPainter {
   final Offset center;
   _AuraPainter({required this.t, required this.center});
 
+  /// تدرّج دائري واحد لكل لون بنصف قطر 1 حول الأصل — يُبنى مرة واحدة، والموضع
+  /// والحجم بتحويل اللوحة، والظهور بشفافية الفرشاة.
+  static final _orchid = _orbPaint(SplashTheme.orchidLight);
+  static final _rose = _orbPaint(SplashTheme.roseLight);
+
+  static Paint _orbPaint(Color color) => Paint()
+    ..isAntiAlias = true
+    ..shader = RadialGradient(
+      colors: [color, color.withValues(alpha: 0)],
+    ).createShader(Rect.fromCircle(center: Offset.zero, radius: 1));
+
   @override
   void paint(Canvas canvas, Size size) {
     final v = _ease(t, 0.3, 1.4, Curves.easeOutCubic);
     if (v <= 0) return;
-    void orb(Offset c, double r, Color color, double a) {
-      final rect = Rect.fromCircle(center: c, radius: r);
-      canvas.drawCircle(
-        c,
-        r,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [
-              color.withValues(alpha: a * v),
-              color.withValues(alpha: 0),
-            ],
-          ).createShader(rect),
-      );
+    void orb(Offset c, double r, Paint paint, double a) {
+      paint.color = Color.fromRGBO(0, 0, 0, a * v);
+      canvas.save();
+      canvas.translate(c.dx, c.dy);
+      canvas.scale(r);
+      canvas.drawCircle(Offset.zero, 1, paint);
+      canvas.restore();
     }
 
     final w = size.width;
@@ -699,14 +756,14 @@ class _AuraPainter extends CustomPainter {
             -70 + 8 * math.cos(t * 0.7),
           ),
       w * 0.62,
-      SplashTheme.orchidLight,
+      _orchid,
       0.16,
     );
     orb(
       center +
           Offset(w * 0.24 + 10 * math.cos(t * 0.8), 60 + 8 * math.sin(t * 0.6)),
       w * 0.58,
-      SplashTheme.roseLight,
+      _rose,
       0.16,
     );
   }

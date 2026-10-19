@@ -1,5 +1,51 @@
+import '../../core/perf/device_perf.dart';
 import '../../core/utils/json.dart';
 import '../../core/utils/media_url.dart';
+
+/// مقاسات صور السيرفر بالترتيب — تطابق IMAGE_VARIANTS في backend/media.constants.ts.
+const _variantLadder = <(String, int)>[
+  ('thumb', 320),
+  ('small', 640),
+  ('medium', 1000),
+  ('large', 1600),
+];
+
+/// لاحقة مقاس في اسم الملف: `<base>_medium.webp` (قبل الاستعلام `?v=` إن وُجد).
+final _variantSuffix = RegExp(r'_(thumb|small|medium|large)\.(webp|jpe?g|avif)$', caseSensitive: false);
+
+/// يبدّل مقاس صورة سيرفرنا إلى أصغر مقاس يغطي [pixelWidth] بكسل فعلي.
+///
+/// كثير من الروابط تأتي من السيرفر نصاً جاهزاً (medium أو large لأيقونة 40pt)،
+/// فيختار هذا المقاس حسب حجم الظهور الفعلي، ويُبقي الاستعلام (`?v=`) كما هو.
+/// - روابط ليست بنمط `/media/…/<base>_<size>.<ext>` تبقى كما هي.
+/// - لا يكبّر من thumb أبداً: thumb وحده يُكتب لحظة الرفع والباقي يُولَّد بعدها بثوانٍ،
+///   فرابط thumb قد يعني أن الباقي لم يُولَّد بعد. أي مقاس غيره يعني أن الأربعة موجودة
+///   (السيرفر يحفظ قائمة المقاسات بعد توليدها كلها).
+/// - المقاس الجديد بصيغة webp دائماً (موجودة لكل المقاسات؛ jpg لـlarge فقط).
+/// - الأجهزة البسيطة تقبل مقاساً يغطي ~85% من العرض (فرق لا يُرى، وذاكرة أقل).
+///
+/// توحيد المفاتيح: الرابط نفسه (مع `?v=` أو بدونه) هو مفتاح الكاش، فاختيار المقاس من
+/// حجم الظهور يجعل الشاشات المختلفة تتلاقى على الملفات نفسها بدل نسخ بمقاسات متفرقة.
+String mediaVariantFor(String url, int pixelWidth) {
+  if (url.isEmpty || pixelWidth <= 0 || !url.contains('/media/')) return url;
+  final cut = url.indexOf(RegExp(r'[?#]'));
+  final path = cut < 0 ? url : url.substring(0, cut);
+  final m = _variantSuffix.firstMatch(path);
+  if (m == null) return url;
+
+  final current = m.group(1)!.toLowerCase();
+  final need = DevicePerf.isLow ? (pixelWidth * 0.85).ceil() : pixelWidth;
+  var target = _variantLadder.last.$1;
+  for (final (name, width) in _variantLadder) {
+    if (width >= need) {
+      target = name;
+      break;
+    }
+  }
+  if (target == current) return url;
+  if (current == 'thumb') return url;
+  return '${path.substring(0, m.start)}_$target.webp${cut < 0 ? '' : url.substring(cut)}';
+}
 
 class AppMedia {
   final String id;

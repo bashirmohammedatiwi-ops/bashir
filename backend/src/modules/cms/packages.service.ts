@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PackageKind, Prisma } from "@prisma/client";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
-import { mediaRecordToUrl, rewriteMediaRecord } from "../../common/media-url.util";
+import { mediaRecordToUrl, rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util";
 import { PrismaService } from "../../common/prisma.service";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
 
@@ -45,6 +45,19 @@ export function worldScope(world?: string | null) {
 }
 
 /**
+ * صورة منتج داخل الباقة — تُعرض صغيرة دائماً (أيقونات مكدّسة 26–32pt، شبكة 2×2 في الغلاف)،
+ * فمقاس small (640) يكفي بدل medium. بلا small (لم يُولَّد بعد) نرجع للاختيار المعتاد.
+ */
+function packageThumbUrl(media: unknown): string | null {
+  const variants = (media as { variants?: Record<string, { formats?: Record<string, string> }> } | null | undefined)
+    ?.variants;
+  const formats = variants?.small?.formats;
+  const path = formats?.webp ?? formats?.jpg;
+  if (path) return rewriteMediaUrl(path);
+  return mediaRecordToUrl(media as never);
+}
+
+/**
  * ما يراه التطبيق: الأسعار محسوبة من أسعار المنتجات الحالية —
  * «السعر قبل الخصم» = مجموع المنتجات دائماً (لا رقم قديم مكتوب يدوياً)، والتوفير الفعلي.
  */
@@ -55,7 +68,7 @@ export function publicPackage(p: PackageFull) {
   const saving = Math.max(0, itemsTotal - p.price);
   const inStock = items.length > 0 && items.every((i) => i.product.stock >= Math.max(1, i.quantity));
   const thumbs = items
-    .map((i) => mediaRecordToUrl(i.product.images.find((im) => im.media)?.media as never))
+    .map((i) => packageThumbUrl(i.product.images.find((im) => im.media)?.media))
     .filter((u): u is string => !!u)
     .slice(0, 5);
   return {
