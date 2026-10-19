@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,17 @@ import '../../worlds/world_icon.dart';
 import '../../worlds/world_theme.dart';
 import '../../worlds/worlds_provider.dart';
 import '../../../core/brand/brand_logo.dart';
+
+/// نصوص رأس الرئيسية في هذا الملف.
+extension _WorldShowcaseStrings on AppStrings {
+  String get storeName => isAr ? 'ديما الحياة' : 'Deema Alhayat';
+  String searchForHint(String name) =>
+      isAr ? 'ابحثي عن $name…' : 'Search $name…';
+
+  /// وصف زر الإشعارات مع عدد غير المقروء: «الإشعارات، 3 جديدة».
+  String unreadBadge(String label, int n) =>
+      isAr ? '$label، $n جديدة' : '$label, $n new';
+}
 
 /// لون الكتلة العلوية — أعمق قليلاً من لون العالم.
 Color worldBandColor(StoreWorld w) => Color.lerp(w.accent, Colors.black, 0.1)!;
@@ -44,7 +56,9 @@ class WorldHeroBand extends ConsumerWidget {
     final base = worldBandColor(world);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 450),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 450),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         // توهّج ناعم من الزاوية العليا — عمق بدل لون مسطّح.
@@ -77,6 +91,7 @@ class WorldHeroBand extends ConsumerWidget {
                 child: Row(
                   children: [
                     _GlassCircle(
+                      label: s.myAccount,
                       child: const Icon(
                         Icons.person_outline_rounded,
                         color: Colors.white,
@@ -101,9 +116,7 @@ class WorldHeroBand extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            firstName.isNotEmpty
-                                ? firstName
-                                : (s.isAr ? 'ديما الحياة' : 'Deema Alhayat'),
+                            firstName.isNotEmpty ? firstName : s.storeName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppText.title3.copyWith(
@@ -117,6 +130,7 @@ class WorldHeroBand extends ConsumerWidget {
                     ),
                     if (whatsapp != null && whatsapp.isNotEmpty) ...[
                       _GlassCircle(
+                        label: s.whatsappSupport,
                         child: const Icon(
                           Icons.chat_bubble_outline_rounded,
                           color: Colors.white,
@@ -130,6 +144,7 @@ class WorldHeroBand extends ConsumerWidget {
                       const SizedBox(width: 8),
                     ],
                     _GlassCircle(
+                      label: s.notifications,
                       badge: unread,
                       child: const Icon(
                         Icons.notifications_none_rounded,
@@ -156,92 +171,148 @@ class WorldHeroBand extends ConsumerWidget {
 }
 
 /// البحث في رأس الورقة البيضاء: حبة رمادية فاتحة + مربع أبيض لمسح الباركود.
-class _SheetSearch extends ConsumerWidget {
+///
+/// التلميح يتناوب بين أقسام العالم، ولمسة الحبة تحمل القسم المعروض لحظتها إلى
+/// شاشة البحث (`?hint=`) — فلا يضيع الإلهام في بحث فارغ.
+class _SheetSearch extends ConsumerStatefulWidget {
   final Color accent;
   final String worldSlug;
   const _SheetSearch({required this.accent, required this.worldSlug});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SheetSearch> createState() => _SheetSearchState();
+}
+
+class _SheetSearchState extends ConsumerState<_SheetSearch> {
+  /// التلميح الظاهر الآن — يملكه البحث ليعرف ما رأته الزبونة عند اللمس.
+  final _hintIndex = ValueNotifier<int>(0);
+
+  @override
+  void didUpdateWidget(covariant _SheetSearch oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // عالم جديد = أقسام جديدة: نبدأ من التلميح العام.
+    if (oldWidget.worldSlug != widget.worldSlug) _hintIndex.value = 0;
+  }
+
+  @override
+  void dispose() {
+    _hintIndex.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final t = context.worldTheme;
     final s = ref.s;
     final lang = ref.watch(languageCodeProvider);
     // اقتراحات متناوبة من أقسام العالم الحالي — البحث يلهم بدل أن ينتظر.
     final cats =
-        ref.watch(worldDetailProvider(worldSlug)).valueOrNull?.categories ??
+        ref
+            .watch(worldDetailProvider(widget.worldSlug))
+            .valueOrNull
+            ?.categories ??
         const [];
+    final names = [
+      for (final c in cats.take(6))
+        if (c.localizedName(lang).trim().isNotEmpty)
+          c.localizedName(lang).trim(),
+    ];
     final hints = <String>[
       s.searchHintHome,
-      for (final c in cats.take(6))
-        s.isAr
-            ? 'ابحثي عن ${c.localizedName(lang)}…'
-            : 'Search ${c.localizedName(lang)}…',
+      for (final n in names) s.searchForHint(n),
     ];
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        context.push('/search');
-      },
-      child: Container(
-        height: 56,
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 6, 6),
-        decoration: BoxDecoration(
-          color: Color.alphaBlend(t.ink.withValues(alpha: 0.045), t.surface),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.search_rounded, color: t.ink, size: 24),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _RotatingHint(
-                key: ValueKey(worldSlug),
-                hints: hints,
-                style: AppText.bodySmall.copyWith(
-                  color: t.inkMuted,
-                  fontSize: 14,
-                  height: 1.2,
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                context.push('/scan');
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: t.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: t.ink.withValues(alpha: 0.07),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+
+    void openSearch() {
+      HapticFeedback.selectionClick();
+      final i = _hintIndex.value % hints.length;
+      // التلميح الأول عام؛ ما بعده اسم قسم يُثبَّت أولاً في اقتراحات البحث.
+      context.push(
+        i == 0
+            ? '/search'
+            : '/search?hint=${Uri.encodeComponent(names[i - 1])}',
+      );
+    }
+
+    return Semantics(
+      button: true,
+      label: s.searchHintHome,
+      child: GestureDetector(
+        onTap: openSearch,
+        child: Container(
+          height: 56,
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 6, 6),
+          decoration: BoxDecoration(
+            color: Color.alphaBlend(t.ink.withValues(alpha: 0.045), t.surface),
+            borderRadius: BorderRadius.circular(AppCorners.lg),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.search_rounded, color: t.ink, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ExcludeSemantics(
+                  child: _RotatingHint(
+                    key: ValueKey(widget.worldSlug),
+                    hints: hints,
+                    index: _hintIndex,
+                    style: AppText.bodySmall.copyWith(
+                      color: t.inkMuted,
+                      fontSize: 14,
+                      height: 1.2,
                     ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: accent,
-                  size: 22,
+                  ),
                 ),
               ),
-            ),
-          ],
+              Semantics(
+                button: true,
+                label: s.scanBarcode,
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/scan');
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: t.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: t.ink.withValues(alpha: 0.07),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: widget.accent,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// نص يتبدّل كل بضع ثوانٍ بانزلاق ناعم للأعلى.
+/// نص يتبدّل كل بضع ثوانٍ بانزلاق ناعم للأعلى — والفهرس في [index] يملكه الأب.
+/// مع «تقليل الحركة» يثبت على التلميح الأول.
 class _RotatingHint extends StatefulWidget {
   final List<String> hints;
+  final ValueNotifier<int> index;
   final TextStyle style;
-  const _RotatingHint({super.key, required this.hints, required this.style});
+  const _RotatingHint({
+    super.key,
+    required this.hints,
+    required this.index,
+    required this.style,
+  });
 
   @override
   State<_RotatingHint> createState() => _RotatingHintState();
@@ -249,15 +320,21 @@ class _RotatingHint extends StatefulWidget {
 
 class _RotatingHintState extends State<_RotatingHint> {
   Timer? _timer;
-  int _i = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 3200), (_) {
-      if (!mounted || widget.hints.length < 2) return;
-      setState(() => _i = (_i + 1) % widget.hints.length);
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final still = MediaQuery.disableAnimationsOf(context);
+    if (still) {
+      _timer?.cancel();
+      _timer = null;
+      widget.index.value = 0;
+    } else {
+      _timer ??= Timer.periodic(const Duration(milliseconds: 3200), (_) {
+        if (!mounted || widget.hints.length < 2) return;
+        widget.index.value = (widget.index.value + 1) % widget.hints.length;
+      });
+    }
   }
 
   @override
@@ -268,79 +345,94 @@ class _RotatingHintState extends State<_RotatingHint> {
 
   @override
   Widget build(BuildContext context) {
-    final text = widget.hints[_i % widget.hints.length];
-    return ClipRect(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 420),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        layoutBuilder: (current, previous) => Stack(
-          alignment: AlignmentDirectional.centerStart,
-          children: [...previous, if (current != null) current],
-        ),
-        transitionBuilder: (child, a) {
-          final incoming = child.key == ValueKey(text);
-          return FadeTransition(
-            opacity: a,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: Offset(0, incoming ? 0.6 : -0.6),
-                end: Offset.zero,
-              ).animate(a),
-              child: child,
+    final still = MediaQuery.disableAnimationsOf(context);
+    return ValueListenableBuilder<int>(
+      valueListenable: widget.index,
+      builder: (context, i, _) {
+        final text = widget.hints[i % widget.hints.length];
+        return ClipRect(
+          child: AnimatedSwitcher(
+            duration: still ? Duration.zero : const Duration(milliseconds: 420),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (current, previous) => Stack(
+              alignment: AlignmentDirectional.centerStart,
+              children: [...previous, if (current != null) current],
             ),
-          );
-        },
-        child: Text(
-          text,
-          key: ValueKey(text),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: widget.style,
-        ),
-      ),
+            transitionBuilder: (child, a) {
+              final incoming = child.key == ValueKey(text);
+              return FadeTransition(
+                opacity: a,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: Offset(0, incoming ? 0.6 : -0.6),
+                    end: Offset.zero,
+                  ).animate(a),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              text,
+              key: ValueKey(text),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: widget.style,
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-class _GlassCircle extends StatelessWidget {
+/// زر زجاجي دائري في رأس العالم — باسم مسموع لقارئ الشاشة ومعه عدد الشارة.
+class _GlassCircle extends ConsumerWidget {
   final Widget child;
   final VoidCallback onTap;
+  final String label;
   final int badge;
   const _GlassCircle({
     required this.child,
     required this.onTap,
+    required this.label,
     this.badge = 0,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Semantics(
+      button: true,
+      label: badge > 0 ? ref.s.unreadBadge(label, badge) : label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+              ),
+              alignment: Alignment.center,
+              child: child,
             ),
-            alignment: Alignment.center,
-            child: child,
-          ),
-          if (badge > 0)
-            PositionedDirectional(
-              top: -2,
-              end: -2,
-              child: CountBadge(count: badge),
-            ),
-        ],
+            if (badge > 0)
+              PositionedDirectional(
+                top: -2,
+                end: -2,
+                child: CountBadge(count: badge),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -378,21 +470,22 @@ class WorldSheetTop extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        WorldSegments(worlds: worlds, selectedSlug: current.slug),
+        // عالم الهدايا لا يظهر في المحدّد إلا حين يكون مفتوحاً — فيُرى مختاراً.
+        WorldSegments(
+          worlds: [
+            ...worlds,
+            if (current.isGift && !worlds.any((w) => w.slug == current.slug))
+              current,
+          ],
+          selectedSlug: current.slug,
+        ),
       ],
     );
   }
 }
 
-String _sectionsLabel(int n, bool ar) {
-  // قبل وصول البيانات: سطر فارغ يحفظ الارتفاع بدل "0 أقسام".
-  if (n <= 0) return ' ';
-  if (!ar) return n == 1 ? '1 section' : '$n sections';
-  if (n == 1) return 'قسم واحد';
-  if (n == 2) return 'قسمان';
-  if (n <= 10) return '$n أقسام';
-  return '$n قسماً';
-}
+/// عدد أقسام العالم تحت اسمه — قبل وصول البيانات سطر فارغ يحفظ الارتفاع بدل «0 أقسام».
+String _sectionsLabel(AppStrings s, int n) => n <= 0 ? ' ' : s.sectionCount(n);
 
 /// محدّد العوالم على عرض الشاشة: حاوية رمادية ناعمة، والمختار يمتلئ بلون عالمه.
 class WorldSegments extends ConsumerWidget {
@@ -420,6 +513,10 @@ class WorldSegments extends ConsumerWidget {
     final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
     final t = context.worldTheme;
+    // عوالم الهدايا تُعرض فقط وهي المختارة — حتى يرى الزبون أين هو.
+    final list = worlds
+        .where((w) => !w.isGift || w.slug == selectedSlug)
+        .toList();
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: inset),
       child: Container(
@@ -430,19 +527,19 @@ class WorldSegments extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            for (final w in worlds)
+            for (final w in list)
               Expanded(
                 child: _Segment(
                   world: w,
                   name: w.localizedName(lang),
                   subtitle: _sectionsLabel(
+                    s,
                     ref
                             .watch(worldDetailProvider(w.slug))
                             .valueOrNull
                             ?.categories
                             .length ??
                         0,
-                    s.isAr,
                   ),
                   selected: w.slug == selectedSlug,
                   ink: t.ink,
@@ -487,15 +584,19 @@ class _Segment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = worldBandColor(world);
+    final still = MediaQuery.disableAnimationsOf(context);
+    Duration ms(int v) => still ? Duration.zero : Duration(milliseconds: v);
     return Semantics(
       button: true,
       selected: selected,
       label: name,
+      excludeSemantics: true,
+      onTap: onTap,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 320),
+          duration: ms(320),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.fromLTRB(4, 8, 4, 7),
           decoration: BoxDecoration(
@@ -523,7 +624,7 @@ class _Segment extends StatelessWidget {
               // الأيقونة بألوانها مباشرة — تكبر قليلاً وتطفو بظل ناعم عند الاختيار.
               AnimatedScale(
                 scale: selected ? 1.12 : 1.0,
-                duration: const Duration(milliseconds: 320),
+                duration: ms(320),
                 curve: Curves.easeOutBack,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -544,12 +645,12 @@ class _Segment extends StatelessWidget {
                       children: [
                         AnimatedOpacity(
                           opacity: selected ? 0 : 1,
-                          duration: const Duration(milliseconds: 280),
+                          duration: ms(280),
                           child: WorldIcon(slug: world.slug, size: 32),
                         ),
                         AnimatedOpacity(
                           opacity: selected ? 1 : 0,
-                          duration: const Duration(milliseconds: 280),
+                          duration: ms(280),
                           child: WorldIcon(
                             slug: world.slug,
                             size: 32,
@@ -615,78 +716,85 @@ class StickyWorldsBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
     final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
     final top = MediaQuery.paddingOf(context).top;
-    final list = worlds.where((w) => !w.isGift).toList();
+    // عالم الهدايا يظهر مختاراً فقط حين يكون مفتوحاً.
+    final list = worlds
+        .where((w) => !w.isGift || w.slug == currentSlug)
+        .toList();
+    // ضبابية الخلفية مكلفة على أندرويد أثناء التمرير: هناك سطح شبه مصمت بلا ضبابية.
+    final blur = defaultTargetPlatform == TargetPlatform.iOS;
 
+    final bar = Container(
+      padding: EdgeInsets.fromLTRB(12, top + 2, 12, 8),
+      decoration: BoxDecoration(
+        color: t.surface.withValues(alpha: blur ? 0.86 : 0.97),
+        border: Border(
+          bottom: BorderSide(color: t.hairline.withValues(alpha: 0.7)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: t.accentDark.withValues(alpha: 0.07),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        height: height - 10,
+        child: Row(
+          children: [
+            for (final w in list)
+              Expanded(
+                // المختار يتمدّد بأيقونته واسمه، والبقية أيقونات — نفس لغة شريط التنقل.
+                flex: w.slug == currentSlug ? 20 : 8,
+                child: _MiniWorld(
+                  world: w,
+                  name: w.localizedName(lang),
+                  selected: w.slug == currentSlug,
+                  ink: t.ink,
+                  onTap: () {
+                    if (w.slug == currentSlug) return;
+                    HapticFeedback.selectionClick();
+                    ref.read(selectedWorldSlugProvider.notifier).state = w.slug;
+                    onWorldChanged?.call();
+                  },
+                ),
+              ),
+            const SizedBox(width: 6),
+            Semantics(
+              button: true,
+              label: s.searchShort,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  context.push('/search');
+                },
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: t.accentLight,
+                    border: Border.all(color: t.accentSoft),
+                  ),
+                  child: Icon(
+                    Icons.search_rounded,
+                    size: 21,
+                    color: t.accentDark,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!blur) return bar;
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-        child: Container(
-          padding: EdgeInsets.fromLTRB(12, top + 2, 12, 8),
-          decoration: BoxDecoration(
-            color: t.surface.withValues(alpha: 0.86),
-            border: Border(
-              bottom: BorderSide(color: t.hairline.withValues(alpha: 0.7)),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: t.accentDark.withValues(alpha: 0.07),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: SizedBox(
-            height: height - 10,
-            child: Row(
-              children: [
-                for (final w in list)
-                  Expanded(
-                    // المختار يتمدّد بأيقونته واسمه، والبقية أيقونات — نفس لغة شريط التنقل.
-                    flex: w.slug == currentSlug ? 20 : 8,
-                    child: _MiniWorld(
-                      world: w,
-                      name: w.localizedName(lang),
-                      selected: w.slug == currentSlug,
-                      ink: t.ink,
-                      onTap: () {
-                        if (w.slug == currentSlug) return;
-                        HapticFeedback.selectionClick();
-                        ref.read(selectedWorldSlugProvider.notifier).state =
-                            w.slug;
-                        onWorldChanged?.call();
-                      },
-                    ),
-                  ),
-                const SizedBox(width: 6),
-                Semantics(
-                  button: true,
-                  label: lang == 'en' ? 'Search' : 'بحث',
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      context.push('/search');
-                    },
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: t.accentLight,
-                        border: Border.all(color: t.accentSoft),
-                      ),
-                      child: Icon(
-                        Icons.search_rounded,
-                        size: 21,
-                        color: t.accentDark,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: bar,
       ),
     );
   }
@@ -710,15 +818,18 @@ class _MiniWorld extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = worldBandColor(world);
+    final still = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       button: true,
       selected: selected,
       label: name,
+      excludeSemantics: true,
+      onTap: onTap,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 320),
+          duration: still ? Duration.zero : const Duration(milliseconds: 320),
           curve: Curves.easeOutCubic,
           margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -747,7 +858,9 @@ class _MiniWorld extends StatelessWidget {
               SizedBox.square(
                 dimension: 26,
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 260),
+                  duration: still
+                      ? Duration.zero
+                      : const Duration(milliseconds: 260),
                   child: WorldIcon(
                     key: ValueKey(selected),
                     slug: world.slug,

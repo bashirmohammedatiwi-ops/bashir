@@ -37,11 +37,7 @@ class HomeBannerStage extends StatelessWidget {
     final itemSize = banner.cardSize;
     return HomeBannerStage(
       banner: banner,
-      layout: resolveBannerLayout(
-        section,
-        index: index,
-        itemCardSize: itemSize,
-      ),
+      layout: resolveBannerLayout(section, index: index, itemCardSize: itemSize),
       sceneIndex: sceneIndex,
       onTap: onTap,
       width: width,
@@ -52,9 +48,7 @@ class HomeBannerStage extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final screenW = MediaQuery.sizeOf(context).width;
-    final cardW =
-        width ??
-        (layout.fullBleed ? screenW : screenW - HomeTheme.paddingH * 2);
+    final cardW = width ?? (layout.fullBleed ? screenW : screenW - HomeTheme.paddingH * 2);
     final cardH = layout.heightFor(cardW);
     final radius = layout.radius;
     final tint = _tintFor(context, sceneIndex, banner);
@@ -63,35 +57,36 @@ class HomeBannerStage extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.surface,
         borderRadius: BorderRadius.circular(radius),
-        border: layout.fullBleed
-            ? null
-            : Border.all(color: t.hairline.withValues(alpha: 0.75)),
+        border: layout.fullBleed ? null : Border.all(color: t.hairline.withValues(alpha: 0.75)),
         boxShadow: layout.fullBleed ? null : t.cardShadow,
       ),
-      child: Material(
-        borderRadius: BorderRadius.circular(radius),
-        clipBehavior: Clip.antiAlias,
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap != null
-              ? () {
-                  HapticFeedback.selectionClick();
-                  onTap!();
-                }
-              : null,
-          borderRadius: BorderRadius.circular(radius),
-          child: SizedBox(
-            width: cardW,
-            height: cardH,
-            child: ClipRRect(
+      child: SizedBox(
+        width: cardW,
+        height: cardH,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ClipRRect(
               borderRadius: BorderRadius.circular(radius),
-              child: _ImageOnlyLayout(
-                banner: banner,
-                tint: tint,
-                imageBg: t.accentLight,
-              ),
+              child: _ImageOnlyLayout(banner: banner, tint: tint, imageBg: t.accentLight),
             ),
-          ),
+            // التموّج فوق الصورة — تحتها كانت الصورة المعتمة تخفيه تماماً.
+            if (onTap != null)
+              Positioned.fill(
+                child: Material(
+                  type: MaterialType.transparency,
+                  borderRadius: BorderRadius.circular(radius),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap!();
+                    },
+                    borderRadius: BorderRadius.circular(radius),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -106,11 +101,7 @@ class HomeBannerStage extends StatelessWidget {
     return card;
   }
 
-  static _BannerTint _tintFor(
-    BuildContext context,
-    int index,
-    AppBanner banner,
-  ) {
+  static _BannerTint _tintFor(BuildContext context, int index, AppBanner banner) {
     final t = context.worldTheme;
     final custom = parseHexColor(banner.backgroundColor);
     if (custom != null) {
@@ -138,11 +129,7 @@ class _BannerTint {
   final Color border;
   final Color accent;
 
-  const _BannerTint({
-    required this.bg,
-    required this.border,
-    required this.accent,
-  });
+  const _BannerTint({required this.bg, required this.border, required this.accent});
 }
 
 class _ImageOnlyLayout extends StatelessWidget {
@@ -150,11 +137,7 @@ class _ImageOnlyLayout extends StatelessWidget {
   final _BannerTint tint;
   final Color imageBg;
 
-  const _ImageOnlyLayout({
-    required this.banner,
-    required this.tint,
-    required this.imageBg,
-  });
+  const _ImageOnlyLayout({required this.banner, required this.tint, required this.imageBg});
 
   @override
   Widget build(BuildContext context) {
@@ -168,11 +151,7 @@ class _ImageOnlyLayout extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: Icon(
-            Icons.spa_rounded,
-            size: 44,
-            color: tint.accent.withValues(alpha: 0.35),
-          ),
+          child: Icon(Icons.spa_rounded, size: 44, color: tint.accent.withValues(alpha: 0.35)),
         ),
       );
     }
@@ -189,18 +168,12 @@ class _ImageOnlyLayout extends StatelessWidget {
   }
 }
 
-double homeHeroBannerHeight(
-  BuildContext context, {
-  HomeSection? section,
-  double? width,
-}) {
-  final inset = HomeTheme.bannerInset;
+double homeHeroBannerHeight(BuildContext context, {HomeSection? section, double? width}) {
+  const inset = HomeTheme.bannerInset;
   final w =
-      width ??
-      (MediaQuery.sizeOf(context).width -
-          (section?.fullBleed == true ? 0 : inset * 2));
+      width ?? (MediaQuery.sizeOf(context).width - (section?.fullBleed == true ? 0 : inset * 2));
   final layout = section != null
       ? resolveBannerLayout(section)
-      : BannerLayoutConfig(aspect: HomeTheme.bannerAspect);
+      : const BannerLayoutConfig(aspect: HomeTheme.bannerAspect);
   return layout.heightFor(w);
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show ValueListenable, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -6,25 +7,43 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/navigation/app_navigation.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/shimmer_box.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/brand.dart';
 import '../../../data/models/category.dart';
+import '../../brands/brand_avatar.dart';
+import '../../brands/brands_screen.dart' show brandsCategoryRequestProvider;
 import '../../catalog/catalog_providers.dart';
+import '../../shell/nav_tabs.dart';
 import '../../worlds/world_theme.dart';
 import '../category_browse.dart';
 import '../recent_categories.dart';
+import 'category_line_art.dart';
+
+/// يربط شاشة الأقسام باللوحة الظاهرة حالياً — «لمسة ثانية على التبويب» تصعد لأعلاها.
+class CategoryPaneController {
+  _CategoryPaneState? _pane;
+
+  /// يصعد لأعلى اللوحة؛ false إن كانت في الأعلى أصلاً (أو لا لوحة).
+  bool scrollToTop() => _pane?._scrollToTop() ?? false;
+}
 
 /// لوحة القسم المختار — كل شيء ظاهر دفعة واحدة:
 /// غلاف + "تسوقي الكل" ← البراندات ← الأقسام الفرعية بصورها وأعدادها ← الأكثر طلباً.
 class CategoryPane extends ConsumerStatefulWidget {
   final IndexedCategory entry;
   final Future<void> Function() onRefresh;
+  final CategoryPaneController? controller;
 
-  const CategoryPane({super.key, required this.entry, required this.onRefresh});
+  const CategoryPane({
+    super.key,
+    required this.entry,
+    required this.onRefresh,
+    this.controller,
+  });
 
   @override
   ConsumerState<CategoryPane> createState() => _CategoryPaneState();
@@ -32,57 +51,141 @@ class CategoryPane extends ConsumerStatefulWidget {
 
 class _CategoryPaneState extends ConsumerState<CategoryPane> {
   final _scroll = ScrollController();
+  final _jumpScroll = ScrollController();
   final _paneKey = GlobalKey();
 
   /// مفتاح لكل مجموعة (قسم فرعي) — للقفز إليها وتتبّع المجموعة الظاهرة.
   final Map<String, GlobalKey> _groupKeys = {};
-  String? _active;
+
+  /// مفتاح لكل حبّة في شريط القفز — لإبقاء النشطة ظاهرة.
+  final Map<String, GlobalKey> _pillKeys = {};
+
+  /// المجموعة النشطة — تتغيّر مع التمرير دون إعادة بناء اللوحة كلها.
+  final _active = ValueNotifier<String?>(null);
+  List<String> _groupOrder = const [];
+
+  /// أثناء حركة القفز لا نتتبّع: كانت الحبّات تومض بالمجموعات التي تمرّ بها.
+  bool _jumping = false;
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_trackActive);
+    _active.addListener(_revealActivePill);
+    widget.controller?._pane = this;
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryPane old) {
+    super.didUpdateWidget(old);
+    if (old.controller != widget.controller) {
+      if (old.controller?._pane == this) old.controller!._pane = null;
+      widget.controller?._pane = this;
+    }
   }
 
   @override
   void dispose() {
+    // اللوحة القديمة تُزال بعد ظهور الجديدة (AnimatedSwitcher) — لا نفصل الجديدة.
+    if (widget.controller?._pane == this) widget.controller!._pane = null;
     _scroll.removeListener(_trackActive);
+    _active.removeListener(_revealActivePill);
     _scroll.dispose();
+    _jumpScroll.dispose();
+    _active.dispose();
     super.dispose();
   }
 
   GlobalKey _keyFor(String id) => _groupKeys.putIfAbsent(id, GlobalKey.new);
 
-  /// المجموعة النشطة: آخر عنوان مرّ تحت شريط القفز.
-  void _trackActive() {
-    final pane = _paneKey.currentContext?.findRenderObject() as RenderBox?;
-    if (pane == null) return;
-    final paneTop = pane.localToGlobal(Offset.zero).dy;
-    String? current;
-    for (final e in _groupKeys.entries) {
-      final box = e.value.currentContext?.findRenderObject() as RenderBox?;
-      if (box == null || !box.attached) continue;
-      final y = box.localToGlobal(Offset.zero).dy - paneTop;
-      if (y <= _JumpBarDelegate.height + 24) current = e.key;
+  bool _scrollToTop() {
+    if (!_scroll.hasClients || _scroll.offset <= 0) return false;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(0);
+    } else {
+      _scroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeOutCubic,
+      );
     }
-    current ??= _groupKeys.keys.isEmpty ? null : _groupKeys.keys.first;
-    if (current != _active) setState(() => _active = current);
+    return true;
+  }
+
+  /// المجموعة النشطة: آخر عنوان مرّ تحت شريط القفز — وفي نهاية التمرير آخر عنوان
+  /// ظاهر، لأن المجموعات الأخيرة قد لا تبلغ أعلى اللوحة.
+  void _trackActive() {
+    if (_jumping || _groupOrder.isEmpty || !_scroll.hasClients) return;
+    final pane = _paneKey.currentContext?.findRenderObject() as RenderBox?;
+    if (pane == null || !pane.hasSize) return;
+    final paneTop = pane.localToGlobal(Offset.zero).dy;
+    final pos = _scroll.position;
+    final atEnd =
+        pos.maxScrollExtent > 0 && pos.pixels >= pos.maxScrollExtent - 1;
+    String? current;
+    for (final id in _groupOrder) {
+      final box =
+          _groupKeys[id]?.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached || !box.hasSize) continue;
+      final y = box.localToGlobal(Offset.zero).dy - paneTop;
+      if (atEnd
+          ? y < pane.size.height - 24
+          : y <= _JumpBarDelegate.height + 24) {
+        current = id;
+      }
+    }
+    _active.value = current ?? _groupOrder.first;
+  }
+
+  void _revealActivePill() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final box = _pillKeys[_active.value]?.currentContext?.findRenderObject();
+      if (box is! RenderBox || !box.attached || !_jumpScroll.hasClients) return;
+      final pos = _jumpScroll.position;
+      // نحرّك الشريط الأفقي وحده — ensureVisible كان سيحرّك اللوحة أيضاً.
+      final target = RenderAbstractViewport.of(box)
+          .getOffsetToReveal(box, 0.5)
+          .offset
+          .clamp(pos.minScrollExtent, pos.maxScrollExtent);
+      if ((target - _jumpScroll.offset).abs() < 1) return;
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _jumpScroll.jumpTo(target);
+      } else {
+        _jumpScroll.animateTo(
+          target,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
   }
 
   void _jumpTo(String id) {
     final ctx = _groupKeys[id]?.currentContext;
-    if (ctx == null) return;
+    if (ctx == null || !_scroll.hasClients) return;
     HapticFeedback.selectionClick();
-    setState(() => _active = id);
+    _active.value = id;
     final box = ctx.findRenderObject()! as RenderBox;
     final viewport = RenderAbstractViewport.of(box);
     final target =
-        viewport.getOffsetToReveal(box, 0).offset - _JumpBarDelegate.height - 4;
-    _scroll.animateTo(
-      target.clamp(0, _scroll.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 520),
-      curve: Curves.easeInOutCubic,
-    );
+        (viewport.getOffsetToReveal(box, 0).offset -
+                _JumpBarDelegate.height -
+                4)
+            .clamp(0.0, _scroll.position.maxScrollExtent);
+    _jumping = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(target);
+      _jumping = false;
+      return;
+    }
+    _scroll
+        .animateTo(
+          target,
+          duration: const Duration(milliseconds: 520),
+          curve: Curves.easeInOutCubic,
+        )
+        .whenComplete(() => _jumping = false);
   }
 
   @override
@@ -96,13 +199,14 @@ class _CategoryPaneState extends ConsumerState<CategoryPane> {
 
     final sections = _sectionSlivers(context, lang, s);
     final groups = _jumpGroups(lang);
+    _groupOrder = [for (final g in groups) g.$1];
 
     final slivers = <Widget>[
       const SliverToBoxAdapter(child: RecentCategoriesStrip()),
       SliverToBoxAdapter(
         child: _CoverCard(
+          category: cat,
           name: cat.localizedName(lang),
-          imageUrl: cat.imageUrl,
           count:
               ref.watch(categoryVisibleCountProvider(target)).valueOrNull ?? 0,
           shopAllLabel: s.catShopAll,
@@ -116,9 +220,11 @@ class _CategoryPaneState extends ConsumerState<CategoryPane> {
           pinned: true,
           delegate: _JumpBarDelegate(
             groups: groups,
-            active: _active ?? groups.first.$1,
+            active: _active,
             onTap: _jumpTo,
             theme: t,
+            controller: _jumpScroll,
+            keyFor: (id) => _pillKeys.putIfAbsent(id, GlobalKey.new),
           ),
         ),
       // الترتيب: الأقسام أولاً (جوهر التصفّح)، ثم البراندات، ثم الأكثر طلباً.
@@ -148,8 +254,9 @@ class _CategoryPaneState extends ConsumerState<CategoryPane> {
       },
       child: CustomScrollView(
         controller: _scroll,
-        // كل المجموعات مبنية مسبقاً حتى يعمل القفز إلى أي منها.
-        cacheExtent: 6000,
+        // عناوين المجموعات slivers تُخطَّط دائماً فيعمل القفز دون بناء كل البلاطات؛
+        // هامش معتدل يجهّز ما تحت الشاشة مباشرة.
+        cacheExtent: 2000,
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
@@ -278,15 +385,19 @@ class _CategoryPaneState extends ConsumerState<CategoryPane> {
 /// شريط القفز: حبّات بأسماء المجموعات، النشطة متدرّجة بلون العالم.
 class _JumpBarDelegate extends SliverPersistentHeaderDelegate {
   final List<(String, String)> groups;
-  final String active;
+  final ValueListenable<String?> active;
   final ValueChanged<String> onTap;
   final WorldThemePalette theme;
+  final ScrollController controller;
+  final GlobalKey Function(String id) keyFor;
 
   _JumpBarDelegate({
     required this.groups,
     required this.active,
     required this.onTap,
     required this.theme,
+    required this.controller,
+    required this.keyFor,
   });
 
   static const height = 54.0;
@@ -299,87 +410,113 @@ class _JumpBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
     final t = theme;
-    return Container(
-      decoration: BoxDecoration(
-        color: t.surface.withValues(alpha: 0.96),
-        border: overlaps
-            ? Border(
-                bottom: BorderSide(color: t.hairline.withValues(alpha: 0.6)),
-              )
-            : null,
-      ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        itemCount: groups.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final (id, name) = groups[i];
-          final on = id == active;
-          return GestureDetector(
-            onTap: () => onTap(id),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 240),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: on ? null : t.accentLight,
-                gradient: on
-                    ? LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color.lerp(t.accent, Colors.white, 0.12)!,
-                          Color.lerp(t.accent, Colors.black, 0.1)!,
-                        ],
-                      )
-                    : null,
-                borderRadius: BorderRadius.circular(AppCorners.pill),
-                boxShadow: on
-                    ? [
-                        BoxShadow(
-                          color: t.accent.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+    final motion = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 240);
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: Container(
+        decoration: BoxDecoration(
+          color: t.surface.withValues(alpha: 0.96),
+          border: overlaps
+              ? Border(
+                  bottom: BorderSide(color: t.hairline.withValues(alpha: 0.6)),
+                )
+              : null,
+        ),
+        child: ValueListenableBuilder<String?>(
+          valueListenable: active,
+          builder: (context, current, _) => ListView.separated(
+            controller: controller,
+            scrollDirection: Axis.horizontal,
+            // المجموعات قليلة: كل الحبّات مبنية فتُظهر النشطة أينما كانت.
+            cacheExtent: 2000,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            itemCount: groups.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final (id, name) = groups[i];
+              // قبل أي تمرير: الأولى نشطة.
+              final on = id == (current ?? groups.first.$1);
+              return Semantics(
+                key: keyFor(id),
+                button: true,
+                selected: on,
+                label: name,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(id),
+                  // منطقة اللمس بارتفاع الشريط كله، والحبّة المرسومة أنحف.
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: AnimatedContainer(
+                      duration: motion,
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: on ? null : t.accentLight,
+                        gradient: on
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color.lerp(t.accent, Colors.white, 0.12)!,
+                                  Color.lerp(t.accent, Colors.black, 0.1)!,
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(AppCorners.pill),
+                        boxShadow: on
+                            ? [
+                                BoxShadow(
+                                  color: t.accent.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        style: AppText.label.copyWith(
+                          fontSize: 12.5,
+                          color: on ? Colors.white : t.accentDark,
+                          fontWeight: on ? FontWeight.w800 : FontWeight.w600,
                         ),
-                      ]
-                    : null,
-              ),
-              child: Text(
-                name,
-                maxLines: 1,
-                style: AppText.label.copyWith(
-                  fontSize: 12.5,
-                  color: on ? Colors.white : t.accentDark,
-                  fontWeight: on ? FontWeight.w800 : FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
+  // الحبّة النشطة تتبدّل عبر ValueListenableBuilder — لا حاجة لإعادة بناء الشريط.
   @override
   bool shouldRebuild(covariant _JumpBarDelegate old) =>
-      old.active != active || old.groups != groups || old.theme != theme;
+      !listEquals(old.groups, groups) || old.theme != theme;
 }
 
 // ─── الغلاف ───────────────────────────────────────────────────────────────────
 
 class _CoverCard extends StatelessWidget {
+  final Category category;
   final String name;
-  final String imageUrl;
   final int count;
   final String shopAllLabel;
   final String Function(int) countLabel;
   final VoidCallback onTap;
 
   const _CoverCard({
+    required this.category,
     required this.name,
-    required this.imageUrl,
     required this.count,
     required this.shopAllLabel,
     required this.countLabel,
@@ -392,167 +529,178 @@ class _CoverCard extends StatelessWidget {
     final deep = Color.lerp(t.accent, Colors.black, 0.14)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 132,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            // بطاقة غلاف بلون العالم العميق — بطل اللوحة.
-            gradient: LinearGradient(
-              begin: AlignmentDirectional.topStart.resolve(
-                Directionality.of(context),
+      child: Semantics(
+        button: true,
+        label: [
+          name,
+          if (count > 0) countLabel(count),
+          shopAllLabel,
+        ].join(', '),
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            height: 132,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              // بطاقة غلاف بلون العالم العميق — بطل اللوحة.
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart.resolve(
+                  Directionality.of(context),
+                ),
+                end: AlignmentDirectional.bottomEnd.resolve(
+                  Directionality.of(context),
+                ),
+                colors: [Color.lerp(t.accent, Colors.white, 0.1)!, deep],
               ),
-              end: AlignmentDirectional.bottomEnd.resolve(
-                Directionality.of(context),
-              ),
-              colors: [Color.lerp(t.accent, Colors.white, 0.1)!, deep],
+              boxShadow: [
+                BoxShadow(
+                  color: t.accent.withValues(alpha: 0.28),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -4,
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: t.accent.withValues(alpha: 0.28),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-                spreadRadius: -4,
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // دوائر ضوء ناعمة للعمق.
-              const PositionedDirectional(
-                top: -40,
-                start: -30,
-                child: _SoftOrb(size: 130, alpha: 0.16),
-              ),
-              const PositionedDirectional(
-                bottom: -50,
-                end: 60,
-                child: _SoftOrb(size: 110, alpha: 0.10),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        16,
-                        14,
-                        6,
-                        14,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.title2.copyWith(color: Colors.white),
-                          ),
-                          if (count > 0) ...[
-                            const SizedBox(height: 2),
+            child: Stack(
+              children: [
+                // دوائر ضوء ناعمة للعمق.
+                const PositionedDirectional(
+                  top: -40,
+                  start: -30,
+                  child: _SoftOrb(size: 130, alpha: 0.16),
+                ),
+                const PositionedDirectional(
+                  bottom: -50,
+                  end: 60,
+                  child: _SoftOrb(size: 110, alpha: 0.10),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          16,
+                          14,
+                          6,
+                          14,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              countLabel(count),
-                              style: AppText.caption.copyWith(
-                                color: Colors.white.withValues(alpha: 0.82),
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.title2.copyWith(
+                                color: Colors.white,
                               ),
                             ),
-                          ],
-                          const Spacer(),
-                          Container(
-                            height: 34,
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                              14,
-                              0,
-                              4,
-                              0,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                AppCorners.pill,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.12),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                            if (count > 0) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                countLabel(count),
+                                style: AppText.caption.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.82),
                                 ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    shopAllLabel,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppText.label.copyWith(
-                                      color: deep,
-                                      fontSize: 12.5,
+                              ),
+                            ],
+                            const Spacer(),
+                            Container(
+                              height: 34,
+                              padding: const EdgeInsetsDirectional.fromSTEB(
+                                14,
+                                0,
+                                4,
+                                0,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(
+                                  AppCorners.pill,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.12),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      shopAllLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppText.label.copyWith(
+                                        color: deep,
+                                        fontSize: 12.5,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  width: 26,
-                                  height: 26,
-                                  decoration: BoxDecoration(
-                                    color: t.accent,
-                                    shape: BoxShape.circle,
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    width: 26,
+                                    height: 26,
+                                    decoration: BoxDecoration(
+                                      color: t.accent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 15,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                  child: const Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 15,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // صورة القسم على لوح أبيض بظل ناعم.
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(
-                      0,
-                      12,
-                      12,
-                      12,
-                    ),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.14),
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(13),
-                          child: AppNetworkImage(
-                            url: imageUrl,
-                            fit: BoxFit.cover,
-                            backgroundColor: Colors.white,
+                      ),
+                    ),
+                    // صورة القسم على لوح أبيض بظل ناعم.
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        0,
+                        12,
+                        12,
+                        12,
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.14),
+                                blurRadius: 14,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(13),
+                            child: CategoryThumb(
+                              category: category,
+                              size: 96,
+                              background: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -611,34 +759,70 @@ class _BrandsRow extends ConsumerWidget {
       ),
       error: (_, __) => _RetryRow(
         onRetry: () => ref.invalidate(
-          entry.level == CategoryLevel.root ? categoryBrandsProvider(id) : subcategoryBrandsProvider(id),
+          entry.level == CategoryLevel.root
+              ? categoryBrandsProvider(id)
+              : subcategoryBrandsProvider(id),
         ),
       ),
       data: (brands) {
-        final list = brands.where((b) => b.name.isNotEmpty).take(16).toList();
-        if (list.isEmpty) return const SizedBox.shrink();
+        // «أبرز» فعلاً: المميزة أولاً ثم الأكثر منتجات في هذا القسم (ترتيب الخادم أبجدي).
+        final list = [...brands.where((b) => b.name.isNotEmpty)]
+          ..sort((a, b) {
+            final f = (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+            return f != 0 ? f : b.productCount.compareTo(a.productCount);
+          });
+        final top = list.take(12).toList();
+        if (top.isEmpty) return const SizedBox.shrink();
+        // «كل البراندات» يفتح الدليل على شريحة القسم الرئيسي.
+        final rootId = entry.level == CategoryLevel.root ? id : entry.root?.id;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _GroupHeader(title: s.catTopBrands),
             SizedBox(
-              height: 84,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: list.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (context, i) => _BrandBubble(
-                  brand: list[i],
-                  name: list[i].localizedName(lang),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    final b = list[i];
-                    final scope = entry.level == CategoryLevel.root
-                        ? 'categoryId'
-                        : 'subcategoryId';
-                    context.push(
-                      '/products?brandId=${b.id}&$scope=$id&title=${Uri.encodeComponent(b.localizedName(lang))}',
+              height: 92,
+              child: MediaQuery.withClampedTextScaling(
+                maxScaleFactor: 1.2,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: top.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (context, i) {
+                    if (i == top.length) {
+                      return _AllBrandsBubble(
+                        label: s.all,
+                        semanticLabel: s.viewAllBrands,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          final container = ProviderScope.containerOf(
+                            context,
+                            listen: false,
+                          );
+                          if (rootId != null) {
+                            container
+                                    .read(
+                                      brandsCategoryRequestProvider.notifier,
+                                    )
+                                    .state =
+                                rootId;
+                          }
+                          openMainTab(context, container, NavTabs.brands);
+                        },
+                      );
+                    }
+                    final b = top[i];
+                    return _BrandBubble(
+                      brand: b,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        final scope = entry.level == CategoryLevel.root
+                            ? 'categoryId'
+                            : 'subcategoryId';
+                        context.push(
+                          '/products?brandId=${b.id}&$scope=$id&title=${Uri.encodeComponent(b.localizedName(lang))}',
+                        );
+                      },
                     );
                   },
                 ),
@@ -653,62 +837,113 @@ class _BrandsRow extends ConsumerWidget {
 
 class _BrandBubble extends StatelessWidget {
   final Brand brand;
-  final String name;
   final VoidCallback onTap;
 
-  const _BrandBubble({
-    required this.brand,
-    required this.name,
+  const _BrandBubble({required this.brand, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return _BubbleFrame(
+      label: brand.label,
+      semanticLabel: brand.label,
+      onTap: onTap,
+      ltr: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: t.hairline),
+        ),
+        child: BrandAvatar(brand: brand, size: 56),
+      ),
+    );
+  }
+}
+
+/// آخر الصف: «الكل» — دليل البراندات على شريحة هذا القسم.
+class _AllBrandsBubble extends StatelessWidget {
+  final String label;
+  final String semanticLabel;
+  final VoidCallback onTap;
+
+  const _AllBrandsBubble({
+    required this.label,
+    required this.semanticLabel,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return _BubbleFrame(
+      label: label,
+      semanticLabel: semanticLabel,
       onTap: onTap,
-      child: SizedBox(
-        width: 62,
-        child: Column(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: t.hairline),
-              ),
-              child: ClipOval(
-                child: brand.logoUrl.isNotEmpty
-                    ? AppNetworkImage(
-                        url: brand.logoUrl,
-                        fit: BoxFit.contain,
-                        backgroundColor: Colors.white,
-                      )
-                    : Center(
-                        child: Text(
-                          (brand.initial ?? name).characters.first
-                              .toUpperCase(),
-                          style: AppText.title3.copyWith(color: t.accent),
-                        ),
-                      ),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: t.accentLight,
+          shape: BoxShape.circle,
+          border: Border.all(color: t.accentSoft),
+        ),
+        child: Icon(Icons.grid_view_rounded, size: 22, color: t.accentDark),
+      ),
+    );
+  }
+}
+
+/// فقاعة الصف: دائرة + اسم، بلمسة حبرية ووصف لقارئ الشاشة.
+class _BubbleFrame extends StatelessWidget {
+  final String label;
+  final String semanticLabel;
+  final VoidCallback onTap;
+  final Widget child;
+  final bool ltr;
+
+  const _BubbleFrame({
+    required this.label,
+    required this.semanticLabel,
+    required this.onTap,
+    required this.child,
+    this.ltr = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppCorners.md),
+          child: SizedBox(
+            width: 66,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Column(
+                children: [
+                  child,
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    textDirection: ltr ? TextDirection.ltr : null,
+                    style: AppText.micro.copyWith(
+                      color: t.inkSoft,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: AppText.micro.copyWith(
-                color: t.inkSoft,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -733,7 +968,10 @@ class _RetryRow extends ConsumerWidget {
           Icon(Icons.cloud_off_rounded, size: 18, color: t.inkMuted),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(s.errorOccurred, style: AppText.bodySmall.copyWith(color: t.inkMuted)),
+            child: Text(
+              s.errorOccurred,
+              style: AppText.bodySmall.copyWith(color: t.inkMuted),
+            ),
           ),
           TextButton(
             onPressed: onRetry,
@@ -767,7 +1005,7 @@ class _GroupHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(14, 22, 10, 12),
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 16, 4, 6),
       child: Row(
         children: [
           // خط لوني صغير قبل العنوان — نفس لغة عناوين الرئيسية.
@@ -814,36 +1052,48 @@ class _GroupHeader extends StatelessWidget {
           ],
           const Spacer(),
           if (actionLabel != null && onAction != null)
-            GestureDetector(
-              onTap: onAction,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      actionLabel!,
-                      style: AppText.label.copyWith(
-                        fontSize: 12.5,
-                        color: t.accentDark,
-                      ),
+            Semantics(
+              button: true,
+              label: '$actionLabel — $title',
+              excludeSemantics: true,
+              child: GestureDetector(
+                onTap: onAction,
+                behavior: HitTestBehavior.opaque,
+                // منطقة لمس 44 على الأقل — النص والدائرة الصغيرة وحدهما كانا ~32.
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: kMinTapTarget,
+                    minWidth: kMinTapTarget,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          actionLabel!,
+                          style: AppText.label.copyWith(
+                            fontSize: 12.5,
+                            color: t.accentDark,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: t.accent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 5),
-                    Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: t.accent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -895,6 +1145,7 @@ class _CategoryTile extends ConsumerWidget {
     return Semantics(
       button: true,
       label: c.localizedName(lang),
+      excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => data.target.open(context),
@@ -925,11 +1176,7 @@ class _CategoryTile extends ConsumerWidget {
                   ],
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: AppNetworkImage(
-                  url: c.imageUrl,
-                  fit: BoxFit.cover,
-                  backgroundColor: Colors.transparent,
-                ),
+                child: CategoryThumb(category: c),
               ),
             ),
             const SizedBox(height: 6),
@@ -989,10 +1236,10 @@ class _SubRowTile extends StatelessWidget {
                   child: SizedBox(
                     width: 52,
                     height: 52,
-                    child: AppNetworkImage(
-                      url: category.imageUrl,
-                      fit: BoxFit.cover,
-                      backgroundColor: t.surface,
+                    child: CategoryThumb(
+                      category: category,
+                      size: 52,
+                      background: t.surface,
                     ),
                   ),
                 ),
@@ -1063,7 +1310,9 @@ class _TopProducts extends ConsumerWidget {
           ],
         ),
       ),
-      error: (_, __) => _RetryRow(onRetry: () => ref.invalidate(categoryTopProductsProvider(target))),
+      error: (_, __) => _RetryRow(
+        onRetry: () => ref.invalidate(categoryTopProductsProvider(target)),
+      ),
       data: (products) {
         if (products.length < 2) return const SizedBox.shrink();
         return Padding(

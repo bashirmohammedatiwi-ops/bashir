@@ -23,8 +23,11 @@ void navigateListing({
   String? brandId,
   required String title,
 }) {
+  final scoped = categoryId != null || subcategoryId != null || tertiaryCategoryId != null;
   final q = _listingQuery({
-    'title': title,
+    // داخل قسم يُشتق العنوان من الشجرة بلغة الواجهة؛ «title» في الرابط يعني عنواناً
+    // صريحاً (رفّ من لوحة التحكم) يُعرض كما هو.
+    'title': scoped ? null : title,
     'categoryId': categoryId,
     'subcategoryId': subcategoryId,
     'tertiaryCategoryId': tertiaryCategoryId,

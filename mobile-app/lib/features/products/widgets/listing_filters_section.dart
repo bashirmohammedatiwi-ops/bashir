@@ -51,7 +51,9 @@ class ListingFiltersSection extends ConsumerWidget {
     final s = ref.watch(stringsProvider);
     final lang = ref.watch(languageCodeProvider);
     final t = context.worldTheme;
-    final brands = (brandsAsync?.valueOrNull ?? const <Brand>[]).take(30).toList();
+    final allBrands = brandsAsync?.valueOrNull ?? const <Brand>[];
+    final brands = _railBrands(allBrands, selectedBrandId);
+    final hasMoreBrands = brands.length < allBrands.length;
     final showChildren = childCategories.isNotEmpty;
     final showBrands = brands.isNotEmpty;
     if (!showChildren && !showBrands) return const SizedBox(height: 6);
@@ -81,7 +83,9 @@ class ListingFiltersSection extends ConsumerWidget {
         children: [
           if (showChildren)
             _FadedRail(
+              key: const PageStorageKey('listing_sub_rail'),
               height: _SubTile.height,
+              itemExtent: _SubTile._width,
               itemCount: childCategories.length + 1,
               activeIndex: activeChildId == null
                   ? 0
@@ -126,54 +130,67 @@ class ListingFiltersSection extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Text(s.navBrands, style: ListingTheme.sectionTitle(context)),
                   const SizedBox(width: 6),
-                  Text(formatNumber(brands.length), style: ListingTheme.sectionHint(context)),
+                  // العدد الحقيقي لبراندات القسم، لا ما يتّسع له الشريط.
+                  Text(formatNumber(allBrands.length), style: ListingTheme.sectionHint(context)),
                   const Spacer(),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: selectedBrandId == null
-                        ? const SizedBox.shrink()
-                        : GestureDetector(
-                            key: const ValueKey('clear'),
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              openBrand(null);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.close_rounded, size: 15, color: t.accentDark),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    s.clear,
-                                    style: AppText.caption.copyWith(
-                                      color: t.accentDark,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
+                  // ارتفاع ثابت: ظهور «مسح» واختفاؤه لا يحرّك الشريط تحته.
+                  SizedBox(
+                    height: 36,
+                    child: AnimatedSwitcher(
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 200),
+                      child: selectedBrandId == null
+                          ? const SizedBox.shrink()
+                          : TextButton.icon(
+                              key: const ValueKey('clear'),
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                openBrand(null);
+                              },
+                              icon: const Icon(Icons.close_rounded, size: 16),
+                              label: Text(
+                                s.clear,
+                                style: AppText.caption.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: t.accentDark,
+                                minimumSize: const Size(44, 36),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
                               ),
                             ),
-                          ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
             _FadedRail(
+              key: const PageStorageKey('listing_brand_rail'),
               height: _BrandChip.height,
-              itemCount: brands.length,
+              itemCount: brands.length + (hasMoreBrands ? 1 : 0),
               activeIndex: selectedBrandId == null ? -1 : brands.indexWhere((b) => b.id == selectedBrandId),
               separator: 8,
               itemBuilder: (context, i) {
+                if (i == brands.length) {
+                  return _AllBrandsChip(
+                    label: s.lfAllBrandsCount(formatNumber(allBrands.length)),
+                    onTap: () => _openBrandPicker(
+                      context,
+                      brands: allBrands,
+                      selectedBrandId: selectedBrandId,
+                      onPick: openBrand,
+                    ),
+                  );
+                }
                 final b = brands[i];
                 final selected = selectedBrandId == b.id;
                 return _BrandChip(
                   brand: b,
                   name: b.localizedName(lang),
-                  countLabel: b.productCount > 0 ? '${formatNumber(b.productCount)} ${s.isAr ? 'منتج' : 'items'}' : null,
+                  countLabel: b.productCount > 0 ? s.lfBrandItems(formatNumber(b.productCount)) : null,
                   selected: selected,
                   onTap: () => openBrand(selected ? null : b.id),
                 );
@@ -187,20 +204,45 @@ class ListingFiltersSection extends ConsumerWidget {
   }
 }
 
+/// أقصى عدد براندات في الشريط — الباقي في ورقة «كل البراندات» القابلة للبحث.
+const _railBrandCap = 20;
+
+/// براندات الشريط: الأوائل، ومعهم المختار حتى لو كان بعدهم — فيبقى ظاهراً دائماً.
+List<Brand> _railBrands(List<Brand> all, String? selectedId) {
+  if (all.length <= _railBrandCap + 1) return all;
+  final head = all.take(_railBrandCap).toList();
+  if (selectedId != null && !head.any((b) => b.id == selectedId)) {
+    for (final b in all) {
+      if (b.id == selectedId) {
+        head.add(b);
+        break;
+      }
+    }
+  }
+  return head;
+}
+
 /// شريط أفقي بحواف متلاشية، يمرّر العنصر المختار إلى المنتصف عند الظهور.
+///
+/// مع [itemExtent] (عناصر بعرض ثابت) قائمة كسولة والموضع يُحسب حساباً — العنصر البعيد
+/// لم يُبنَ بعد فلا سياق له. بدونه تُبنى العناصر كلها في صف (عددها محدود) ويُمرَّر
+/// المختار بمقاسه الفعلي. التمرير على الشريط نفسه فقط: الصفحة لا تقفز عمودياً.
 class _FadedRail extends StatefulWidget {
   final double height;
   final int itemCount;
   final int activeIndex;
   final double separator;
+  final double? itemExtent;
   final IndexedWidgetBuilder itemBuilder;
 
   const _FadedRail({
+    super.key,
     required this.height,
     required this.itemCount,
     required this.activeIndex,
     required this.separator,
     required this.itemBuilder,
+    this.itemExtent,
   });
 
   @override
@@ -208,6 +250,7 @@ class _FadedRail extends StatefulWidget {
 }
 
 class _FadedRailState extends State<_FadedRail> {
+  final _controller = ScrollController();
   final _activeKey = GlobalKey();
 
   @override
@@ -222,16 +265,39 @@ class _FadedRailState extends State<_FadedRail> {
     if (old.activeIndex != widget.activeIndex) _revealActive(animate: true);
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   void _revealActive({required bool animate}) {
     if (widget.activeIndex <= 0) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _activeKey.currentContext;
-      if (ctx == null || !mounted) return;
-      Scrollable.ensureVisible(
-        ctx,
+      if (!mounted || !_controller.hasClients) return;
+      final position = _controller.position;
+      final motion = animate && !MediaQuery.disableAnimationsOf(context);
+      const duration = Duration(milliseconds: 380);
+      const curve = Curves.easeOutCubic;
+
+      final extent = widget.itemExtent;
+      if (extent != null) {
+        final start = ListingTheme.padH + widget.activeIndex * (extent + widget.separator);
+        final target = (start + extent / 2 - position.viewportDimension / 2)
+            .clamp(position.minScrollExtent, position.maxScrollExtent)
+            .toDouble();
+        if ((target - position.pixels).abs() < 1) return;
+        motion ? _controller.animateTo(target, duration: duration, curve: curve) : _controller.jumpTo(target);
+        return;
+      }
+
+      final box = _activeKey.currentContext?.findRenderObject();
+      if (box == null) return;
+      position.ensureVisible(
+        box,
         alignment: 0.5,
-        duration: animate ? const Duration(milliseconds: 380) : Duration.zero,
-        curve: Curves.easeOutCubic,
+        duration: motion ? duration : Duration.zero,
+        curve: curve,
       );
     });
   }
@@ -239,6 +305,42 @@ class _FadedRailState extends State<_FadedRail> {
   @override
   Widget build(BuildContext context) {
     final rtl = Directionality.of(context) == TextDirection.rtl;
+    const padding = EdgeInsets.symmetric(horizontal: ListingTheme.padH);
+
+    final Widget rail;
+    if (widget.itemExtent != null) {
+      rail = ListView.separated(
+        controller: _controller,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: padding,
+        clipBehavior: Clip.none,
+        itemCount: widget.itemCount,
+        separatorBuilder: (_, __) => SizedBox(width: widget.separator),
+        itemBuilder: widget.itemBuilder,
+      );
+    } else {
+      rail = SingleChildScrollView(
+        controller: _controller,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: padding,
+        clipBehavior: Clip.none,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < widget.itemCount; i++) ...[
+              if (i > 0) SizedBox(width: widget.separator),
+              KeyedSubtree(
+                key: i == widget.activeIndex ? _activeKey : null,
+                child: widget.itemBuilder(context, i),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     return SizedBox(
       height: widget.height,
       child: ShaderMask(
@@ -249,18 +351,7 @@ class _FadedRailState extends State<_FadedRail> {
           colors: const [Colors.white, Colors.white, Colors.transparent],
           stops: const [0, 0.93, 1],
         ).createShader(rect),
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: ListingTheme.padH),
-          clipBehavior: Clip.none,
-          itemCount: widget.itemCount,
-          separatorBuilder: (_, __) => SizedBox(width: widget.separator),
-          itemBuilder: (context, i) => KeyedSubtree(
-            key: i == widget.activeIndex ? _activeKey : null,
-            child: widget.itemBuilder(context, i),
-          ),
-        ),
+        child: rail,
       ),
     );
   }
@@ -562,4 +653,187 @@ class _BrandChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// آخر الشريط: «كل البراندات (N)» — يفتح ورقة بحث بكل براندات القسم.
+class _AllBrandsChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _AllBrandsChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: HomeTapScale(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 5, 14, 5),
+          decoration: BoxDecoration(
+            color: t.accentLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: t.accentSoft),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.apps_rounded, size: 18, color: t.accentDark),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                maxLines: 1,
+                style: AppText.label.copyWith(fontSize: 13, color: t.accentDark, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ورقة كل براندات القسم مع بحث بالاسم (عربي/إنجليزي).
+void _openBrandPicker(
+  BuildContext context, {
+  required List<Brand> brands,
+  required String? selectedBrandId,
+  required ValueChanged<String?> onPick,
+}) {
+  final s = ProviderScope.containerOf(context, listen: false).read(stringsProvider);
+  showAppSheet<void>(
+    context: context,
+    title: s.navBrands,
+    expand: true,
+    builder: (ctx) => _BrandPickerSheet(
+      brands: brands,
+      selectedBrandId: selectedBrandId,
+      onPick: (id) {
+        Navigator.of(ctx).pop();
+        onPick(id);
+      },
+    ),
+  );
+}
+
+class _BrandPickerSheet extends ConsumerStatefulWidget {
+  final List<Brand> brands;
+  final String? selectedBrandId;
+  final ValueChanged<String?> onPick;
+
+  const _BrandPickerSheet({required this.brands, required this.selectedBrandId, required this.onPick});
+
+  @override
+  ConsumerState<_BrandPickerSheet> createState() => _BrandPickerSheetState();
+}
+
+class _BrandPickerSheetState extends ConsumerState<_BrandPickerSheet> {
+  String _query = '';
+
+  /// يطابق الاسم بأي لغة، بلا حساسية لحالة الأحرف.
+  bool _matches(Brand b, String q) {
+    if (q.isEmpty) return true;
+    return [b.localizedName('ar'), b.localizedName('en'), b.name].any((n) => n.toLowerCase().contains(q));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+    final lang = ref.watch(languageCodeProvider);
+    final t = context.worldTheme;
+    final q = _query.trim().toLowerCase();
+    final visible = widget.brands.where((b) => _matches(b, q)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: TextField(
+            textInputAction: TextInputAction.search,
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              hintText: s.searchBrandsHint,
+              prefixIcon: Icon(Icons.search_rounded, color: t.inkMuted),
+            ),
+          ),
+        ),
+        Expanded(
+          child: visible.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(s.noBrands, style: AppText.body.copyWith(color: t.inkMuted)),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  itemCount: visible.length,
+                  itemBuilder: (context, i) {
+                    final b = visible[i];
+                    final selected = b.id == widget.selectedBrandId;
+                    return ListTile(
+                      minTileHeight: 56,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppCorners.md)),
+                      selected: selected,
+                      selectedTileColor: t.accentLight,
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppCorners.sm),
+                          border: Border.all(color: t.divider),
+                        ),
+                        child: b.logoUrl.isNotEmpty
+                            ? AppNetworkImage(url: b.logoUrl, fit: BoxFit.contain, backgroundColor: Colors.white)
+                            : Center(
+                                child: Text(
+                                  (b.initial ?? b.localizedName(lang)).characters.first.toUpperCase(),
+                                  style: AppText.title3.copyWith(color: t.accent),
+                                ),
+                              ),
+                      ),
+                      title: Text(
+                        b.localizedName(lang),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body.copyWith(
+                          color: selected ? t.accentDark : t.ink,
+                          fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: b.productCount > 0
+                          ? Text(
+                              s.lfBrandItems(formatNumber(b.productCount)),
+                              style: AppText.caption.copyWith(color: t.inkMuted),
+                            )
+                          : null,
+                      trailing: selected ? Icon(Icons.check_circle_rounded, color: t.accent) : null,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        widget.onPick(selected ? null : b.id);
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// نصوص شريط البراندات في صفحة القائمة.
+extension ListingFiltersLabels on AppStrings {
+  String lfAllBrandsCount(String n) => isAr ? 'كل البراندات ($n)' : 'All brands ($n)';
+
+  String lfBrandItems(String n) => isAr ? '$n منتج' : '$n items';
 }

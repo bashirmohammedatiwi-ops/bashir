@@ -18,37 +18,21 @@ class CircleTilesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
-    var items = section.items;
-    if (items.isEmpty && section.categories.isNotEmpty) {
-      items = section.categories
-          .map(
-            (c) => {
-              'id': c.id,
-              'title': c.nameAr ?? c.name,
-              'imageUrl': c.imageUrl,
-              'linkType': c.linkType ?? 'category',
-              'linkValue': c.linkValue ?? c.id,
-              'link': c.link ?? '/products?categoryId=${c.id}',
-            },
-          )
-          .toList();
-    }
+    // الخادم يرسل CIRCLE_TILES دائماً بعناصر جاهزة (items) — لا بديل من الأقسام.
+    final items = section.items;
     if (items.isEmpty) return const SizedBox.shrink();
 
     final layout = section.sectionLayout ?? section.layout ?? 'row';
 
     return HomeSectionShell(
       section: section,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
-        child: layout == 'row'
-            ? _CircleRow(items: items, lang: lang)
-            : _CircleGrid(
-                items: items,
-                columns: layout == 'grid3' ? 3 : 4,
-                lang: lang,
-              ),
-      ),
+      // الصف الأفقي يضع الحشوة داخل القائمة فتمرّ الدوائر حتى حافة الشاشة مثل بقية الصفوف.
+      child: layout == 'row'
+          ? _CircleRow(items: items, lang: lang)
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+              child: _CircleGrid(items: items, columns: layout == 'grid3' ? 3 : 4, lang: lang),
+            ),
     );
   }
 }
@@ -60,10 +44,21 @@ class _CircleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasSubtitle = items.any(
+      (e) =>
+          e is Map &&
+          cmsTextForLang(
+            Map<String, dynamic>.from(e),
+            lang,
+            arKey: 'subtitle',
+            enKey: 'subtitleEn',
+          ).isNotEmpty,
+    );
     return SizedBox(
-      height: 108,
+      height: CircleTile.heightFor(context, withSubtitle: hasSubtitle),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 4),
         itemBuilder: (_, i) => _buildTile(context, items[i], lang),
@@ -76,11 +71,7 @@ class _CircleGrid extends StatelessWidget {
   final List<dynamic> items;
   final int columns;
   final String lang;
-  const _CircleGrid({
-    required this.items,
-    required this.columns,
-    required this.lang,
-  });
+  const _CircleGrid({required this.items, required this.columns, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -107,12 +98,7 @@ Widget _buildTile(BuildContext context, dynamic data, String lang) {
   if (data is! Map) return const SizedBox.shrink();
   final m = Map<String, dynamic>.from(data);
   final title = cmsTextForLang(m, lang);
-  final subtitle = cmsTextForLang(
-    m,
-    lang,
-    arKey: 'subtitle',
-    enKey: 'subtitleEn',
-  );
+  final subtitle = cmsTextForLang(m, lang, arKey: 'subtitle', enKey: 'subtitleEn');
   return CircleTile(
     title: title.isNotEmpty ? title : (m['title']?.toString() ?? ''),
     subtitle: subtitle.isNotEmpty ? subtitle : m['subtitle']?.toString(),

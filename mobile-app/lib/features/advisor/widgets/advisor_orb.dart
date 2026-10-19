@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/brand/brand_logo.dart';
 
-/// كرة «ديما»: كرة بتدرّج الهوية، حلقة هالة تدور ببطء، وتنفّس هادئ.
-/// أثناء التفكير تتسارع الحلقة وتدور حولها نجيمات.
+/// كرة «ديما»: كرة بتدرّج الهوية، حلقة هالة، وتنفّس هادئ.
+///
+/// هادئة افتراضياً حتى لا تُرسم إطارات بلا داعٍ: الحلقة تدور فقط أثناء التفكير
+/// (وتدور حولها نجيمات)، والتنفّس للكرات الكبيرة فقط (40 فأكثر). مع «تقليل الحركة»
+/// تُرسم ثابتة تماماً.
 class AdvisorOrb extends StatefulWidget {
   final double size;
   final bool thinking;
@@ -16,16 +19,35 @@ class AdvisorOrb extends StatefulWidget {
 }
 
 class _AdvisorOrbState extends State<AdvisorOrb> with TickerProviderStateMixin {
-  late final AnimationController _spin = AnimationController(vsync: this, duration: const Duration(seconds: 9))..repeat();
-  late final AnimationController _breath = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))
-    ..repeat(reverse: true);
+  late final AnimationController _spin = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+  late final AnimationController _breath = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600), value: 0.5);
+  bool _still = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _still = MediaQuery.disableAnimationsOf(context);
+    _sync();
+  }
 
   @override
   void didUpdateWidget(covariant AdvisorOrb old) {
     super.didUpdateWidget(old);
-    if (old.thinking != widget.thinking) {
-      _spin.duration = widget.thinking ? const Duration(milliseconds: 1600) : const Duration(seconds: 9);
-      _spin.repeat();
+    if (old.thinking != widget.thinking || old.size != widget.size) _sync();
+  }
+
+  /// تشغيل/إيقاف الحركتين حسب الحالة — بلا تكرار دائم.
+  void _sync() {
+    if (widget.thinking && !_still) {
+      if (!_spin.isAnimating) _spin.repeat();
+    } else {
+      _spin.stop();
+    }
+    if (widget.size >= 40 && !_still) {
+      if (!_breath.isAnimating) _breath.repeat(reverse: true);
+    } else {
+      _breath.stop();
+      _breath.value = 0.5;
     }
   }
 
@@ -78,10 +100,12 @@ class _OrbPainter extends CustomPainter {
       c,
       glowR,
       Paint()
-        ..shader = RadialGradient(colors: [
-          BrandColors.rose.withValues(alpha: thinking ? 0.32 : 0.22),
-          BrandColors.orchid.withValues(alpha: 0),
-        ]).createShader(Rect.fromCircle(center: c, radius: glowR)),
+        ..shader = RadialGradient(
+          colors: [
+            BrandColors.rose.withValues(alpha: thinking ? 0.32 : 0.22),
+            BrandColors.orchid.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromCircle(center: c, radius: glowR)),
     );
 
     // الكرة: تدرّج دائري يدور
@@ -101,10 +125,9 @@ class _OrbPainter extends CustomPainter {
       c.translate(-body * 0.25, -body * 0.32),
       body * 0.55,
       Paint()
-        ..shader = RadialGradient(colors: [
-          Colors.white.withValues(alpha: 0.55),
-          Colors.white.withValues(alpha: 0),
-        ]).createShader(Rect.fromCircle(center: c.translate(-body * 0.25, -body * 0.32), radius: body * 0.55)),
+        ..shader = RadialGradient(
+          colors: [Colors.white.withValues(alpha: 0.55), Colors.white.withValues(alpha: 0)],
+        ).createShader(Rect.fromCircle(center: c.translate(-body * 0.25, -body * 0.32), radius: body * 0.55)),
     );
 
     // حلقة الهالة: قوس متدرّج يدور

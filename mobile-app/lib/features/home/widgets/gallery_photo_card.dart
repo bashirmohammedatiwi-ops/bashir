@@ -1,12 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
 import '../../worlds/world_theme.dart';
 import 'gallery_tile_sizer.dart';
+import 'home_animations.dart';
 import 'home_theme.dart';
 import 'photo_shape_kit.dart';
 
@@ -47,14 +51,15 @@ class GalleryRenderStyle {
       aspectLabel = section.aspectRatio;
     } else if (section.bannerAspect != null) {
       final a = section.bannerAspect!;
-      if ((a - 1).abs() < 0.05)
+      if ((a - 1).abs() < 0.05) {
         aspectLabel = '1:1';
-      else if ((a - 4 / 3).abs() < 0.05)
+      } else if ((a - 4 / 3).abs() < 0.05) {
         aspectLabel = '4:3';
-      else if ((a - 3 / 4).abs() < 0.05)
+      } else if ((a - 3 / 4).abs() < 0.05) {
         aspectLabel = '3:4';
-      else if ((a - 16 / 9).abs() < 0.05)
+      } else if ((a - 16 / 9).abs() < 0.05) {
         aspectLabel = '16:9';
+      }
     }
 
     return GalleryRenderStyle(
@@ -65,7 +70,8 @@ class GalleryRenderStyle {
       defaultBorder: section.borderStyle ?? 'none',
       defaultShadow: section.showShadow,
       fit: _parseFit(section.kind),
-      tileCornerRadius: section.tileCornerRadius ?? HomeTheme.galleryRadius,
+      // بلا قيمة من اللوحة = زوايا الشكل نفسه (حبة/قوس/دائرة) أو galleryRadius — انظري [cornerRadiusFor].
+      tileCornerRadius: section.tileCornerRadius,
       sectionCustomWidth: section.customWidth,
       sectionCustomHeight: section.customHeight,
       uniformStyle: true,
@@ -131,13 +137,24 @@ class GalleryRenderStyle {
       PhotoShapeGeometry.parseAspect(defaultAspect) ??
       PhotoShapeGeometry.aspectForShape(defaultShape);
 
-  double tileHeight(double fallback) =>
-      sectionCustomHeight ??
-      PhotoShapeGeometry.sizeHeight(defaultSize).clamp(96, fallback);
+  /// زاوية البطاقة: الأشكال ذات الزوايا المحسوبة (حبة، قوس، دائرة) تبقى كما صمّمتها اللوحة،
+  /// والبقية تأخذ زاوية القسم أو [HomeTheme.galleryRadius].
+  double? cornerRadiusFor(String shape) =>
+      _shapeOwnsRadius.contains(shape) ? null : (tileCornerRadius ?? HomeTheme.galleryRadius);
+
+  static const _shapeOwnsRadius = {'pill', 'arch', 'circle'};
+
+  double tileHeight(double fallback) {
+    if (sectionCustomHeight != null) return sectionCustomHeight!;
+    // حدّ أدنى لا يتجاوز الأعلى — clamp يرمي خطأ إن انعكس المدى.
+    final lo = math.min(96.0, fallback);
+    return PhotoShapeGeometry.sizeHeight(defaultSize).clamp(lo, math.max(lo, fallback));
+  }
 
   double tileWidth(double height) {
-    if (sectionCustomWidth != null && sectionCustomWidth! > 0)
+    if (sectionCustomWidth != null && sectionCustomWidth! > 0) {
       return sectionCustomWidth!;
+    }
     final aspect = resolvedAspect();
     return height * aspect;
   }
@@ -152,7 +169,9 @@ class GalleryPhotoCard extends ConsumerWidget {
   final VoidCallback? onTap;
   final bool showCaption;
   final double? cornerRadiusOverride;
-  final bool showShadow;
+
+  /// null = إعداد الصورة/القسم من اللوحة ([PhotoTileData.showShadow]).
+  final bool? showShadow;
 
   const GalleryPhotoCard({
     super.key,
@@ -163,7 +182,7 @@ class GalleryPhotoCard extends ConsumerWidget {
     this.onTap,
     this.showCaption = true,
     this.cornerRadiusOverride,
-    this.showShadow = true,
+    this.showShadow,
   });
 
   bool _hasCaption(String lang) =>
@@ -175,23 +194,15 @@ class GalleryPhotoCard extends ConsumerWidget {
     if (data.imageUrl.isEmpty) return const SizedBox.shrink();
 
     final t = context.worldTheme;
-    String? title;
-    String? subtitle;
-    String lang = 'ar';
-    if (showCaption) {
-      lang = ref.watch(languageCodeProvider);
-      title = data.titleForLang(lang);
-      subtitle = data.subtitleForLang(lang);
-    }
+    final lang = ref.watch(languageCodeProvider);
+    final rawTitle = data.titleForLang(lang);
+    final title = showCaption ? rawTitle : null;
+    final subtitle = showCaption ? data.subtitleForLang(lang) : null;
 
     final shape = data.shape;
-    final radius = PhotoShapeGeometry.cornerRadius(
-      shape,
-      height,
-      override: cornerRadiusOverride,
-    );
+    final radius = PhotoShapeGeometry.cornerRadius(shape, height, override: cornerRadiusOverride);
     final borderRadius = PhotoShapeGeometry.borderRadius(shape, radius);
-    final border = PhotoShapeGeometry.border(data.borderStyle);
+    final border = PhotoShapeGeometry.border(data.borderStyle, accent: t.accent);
 
     Widget image = AppNetworkImage(
       url: data.imageUrl,
@@ -221,7 +232,7 @@ class GalleryPhotoCard extends ConsumerWidget {
         borderRadius: shape == 'circle' ? null : borderRadius,
         shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
         border: border,
-        boxShadow: (showShadow || data.showShadow) ? t.cardShadow : null,
+        boxShadow: (showShadow ?? data.showShadow) ? t.cardShadow : null,
       ),
       child: ClipRRect(
         borderRadius: shape == 'circle' ? BorderRadius.zero : borderRadius,
@@ -240,9 +251,7 @@ class GalleryPhotoCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           framedImage,
-          if (showCaption &&
-              _hasCaption(lang) &&
-              (data.overlayStyle ?? 'none') == 'none') ...[
+          if (showCaption && _hasCaption(lang) && (data.overlayStyle ?? 'none') == 'none') ...[
             const SizedBox(height: 9),
             Row(
               children: [
@@ -282,11 +291,7 @@ class GalleryPhotoCard extends ConsumerWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: t.accentSoft),
                     ),
-                    child: Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 14,
-                      color: t.accentDark,
-                    ),
+                    child: Icon(Icons.arrow_forward_rounded, size: 14, color: t.accentDark),
                   ),
               ],
             ),
@@ -295,17 +300,32 @@ class GalleryPhotoCard extends ConsumerWidget {
       ),
     );
 
-    if (onTap == null) return card;
+    // تسمية لقارئ الشاشة — العنوان (والعنوان الفرعي) من اللوحة، أو «صورة».
+    final rawSubtitle = data.subtitleForLang(lang);
+    final label = rawTitle == null
+        ? ref.watch(stringsProvider).homeMediaPhoto
+        : (rawSubtitle == null ? rawTitle : '$rawTitle, $rawSubtitle');
+    if (onTap == null) {
+      return Semantics(
+        image: true,
+        label: label,
+        child: ExcludeSemantics(child: card),
+      );
+    }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap!();
-        },
-        borderRadius: borderRadius,
-        child: card,
+    // ضغطة مرئية فوق الصورة (التموّج كان يُرسم تحت الصورة المعتمة فلا يظهر).
+    return Semantics(
+      button: true,
+      image: true,
+      label: label,
+      child: ExcludeSemantics(
+        child: HomeTapScale(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap!();
+          },
+          child: card,
+        ),
       ),
     );
   }
@@ -338,19 +358,14 @@ class GalleryGridLayout extends StatelessWidget {
           viewportWidth: constraints.maxWidth,
           gap: gap,
           section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(
-            section,
-            defaultAspect: style.defaultAspect,
-          ),
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
           gridColumns: columns,
         );
         final tileW = sizer.tileWidth;
         final tileH = sizer.tileHeight;
 
         // الصف الأخير الناقص يتمدد ليملأ العرض — لا بطاقات يتيمة ولا فراغات.
-        final visible = items
-            .where((raw) => style.tileData(raw).imageUrl.isNotEmpty)
-            .toList();
+        final visible = items.where((raw) => style.tileData(raw).imageUrl.isNotEmpty).toList();
         final remainder = columns > 1 ? visible.length % columns : 0;
         final rowW = constraints.maxWidth;
         return Wrap(
@@ -363,20 +378,20 @@ class GalleryGridLayout extends StatelessWidget {
                 builder: (context) {
                   final raw = visible[i];
                   final data = style.tileData(raw);
-                  final inLastRow =
-                      remainder > 0 && i >= visible.length - remainder;
-                  final w = inLastRow
-                      ? (rowW - gap * (remainder - 1)) / remainder
-                      : tileW;
+                  final inLastRow = remainder > 0 && i >= visible.length - remainder;
+                  final w = inLastRow ? (rowW - gap * (remainder - 1)) / remainder : tileW;
+                  // البطاقة الوحيدة في الصف الأخير أعرض — نحدّ ارتفاعها دون قلب مدى clamp
+                  // (البلاطات القصيرة < 120 كانت ترمي ArgumentError).
+                  final lo = math.min(120.0, tileH);
                   final h = inLastRow && remainder == 1
-                      ? (w / 2.1).clamp(120.0, tileH)
+                      ? (w / 2.1).clamp(lo, math.max(lo, tileH)).toDouble()
                       : tileH;
                   return GalleryPhotoCard(
                     data: data,
                     width: w,
                     height: h,
                     fit: style.fit,
-                    cornerRadiusOverride: style.tileCornerRadius,
+                    cornerRadiusOverride: style.cornerRadiusFor(data.shape),
                     showCaption: (data.overlayStyle ?? 'none') == 'none',
                     onTap: () => onTap(raw),
                   );
@@ -390,12 +405,14 @@ class GalleryGridLayout extends StatelessWidget {
 }
 
 /// تمرير أفقي — بطاقات موحّدة العرض والارتفاع.
-class GalleryHorizontalLayout extends StatelessWidget {
+/// [padding] داخل القائمة نفسها، فتمرّ الصور حتى حافة الشاشة مثل صفوف المنتجات.
+class GalleryHorizontalLayout extends ConsumerWidget {
   final HomeSection section;
   final List<Map<String, dynamic>> items;
   final double gap;
   final GalleryRenderStyle style;
   final void Function(Map<String, dynamic> raw) onTap;
+  final EdgeInsetsGeometry padding;
 
   const GalleryHorizontalLayout({
     super.key,
@@ -404,53 +421,72 @@ class GalleryHorizontalLayout extends StatelessWidget {
     required this.gap,
     required this.style,
     required this.onTap,
+    this.padding = EdgeInsets.zero,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final scaler = MediaQuery.textScalerOf(context);
+    final resolvedPadding = padding.resolve(Directionality.of(context));
+    // الصور بلا رابط صورة تُستبعد قبل البناء — لا فجوات مزدوجة بين الفواصل.
+    final visible = [
+      for (final raw in items)
+        if (style.tileData(raw).imageUrl.isNotEmpty) raw,
+    ];
+    if (visible.isEmpty) return const SizedBox.shrink();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final sizer = GalleryTileSizer.forSection(
-          viewportWidth: constraints.maxWidth,
+          // مقاس البطاقات من العرض المرئي بعد الحشوة — نفس المقاس قبل نقل الحشوة للداخل.
+          viewportWidth: math.max(0.0, constraints.maxWidth - resolvedPadding.horizontal),
           gap: gap,
           section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(
-            section,
-            defaultAspect: style.defaultAspect,
-          ),
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
         );
         final tileH = sizer.tileHeight;
         final tileW = sizer.tileWidth;
-        final captionExtra = style.defaultOverlay == 'none' ? 28.0 : 0.0;
+
+        // مساحة التعليق تحت الصورة: 9 فراغ + العنوان (13.5×1.2) + العنوان الفرعي (11×1.4) إن وُجد،
+        // بحجم الخط الفعلي للمستخدم — لا قصّ للنص عند تكبير الخط.
+        var hasCaption = false;
+        var hasSub = false;
+        for (final raw in visible) {
+          final d = style.tileData(raw);
+          if ((d.overlayStyle ?? 'none') != 'none') continue;
+          if (d.titleForLang(lang)?.isNotEmpty ?? false) hasCaption = true;
+          if (d.subtitleForLang(lang)?.isNotEmpty ?? false) {
+            hasCaption = true;
+            hasSub = true;
+          }
+        }
+        final textH = scaler.scale(13.5) * 1.2 + (hasSub ? scaler.scale(11) * 1.4 : 0);
+        // سهم «افتحي» (24) يظهر بجانب النص في البطاقات العريضة.
+        final captionRowH = tileW >= 110 ? math.max(textH, 24.0) : textH;
+        final captionExtra = hasCaption ? 9 + captionRowH + 2 : 0.0;
 
         return SizedBox(
           height: tileH + captionExtra,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            padding: EdgeInsets.zero,
-            itemCount: items.length,
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            padding: padding,
+            itemCount: visible.length,
             separatorBuilder: (_, __) => SizedBox(width: gap),
             itemBuilder: (context, i) {
-              final raw = items[i];
+              final raw = visible[i];
               final data = style.tileData(raw);
-              if (data.imageUrl.isEmpty) return const SizedBox.shrink();
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onTap(raw);
-                },
+              return Align(
+                alignment: AlignmentDirectional.topStart,
                 child: GalleryPhotoCard(
                   data: data,
                   width: tileW,
                   height: tileH,
                   fit: style.fit,
-                  cornerRadiusOverride: style.tileCornerRadius,
+                  cornerRadiusOverride: style.cornerRadiusFor(data.shape),
                   showCaption: (data.overlayStyle ?? 'none') == 'none',
-                  onTap: null,
+                  onTap: () => onTap(raw),
                 ),
               );
             },
@@ -482,31 +518,34 @@ class GalleryStackLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final sizer = GalleryTileSizer.forSection(
+        // كل صورة بعرض الشاشة كاملاً — الارتفاع من النسبة بغضّ النظر عن tilesPerView
+        // (الفسيفساء كانت تُرسم شريطاً بارتفاع ~73).
+        final tileH = GalleryTileSizer(
           viewportWidth: constraints.maxWidth,
           gap: gap,
-          section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(
-            section,
-            defaultAspect: style.defaultAspect,
-          ),
-        );
+          tilesPerView: 1,
+          rowHeight: section.rowHeight ?? 'auto',
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+        ).tileHeight;
+        final visible = [
+          for (final raw in items)
+            if (style.tileData(raw).imageUrl.isNotEmpty) raw,
+        ];
 
         return Column(
           children: [
-            for (var i = 0; i < items.length; i++) ...[
+            for (var i = 0; i < visible.length; i++) ...[
               if (i > 0) SizedBox(height: gap),
               Builder(
                 builder: (context) {
-                  final data = style.tileData(items[i]);
-                  if (data.imageUrl.isEmpty) return const SizedBox.shrink();
+                  final data = style.tileData(visible[i]);
                   return GalleryPhotoCard(
                     data: data,
                     width: constraints.maxWidth,
-                    height: sizer.tileHeight,
+                    height: tileH,
                     fit: style.fit,
-                    cornerRadiusOverride: style.tileCornerRadius,
-                    onTap: () => onTap(items[i]),
+                    cornerRadiusOverride: style.cornerRadiusFor(data.shape),
+                    onTap: () => onTap(visible[i]),
                   );
                 },
               ),
@@ -537,8 +576,7 @@ class _GalleryOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasText =
-        (title?.isNotEmpty ?? false) || (subtitle?.isNotEmpty ?? false);
+    final hasText = (title?.isNotEmpty ?? false) || (subtitle?.isNotEmpty ?? false);
     final hasBadge = badge?.isNotEmpty ?? false;
     if (style == 'none' && !hasText && !hasBadge) return child;
 
@@ -555,9 +593,7 @@ class _GalleryOverlay extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(
-                      alpha: style == 'center' ? 0.35 : 0.04,
-                    ),
+                    Colors.black.withValues(alpha: style == 'center' ? 0.35 : 0.04),
                     Colors.black.withValues(alpha: 0.68),
                   ],
                   stops: const [0.0, 0.5, 1.0],
@@ -571,16 +607,10 @@ class _GalleryOverlay extends StatelessWidget {
             end: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(20),
-              ),
+              decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(20)),
               child: Text(
                 badge!,
-                style: HomeTheme.overline.copyWith(
-                  color: Colors.white,
-                  fontSize: 10,
-                ),
+                style: HomeTheme.overline.copyWith(color: Colors.white, fontSize: 10),
               ),
             ),
           ),
@@ -592,11 +622,7 @@ class _GalleryOverlay extends StatelessWidget {
             top: style == 'center' ? 0 : null,
             child: style == 'center'
                 ? Center(
-                    child: _GalleryOverlayText(
-                      title: title,
-                      subtitle: subtitle,
-                      center: true,
-                    ),
+                    child: _GalleryOverlayText(title: title, subtitle: subtitle, center: true),
                   )
                 : _GalleryOverlayText(title: title, subtitle: subtitle),
           ),
@@ -616,9 +642,7 @@ class _GalleryOverlayText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: center
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         if (title != null && title!.isNotEmpty)
           Text(
@@ -637,10 +661,7 @@ class _GalleryOverlayText extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: center ? TextAlign.center : TextAlign.start,
-            style: HomeTheme.body(
-              size: 11,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
+            style: HomeTheme.body(size: 11, color: Colors.white.withValues(alpha: 0.9)),
           ),
         ],
       ],

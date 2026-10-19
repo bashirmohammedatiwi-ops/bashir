@@ -7,7 +7,8 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/product_card.dart';
+import '../../../core/theme/card_sizes.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/product_card_actions.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/home_section.dart';
@@ -15,12 +16,29 @@ import '../../../data/models/product.dart';
 import '../../worlds/world_theme.dart';
 import '../home_link.dart';
 import '../home_strings.dart';
+import '../widgets/home_product_row.dart';
+import '../widgets/home_section_shell.dart';
+
+/// هل تصلح قائمة المنتجات لتكون «واجهة عرض»؟ فقط بتخطيط افتراضي أو «spotlight» —
+/// تخطيط «film» وغيره مما يختاره المشرف يبقى كما هو.
+bool isSpotlightCandidate(HomeSection section) {
+  final layout = (section.layout ?? '').trim();
+  return section.type == 'PRODUCT_LIST' &&
+      section.products.isNotEmpty &&
+      (layout.isEmpty || layout == 'spotlight');
+}
 
 /// أول قائمة منتجات في العالم تُعرض كـ"واجهة عرض":
 /// منتج بطل كبير في بطاقة تحريرية، ثم بقية المختارات في صف — كسر لرتابة الصفوف المتكررة.
+/// العنوان والخلفية و«عرض الكل» من لوحة التحكم كبقية الأقسام.
 class ProductSpotlightSection extends ConsumerWidget {
   final HomeSection section;
-  const ProductSpotlightSection({super.key, required this.section});
+  final bool compactTop;
+  const ProductSpotlightSection({
+    super.key,
+    required this.section,
+    this.compactTop = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +46,6 @@ class ProductSpotlightSection extends ConsumerWidget {
         .where((p) => p.coverUrl.isNotEmpty)
         .toList();
     if (products.isEmpty) return const SizedBox.shrink();
-    final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
     // البطل: أول منتج متوفر.
     final hero = products.firstWhere(
@@ -36,43 +53,39 @@ class ProductSpotlightSection extends ConsumerWidget {
       orElse: () => products.first,
     );
     final rest = products.where((p) => p.id != hero.id).toList();
+    void viewAll() => openViewAllLink(
+      context,
+      query: section.viewAllQuery,
+      fallbackQuery: 'isFeatured=1',
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppSectionTitle(
-          title: section.titleForLang(lang) ?? s.homeSpotlight,
-          subtitle: section.subtitleForLang(lang),
-          actionLabel: section.showViewAll ? s.viewAll : null,
-          onAction: section.showViewAll
-              ? () => openViewAllLink(
-                  context,
-                  query: section.viewAllQuery,
-                  fallbackQuery: 'isFeatured=1',
-                )
-              : null,
-        ),
-        _HeroProductCard(product: hero, badge: s.homeSpotlight),
-        if (rest.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 262,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: rest.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => ProductCard(
-                key: ValueKey(rest[i].id),
-                product: rest[i],
-                width: 150,
-                lite: true,
-                showPromoBadge: true,
+    return HomeSectionShell(
+      section: section,
+      compactTop: compactTop,
+      showTitle: section.showTitle,
+      actionLabel: section.showViewAll ? s.viewAll : null,
+      onAction: section.showViewAll ? viewAll : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _HeroProductCard(product: hero, badge: s.homeSpotlightBadge),
+          if (rest.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            HomeProductRow(
+              products: rest,
+              showPromoBadge: true,
+              itemWidth: Responsive.scaledCarouselWidth(
+                context,
+                cardSizeSpec(
+                  section.productCardSize ?? section.cardSize,
+                ).productWidth,
               ),
+              onViewAll: section.showViewAll ? viewAll : null,
+              viewAllLabel: s.viewAll,
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -95,11 +108,15 @@ class _HeroProductCard extends ConsumerWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.horizontalPadding(context),
+      ),
       child: GestureDetector(
         onTap: open,
         child: Container(
-          height: 178,
+          // ارتفاع أدنى لا ثابت: مع تكبير الخط حتى 1.25 تتمدد البطاقة بدل أن يخرج
+          // السعر وزر السلة منها.
+          constraints: const BoxConstraints(minHeight: 178),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: t.surface,
@@ -118,6 +135,7 @@ class _HeroProductCard extends ConsumerWidget {
               // لوحة الصورة: بيضاء (صور المنتجات بخلفية بيضاء) مع منصة عرض بلون العالم.
               Container(
                 width: 150,
+                height: 162,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
@@ -166,6 +184,7 @@ class _HeroProductCard extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 6, 2),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
@@ -237,7 +256,7 @@ class _HeroProductCard extends ConsumerWidget {
                           ],
                         ),
                       ],
-                      const Spacer(),
+                      const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [

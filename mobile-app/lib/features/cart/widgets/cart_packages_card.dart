@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../worlds/world_theme.dart';
 import '../cart_packages_provider.dart';
+import '../cart_strings.dart';
 import 'cart_theme.dart';
 
 /// باقات السلة: المكتملة بتوفيرها، والناقصة بما ينقصها — حتى تفهم الزبونة لماذا تغيّر السعر.
@@ -32,7 +34,9 @@ class CartPackagesCard extends ConsumerWidget {
               children: [
                 CartTheme.iconBadge(context, Icons.card_giftcard_rounded, size: 34),
                 const SizedBox(width: 10),
-                Expanded(child: Text('باقاتكِ', style: AppText.title3.copyWith(color: t.ink))),
+                Expanded(
+                  child: Text(ref.s.cartYourBundles, style: AppText.title3.copyWith(color: t.ink)),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -50,6 +54,7 @@ class _PackageLine extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final t = context.worldTheme;
     final p = status.pack;
     final done = status.complete;
@@ -90,8 +95,10 @@ class _PackageLine extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       done
-                          ? (status.saving > 0 ? '✓ مكتملة — وفّرتِ ${formatPrice(status.saving)}' : '✓ مكتملة')
-                          : 'ينقصها $missing ${missing == 1 ? 'منتج' : 'منتجات'} — أكمليها لسعر الباقة',
+                          ? (status.saving > 0
+                                ? s.cartBundleCompleteSaved(formatPrice(status.saving, lang: s.lang))
+                                : s.cartBundleComplete)
+                          : s.cartBundleMissing(missing),
                       style: AppText.caption.copyWith(
                         color: done ? AppColors.success : t.inkSoft,
                         fontWeight: FontWeight.w700,
@@ -103,11 +110,13 @@ class _PackageLine extends ConsumerWidget {
               if (!done)
                 TextButton(
                   onPressed: () => context.push('/package/${Uri.encodeComponent(p.routeId)}'),
-                  child: const Text('أكمليها'),
+                  style: TextButton.styleFrom(minimumSize: const Size(0, kMinTapTarget)),
+                  child: Text(s.cartCompleteBundle),
                 ),
               IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: 'إلغاء الباقة (تبقى المنتجات)',
+                constraints: const BoxConstraints.tightFor(width: kMinTapTarget, height: kMinTapTarget),
+                padding: EdgeInsets.zero,
+                tooltip: s.cartRemoveBundle,
                 onPressed: () {
                   HapticFeedback.selectionClick();
                   ref.read(cartPackagesProvider.notifier).remove(p.id);

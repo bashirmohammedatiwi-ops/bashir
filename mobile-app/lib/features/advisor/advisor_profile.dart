@@ -5,60 +5,70 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/utils/json.dart';
 
-/// خيار في الملف الجمالي: المعرّف الذي تفهمه «ديما» + اسمه ورمزه.
+/// خيار في الملف الجمالي: المعرّف الذي تفهمه «ديما» + اسمه بالعربي والإنجليزي ورمزه.
 class ProfileOption {
   final String id;
-  final String label;
+  final String ar;
   final String emoji;
-  const ProfileOption(this.id, this.label, this.emoji);
+  final String en;
+  const ProfileOption(this.id, this.ar, this.emoji, this.en);
+
+  String label(bool isAr) => isAr ? ar : en;
 }
 
 abstract final class ProfileOptions {
   static const skinTypes = [
-    ProfileOption('oily', 'دهنية', '💦'),
-    ProfileOption('dry', 'جافة', '🏜️'),
-    ProfileOption('combination', 'مختلطة', '☯️'),
-    ProfileOption('sensitive', 'حساسة', '🌷'),
+    ProfileOption('oily', 'دهنية', '💦', 'Oily'),
+    ProfileOption('dry', 'جافة', '🏜️', 'Dry'),
+    ProfileOption('combination', 'مختلطة', '☯️', 'Combination'),
+    ProfileOption('normal', 'عادية', '😊', 'Normal'),
+    ProfileOption('sensitive', 'حساسة', '🌷', 'Sensitive'),
   ];
   static const skinConcerns = [
-    ProfileOption('acne', 'حب الشباب', '🔴'),
-    ProfileOption('pigment', 'التصبغات', '✨'),
-    ProfileOption('aging', 'التجاعيد', '⏳'),
-    ProfileOption('pores', 'المسام', '🔍'),
-    ProfileOption('dark_circles', 'الهالات', '👁️'),
-    ProfileOption('dull', 'البهتان', '🌫️'),
-    ProfileOption('dryness', 'الجفاف', '💧'),
-    ProfileOption('sensitive', 'الاحمرار', '🌡️'),
+    ProfileOption('acne', 'حب الشباب', '🔴', 'Acne'),
+    ProfileOption('pigment', 'التصبغات', '✨', 'Pigmentation'),
+    ProfileOption('aging', 'التجاعيد', '⏳', 'Wrinkles'),
+    ProfileOption('pores', 'المسام', '🔍', 'Pores'),
+    ProfileOption('oily', 'الدهون واللمعان', '🫧', 'Oil & shine'),
+    ProfileOption('dark_circles', 'الهالات', '👁️', 'Dark circles'),
+    ProfileOption('dull', 'البهتان', '🌫️', 'Dullness'),
+    ProfileOption('dryness', 'الجفاف', '💧', 'Dryness'),
+    ProfileOption('sensitive', 'الاحمرار', '🌡️', 'Redness'),
   ];
   static const hairConcerns = [
-    ProfileOption('hairloss', 'التساقط', '🍃'),
-    ProfileOption('dandruff', 'القشرة', '❄️'),
-    ProfileOption('frizz', 'الهيشان', '🌀'),
-    ProfileOption('damaged', 'التلف', '🩹'),
-    ProfileOption('dry_hair', 'الجفاف', '🌾'),
-    ProfileOption('colored', 'مصبوغ', '🎨'),
-    ProfileOption('oily_scalp', 'فروة دهنية', '💧'),
+    ProfileOption('hairloss', 'التساقط', '🍃', 'Hair loss'),
+    ProfileOption('dandruff', 'القشرة', '❄️', 'Dandruff'),
+    ProfileOption('frizz', 'الهيشان', '🌀', 'Frizz'),
+    ProfileOption('damaged', 'التلف', '🩹', 'Damage'),
+    ProfileOption('dry_hair', 'الجفاف', '🌾', 'Dryness'),
+    ProfileOption('colored', 'مصبوغ', '🎨', 'Colour-treated'),
+    ProfileOption('oily_scalp', 'فروة دهنية', '💧', 'Oily scalp'),
   ];
   static const families = [
-    ProfileOption('woody', 'خشبي', '🪵'),
-    ProfileOption('floral', 'زهري', '🌹'),
-    ProfileOption('oriental', 'شرقي', '🕌'),
-    ProfileOption('oud', 'عود', '🏺'),
-    ProfileOption('musk', 'مسك', '🤍'),
-    ProfileOption('vanilla', 'فانيلا', '🍦'),
-    ProfileOption('sweet', 'حلو', '🍬'),
-    ProfileOption('fresh', 'منعش', '🍋'),
-    ProfileOption('fruity', 'فواكه', '🍓'),
-    ProfileOption('coffee', 'قهوة', '☕'),
+    ProfileOption('woody', 'خشبي', '🪵', 'Woody'),
+    ProfileOption('floral', 'زهري', '🌹', 'Floral'),
+    ProfileOption('oriental', 'شرقي', '🕌', 'Oriental'),
+    ProfileOption('oud', 'عود', '🏺', 'Oud'),
+    ProfileOption('musk', 'مسك', '🤍', 'Musk'),
+    ProfileOption('vanilla', 'فانيلا', '🍦', 'Vanilla'),
+    ProfileOption('sweet', 'حلو', '🍬', 'Sweet'),
+    ProfileOption('fresh', 'منعش', '🍋', 'Fresh'),
+    ProfileOption('fruity', 'فواكه', '🍓', 'Fruity'),
+    ProfileOption('coffee', 'قهوة', '☕', 'Coffee'),
   ];
   static const genders = [
-    ProfileOption('women', 'نسائية', '👩'),
-    ProfileOption('unisex', 'للجنسين', '🤝'),
+    ProfileOption('women', 'نسائية', '👩', 'Feminine'),
+    ProfileOption('unisex', 'للجنسين', '🤝', 'Unisex'),
   ];
 
-  static String? label(List<ProfileOption> list, String? id) {
+  /// حدود ما تعتمده «ديما» من كل مجموعة (مطابقة لما يقصّه السيرفر).
+  static const maxConcerns = 4;
+  static const maxHairConcerns = 4;
+  static const maxFamilies = 5;
+
+  static String? label(List<ProfileOption> list, String? id, {bool isAr = true}) {
     for (final o in list) {
-      if (o.id == id) return o.label;
+      if (o.id == id) return o.label(isAr);
     }
     return null;
   }
@@ -126,21 +136,23 @@ class AdvisorProfile {
       if (l != null) notes.add('بشرتكِ $l');
     }
     List<String>? list(String k) => u[k] is List ? asStringList(u[k]) : null;
+    // ما تعلّمته يُضاف لما اختارته بنفسها — لا يحلّ محله (السيرفر يرسل قائمة مقصوصة).
+    List<String> union(List<String> learned, List<String> mine) => [...learned, ...mine.where((x) => !learned.contains(x))];
     final c = list('concerns');
     if (c != null) {
-      next = next.copyWith(concerns: c);
+      next = next.copyWith(concerns: union(c, concerns));
       final added = c.where((x) => !concerns.contains(x)).map((x) => ProfileOptions.label(ProfileOptions.skinConcerns, x)).whereType<String>();
       if (added.isNotEmpty) notes.add('تهتمين بـ${added.join(' و')}');
     }
     final h = list('hairConcerns');
     if (h != null) {
-      next = next.copyWith(hairConcerns: h);
+      next = next.copyWith(hairConcerns: union(h, hairConcerns));
       final added = h.where((x) => !hairConcerns.contains(x)).map((x) => ProfileOptions.label(ProfileOptions.hairConcerns, x)).whereType<String>();
       if (added.isNotEmpty) notes.add('شعركِ: ${added.join(' و')}');
     }
     final f = list('families');
     if (f != null) {
-      next = next.copyWith(families: f);
+      next = next.copyWith(families: union(f, families));
       final added = f.where((x) => !families.contains(x)).map((x) => ProfileOptions.label(ProfileOptions.families, x)).whereType<String>();
       if (added.isNotEmpty) notes.add('تحبين ${added.join(' و')}');
     }
@@ -151,10 +163,12 @@ class AdvisorProfile {
 
   /// سطر يلخص ما تتذكره «ديما» (للترحيب).
   String summary() {
+    final skin = ProfileOptions.label(ProfileOptions.skinTypes, skinType);
+    final loved = families.map((f) => ProfileOptions.label(ProfileOptions.families, f)).whereType<String>().take(2);
     final parts = <String>[
-      if (skinType != null) 'بشرة ${ProfileOptions.label(ProfileOptions.skinTypes, skinType) ?? ''}',
-      ...concerns.take(2).map((c) => ProfileOptions.label(ProfileOptions.skinConcerns, c)).whereType<String>(),
-      if (families.isNotEmpty) 'تحبين ${families.take(2).map((f) => ProfileOptions.label(ProfileOptions.families, f)).whereType<String>().join(' و')}',
+      if (skin != null) 'بشرة $skin',
+      ...concerns.map((c) => ProfileOptions.label(ProfileOptions.skinConcerns, c)).whereType<String>().take(2),
+      if (loved.isNotEmpty) 'تحبين ${loved.join(' و')}',
     ];
     return parts.join(' • ');
   }

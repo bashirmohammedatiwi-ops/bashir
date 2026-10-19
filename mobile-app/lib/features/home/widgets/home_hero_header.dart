@@ -16,6 +16,12 @@ import '../../profile/profile_providers.dart';
 import '../../worlds/world_theme.dart';
 import '../../worlds/worlds_provider.dart';
 
+/// وصف زر بشارة لقارئ الشاشة: «الإشعارات، 3 جديدة».
+extension _HeroHeaderStrings on AppStrings {
+  String withBadge(String label, int n) =>
+      n <= 0 ? label : (isAr ? '$label، $n جديدة' : '$label, $n new');
+}
+
 /// رأس الرئيسية — نظيف على خلفية بيضاء.
 class HomeHeroHeader extends ConsumerWidget {
   final bool overBanner;
@@ -44,6 +50,7 @@ class HomeHeroHeader extends ConsumerWidget {
             Expanded(
               child: _BannerSearchField(
                 hint: s.searchHintHome,
+                scanLabel: s.scanBarcode,
                 onSearch: () => context.push('/search'),
                 onScan: () => context.push('/scan'),
               ),
@@ -51,6 +58,7 @@ class HomeHeroHeader extends ConsumerWidget {
             const SizedBox(width: 8),
             _GlassRoundButton(
               icon: Icons.notifications_none_rounded,
+              label: s.withBadge(s.notifications, unread),
               badge: unread,
               onTap: () => context.push('/notifications'),
             ),
@@ -58,6 +66,7 @@ class HomeHeroHeader extends ConsumerWidget {
               const SizedBox(width: 8),
               _GlassRoundButton(
                 icon: Icons.support_agent_rounded,
+                label: s.whatsappSupport,
                 onTap: () =>
                     openWhatsApp(whatsapp, message: s.whatsappHelpMessage),
               ),
@@ -74,9 +83,10 @@ class HomeHeroHeader extends ConsumerWidget {
             IconButton(
               onPressed: () =>
                   openWhatsApp(whatsapp, message: s.whatsappHelpMessage),
+              tooltip: s.whatsappSupport,
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               icon: Icon(
                 Icons.support_agent_rounded,
                 color: iconColor,
@@ -89,9 +99,10 @@ class HomeHeroHeader extends ConsumerWidget {
                 context,
                 ProviderScope.containerOf(context, listen: false),
               ),
+              tooltip: s.withBadge(s.navCart, cartCount),
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               icon: Badge(
                 isLabelVisible: cartCount > 0,
                 label: Text(cartCount > 9 ? '9+' : '$cartCount'),
@@ -155,14 +166,15 @@ class HomeHeroHeader extends ConsumerWidget {
                   ),
                   IconButton(
                     onPressed: () => context.push('/scan'),
+                    tooltip: s.scanBarcode,
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
-                      minWidth: 36,
-                      minHeight: 36,
+                      minWidth: 44,
+                      minHeight: 42,
                     ),
                     icon: Icon(
-                      Icons.photo_camera_outlined,
+                      Icons.qr_code_scanner_rounded,
                       size: 20,
                       color: t.inkSoft,
                     ),
@@ -174,9 +186,10 @@ class HomeHeroHeader extends ConsumerWidget {
           const SizedBox(width: 2),
           IconButton(
             onPressed: () => context.push('/notifications'),
+            tooltip: s.withBadge(s.notifications, unread),
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             icon: Badge(
               isLabelVisible: unread > 0,
               label: Text(unread > 9 ? '9+' : '$unread'),
@@ -196,16 +209,28 @@ class HomeHeroHeader extends ConsumerWidget {
 class _GlassRoundButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final String label;
   final int badge;
 
   const _GlassRoundButton({
     required this.icon,
     required this.onTap,
+    required this.label,
     this.badge = 0,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: _button(),
+    );
+  }
+
+  Widget _button() {
     return ClipOval(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
@@ -252,11 +277,13 @@ class _GlassRoundButton extends StatelessWidget {
 
 class _BannerSearchField extends StatelessWidget {
   final String hint;
+  final String scanLabel;
   final VoidCallback onSearch;
   final VoidCallback onScan;
 
   const _BannerSearchField({
     required this.hint,
+    required this.scanLabel,
     required this.onSearch,
     required this.onScan,
   });
@@ -301,7 +328,7 @@ class _BannerSearchField extends StatelessWidget {
                   Container(width: 1, height: 22, color: t.hairline),
                   Semantics(
                     button: true,
-                    label: 'Scan',
+                    label: scanLabel,
                     child: InkWell(
                       onTap: () {
                         HapticFeedback.selectionClick();

@@ -22,6 +22,7 @@ class CartCouponSection extends ConsumerStatefulWidget {
   final int discount;
   final VoidCallback onApply;
   final VoidCallback onRemove;
+
   /// مجموع السلة — لعرض «أضيفي X لتفعيل الخصم» حين يكون دون الحد الأدنى.
   final int subtotal;
 
@@ -73,7 +74,7 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
     final t = context.worldTheme;
     // سبب إزالة الكود تلقائياً (انتهى، لأول طلب فقط…) يظهر مكان خطأ الحقل.
     final reject = ref.watch(appliedCouponRejectProvider);
-    final error = widget.error ?? reject;
+    final error = widget.error ?? (reject == null ? null : s.couponRemoved(reject));
     if (reject != null) _open = true;
 
     return AnimatedSize(
@@ -81,7 +82,12 @@ class _CartCouponSectionState extends ConsumerState<CartCouponSection> {
       curve: Curves.easeOutCubic,
       alignment: AlignmentDirectional.topCenter,
       child: widget.applied != null
-          ? _AppliedCoupon(coupon: widget.applied!, discount: widget.discount, subtotal: widget.subtotal, onRemove: widget.onRemove)
+          ? _AppliedCoupon(
+              coupon: widget.applied!,
+              discount: widget.discount,
+              subtotal: widget.subtotal,
+              onRemove: widget.onRemove,
+            )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -257,7 +263,16 @@ class _AppliedCoupon extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 6),
-          AppIconButton(icon: Icons.close_rounded, size: 34, iconSize: 17, tooltip: s.removeCoupon, color: t.inkSoft, onTap: onRemove),
+          AppIconButton(
+            icon: Icons.close_rounded,
+            size: kMinTapTarget,
+            iconSize: 17,
+            outlined: false,
+            background: Colors.transparent,
+            tooltip: s.removeCoupon,
+            color: t.inkSoft,
+            onTap: onRemove,
+          ),
         ],
       );
     }
@@ -286,8 +301,10 @@ class _AppliedCoupon extends ConsumerWidget {
         ),
         AppIconButton(
           icon: Icons.close_rounded,
-          size: 34,
+          size: kMinTapTarget,
           iconSize: 17,
+          outlined: false,
+          background: Colors.transparent,
           tooltip: s.removeCoupon,
           color: t.inkSoft,
           onTap: onRemove,

@@ -1,20 +1,22 @@
-import '../../core/widgets/app_snackbar.dart';
-import '../../core/utils/friendly_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/utils/friendly_error.dart';
+import '../../core/utils/phone_util.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/address.dart';
 import '../../data/services/api_service.dart';
+import '../../features/worlds/world_theme.dart';
 import 'profile_providers.dart';
+import 'widgets/account_strings.dart';
 import 'widgets/account_theme.dart';
 import 'widgets/address_form.dart';
 import 'widgets/profile_ui.dart';
-import '../../features/worlds/world_theme.dart';
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
@@ -90,16 +92,18 @@ class _AddressesBody extends ConsumerWidget {
     );
   }
 
+  /// الورقة تبقى مفتوحة حتى ينجح الحفظ — الفشل يظهر داخلها وما كُتب باقٍ.
   Future<void> _add(BuildContext context, WidgetRef ref) async {
-    final result = await showAddressForm(context);
-    if (result == null) return;
-    try {
-      await ref.read(apiServiceProvider).createAddress(result);
-      ref.invalidate(addressesProvider);
-    } catch (e) {
-      if (context.mounted) {
-        AppSnackbar.error(context, ref.friendly(e));
-      }
+    final api = ref.read(apiServiceProvider);
+    final saved = await showAddressForm(
+      context,
+      onSubmit: (a) async {
+        await api.createAddress(a);
+        ref.invalidate(addressesProvider);
+      },
+    );
+    if (saved != null && context.mounted) {
+      AppSnackbar.success(context, ref.s.acctAddressSaved);
     }
   }
 
@@ -108,16 +112,18 @@ class _AddressesBody extends ConsumerWidget {
     WidgetRef ref,
     Address address,
   ) async {
-    final result = await showAddressForm(context, initial: address);
-    if (result == null) return;
-    try {
+    final api = ref.read(apiServiceProvider);
+    final saved = await showAddressForm(
+      context,
+      initial: address,
       // الحقول المُفرغة تُرسل null صراحةً فتُمسح على السيرفر (لا تبقى القيمة القديمة).
-      await ref.read(apiServiceProvider).updateAddress(address.id, result, clearMissing: true);
-      ref.invalidate(addressesProvider);
-    } catch (e) {
-      if (context.mounted) {
-        AppSnackbar.error(context, ref.friendly(e));
-      }
+      onSubmit: (a) async {
+        await api.updateAddress(address.id, a, clearMissing: true);
+        ref.invalidate(addressesProvider);
+      },
+    );
+    if (saved != null && context.mounted) {
+      AppSnackbar.success(context, ref.s.acctAddressSaved);
     }
   }
 
@@ -138,6 +144,7 @@ class _AddressesBody extends ConsumerWidget {
     try {
       await ref.read(apiServiceProvider).deleteAddress(address.id);
       ref.invalidate(addressesProvider);
+      if (context.mounted) AppSnackbar.success(context, s.acctAddressDeleted);
     } catch (e) {
       if (context.mounted) {
         AppSnackbar.error(context, ref.friendly(e));
@@ -224,7 +231,7 @@ class _AddressTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        address.phone,
+                        formatPhoneLocal(address.phone),
                         maxLines: 1,
                         textDirection: TextDirection.ltr,
                         style: AppText.caption.copyWith(color: t.inkMuted),
@@ -243,26 +250,30 @@ class _AddressTile extends StatelessWidget {
             ),
           ),
           Divider(height: 1, thickness: 1, color: t.divider),
-          Row(
-            children: [
-              Expanded(
-                child: _AddressAction(
-                  icon: Icons.edit_outlined,
-                  label: s.edit,
-                  color: t.accentDark,
-                  onTap: onEdit,
+          // Material شفاف فوق خلفية البطاقة: تموّج اللمس يظهر فوقها لا تحتها.
+          Material(
+            type: MaterialType.transparency,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _AddressAction(
+                    icon: Icons.edit_outlined,
+                    label: s.edit,
+                    color: t.accentDark,
+                    onTap: onEdit,
+                  ),
                 ),
-              ),
-              Container(width: 1, height: 24, color: t.divider),
-              Expanded(
-                child: _AddressAction(
-                  icon: Icons.delete_outline_rounded,
-                  label: s.delete,
-                  color: AccountTheme.danger,
-                  onTap: onDelete,
+                Container(width: 1, height: 24, color: t.divider),
+                Expanded(
+                  child: _AddressAction(
+                    icon: Icons.delete_outline_rounded,
+                    label: s.delete,
+                    color: AccountTheme.danger,
+                    onTap: onDelete,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

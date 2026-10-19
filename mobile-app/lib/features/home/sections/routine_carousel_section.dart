@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
@@ -43,8 +43,8 @@ class RoutineCarouselSection extends ConsumerWidget {
           ? () => openViewAllLink(
               context,
               query: section.viewAllQuery,
-              fallbackQuery:
-                  'isPromo=1&title=${Uri.encodeComponent(s.skinRoutineTitle)}',
+              // «عرض الكل» للروتين يفتح تبويب الروتينات، لا قائمة منتجات.
+              fallbackQuery: '/packages?tab=routines',
             )
           : null,
       child: SizedBox(
@@ -93,7 +93,7 @@ class _RoutineCard extends StatelessWidget {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppCorners.lg),
         border: Border.all(color: t.hairline.withValues(alpha: 0.8)),
         color: t.surface,
         boxShadow: [

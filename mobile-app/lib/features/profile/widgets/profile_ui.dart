@@ -365,15 +365,28 @@ class _HeroBadge extends StatelessWidget {
       ),
     );
     if (onTap == null) return chip;
+    final radius = BorderRadius.circular(AppCorners.pill);
     return Semantics(
       button: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap!();
-        },
-        child: chip,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap!();
+          },
+          // مساحة لمس 44 حول الشارة دون تكبير شكلها.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: kMinTapTarget),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              widthFactor: 1,
+              child: chip,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -669,6 +682,10 @@ class ProfileMenuTile extends StatelessWidget {
   final bool danger;
   final bool showChevron;
 
+  /// الوصف رقم أو بريد لاتيني (هاتف الدعم مثلاً): يُعرض من اليسار لليمين حتى لا
+  /// تنقلب «+964 770…» داخل صف عربي، ويبقى محاذياً لبداية السطر.
+  final bool subtitleLtr;
+
   const ProfileMenuTile({
     super.key,
     required this.icon,
@@ -680,6 +697,7 @@ class ProfileMenuTile extends StatelessWidget {
     this.value,
     this.danger = false,
     this.showChevron = true,
+    this.subtitleLtr = false,
   });
 
   @override
@@ -721,12 +739,24 @@ class ProfileMenuTile extends StatelessWidget {
                       ),
                       if (hasSubtitle) ...[
                         const SizedBox(height: 1),
-                        Text(
-                          subtitle!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: ProfileUi.captionStyle(context),
-                        ),
+                        if (subtitleLtr)
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              subtitle!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textDirection: TextDirection.ltr,
+                              style: ProfileUi.captionStyle(context),
+                            ),
+                          )
+                        else
+                          Text(
+                            subtitle!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: ProfileUi.captionStyle(context),
+                          ),
                       ],
                     ],
                   ),
@@ -894,24 +924,35 @@ class ProfileInfoBanner extends StatelessWidget {
   final IconData icon;
   final String text;
 
-  const ProfileInfoBanner({super.key, required this.icon, required this.text});
+  /// رسالة خطأ (فشل الحفظ مثلاً) بألوان الخطر بدل لون العالم.
+  final bool danger;
+
+  const ProfileInfoBanner({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.danger = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return Container(
+    final fg = danger ? AccountTheme.danger : t.accentDark;
+    final banner = Container(
       padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: t.accentLight,
+        color: danger ? AccountTheme.danger.withValues(alpha: 0.07) : t.accentLight,
         borderRadius: BorderRadius.circular(AppCorners.md),
-        border: Border.all(color: t.accentSoft),
+        border: Border.all(
+          color: danger ? AccountTheme.danger.withValues(alpha: 0.3) : t.accentSoft,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 1),
-            child: Icon(icon, color: t.accentDark, size: 20),
+            child: Icon(icon, color: fg, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -920,12 +961,16 @@ class ProfileInfoBanner extends StatelessWidget {
         ],
       ),
     );
+    // الخطأ يُعلَن لقارئ الشاشة فور ظهوره.
+    return danger ? Semantics(liveRegion: true, child: banner) : banner;
   }
 }
 
 class ProfileDangerTextButton extends StatelessWidget {
   final String label;
-  final VoidCallback onPressed;
+
+  /// null يعطّل الزر (أثناء عملية جارية مثلاً).
+  final VoidCallback? onPressed;
 
   const ProfileDangerTextButton({
     super.key,
@@ -937,10 +982,12 @@ class ProfileDangerTextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: TextButton(
-        onPressed: () {
-          HapticFeedback.selectionClick();
-          onPressed();
-        },
+        onPressed: onPressed == null
+            ? null
+            : () {
+                HapticFeedback.selectionClick();
+                onPressed!();
+              },
         style: TextButton.styleFrom(
           foregroundColor: AccountTheme.danger,
           minimumSize: const Size(0, kMinTapTarget),
@@ -949,7 +996,11 @@ class ProfileDangerTextButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppText.label.copyWith(color: AccountTheme.danger),
+          style: AppText.label.copyWith(
+            color: onPressed == null
+                ? AccountTheme.danger.withValues(alpha: 0.4)
+                : AccountTheme.danger,
+          ),
         ),
       ),
     );

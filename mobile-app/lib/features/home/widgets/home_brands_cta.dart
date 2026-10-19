@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/navigation/app_navigation.dart';
+import '../../../core/widgets/ui/ui.dart';
+import '../../shell/nav_tabs.dart';
 import '../../worlds/world_theme.dart';
 import 'home_theme.dart';
-import '../../../core/navigation/app_navigation.dart';
 
 /// زر بارز لعرض كل البراندات — أسفل أقسام الرئيسية.
 class HomeBrandsCta extends ConsumerWidget {
@@ -26,7 +28,7 @@ class HomeBrandsCta extends ConsumerWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: t.signatureGradient,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppCorners.md + 2),
           boxShadow: [
             BoxShadow(
               color: t.accent.withValues(alpha: 0.28),
@@ -36,15 +38,20 @@ class HomeBrandsCta extends ConsumerWidget {
           ],
         ),
         child: Material(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppCorners.md + 2),
           clipBehavior: Clip.antiAlias,
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
               HapticFeedback.lightImpact();
-              openTabPath(context, '/brands');
+              // تبديل التبويب داخل نفس الواجهة — لا دفع نسخة ثانية منها فوقها.
+              openMainTab(
+                context,
+                ProviderScope.containerOf(context, listen: false),
+                NavTabs.brands,
+              );
             },
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppCorners.md + 2),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               child: Row(
@@ -72,9 +79,7 @@ class HomeBrandsCta extends ConsumerWidget {
                       children: [
                         Text(
                           s.viewAllBrands,
-                          style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
+                          style: AppText.title3.copyWith(
                             color: Colors.white,
                             height: 1.2,
                           ),
@@ -82,9 +87,8 @@ class HomeBrandsCta extends ConsumerWidget {
                         const SizedBox(height: 3),
                         Text(
                           s.brandsPageSubtitle,
-                          style: TextStyle(
+                          style: AppText.caption.copyWith(
                             fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
                             color: Colors.white.withValues(alpha: 0.82),
                             height: 1.25,
                           ),
@@ -100,7 +104,7 @@ class HomeBrandsCta extends ConsumerWidget {
                       color: Colors.white.withValues(alpha: 0.16),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 14,
                       color: Colors.white,

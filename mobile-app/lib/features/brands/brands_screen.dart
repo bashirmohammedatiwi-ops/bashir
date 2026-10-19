@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,11 +16,17 @@ import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
+import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
 import '../home/home_category_filter.dart';
 import '../shell/nav_tabs.dart';
 import '../worlds/world_theme.dart';
+import 'brand_avatar.dart';
 import 'brand_search.dart';
+
+/// طلب قسم جاهز لدليل البراندات — «كل البراندات» في لوحة قسم تضبطه قبل فتح
+/// التبويب، والشاشة تختار شريحة القسم ثم تعيده null.
+final brandsCategoryRequestProvider = StateProvider<String?>((_) => null);
 
 class BrandsScreen extends ConsumerStatefulWidget {
   /// داخل تبويب الشريط السفلي: بلا زر رجوع.
@@ -39,12 +47,61 @@ class _LetterGroup {
   const _LetterGroup(this.letter, this.brands);
 }
 
+/// يُظهر عنصراً داخل شريط أفقي بتحريك الشريط وحده — Scrollable.ensureVisible
+/// كان سيحرّك الصفحة العمودية أيضاً لأن الشريط داخل رأس مثبّت.
+void _revealInRow(BuildContext context, GlobalKey? key, ScrollController row) {
+  final box = key?.currentContext?.findRenderObject();
+  if (box is! RenderBox || !box.attached || !row.hasClients) return;
+  final pos = row.position;
+  final target = RenderAbstractViewport.of(box)
+      .getOffsetToReveal(box, 0.5)
+      .offset
+      .clamp(pos.minScrollExtent, pos.maxScrollExtent);
+  _scrollRowTo(context, row, target);
+}
+
+void _scrollRowTo(BuildContext context, ScrollController row, double target) {
+  if ((target - row.offset).abs() < 1) return;
+  if (MediaQuery.disableAnimationsOf(context)) {
+    row.jumpTo(target);
+  } else {
+    row.animateTo(target, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic);
+  }
+}
+
 class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   String _query = '';
   final _searchCtrl = TextEditingController();
+  // الحقل يعيش داخل الرأس المثبّت ويملك المؤشر طوال الكتابة — لا يُعاد إنشاؤه.
+  final _searchFocus = FocusNode();
   // فهرس البحث يُبنى مرة لكل قائمة براندات.
   BrandSearchIndex? _index;
   List<Brand>? _indexed;
+
+  String? _selectedCategoryId;
+  final _scroll = ScrollController();
+  final _chipsScroll = ScrollController();
+  final _lettersScroll = ScrollController();
+  final _titleKey = GlobalKey();
+
+  /// مفتاح لكل حبّة قسم ('' = الكل) — لإبقاء المختارة ظاهرة.
+  final _chipKeys = <String, GlobalKey>{};
+
+  /// مفاتيح عناوين الحروف (على الـ sliver نفسه) — موضع كل حرف يُقرأ من التخطيط مباشرة.
+  final _letterKeys = <String, GlobalKey>{};
+
+  /// الحرف الحالي في شريط الفهرس — يتغيّر مع التمرير دون إعادة بناء الصفحة.
+  final _activeLetter = ValueNotifier<String?>(null);
+  List<String> _letters = const [];
+  double _pinnedExtent = 0;
+  bool _jumping = false;
+
+  static const _gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 3,
+    childAspectRatio: 0.72,
+    crossAxisSpacing: 10,
+    mainAxisSpacing: 12,
+  );
 
   @override
   void initState() {
@@ -54,11 +111,26 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       _searchCtrl.text = q;
       _query = q;
     }
-    // التبويب يُبنى أول مرة عند فتحه: طلب «/brands?q=…» يكون قد ضُبط قبل ظهوره
-    // فلا يصله ref.listen — نطبّقه هنا مرة.
+    _scroll.addListener(_trackLetter);
+    // التبويب يُبنى أول مرة عند فتحه: طلب «/brands?q=…» أو قسم من لوحة الأقسام يكون
+    // قد ضُبط قبل ظهوره فلا يصله ref.listen — نطبّقه هنا مرة.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _applySearchRequest(ref.read(brandsSearchRequestProvider));
+      if (!mounted) return;
+      _applySearchRequest(ref.read(brandsSearchRequestProvider));
+      _applyCategoryRequest(ref.read(brandsCategoryRequestProvider));
     });
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_trackLetter);
+    _scroll.dispose();
+    _chipsScroll.dispose();
+    _lettersScroll.dispose();
+    _searchCtrl.dispose();
+    _searchFocus.dispose();
+    _activeLetter.dispose();
+    super.dispose();
   }
 
   /// يطبّق بحثاً جاهزاً (من رابط) ثم يعيده null حتى لا يتكرر.
@@ -69,10 +141,17 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
+  /// «كل البراندات» من لوحة قسم: نختار شريحته ونبدأ من أعلى الدليل.
+  void _applyCategoryRequest(String? id) {
+    if (id == null) return;
+    ref.read(brandsCategoryRequestProvider.notifier).state = null;
+    _selectCategory(id, haptic: false);
+  }
+
   /// لمسة ثانية على تبويب البراندات: تمسح البحث وتصعد لأعلى الدليل.
   void _onReselect() {
     if (_query.isNotEmpty) _setQuery('');
-    FocusManager.instance.primaryFocus?.unfocus();
+    _searchFocus.unfocus();
     if (!_scroll.hasClients) return;
     if (MediaQuery.disableAnimationsOf(context)) {
       _scroll.jumpTo(0);
@@ -91,49 +170,95 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
 
   void _setQuery(String v) {
     _searchCtrl.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
-    setState(() => _query = v.trim());
+    _onQueryChanged(v);
   }
-  String? _selectedCategoryId;
-  final _scroll = ScrollController();
-  /// مفاتيح عناوين الحروف — للقفز من شريط الفهرس.
-  final _letterKeys = <String, GlobalKey>{};
+
+  void _onQueryChanged(String raw) {
+    final q = raw.trim();
+    if (q == _query) return;
+    setState(() => _query = q);
+    _activeLetter.value = null;
+    // النتائج تبدأ تحت الشريط المثبّت مباشرة — بلا قفز للحقل تحت الإصبع.
+    final top = _titleExtent;
+    if (_scroll.hasClients && _scroll.offset > top) _scroll.jumpTo(top);
+  }
+
+  /// ارتفاع سطر العنوان فوق الشريط المثبّت.
+  double get _titleExtent {
+    final ro = _titleKey.currentContext?.findRenderObject();
+    return ro is RenderSliver ? ro.geometry?.scrollExtent ?? 0 : 0;
+  }
+
+  /// بداية عنوان الحرف في إحداثيات التمرير. كل الـ slivers تُخطَّط دائماً، وأطوال
+  /// الشبكات محسوبة بدقة من عدد الأعمدة — فلا حاجة لبناء الدليل كله مسبقاً.
+  double? _letterOffset(String letter) {
+    final ro = _letterKeys[letter]?.currentContext?.findRenderObject();
+    if (ro is! RenderSliver || ro.geometry == null) return null;
+    return ro.constraints.precedingScrollExtent;
+  }
+
+  /// الحرف النشط: آخر عنوان بلغ أسفل الشريط المثبّت.
+  void _trackLetter() {
+    if (_jumping || _letters.isEmpty || !_scroll.hasClients) return;
+    final pos = _scroll.position;
+    String? current;
+    if (pos.pixels >= pos.maxScrollExtent - 1 && pos.maxScrollExtent > 0) {
+      // آخر الحروف قد لا تبلغ أعلى الشاشة: الأخير الظاهر هو النشط.
+      final bottom = pos.pixels + pos.viewportDimension - 48;
+      for (final l in _letters) {
+        final o = _letterOffset(l);
+        if (o != null && o <= bottom) current = l;
+      }
+    } else {
+      final line = pos.pixels + _pinnedExtent + 1;
+      for (final l in _letters) {
+        final o = _letterOffset(l);
+        if (o == null) continue;
+        if (o > line) break;
+        current = l;
+      }
+    }
+    _setActiveLetter(current);
+  }
+
+  void _setActiveLetter(String? letter) {
+    if (_activeLetter.value == letter) return;
+    _activeLetter.value = letter;
+    if (letter != null) _revealLetterPill(letter);
+  }
+
+  /// حبّات الحروف بعرض ثابت — موضع الحبّة النشطة يُحسب مباشرة.
+  void _revealLetterPill(String letter) {
+    final i = _letters.indexOf(letter);
+    if (i < 0 || !_lettersScroll.hasClients) return;
+    final pos = _lettersScroll.position;
+    final center = _LetterBar.padding + i * (_LetterBar.pill + _LetterBar.gap) + _LetterBar.pill / 2;
+    _scrollRowTo(context, _lettersScroll, (center - pos.viewportDimension / 2).clamp(0.0, pos.maxScrollExtent));
+  }
 
   void _jumpTo(String letter) {
-    final ctx = _letterKeys[letter]?.currentContext;
-    if (ctx == null) return;
+    final o = _letterOffset(letter);
+    if (o == null || !_scroll.hasClients) return;
     HapticFeedback.selectionClick();
-    Scrollable.ensureVisible(
-      ctx,
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-      // تحت شريط الأقسام الثابت.
-      alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
-      alignment: 0.02,
-    );
+    _setActiveLetter(letter);
+    // عنوان الحرف يستقر تحت الشريط المثبّت تماماً لا تحته.
+    final target = (o - _pinnedExtent).clamp(0.0, _scroll.position.maxScrollExtent);
+    _jumping = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(target);
+      _jumping = false;
+      return;
+    }
+    _scroll
+        .animateTo(target, duration: const Duration(milliseconds: 420), curve: Curves.easeOutCubic)
+        .whenComplete(() => _jumping = false);
   }
 
-  static const _gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 3,
-    childAspectRatio: 0.78,
-    crossAxisSpacing: 10,
-    mainAxisSpacing: 12,
-  );
-
-  @override
-  void dispose() {
-    _scroll.dispose();
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  /// الحرف الأول موحّداً: أ/إ/آ → ا، اللاتيني كبير، وغير ذلك "#".
+  /// الحرف الأول موحّداً: بلا علامات (É → E)، أ/إ/آ → ا، اللاتيني كبير، وغير ذلك "#".
   static String _letterOf(String name) {
-    final n = name.trim();
+    final n = foldText(name);
     if (n.isEmpty) return '#';
-    var c = n.characters.first.toUpperCase();
-    const alef = {'أ', 'إ', 'آ', 'ٱ'};
-    if (alef.contains(c)) c = 'ا';
-    if (c == 'ة') c = 'ه';
+    final c = n.characters.first.toUpperCase();
     final code = c.codeUnitAt(0);
     final latin = code >= 65 && code <= 90;
     final arabic = code >= 0x0621 && code <= 0x064A;
@@ -151,7 +276,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   /// فهرس واحد A–Z بالاسم اللاتيني للبراند (هويته المكتوبة على الشعار) —
   /// أغلب البراندات أسماؤها لاتينية فقط، فالفهرس المزدوج كان يقسم القائمة نصفين.
   /// البراند العربي فقط يُجمع تحت حرفه العربي بعد اللاتيني.
-  List<_LetterGroup> _group(List<Brand> brands, String lang) {
+  List<_LetterGroup> _group(List<Brand> brands) {
     final map = <String, List<Brand>>{};
     for (final b in brands) {
       map.putIfAbsent(_letterOf(b.label), () => []).add(b);
@@ -177,34 +302,53 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     ];
   }
 
-  void _selectCategory(String? id) {
-    if (_selectedCategoryId == id) return;
-    HapticFeedback.selectionClick();
-    setState(() => _selectedCategoryId = id);
+  void _selectCategory(String? id, {bool haptic = true}) {
+    final searching = _query.isNotEmpty;
+    if (_selectedCategoryId == id && !searching) return;
+    if (haptic) HapticFeedback.selectionClick();
+    // لمس قسم أثناء البحث يعني «تصفّحي هذا القسم»: نمسح البحث أولاً.
+    if (searching) {
+      _searchCtrl.clear();
+      _searchFocus.unfocus();
+    }
+    setState(() {
+      _query = '';
+      _selectedCategoryId = id;
+    });
+    // قائمة جديدة تبدأ من أولها (والبراندات المميزة) لا من موضع القائمة السابقة.
+    _activeLetter.value = null;
+    if (_scroll.hasClients && _scroll.offset > 0) _scroll.jumpTo(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _revealInRow(context, _chipKeys[id ?? ''], _chipsScroll);
+    });
   }
 
+  /// سحب للتحديث: تنزيل فعلي من الشبكة (لا نسخة الدقائق الخمس المحفوظة) ثم انتظار النتيجة.
   Future<void> _refresh() async {
-    ref.invalidate(brandsProvider);
-    if (_selectedCategoryId != null) {
-      ref.invalidate(categoryBrandsProvider(_selectedCategoryId!));
-    }
-    // categoriesProvider يقرأ النسخة المحفوظة أولاً — التحديث الفعلي من الشبكة هنا.
+    final api = ref.read(apiServiceProvider);
+    final cat = _selectedCategoryId;
     try {
-      await refreshCategories(ref);
+      await Future.wait([
+        api.getBrands(all: true, forceRefresh: true),
+        if (cat != null) api.getBrands(categoryId: cat, forceRefresh: true),
+      ]);
     } catch (_) {}
+    ref.invalidate(brandsProvider);
+    if (cat != null) ref.invalidate(categoryBrandsProvider(cat));
     try {
       await ref.read(brandsProvider.future);
+      if (cat != null) await ref.read(categoryBrandsProvider(cat).future);
     } catch (_) {}
   }
 
-  void _openBrand(Brand brand, String name) {
+  void _openBrand(Brand brand) {
     HapticFeedback.selectionClick();
     final q = StringBuffer(
-      'brandId=${brand.id}&title=${Uri.encodeComponent(name)}',
+      'brandId=${brand.id}&title=${Uri.encodeComponent(brand.label)}',
     );
-    if (_selectedCategoryId != null) {
-      q.write('&categoryId=$_selectedCategoryId');
-    }
+    // القسم يقيّد البراند فقط حين تتصفّح الدليل — نتائج البحث من كل البراندات.
+    final scope = _query.isEmpty ? _selectedCategoryId : null;
+    if (scope != null) q.write('&categoryId=$scope');
     context.push('/products?${q.toString()}');
   }
 
@@ -214,6 +358,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     final t = context.worldTheme;
     final lang = ref.watch(languageCodeProvider);
     ref.listen<String?>(brandsSearchRequestProvider, (_, q) => _applySearchRequest(q));
+    ref.listen<String?>(brandsCategoryRequestProvider, (_, id) => _applyCategoryRequest(id));
     if (widget.embedded) {
       ref.listen<({int tab, int tick})>(tabReselectProvider, (_, r) {
         if (r.tab == NavTabs.brands) _onReselect();
@@ -224,14 +369,14 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         ? const <Category>[]
         : storefrontParentCategories(cats);
     final allBrands = ref.watch(brandsProvider).valueOrNull;
-    // البحث في كل البراندات دائماً — شريط الأقسام يختفي أثناء البحث،
-    // فلا يصح أن يبقى القسم المختار يقيّد النتائج بصمت.
+    // البحث في كل البراندات دائماً — فلا يبقى القسم المختار يقيّد النتائج بصمت.
     final searching = _query.isNotEmpty;
-    final brandsAsync = _selectedCategoryId == null || searching
+    final scope = searching ? null : _selectedCategoryId;
+    final brandsAsync = scope == null
         ? ref.watch(brandsProvider)
-        : ref.watch(categoryBrandsProvider(_selectedCategoryId!));
+        : ref.watch(categoryBrandsProvider(scope));
 
-    // كل شيء يتمرر — والثابت في الأعلى شريط الأقسام وحده.
+    var letters = const <String>[];
     final content = <Widget>[];
     brandsAsync.when(
       loading: () => content.add(
@@ -247,78 +392,10 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       ),
       data: (list) {
         if (searching) {
-          final index = _indexFor(list);
-          final results = index.search(_query);
-          if (results.isEmpty) {
-            final suggestions = index.suggest(_query);
-            content.add(
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Column(
-                  children: [
-                    EmptyState(
-                      icon: Icons.storefront_outlined,
-                      title: s.isAr ? 'لا يوجد براند بهذا الاسم' : s.noSearchResults,
-                      subtitle: s.isAr ? 'جربي كتابته بالإنجليزي أو بجزء من الاسم' : s.tryAnotherSearch,
-                    ),
-                    // ربما كتبت اسم منتج لا براند («سيروم»): بحث المنتجات بلمسة.
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
-                      child: OutlinedButton.icon(
-                        onPressed: () => context.push('/search?q=${Uri.encodeComponent(_query)}'),
-                        icon: const Icon(Icons.search_rounded, size: 18),
-                        label: Text(s.isAr ? 'ابحثي عن «$_query» في المنتجات' : 'Search products for “$_query”'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: t.accentDark,
-                          side: BorderSide(color: t.accent.withValues(alpha: 0.5)),
-                          shape: const StadiumBorder(),
-                        ),
-                      ),
-                    ),
-                    if (suggestions.isNotEmpty) ...[
-                      Text(s.isAr ? 'هل تقصدين؟' : 'Did you mean?', style: AppText.label.copyWith(color: t.inkSoft)),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          for (final b in suggestions)
-                            ActionChip(
-                              label: Text(b.localizedName(lang)),
-                              onPressed: () => _openBrand(b, b.localizedName(lang)),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
-            return;
-          }
-          content
-            ..add(
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
-                  child: Text(
-                    s.isAr ? '${results.length} براند' : '${results.length} brands',
-                    style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            )
-            ..add(
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                sliver: _grid(results, lang, s),
-              ),
-            );
+          _addSearchResults(content, list, s, t);
           return;
         }
-        final filtered = list;
-        if (filtered.isEmpty) {
+        if (list.isEmpty) {
           content.add(
             SliverFillRemaining(
               hasScrollBody: false,
@@ -327,19 +404,18 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
           );
           return;
         }
-        final featured = _query.isEmpty && _selectedCategoryId == null
-            ? (filtered.where((b) => b.isFeatured).toList()
+        final featured = _selectedCategoryId == null
+            ? (list.where((b) => b.isFeatured).toList()
                 ..sort((a, b) => b.productCount.compareTo(a.productCount)))
             : const <Brand>[];
-        final groups = _query.isEmpty
-            ? _group(filtered, lang)
-            : const <_LetterGroup>[];
+        final groups = _group(list);
+        if (groups.length > 3) letters = [for (final g in groups) g.letter];
         if (featured.isNotEmpty) {
           content
             ..add(
               SliverToBoxAdapter(
                 child: AppSectionTitle(
-                  title: s.isAr ? 'براندات مميزة' : 'Featured brands',
+                  title: s.featuredBrands,
                   padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 12),
                 ),
               ),
@@ -348,52 +424,67 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               SliverToBoxAdapter(
                 child: _FeaturedBrands(
                   brands: featured.take(10).toList(),
-                  lang: lang,
                   productsLabel: s.productsN,
                   onTap: _openBrand,
                 ),
               ),
             );
         }
-        if (groups.length > 3) {
-          content.add(
-            SliverToBoxAdapter(
-              child: _LetterIndex(
-                letters: [for (final g in groups) g.letter],
-                onTap: _jumpTo,
+        for (final g in groups) {
+          content
+            ..add(
+              SliverToBoxAdapter(
+                key: _letterKeys.putIfAbsent(g.letter, GlobalKey.new),
+                child: _LetterHeader(letter: g.letter, count: g.brands.length),
               ),
-            ),
-          );
-        }
-        if (groups.isEmpty) {
-          content.add(
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              sliver: _grid(filtered, lang, s),
-            ),
-          );
-        } else {
-          for (final g in groups) {
-            content
-              ..add(
-                SliverToBoxAdapter(
-                  child: _LetterHeader(
-                    key: _letterKeys.putIfAbsent(g.letter, GlobalKey.new),
-                    letter: g.letter,
-                    count: g.brands.length,
-                  ),
-                ),
-              )
-              ..add(
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  sliver: _grid(g.brands, lang, s),
-                ),
-              );
-          }
+            )
+            ..add(
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                sliver: _grid(g.brands, s),
+              ),
+            );
         }
       },
     );
+    _letters = letters;
+
+    final bar = _BrandsBarDelegate(
+      theme: t,
+      chips: parents.isEmpty
+          ? null
+          : _CategoryChips(
+              key: const ValueKey('brands-cats'),
+              categories: parents,
+              selectedId: _selectedCategoryId,
+              allLabel: s.all,
+              lang: lang,
+              dimmed: searching,
+              controller: _chipsScroll,
+              keyFor: (id) => _chipKeys.putIfAbsent(id ?? '', GlobalKey.new),
+              onSelect: _selectCategory,
+            ),
+      search: _SearchField(
+        key: const ValueKey('brands-search'),
+        hint: allBrands == null
+            ? s.searchBrandsHint
+            : s.searchAmongBrands(allBrands.length),
+        controller: _searchCtrl,
+        focusNode: _searchFocus,
+        onChanged: _onQueryChanged,
+        onClear: () => _setQuery(''),
+      ),
+      letters: letters.isEmpty
+          ? null
+          : _LetterBar(
+              key: const ValueKey('brands-letters'),
+              letters: letters,
+              active: _activeLetter,
+              controller: _lettersScroll,
+              onTap: _jumpTo,
+            ),
+    );
+    _pinnedExtent = bar.maxExtent;
 
     return Scaffold(
       backgroundColor: t.canvas,
@@ -404,48 +495,26 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
           onRefresh: _refresh,
           child: CustomScrollView(
             controller: _scroll,
-            // كل الأقسام مبنية حتى يعمل القفز لأي حرف من الفهرس.
-            cacheExtent: 30000,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
-              // الأقسام أولاً — ثابتة في أعلى الصفحة دائماً.
-              if (_query.isEmpty && parents.isNotEmpty)
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _CategoryBarDelegate(
-                    categories: parents,
-                    selectedId: _selectedCategoryId,
-                    allLabel: s.all,
-                    lang: lang,
-                    onSelect: _selectCategory,
-                    theme: t,
-                  ),
-                ),
-              // زر الرجوع فقط حين تُفتح الصفحة منفصلة (لا في التبويب).
-              if (!widget.embedded)
-                SliverToBoxAdapter(
-                  child: _PageHeader(
-                    title: s.brands,
-                    subtitle: s.brandsPageSubtitle,
-                    onBack: () => context.pop(),
-                  ),
-                ),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                  child: _SearchField(
-                    hint: allBrands == null
-                        ? s.searchBrandsHint
-                        : (s.isAr
-                              ? 'ابحثي بين ${allBrands.length} براند…'
-                              : 'Search ${allBrands.length} brands…'),
-                    controller: _searchCtrl,
-                    onChanged: (v) => setState(() => _query = v.trim()),
-                    onClear: () => _setQuery(''),
-                  ),
+                key: _titleKey,
+                child: _TitleRow(
+                  title: s.brands,
+                  subtitle: allBrands == null || allBrands.isEmpty
+                      ? s.brandsPageSubtitle
+                      : s.brandsCount(allBrands.length),
+                  showBack: !widget.embedded,
                 ),
+              ),
+              // شريط واحد ثابت: الأقسام + البحث + الحروف — في متناول اليد من أي موضع.
+              SliverPersistentHeader(
+                key: const ValueKey('brands-bar'),
+                pinned: true,
+                delegate: bar,
               ),
               ...content,
               SliverToBoxAdapter(
@@ -458,65 +527,138 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     );
   }
 
-  Widget _grid(List<Brand> brands, String lang, AppStrings s) => SliverGrid(
+  void _addSearchResults(List<Widget> content, List<Brand> list, AppStrings s, WorldThemePalette t) {
+    final index = _indexFor(list);
+    final results = index.search(_query);
+    if (results.isEmpty) {
+      final suggestions = index.suggest(_query);
+      content.add(
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Column(
+            children: [
+              EmptyState(
+                icon: Icons.storefront_outlined,
+                title: s.brandNoMatch,
+                subtitle: s.brandTryLatin,
+              ),
+              // ربما كتبت اسم منتج لا براند («سيروم»): بحث المنتجات بلمسة.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/search?q=${Uri.encodeComponent(_query)}'),
+                  icon: const Icon(Icons.search_rounded, size: 18),
+                  label: Text(s.searchProductsFor(_query)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: t.accentDark,
+                    minimumSize: const Size(0, kMinTapTarget),
+                    side: BorderSide(color: t.accent.withValues(alpha: 0.5)),
+                    shape: const StadiumBorder(),
+                  ),
+                ),
+              ),
+              if (suggestions.isNotEmpty) ...[
+                Text(s.didYouMean, style: AppText.label.copyWith(color: t.inkSoft)),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      for (final b in suggestions)
+                        ActionChip(
+                          label: Text(b.label, textDirection: TextDirection.ltr),
+                          onPressed: () => _openBrand(b),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+    content
+      ..add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
+            child: Text(
+              s.brandsCount(results.length),
+              style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      )
+      ..add(
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          sliver: _grid(results, s),
+        ),
+      );
+  }
+
+  Widget _grid(List<Brand> brands, AppStrings s) => SliverGrid(
     gridDelegate: _gridDelegate,
     delegate: SliverChildBuilderDelegate((_, i) {
       final brand = brands[i];
-      final name = brand.localizedName(lang);
       return _BrandTile(
         brand: brand,
-        name: name,
+        alias: _aliasOf(brand),
         productsLabel: s.productsN,
-        onTap: () => _openBrand(brand, name),
+        onTap: () => _openBrand(brand),
       );
     }, childCount: brands.length),
   );
 }
 
-class _PageHeader extends StatelessWidget {
+/// الاسم العربي للبراند إن اختلف عن اسمه اللاتيني — سطر ثانٍ تحت الهوية.
+String? _aliasOf(Brand b) {
+  final ar = b.localizedName('ar').trim();
+  return ar.isEmpty || ar == b.label.trim() ? null : ar;
+}
+
+/// سطر العنوان فوق الشريط المثبّت: «العلامات التجارية» + عدد البراندات.
+class _TitleRow extends StatelessWidget {
   final String title;
   final String subtitle;
-  final VoidCallback? onBack;
+  final bool showBack;
 
-  const _PageHeader({
+  const _TitleRow({
     required this.title,
     required this.subtitle,
-    required this.onBack,
+    required this.showBack,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(
-        onBack == null ? 16 : 6,
-        8,
-        16,
-        12,
-      ),
+      padding: EdgeInsetsDirectional.fromSTEB(showBack ? 6 : 16, 10, 16, 2),
       child: Row(
         children: [
-          if (onBack != null) ...[
-            AppBackButton(onTap: onBack!),
+          if (showBack) ...[
+            const AppBackButton(),
             const SizedBox(width: 4),
           ],
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppText.title1.copyWith(color: t.ink, height: 1.15),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.caption.copyWith(color: t.inkMuted),
-                ),
-              ],
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.title1.copyWith(color: t.ink, height: 1.15),
             ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            subtitle,
+            maxLines: 1,
+            style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -524,16 +666,79 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
+/// الشريط المثبّت: حبّات الأقسام، ثم حقل البحث، ثم فهرس الحروف (يختفي أثناء البحث).
+/// ارتفاعات ثابتة مع حدّ لتكبير الخط — حتى يُحسب موضع القفز بدقة.
+class _BrandsBarDelegate extends SliverPersistentHeaderDelegate {
+  final WorldThemePalette theme;
+  final Widget? chips;
+  final Widget search;
+  final Widget? letters;
+
+  _BrandsBarDelegate({
+    required this.theme,
+    required this.chips,
+    required this.search,
+    required this.letters,
+  });
+
+  static const chipsHeight = 60.0;
+  static const searchHeight = 60.0;
+
+  double get _extent =>
+      (chips == null ? 0 : chipsHeight) + searchHeight + (letters == null ? 0 : _LetterBar.height);
+
+  @override
+  double get minExtent => _extent;
+  @override
+  double get maxExtent => _extent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
+    final t = theme;
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: t.canvas,
+          boxShadow: overlaps
+              ? [
+                  BoxShadow(
+                    color: t.accentDark.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          children: [
+            if (chips != null) SizedBox(height: chipsHeight, child: chips),
+            SizedBox(height: searchHeight, child: search),
+            if (letters != null) SizedBox(height: _LetterBar.height, child: letters),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // المحتوى يتبع حالة الشاشة (الاختيار، البحث، الحرف) — البناء رخيص.
+  @override
+  bool shouldRebuild(covariant _BrandsBarDelegate old) => true;
+}
+
 /// حقل البحث بنفس حبّة الرئيسية.
 class _SearchField extends StatelessWidget {
   final String hint;
   final TextEditingController controller;
+  final FocusNode focusNode;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
 
   const _SearchField({
+    super.key,
     required this.hint,
     required this.controller,
+    required this.focusNode,
     required this.onChanged,
     required this.onClear,
   });
@@ -542,43 +747,51 @@ class _SearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final r = BorderRadius.circular(20);
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      textInputAction: TextInputAction.search,
-      onSubmitted: (_) => FocusScope.of(context).unfocus(),
-      style: AppText.body.copyWith(color: t.ink, height: 1.2),
-      cursorColor: t.accent,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: AppText.bodySmall.copyWith(color: t.inkMuted, fontSize: 14),
-        prefixIcon: Icon(Icons.search_rounded, color: t.ink, size: 23),
-        suffixIcon: ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller,
-          builder: (_, v, __) => v.text.isEmpty
-              ? const SizedBox.shrink()
-              : IconButton(
-                  tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                  icon: Icon(Icons.close_rounded, color: t.inkMuted, size: 20),
-                  onPressed: onClear,
-                ),
-        ),
-        filled: true,
-        fillColor: Color.alphaBlend(t.ink.withValues(alpha: 0.045), t.surface),
-        contentPadding: const EdgeInsets.symmetric(vertical: 15),
-        border: OutlineInputBorder(
-          borderRadius: r,
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: r,
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: r,
-          borderSide: BorderSide(
-            color: t.accent.withValues(alpha: 0.6),
-            width: 1.4,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+      child: Center(
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          onChanged: onChanged,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => focusNode.unfocus(),
+          style: AppText.body.copyWith(color: t.ink, height: 1.2),
+          cursorColor: t.accent,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintMaxLines: 1,
+            hintStyle: AppText.bodySmall.copyWith(color: t.inkMuted, fontSize: 14),
+            prefixIcon: Icon(Icons.search_rounded, color: t.ink, size: 23),
+            suffixIcon: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (_, v, __) => v.text.isEmpty
+                  ? const SizedBox.shrink()
+                  : IconButton(
+                      tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                      icon: Icon(Icons.close_rounded, color: t.inkMuted, size: 20),
+                      onPressed: onClear,
+                    ),
+            ),
+            isDense: true,
+            filled: true,
+            fillColor: Color.alphaBlend(t.ink.withValues(alpha: 0.045), t.surface),
+            contentPadding: const EdgeInsets.symmetric(vertical: 13),
+            border: OutlineInputBorder(
+              borderRadius: r,
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: r,
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: r,
+              borderSide: BorderSide(
+                color: t.accent.withValues(alpha: 0.6),
+                width: 1.4,
+              ),
+            ),
           ),
         ),
       ),
@@ -586,238 +799,125 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-/// البراندات المميزة: بطاقات أفقية كبيرة — الشعار على لوح أبيض فوق تدرّج العالم.
-class _FeaturedBrands extends StatelessWidget {
-  final List<Brand> brands;
+/// حبّات الأقسام: صورة دائرية + اسم — المختارة متدرّجة بلون العالم.
+/// تبقى ظاهرة (باهتة) أثناء البحث حتى لا يقفز الحقل تحت الإصبع.
+class _CategoryChips extends StatelessWidget {
+  final List<Category> categories;
+  final String? selectedId;
+  final String allLabel;
   final String lang;
-  final String Function(int) productsLabel;
-  final void Function(Brand, String) onTap;
+  final bool dimmed;
+  final ScrollController controller;
+  final GlobalKey Function(String? id) keyFor;
+  final void Function(String? id) onSelect;
 
-  const _FeaturedBrands({
-    required this.brands,
+  const _CategoryChips({
+    super.key,
+    required this.categories,
+    required this.selectedId,
+    required this.allLabel,
     required this.lang,
-    required this.productsLabel,
-    required this.onTap,
+    required this.dimmed,
+    required this.controller,
+    required this.keyFor,
+    required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return SizedBox(
-      height: 150,
+    final motion = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 240);
+    return AnimatedOpacity(
+      duration: motion,
+      opacity: dimmed ? 0.45 : 1,
       child: ListView.separated(
+        controller: controller,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: brands.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, i) {
-          final b = brands[i];
-          final name = b.localizedName(lang);
-          return GestureDetector(
-            onTap: () => onTap(b, name),
-            child: Container(
-              width: 230,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                gradient: LinearGradient(
-                  begin: AlignmentDirectional.topStart.resolve(
-                    Directionality.of(context),
-                  ),
-                  end: AlignmentDirectional.bottomEnd.resolve(
-                    Directionality.of(context),
-                  ),
-                  colors: [
-                    Color.lerp(t.accent, Colors.white, 0.12)!,
-                    Color.lerp(t.accent, Colors.black, 0.16)!,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: t.accent.withValues(alpha: 0.26),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                    spreadRadius: -4,
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 104,
-                    height: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: _BrandLogo(
-                      brand: b,
-                      name: name,
-                      fallbackBg: t.accentLight,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.title3.copyWith(color: Colors.white),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          productsLabel(b.productCount),
-                          style: AppText.caption.copyWith(
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 16,
-                            color: t.accentDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// شريط الأقسام الثابت: حبّات مدمجة (صورة دائرية + اسم) — المختار متدرّج بلون العالم.
-class _CategoryBarDelegate extends SliverPersistentHeaderDelegate {
-  final List<Category> categories;
-  final String? selectedId;
-  final String allLabel;
-  final String lang;
-  final ValueChanged<String?> onSelect;
-  final WorldThemePalette theme;
-
-  _CategoryBarDelegate({
-    required this.categories,
-    required this.selectedId,
-    required this.allLabel,
-    required this.lang,
-    required this.onSelect,
-    required this.theme,
-  });
-
-  static const height = 60.0;
-
-  @override
-  double get minExtent => height;
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
-    final t = theme;
-    return Container(
-      decoration: BoxDecoration(
-        color: t.canvas,
-        boxShadow: overlaps
-            ? [
-                BoxShadow(
-                  color: t.accentDark.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         itemCount: categories.length + 1,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
           final isAll = i == 0;
           final cat = isAll ? null : categories[i - 1];
           final id = cat?.id;
-          final on = id == selectedId;
-          return GestureDetector(
-            onTap: () => onSelect(id),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 240),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 14, 4),
-              decoration: BoxDecoration(
-                color: on ? null : t.surface,
-                gradient: on
-                    ? LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color.lerp(t.accent, Colors.white, 0.12)!,
-                          Color.lerp(t.accent, Colors.black, 0.1)!,
-                        ],
-                      )
-                    : null,
-                borderRadius: BorderRadius.circular(AppCorners.pill),
-                border: Border.all(color: on ? Colors.transparent : t.hairline),
-                boxShadow: on
-                    ? [
-                        BoxShadow(
-                          color: t.accent.withValues(alpha: 0.28),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: on
-                          ? Colors.white.withValues(alpha: 0.22)
-                          : t.accentLight,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: isAll
-                        ? Icon(
-                            Icons.grid_view_rounded,
-                            size: 16,
-                            color: on ? Colors.white : t.accentDark,
-                          )
-                        : AppNetworkImage(
-                            url: cat!.imageUrl,
-                            fit: BoxFit.cover,
-                            backgroundColor: Colors.white,
+          // أثناء البحث لا قسم «مختار» — البحث في كل البراندات.
+          final on = !dimmed && id == selectedId;
+          final name = isAll ? allLabel : cat!.localizedName(lang);
+          return Semantics(
+            key: keyFor(id),
+            button: true,
+            selected: on,
+            label: name,
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: () => onSelect(id),
+              child: AnimatedContainer(
+                duration: motion,
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 14, 4),
+                decoration: BoxDecoration(
+                  color: on ? null : t.surface,
+                  gradient: on
+                      ? LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color.lerp(t.accent, Colors.white, 0.12)!,
+                            Color.lerp(t.accent, Colors.black, 0.1)!,
+                          ],
+                        )
+                      : null,
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
+                  border: Border.all(color: on ? Colors.transparent : t.hairline),
+                  boxShadow: on
+                      ? [
+                          BoxShadow(
+                            color: t.accent.withValues(alpha: 0.28),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    isAll ? allLabel : cat!.localizedName(lang),
-                    style: AppText.label.copyWith(
-                      color: on ? Colors.white : t.ink,
-                      fontWeight: on ? FontWeight.w800 : FontWeight.w600,
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: on
+                            ? Colors.white.withValues(alpha: 0.22)
+                            : t.accentLight,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: isAll
+                          ? Icon(
+                              Icons.grid_view_rounded,
+                              size: 16,
+                              color: on ? Colors.white : t.accentDark,
+                            )
+                          : AppNetworkImage(
+                              url: cat!.imageUrl,
+                              width: 32,
+                              height: 32,
+                              fit: BoxFit.cover,
+                              backgroundColor: Colors.white,
+                            ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      name,
+                      style: AppText.label.copyWith(
+                        color: on ? Colors.white : t.ink,
+                        fontWeight: on ? FontWeight.w800 : FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -825,52 +925,77 @@ class _CategoryBarDelegate extends SliverPersistentHeaderDelegate {
       ),
     );
   }
-
-  @override
-  bool shouldRebuild(covariant _CategoryBarDelegate old) =>
-      old.selectedId != selectedId ||
-      old.categories.length != categories.length ||
-      old.lang != lang ||
-      old.theme != theme;
 }
 
-/// شريط فهرس الحروف: حبّات صغيرة تقفز لقسم الحرف.
-class _LetterIndex extends StatelessWidget {
+/// فهرس الحروف: حبّات بعرض ثابت، والحرف الحالي متدرّج بلون العالم.
+class _LetterBar extends StatelessWidget {
   final List<String> letters;
+  final ValueListenable<String?> active;
+  final ScrollController controller;
   final ValueChanged<String> onTap;
-  const _LetterIndex({required this.letters, required this.onTap});
+
+  const _LetterBar({
+    super.key,
+    required this.letters,
+    required this.active,
+    required this.controller,
+    required this.onTap,
+  });
+
+  static const height = 52.0;
+  static const pill = 40.0;
+  static const gap = 6.0;
+  static const padding = 16.0;
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return SizedBox(
-      height: 44,
-      child: Directionality(
-        // الفهرس اللاتيني يُقرأ من اليسار لليمين.
-        textDirection: TextDirection.ltr,
-        child: ListView.separated(
+    return Directionality(
+      // الفهرس اللاتيني يُقرأ من اليسار لليمين.
+      textDirection: TextDirection.ltr,
+      child: ValueListenableBuilder<String?>(
+        valueListenable: active,
+        builder: (context, current, _) => ListView.separated(
+          controller: controller,
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+          padding: const EdgeInsets.fromLTRB(padding, 2, padding, 10),
           itemCount: letters.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          separatorBuilder: (_, __) => const SizedBox(width: gap),
           itemBuilder: (_, i) {
             final l = letters[i];
-            return GestureDetector(
-              onTap: () => onTap(l),
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 32),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: t.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: t.hairline),
-                ),
-                child: Text(
-                  l == 'ا' ? 'أ' : l,
-                  style: AppText.label.copyWith(
-                    color: t.accentDark,
-                    fontWeight: FontWeight.w800,
+            final on = l == current;
+            final shown = l == 'ا' ? 'أ' : l;
+            return Semantics(
+              button: true,
+              selected: on,
+              label: shown,
+              excludeSemantics: true,
+              child: GestureDetector(
+                onTap: () => onTap(l),
+                child: Container(
+                  width: pill,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: on ? null : t.surface,
+                    gradient: on
+                        ? LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color.lerp(t.accent, Colors.white, 0.12)!,
+                              t.accentDark,
+                            ],
+                          )
+                        : null,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: on ? Colors.transparent : t.hairline),
+                  ),
+                  child: Text(
+                    shown,
+                    style: AppText.label.copyWith(
+                      color: on ? Colors.white : t.accentDark,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
@@ -882,51 +1007,195 @@ class _LetterIndex extends StatelessWidget {
   }
 }
 
-class _LetterHeader extends StatelessWidget {
-  final String letter;
-  final int count;
-  const _LetterHeader({super.key, required this.letter, required this.count});
+/// البراندات المميزة: بطاقات أفقية كبيرة — الشعار على لوح أبيض فوق تدرّج العالم.
+class _FeaturedBrands extends StatelessWidget {
+  final List<Brand> brands;
+  final String Function(int) productsLabel;
+  final ValueChanged<Brand> onTap;
+
+  const _FeaturedBrands({
+    required this.brands,
+    required this.productsLabel,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 10),
-      child: Row(
-        children: [
-          ShaderMask(
-            blendMode: BlendMode.srcIn,
-            shaderCallback: (r) => LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color.lerp(t.accent, Colors.white, 0.2)!, t.accentDark],
-            ).createShader(r),
-            child: Text(
-              letter == 'ا' ? 'أ' : letter,
-              style: AppText.display.copyWith(
-                fontSize: 26,
-                height: 1,
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+    final dir = Directionality.of(context);
+    final radius = BorderRadius.circular(22);
+    return SizedBox(
+      height: 150,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: brands.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, i) {
+          final b = brands[i];
+          final alias = _aliasOf(b);
+          return Semantics(
+            button: true,
+            label: '${b.label}, ${productsLabel(b.productCount)}',
+            excludeSemantics: true,
+            child: Container(
+              width: 230,
+              decoration: BoxDecoration(
+                borderRadius: radius,
+                boxShadow: [
+                  BoxShadow(
+                    color: t.accent.withValues(alpha: 0.26),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                    spreadRadius: -4,
+                  ),
+                ],
+              ),
+              child: Material(
+                type: MaterialType.transparency,
+                borderRadius: radius,
+                clipBehavior: Clip.antiAlias,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: AlignmentDirectional.topStart.resolve(dir),
+                      end: AlignmentDirectional.bottomEnd.resolve(dir),
+                      colors: [
+                        Color.lerp(t.accent, Colors.white, 0.12)!,
+                        Color.lerp(t.accent, Colors.black, 0.16)!,
+                      ],
+                    ),
+                  ),
+                  child: InkWell(
+                    onTap: () => onTap(b),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 104,
+                            height: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: BrandAvatar(brand: b, size: 80, framed: false),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  b.label,
+                                  maxLines: alias == null ? 2 : 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textDirection: TextDirection.ltr,
+                                  style: AppText.title3.copyWith(color: Colors.white),
+                                ),
+                                if (alias != null)
+                                  Text(
+                                    alias,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppText.caption.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  productsLabel(b.productCount),
+                                  maxLines: 1,
+                                  style: AppText.caption.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 16,
+                                    color: t.accentDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// عنوان الحرف — ارتفاع ثابت مع حدّ لتكبير الخط.
+class _LetterHeader extends StatelessWidget {
+  final String letter;
+  final int count;
+  const _LetterHeader({required this.letter, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: SizedBox(
+        height: 54,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (r) => LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color.lerp(t.accent, Colors.white, 0.2)!, t.accentDark],
+                ).createShader(r),
+                child: Text(
+                  letter == 'ا' ? 'أ' : letter,
+                  style: AppText.display.copyWith(
+                    fontSize: 26,
+                    height: 1,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  height: 1,
+                  color: t.hairline.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '$count',
+                style: AppText.caption.copyWith(
+                  color: t.inkMuted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: t.hairline.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '$count',
-            style: AppText.caption.copyWith(
-              color: t.inkMuted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -948,39 +1217,33 @@ class _BrandsGridLoading extends StatelessWidget {
   }
 }
 
+/// بطاقة براند: الشعار في دائرة، الاسم اللاتيني (هوية البراند وحرف الفهرس)
+/// ثم الاسم العربي إن وُجد، ثم عدد المنتجات.
 class _BrandTile extends StatelessWidget {
   final Brand brand;
-  final String name;
+  final String? alias;
   final String Function(int) productsLabel;
   final VoidCallback onTap;
 
   const _BrandTile({
     required this.brand,
-    required this.name,
+    required this.alias,
     required this.productsLabel,
     required this.onTap,
   });
 
-  Color _fallbackBg(BuildContext context) {
-    final hex = brand.bgColorHex?.replaceFirst('#', '').trim();
-    if (hex == null || hex.length < 6) return context.worldTheme.accentLight;
-    try {
-      return Color(int.parse('FF${hex.substring(0, 6)}', radix: 16));
-    } catch (_) {
-      return context.worldTheme.accentLight;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return GestureDetector(
-      onTap: onTap,
+    final radius = BorderRadius.circular(20);
+    final count = productsLabel(brand.productCount);
+    return Semantics(
+      button: true,
+      label: [brand.label, if (alias != null) alias!, count].join(', '),
+      excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
         decoration: BoxDecoration(
-          color: t.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: radius,
           boxShadow: [
             BoxShadow(
               color: t.accentDark.withValues(alpha: 0.07),
@@ -990,110 +1253,68 @@ class _BrandTile extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          children: [
-            // الشعار في دائرة بيضاء بحلقة ناعمة.
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(
-                      color: t.accentSoft.withValues(alpha: 0.8),
+        child: Material(
+          color: t.surface,
+          borderRadius: radius,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (_, c) => Center(
+                        child: BrandAvatar(
+                          brand: brand,
+                          size: c.maxWidth < c.maxHeight ? c.maxWidth : c.maxHeight,
+                        ),
+                      ),
                     ),
                   ),
-                  child: ClipOval(
-                    child: _BrandLogo(
-                      brand: brand,
-                      name: name,
-                      fallbackBg: _fallbackBg(context),
+                  const SizedBox(height: 7),
+                  Text(
+                    brand.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.ltr,
+                    style: AppText.label.copyWith(color: t.ink, fontSize: 12.5),
+                  ),
+                  if (alias != null)
+                    Text(
+                      alias!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppText.micro.copyWith(
+                        color: t.inkMuted,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: t.accentLight,
+                      borderRadius: BorderRadius.circular(AppCorners.pill),
+                    ),
+                    child: Text(
+                      count,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.micro.copyWith(
+                        color: t.accentDark,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: AppText.label.copyWith(color: t.ink, fontSize: 12.5),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: t.accentLight,
-                borderRadius: BorderRadius.circular(AppCorners.pill),
-              ),
-              child: Text(
-                productsLabel(brand.productCount),
-                maxLines: 1,
-                style: AppText.micro.copyWith(
-                  color: t.accentDark,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BrandLogo extends StatelessWidget {
-  final Brand brand;
-  final String name;
-  final Color fallbackBg;
-
-  const _BrandLogo({
-    required this.brand,
-    required this.name,
-    required this.fallbackBg,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.worldTheme;
-    if (brand.logoUrl.isNotEmpty) {
-      return Center(
-        child: AppNetworkImage(
-          url: brand.logoUrl,
-          fit: BoxFit.contain,
-          width: double.infinity,
-          height: double.infinity,
-          backgroundColor: t.accentLight.withValues(alpha: 0.55),
-        ),
-      );
-    }
-
-    final initial = brand.initial?.isNotEmpty == true
-        ? brand.initial!
-        : (name.isNotEmpty ? name.characters.first : '·');
-
-    return Center(
-      child: Container(
-        width: 72,
-        height: 72,
-        decoration: BoxDecoration(
-          color: fallbackBg,
-          shape: BoxShape.circle,
-          border: Border.all(color: t.hairline.withValues(alpha: 0.7)),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          initial,
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            color: t.accent.withValues(alpha: 0.6),
-            height: 1,
           ),
         ),
       ),

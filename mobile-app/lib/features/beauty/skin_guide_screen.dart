@@ -1,9 +1,11 @@
-import '../../core/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config.dart';
+import '../../core/l10n/app_strings.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/product_grid.dart';
@@ -14,7 +16,17 @@ import '../../data/models/beauty.dart';
 import '../worlds/world_theme.dart';
 import 'beauty_home_sections.dart';
 import 'beauty_providers.dart';
+import 'beauty_strings.dart';
 import 'beauty_widgets.dart';
+
+/// صفحة فُتحت وحدها من رابط: رجوع النظام يفتح المتجر بدل أن يغلق التطبيق.
+Widget _homeOnRootPop(BuildContext context, Widget child) => PopScope(
+      canPop: GoRouter.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go('/');
+      },
+      child: child,
+    );
 
 /// رأس صفحات الجمال: تدرّج لون العالم، زر رجوع، عنوان وسطر.
 class BeautyHeader extends StatelessWidget {
@@ -28,7 +40,9 @@ class BeautyHeader extends StatelessWidget {
     final t = context.worldTheme;
     final top = MediaQuery.paddingOf(context).top;
     return Container(
-      padding: EdgeInsets.fromLTRB(8, top + 6, 20, 26),
+      padding: EdgeInsetsDirectional.fromSTEB(8, top + 6, 20, 26),
+      // الحافة المستديرة تقصّ الرمز الكبير — لا خط مستقيم فوقها.
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topRight,
@@ -38,25 +52,27 @@ class BeautyHeader extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           PositionedDirectional(
             end: -6,
             bottom: -18,
-            child: Text(emoji, style: TextStyle(fontSize: 86, color: Colors.white.withValues(alpha: 0.9))),
+            child: ExcludeSemantics(
+              child: Text(emoji, style: TextStyle(fontSize: 86, color: Colors.white.withValues(alpha: 0.9))),
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton(
-                onPressed: () => context.canPop() ? context.pop() : context.go('/'),
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-              ),
+              // يرجع، أو يفتح الرئيسية إن فُتحت الصفحة وحدها من رابط.
+              AppBackButton(color: Colors.white, background: Colors.white.withValues(alpha: 0.18), outlined: false),
+              const SizedBox(height: 4),
               Padding(
                 padding: const EdgeInsetsDirectional.only(start: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AppText.display.copyWith(color: Colors.white)),
+                    Semantics(header: true, child: Text(title, style: AppText.display.copyWith(color: Colors.white))),
                     const SizedBox(height: 4),
                     SizedBox(
                       width: MediaQuery.sizeOf(context).width * 0.66,
@@ -86,6 +102,7 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final t = context.worldTheme;
     final concerns = ref.watch(skinConcernsListProvider);
     final routines = ref.watch(beautyPackagesProvider('routines')).valueOrNull ?? const <BeautyPackage>[];
@@ -94,7 +111,7 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
     final evening = routines.where((p) => p.isEvening).toList();
     final shownRoutines = morning.isNotEmpty && evening.isNotEmpty ? (_evening ? evening : morning) : routines;
 
-    return Scaffold(
+    return _homeOnRootPop(context, Scaffold(
       backgroundColor: t.canvas,
       body: RefreshIndicator(
         color: t.accent,
@@ -102,18 +119,14 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
-            const SliverToBoxAdapter(
-              child: BeautyHeader(
-                title: 'دليل البشرة',
-                subtitle: 'اعرفي بشرتكِ، وافهمي مشكلتها، واختاري روتيناً يناسبها',
-                emoji: '🌸',
-              ),
+            SliverToBoxAdapter(
+              child: BeautyHeader(title: s.beautySkinGuide, subtitle: s.beautySkinGuideSubtitle, emoji: '🌸'),
             ),
             const SliverToBoxAdapter(
               child: Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 0), child: SkinQuizBanner()),
             ),
-            const SliverToBoxAdapter(
-              child: AppSectionTitle(title: 'شنو يزعج بشرتكِ؟', subtitle: 'اختاري المشكلة ونشرحلكِ أسبابها وعلاجها'),
+            SliverToBoxAdapter(
+              child: AppSectionTitle(title: s.beautyConcernsTitle, subtitle: s.beautyConcernsSubtitle),
             ),
             concerns.when(
               loading: () => SliverPadding(
@@ -130,8 +143,8 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
                 child: ErrorView.from(e, onRetry: () => ref.invalidate(skinConcernsListProvider)),
               ),
               data: (list) => list.isEmpty
-                  ? const SliverToBoxAdapter(
-                      child: EmptyState(icon: Icons.spa_outlined, title: 'الدليل قيد التحضير', subtitle: 'قريباً نضيف مشاكل البشرة وحلولها'),
+                  ? SliverToBoxAdapter(
+                      child: EmptyState(icon: Icons.spa_outlined, title: s.beautyGuideComingTitle, subtitle: s.beautyGuideComingSubtitle),
                     )
                   : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -152,9 +165,9 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
             if (routines.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: AppSectionTitle(
-                  title: 'روتين جاهز لكِ',
-                  subtitle: 'خطوات مرتّبة بسعر أوفر من شرائها منفردة',
-                  actionLabel: 'الكل',
+                  title: s.beautyRoutinesForYou,
+                  subtitle: s.beautyRoutinesForYouSubtitle,
+                  actionLabel: s.beautySeeAll,
                   onAction: () => context.push('/packages?tab=routines'),
                 ),
               ),
@@ -181,8 +194,8 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
             if (bundles.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: AppSectionTitle(
-                  title: 'باقات العناية',
-                  actionLabel: 'الكل',
+                  title: s.beautyCareBundles,
+                  actionLabel: s.beautySeeAll,
                   onAction: () => context.push('/packages?tab=bundles'),
                 ),
               ),
@@ -204,26 +217,21 @@ class _SkinGuideScreenState extends ConsumerState<SkinGuideScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
 /// «ترتيب الخطوات الصحيح»: من الأخف للأثقل.
-class _RoutineOrderCard extends StatelessWidget {
+class _RoutineOrderCard extends ConsumerWidget {
   const _RoutineOrderCard();
 
-  static const _steps = [
-    ('🫧', 'غسول', 'ينظّف الدهون والأوساخ'),
-    ('💦', 'تونر', 'يوازن البشرة ويهيئها'),
-    ('💧', 'سيروم', 'علاج مركّز لمشكلتكِ'),
-    ('👁️', 'كريم العين', 'منطقة رقيقة تحتاج لطفاً'),
-    ('🧴', 'مرطب', 'يحبس الرطوبة'),
-    ('☀️', 'واقي الشمس', 'صباحاً دائماً — آخر خطوة'),
-  ];
+  static const _icons = ['🫧', '💦', '💧', '👁️', '🧴', '☀️'];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final t = context.worldTheme;
+    final steps = s.beautyRoutineOrderSteps;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       child: Container(
@@ -232,11 +240,11 @@ class _RoutineOrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ترتيب خطوات الروتين 📋', style: AppText.title3.copyWith(color: t.ink)),
+            Text(s.beautyRoutineOrderTitle, style: AppText.title3.copyWith(color: t.ink)),
             const SizedBox(height: 2),
-            Text('القاعدة: من الأخف قواماً إلى الأثقل', style: AppText.caption.copyWith(color: t.inkMuted)),
+            Text(s.beautyRoutineOrderRule, style: AppText.caption.copyWith(color: t.inkMuted)),
             const SizedBox(height: 12),
-            for (var i = 0; i < _steps.length; i++)
+            for (var i = 0; i < steps.length; i++)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -247,9 +255,9 @@ class _RoutineOrderCard extends StatelessWidget {
                         height: 34,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(color: t.accentLight, shape: BoxShape.circle),
-                        child: Text(_steps[i].$1, style: const TextStyle(fontSize: 16)),
+                        child: Text(_icons[i], style: const TextStyle(fontSize: 16)),
                       ),
-                      if (i < _steps.length - 1) Container(width: 2, height: 18, color: t.accentLight),
+                      if (i < steps.length - 1) Container(width: 2, height: 18, color: t.accentLight),
                     ],
                   ),
                   const SizedBox(width: 12),
@@ -258,8 +266,8 @@ class _RoutineOrderCard extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 6),
                       child: Text.rich(
                         TextSpan(children: [
-                          TextSpan(text: '${i + 1}. ${_steps[i].$2}  ', style: AppText.label.copyWith(color: t.ink)),
-                          TextSpan(text: _steps[i].$3, style: AppText.caption.copyWith(color: t.inkMuted)),
+                          TextSpan(text: '${i + 1}. ${steps[i].$1}  ', style: AppText.label.copyWith(color: t.ink)),
+                          TextSpan(text: steps[i].$2, style: AppText.caption.copyWith(color: t.inkMuted)),
                         ]),
                       ),
                     ),
@@ -282,16 +290,16 @@ class SkinConcernScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
     final async = ref.watch(skinGuideProvider(slug));
-    return Scaffold(
+    return _homeOnRootPop(context, Scaffold(
       backgroundColor: t.canvas,
       body: async.when(
         loading: () => const _GuideSkeleton(),
         error: (e, _) => SafeArea(
           child: Column(
             children: [
-              Align(
+              const Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.arrow_back_rounded)),
+                child: Padding(padding: EdgeInsetsDirectional.only(start: 8, top: 6), child: AppBackButton()),
               ),
               Expanded(child: ErrorView.from(e, onRetry: () => ref.invalidate(skinGuideProvider(slug)))),
             ],
@@ -299,19 +307,29 @@ class SkinConcernScreen extends ConsumerWidget {
         ),
         data: (g) => _GuideBody(guide: g),
       ),
-    );
+    ));
   }
 }
 
 class _GuideSkeleton extends StatelessWidget {
   const _GuideSkeleton();
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: EdgeInsets.zero,
-        children: const [
-          ShimmerBox(height: 300, radius: 0),
-          Padding(padding: EdgeInsets.all(16), child: ShimmerBox(height: 90, radius: 18)),
-          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: ShimmerBox(height: 160, radius: 18)),
+  Widget build(BuildContext context) => Stack(
+        children: [
+          ListView(
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            children: const [
+              ShimmerBox(height: 300, radius: 0),
+              Padding(padding: EdgeInsets.all(16), child: ShimmerBox(height: 90, radius: 18)),
+              Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: ShimmerBox(height: 160, radius: 18)),
+            ],
+          ),
+          PositionedDirectional(
+            top: MediaQuery.paddingOf(context).top + 6,
+            start: 8,
+            child: const BeautyBackButton(),
+          ),
         ],
       );
 }
@@ -322,8 +340,11 @@ class _GuideBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final t = context.worldTheme;
     final c = guide.concern;
+    final width = MediaQuery.sizeOf(context).width;
+    void openAll() => context.push('/products?concernSlug=${Uri.encodeComponent(c.slug)}&title=${Uri.encodeComponent(c.name)}');
     final color = parseHex(c.color) ?? t.accent;
     final dark = Color.lerp(color, Colors.black, 0.4)!;
     return CustomScrollView(
@@ -335,7 +356,19 @@ class _GuideBody extends ConsumerWidget {
           stretch: true,
           backgroundColor: dark,
           foregroundColor: Colors.white,
-          title: CollapsingTitle(child: Text(c.name, style: AppText.title3.copyWith(color: Colors.white))),
+          automaticallyImplyLeading: false,
+          leadingWidth: 60,
+          leading: const Padding(
+            padding: EdgeInsetsDirectional.only(start: 8),
+            child: Center(child: BeautyBackButton()),
+          ),
+          actions: [
+            BeautyShareButton(url: AppConfig.webUrl('/skin-guide/${Uri.encodeComponent(c.slug)}'), title: c.name),
+            const SizedBox(width: 8),
+          ],
+          title: CollapsingTitle(
+            child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.title3.copyWith(color: Colors.white)),
+          ),
           flexibleSpace: FlexibleSpaceBar(
             collapseMode: CollapseMode.parallax,
             stretchModes: const [StretchMode.zoomBackground],
@@ -343,7 +376,7 @@ class _GuideBody extends ConsumerWidget {
               fit: StackFit.expand,
               children: [
                 if (c.imageUrl != null)
-                  AppNetworkImage(url: c.imageUrl!, fit: BoxFit.cover)
+                  AppNetworkImage(url: c.imageUrl!, width: width, fit: BoxFit.cover)
                 else
                   DecoratedBox(
                     decoration: BoxDecoration(gradient: LinearGradient(colors: [color, dark])),
@@ -359,6 +392,7 @@ class _GuideBody extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const TopScrim(),
                 PositionedDirectional(
                   start: 20,
                   end: 20,
@@ -366,17 +400,19 @@ class _GuideBody extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('دليل البشرة', style: AppText.micro.copyWith(color: Colors.white.withValues(alpha: 0.8))),
+                      Text(s.beautySkinGuide, style: AppText.micro.copyWith(color: Colors.white.withValues(alpha: 0.8))),
                       const SizedBox(height: 4),
-                      Text('${c.icon != null ? '${c.icon} ' : ''}${c.name}', style: AppText.display.copyWith(color: Colors.white)),
+                      Text('${c.icon != null ? '${c.icon} ' : ''}${c.name}', maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: AppText.display.copyWith(color: Colors.white)),
                       if (c.subtitle != null)
-                        Text(c.subtitle!, style: AppText.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.9))),
+                        Text(c.subtitle!, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppText.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.9))),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 6,
                         children: [
-                          if (guide.productTotal > 0) _HeroChip('${arProducts(guide.productTotal)} لعلاجها'),
-                          if (guide.routines.isNotEmpty) _HeroChip('${guide.routines.length} روتين مقترح'),
+                          if (guide.productTotal > 0) _HeroChip(s.beautyProductsToTreat(guide.productTotal)),
+                          if (guide.routines.isNotEmpty) _HeroChip(s.beautySuggestedRoutines(guide.routines.length)),
                         ],
                       ),
                     ],
@@ -398,7 +434,7 @@ class _GuideBody extends ConsumerWidget {
             ),
           ),
         if (c.tips.isNotEmpty) ...[
-          const SliverToBoxAdapter(child: AppSectionTitle(title: '💡 نصائح ديما لكِ')),
+          SliverToBoxAdapter(child: AppSectionTitle(title: s.beautyTipsTitle)),
           SliverList.builder(
             itemCount: c.tips.length,
             itemBuilder: (_, i) => Padding(
@@ -426,7 +462,7 @@ class _GuideBody extends ConsumerWidget {
         ],
         if (c.causes.isNotEmpty)
           SliverToBoxAdapter(
-            child: _ListCard(title: '🔍 ليش تصير؟', items: c.causes, dot: color),
+            child: _ListCard(title: s.beautyCausesTitle, items: c.causes, dot: color),
           ),
         if (c.ingredients.isNotEmpty || c.avoid.isNotEmpty)
           SliverToBoxAdapter(
@@ -439,8 +475,8 @@ class _GuideBody extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (c.ingredients.isNotEmpty) ...[
-                      Text('✅ مكونات تبحثين عنها', style: AppText.title3.copyWith(color: t.ink)),
-                      Text('اضغطي على المكوّن لتشوفي منتجاته', style: AppText.caption.copyWith(color: t.inkMuted)),
+                      Text(s.beautyIngredientsTitle, style: AppText.title3.copyWith(color: t.ink)),
+                      Text(s.beautyIngredientsHint, style: AppText.caption.copyWith(color: t.inkMuted)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -449,8 +485,8 @@ class _GuideBody extends ConsumerWidget {
                           for (final x in c.ingredients)
                             ActionChip(
                               label: Text(x),
-                              labelStyle: AppText.label.copyWith(color: const Color(0xFF13795B)),
-                              backgroundColor: const Color(0xFFE6F6EF),
+                              labelStyle: AppText.label.copyWith(color: AppColors.successDeep),
+                              backgroundColor: AppColors.successSoft,
                               side: BorderSide.none,
                               shape: const StadiumBorder(),
                               onPressed: () {
@@ -463,7 +499,7 @@ class _GuideBody extends ConsumerWidget {
                     ],
                     if (c.ingredients.isNotEmpty && c.avoid.isNotEmpty) const SizedBox(height: 16),
                     if (c.avoid.isNotEmpty) ...[
-                      Text('⛔ تجنّبي', style: AppText.title3.copyWith(color: t.ink)),
+                      Text(s.beautyAvoidTitle, style: AppText.title3.copyWith(color: t.ink)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -472,8 +508,8 @@ class _GuideBody extends ConsumerWidget {
                           for (final x in c.avoid)
                             Chip(
                               label: Text(x),
-                              labelStyle: AppText.label.copyWith(color: const Color(0xFFB4232F)),
-                              backgroundColor: const Color(0xFFFDECEE),
+                              labelStyle: AppText.label.copyWith(color: AppColors.danger),
+                              backgroundColor: AppColors.dangerSoft,
                               side: BorderSide.none,
                               shape: const StadiumBorder(),
                             ),
@@ -487,7 +523,7 @@ class _GuideBody extends ConsumerWidget {
           ),
         if (guide.routines.isNotEmpty) ...[
           SliverToBoxAdapter(
-            child: AppSectionTitle(title: 'روتين لـ${c.name}', subtitle: 'خطوات جاهزة بسعر أوفر'),
+            child: AppSectionTitle(title: s.beautyRoutinesFor(c.name), subtitle: s.beautyRoutinesForSubtitle),
           ),
           SliverToBoxAdapter(
             child: SizedBox(
@@ -510,9 +546,9 @@ class _GuideBody extends ConsumerWidget {
         if (guide.products.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: AppSectionTitle(
-              title: 'منتجات تعالج ${c.name}',
-              actionLabel: guide.productTotal > guide.products.length ? 'الكل (${guide.productTotal})' : null,
-              onAction: () => context.push('/products?concernSlug=${Uri.encodeComponent(c.slug)}&title=${Uri.encodeComponent(c.name)}'),
+              title: s.beautyProductsFor(c.name),
+              actionLabel: guide.productTotal > guide.products.length ? s.beautySeeAllCount(guide.productTotal) : null,
+              onAction: openAll,
             ),
           ),
           SliverPadding(
@@ -530,24 +566,24 @@ class _GuideBody extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                 child: OutlinedButton(
-                  onPressed: () => context.push('/products?concernSlug=${Uri.encodeComponent(c.slug)}&title=${Uri.encodeComponent(c.name)}'),
+                  onPressed: openAll,
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                     side: BorderSide(color: color),
                     foregroundColor: dark,
                     shape: const StadiumBorder(),
                   ),
-                  child: Text('عرض كل المنتجات (${guide.productTotal})'),
+                  child: Text(s.beautyShowAllProducts(guide.productTotal)),
                 ),
               ),
             ),
         ],
         if (!c.hasGuide && guide.products.isEmpty && guide.routines.isEmpty)
-          const SliverToBoxAdapter(
-            child: EmptyState(icon: Icons.spa_outlined, title: 'نجهّز محتوى هذه المشكلة', subtitle: 'قريباً نصائح ومنتجات مختارة'),
+          SliverToBoxAdapter(
+            child: EmptyState(icon: Icons.spa_outlined, title: s.beautyConcernComingTitle, subtitle: s.beautyConcernComingSubtitle),
           ),
         if (guide.others.isNotEmpty) ...[
-          const SliverToBoxAdapter(child: AppSectionTitle(title: 'مشاكل أخرى')),
+          SliverToBoxAdapter(child: AppSectionTitle(title: s.beautyOtherConcerns)),
           SliverToBoxAdapter(
             child: SizedBox(
               height: 176,

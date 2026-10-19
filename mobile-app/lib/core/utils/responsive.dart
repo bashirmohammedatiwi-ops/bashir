@@ -36,11 +36,18 @@ abstract final class Responsive {
 
   static bool isExpanded(BuildContext context) => tierOf(context) == ScreenTier.expanded;
 
+  /// أدنى تصغير للخط نقبله من إعدادات النظام.
+  static const minTextScale = 0.85;
+
+  /// سقف تكبير الخط العام — بطاقات المنتج بارتفاعات ثابتة لا تحتمل أكثر.
+  /// الشاشات النصية (الدفع، تفاصيل الطلب، الوثائق…) ترفعه بـ `LargeTextScope`.
+  static const maxTextScale = 1.3;
+
   /// يمنع كسر التخطيط عند تكبير الخط في إعدادات النظام.
   static TextScaler clampTextScaler(BuildContext context) {
     return MediaQuery.textScalerOf(context).clamp(
-      minScaleFactor: 0.85,
-      maxScaleFactor: 1.25,
+      minScaleFactor: minTextScale,
+      maxScaleFactor: maxTextScale,
     );
   }
 

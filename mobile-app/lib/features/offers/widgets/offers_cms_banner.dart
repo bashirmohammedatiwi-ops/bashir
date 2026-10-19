@@ -1,10 +1,8 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../core/theme/ad_slots.dart';
-import '../../../core/l10n/app_strings.dart';
 import '../../../data/models/home_section.dart';
 import '../../home/home_link.dart';
 import '../../home/widgets/home_banner_stage.dart';
@@ -84,6 +82,8 @@ class _OffersCmsBannerState extends State<OffersCmsBanner> {
   }
 }
 
+/// غلاف أقسام لوحة التحكم في العروض: مسافة عمودية فقط — الأقسام تحشو نفسها أفقياً
+/// (16) والشرائط الأفقية تمتد لحافة الشاشة كما في الرئيسية.
 class OffersSectionFrame extends StatelessWidget {
   final Widget child;
 
@@ -92,32 +92,8 @@ class OffersSectionFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: OffersTheme.hPad, vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: child,
-    );
-  }
-}
-
-class OffersCatalogHeader extends ConsumerWidget {
-  final int loadedCount;
-  final bool loading;
-
-  const OffersCatalogHeader({
-    super.key,
-    required this.loadedCount,
-    this.loading = false,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.s;
-    return OffersSectionHeader(
-      title: s.offerProducts,
-      subtitle: loading
-          ? s.loading
-          : loadedCount > 0
-              ? s.productsAvailableNow(loadedCount)
-              : s.noOffersNow,
     );
   }
 }

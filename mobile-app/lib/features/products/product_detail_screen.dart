@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import '../checkout/delivery_estimate.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +11,11 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/navigation/product_nav.dart';
 import '../../core/push/push_service.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/ds_strings.dart';
-import '../cart/cart_strings.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -28,6 +30,7 @@ import '../../core/widgets/fullscreen_image_viewer.dart';
 import '../../core/widgets/horizontal_product_list.dart';
 import '../../core/widgets/product_detail_skeleton.dart';
 import '../../core/widgets/states.dart';
+import '../../data/models/paginated.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
 import '../../data/services/api_service.dart';
@@ -36,8 +39,6 @@ import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/recently_viewed_provider.dart';
-import '../shell/main_shell.dart';
-import '../shell/nav_tabs.dart';
 import '../wishlist/wishlist_provider.dart';
 import '../worlds/world_theme.dart';
 import 'widgets/added_to_cart_sheet.dart';
@@ -45,9 +46,50 @@ import 'widgets/product_detail_theme.dart';
 import 'widgets/product_shade_picker.dart';
 import '../worlds/worlds_provider.dart';
 
+/// نصوص صفحة المنتج التي لا تُستخدم خارجها.
+extension _PdpStringsX on AppStrings {
+  String get detailsRefreshFailed => isAr ? 'تعذّر تحديث التفاصيل' : "Couldn't refresh the details";
+  String get productRemovedHint => isAr
+      ? 'ربما توقّف بيعه أو أُزيل من المتجر — عندنا بدائل قريبة منه'
+      : 'It may have been discontinued or removed — we have close alternatives';
+  String get browseSimilar => isAr ? 'تصفّحي منتجات مشابهة' : 'Browse similar products';
+  String seeAllReviews(int n) => isAr ? 'عرض كل التقييمات (\u2066$n\u2069)' : 'See all reviews ($n)';
+  String get editYourReview => isAr ? 'عدّلي تقييمك' : 'Edit your review';
+  String get updateReview => isAr ? 'حفظ التعديل' : 'Save changes';
+  String get reviewsNewest => isAr ? 'الأحدث' : 'Newest';
+  String get reviewsHighest => isAr ? 'الأعلى' : 'Highest';
+  String get reviewsLowest => isAr ? 'الأقل' : 'Lowest';
+  String get reviewsLoadFailed => isAr ? 'تعذّر تحميل التقييمات' : "Couldn't load the reviews";
+
+  /// توزيع النجوم محسوب من آخر التقييمات المجلوبة فقط — نقولها صراحة.
+  String fromLatestReviews(int n) => isAr
+      ? 'من آخر ${arCount(n, one: 'تقييم', two: 'تقييمين', few: 'تقييمات', many: 'تقييماً')}'
+      : 'From the latest ${enCount(n, 'review', 'reviews')}';
+  String starsCount(int n) => isAr
+      ? arCount(n, one: 'نجمة واحدة', two: 'نجمتان', few: 'نجوم', many: 'نجمة')
+      : enCount(n, 'star', 'stars');
+}
+
+/// أول صفحة تقييمات (الأحدث) مع تقييم الزبونة نفسها — تتجدد حين تسجّل الدخول أو تخرج.
+final _reviewsPreviewProvider = FutureProvider.autoDispose
+    .family<({Paginated<Review> page, Review? mine}), String>((ref, productId) {
+  ref.watch(authProvider.select((a) => a.isAuthenticated ? a.user?.id : null));
+  return ref.read(apiServiceProvider).getProductReviewsPage(productId, limit: _reviewsPreviewLimit);
+});
+
+/// عدد التقييمات في المعاينة — يكفي لتوزيع نجوم معقول دون صفحة ثقيلة.
+const _reviewsPreviewLimit = 20;
+
+/// عدد التقييمات الظاهرة داخل الصفحة؛ البقية في «عرض كل التقييمات».
+const _reviewsInline = 5;
+
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String idOrSlug;
-  const ProductDetailScreen({super.key, required this.idOrSlug});
+
+  /// درجة تُختار أولاً (من مسح باركود الدرجة أو رابط `?shade=`) إن كانت متاحة.
+  final String? initialShadeId;
+
+  const ProductDetailScreen({super.key, required this.idOrSlug, this.initialShadeId});
 
   @override
   ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -56,7 +98,13 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _imageIndex = 0;
   int _quantity = 1;
-  ProductShade? _shade;
+
+  /// معرّف الدرجة المختارة فقط — الكائن نفسه يُشتق من نسخة المنتج الحالية في كل بناء،
+  /// فلا تبقى صورة البطاقة المصغّرة أو مخزونها وسعرها القديمان بعد وصول التفاصيل.
+  String? _shadeId;
+
+  /// [ProductDetailScreen.initialShadeId] طُبّقت (أو تبيّن أنها غير متاحة).
+  bool _initialShadeHandled = false;
   final _pageCtrl = PageController();
   String? _precachedGalleryStamp;
 
@@ -81,79 +129,112 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
+  /// الدرجة المختارة من نسخة [product] الحالية — أو الوحيدة إن لم يكن للمنتج غيرها.
+  ProductShade? _shadeOf(Product product) =>
+      product.displayableShades.where((s) => s.id == _shadeId).firstOrNull ?? product.soleDisplayableShade;
+
+  /// القطع الموجودة في السلة من هذا المنتج بهذه الدرجة (نفس مفتاح سطر السلة).
+  int _inCartFor(Product product, ProductShade? shade) {
+    final key = shade == null ? product.id : '${product.id}:${shade.id}';
+    return ref.read(cartProvider).items.where((e) => e.key == key).fold<int>(0, (n, e) => n + e.quantity);
+  }
+
+  /// أقصى كمية يمكن إضافتها الآن: مخزون الدرجة ناقص ما في السلة منها (1 على الأقل للعرض).
+  int _maxQtyFor(Product product, ProductShade? shade) {
+    final cartShade = product.shadeForCart(selected: shade);
+    final stock = cartShade?.stock ?? product.stock;
+    return math.max(1, math.min(99, stock - _inCartFor(product, cartShade)));
+  }
+
+  /// الإضافة متاحة فقط لنسخة تعرف درجاتها — بذرة مختصرة أو بلا درجات (من «شاهدتِها
+  /// مؤخراً» بعد إعادة التشغيل مثلاً) قد تضيف منتجاً متعدد الدرجات بلا درجة.
+  bool get _seedCanAdd {
+    final seed = ProductSeeds.get(widget.idOrSlug);
+    return seed != null && !ProductSeeds.isLite(widget.idOrSlug) && seed.shades.isNotEmpty;
+  }
+
+  bool _isGone(Object e) => e is ApiException && (e.status == 404 || e.status == 410);
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(productDetailProvider(widget.idOrSlug));
     ref.listen(productDetailProvider(widget.idOrSlug), (prev, next) {
       next.whenData((p) => ref.read(recentlyViewedProvider.notifier).add(p));
     });
+    // السلة تحدد أقصى كمية للدرجة — نعيد البناء حين تتغيّر.
+    ref.watch(cartProvider.select((c) => c.count));
     // فُتح من بطاقة: نعرض المنتج فوراً ببياناتها، والتفاصيل تكتمل حين تصل.
     final seed = ProductSeeds.get(widget.idOrSlug);
+    final failure = async.hasError && !async.isLoading ? async.error : null;
+    final gone = failure != null && _isGone(failure);
+    void retry() => ref.invalidate(productDetailProvider(widget.idOrSlug));
+
+    Widget? bottomBar(Product product, {required bool canAdd}) => _BottomBar(
+          product: product,
+          quantity: _quantity,
+          shade: _shadeOf(product),
+          onAdd: canAdd ? () => _addToCart(product) : null,
+        );
+
     return Scaffold(
       backgroundColor: context.worldTheme.canvas,
       body: async.when(
         loading: () => seed != null ? _buildContent(seed) : const ProductDetailSkeleton(),
-        error: (e, _) => Scaffold(
-          appBar: AppBar(),
-          body: ErrorView.from(
-            e,
-            onRetry: () => ref.invalidate(productDetailProvider(widget.idOrSlug)),
-          ),
-        ),
-        data: (product) => _buildContent(product),
-      ),
-      bottomNavigationBar: async.maybeWhen(
-        data: (product) => _BottomBar(
-          product: product,
-          quantity: _quantity,
-          shade: _shade,
-          onAdd: () => _addToCart(product),
-        ),
-        loading: () => seed == null
-            ? null
-            : _BottomBar(
-                product: seed,
-                quantity: _quantity,
-                shade: _shade,
-                // نسخة البطاقة المختصرة لا تعرف الدرجات بعد: الإضافة تنتظر التفاصيل
-                // حتى لا يُضاف منتج متعدد الدرجات بلا درجة.
-                onAdd: ProductSeeds.isLite(widget.idOrSlug) || (seed.shades.isEmpty && seed.shadeCount > 1)
-                    ? null
-                    : () => _addToCart(seed),
+        error: (e, _) {
+          // «إعادة المحاولة» جارية: نعرض ما يُعرض أثناء التحميل لا الخطأ السابق.
+          if (async.isLoading) return seed != null ? _buildContent(seed) : const ProductDetailSkeleton();
+          if (gone) return _GoneView(seed: seed);
+          // بيانات البطاقة ظاهرة أصلاً: نبقيها مع تنبيه صغير بدل استبدالها بشاشة خطأ.
+          if (seed != null) return _buildContent(seed, onRefreshFailed: retry);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
+                  child: Align(alignment: AlignmentDirectional.centerStart, child: AppBackButton()),
+                ),
               ),
-        orElse: () => null,
+              Expanded(child: ErrorView.from(e, onRetry: retry)),
+            ],
+          );
+        },
+        data: (product) => _buildContent(product, complete: true),
+      ),
+      bottomNavigationBar: async.when(
+        data: (product) => bottomBar(product, canAdd: true),
+        loading: () => seed == null ? null : bottomBar(seed, canAdd: _seedCanAdd),
+        error: (_, __) => seed == null || gone ? null : bottomBar(seed, canAdd: _seedCanAdd),
       ),
     );
   }
 
   void _addToCart(Product product) {
-    final s = ref.s;
-    final shade = product.shadeForCart(selected: _shade);
+    final s = ref.read(stringsProvider);
+    final shade = product.shadeForCart(selected: _shadeOf(product));
     if (product.hasMultipleDisplayableShades && shade == null) {
       AppSnackbar.show(context, s.selectShadeFirst);
       return;
     }
     HapticFeedback.mediumImpact();
+    final requested = _quantity;
     // ما أُضيف فعلاً — قد يكون أقل من المطلوب إن لم يكفِ المخزون.
-    final added = ref.read(cartProvider.notifier).addCounted(product, quantity: _quantity, shade: shade);
+    final added = ref.read(cartProvider.notifier).addCounted(product, quantity: requested, shade: shade);
     if (added <= 0) {
       AppSnackbar.error(context, s.maxStockReached);
       return;
     }
-    if (added < _quantity) {
-      AppSnackbar.show(context, s.onlyAddedInStock(added));
-    }
+    if (added < requested) AppSnackbar.show(context, s.addedOnly(added));
     // تأكيد واضح + ما يكمّله + كم يبقى للتوصيل المجاني (بدل إشعار عابر).
     showAddedToCartSheet(
       context,
       product: product,
       shade: shade,
-      quantity: added,
+      quantity: requested,
+      added: added,
       lang: ref.read(languageCodeProvider),
-      onViewCart: () {
-        context.go('/');
-        ref.read(navIndexProvider.notifier).state = NavTabs.cart;
-      },
+      onViewCart: () => openCartTab(context, ProviderScope.containerOf(context)),
     );
   }
 
@@ -168,36 +249,69 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return urls;
   }
 
-  void _syncShadeSelection(Product product) {
+  /// يضبط الدرجة المختارة على نسخة [product] الحالية قبل البناء (بلا إطار وسيط خاطئ):
+  /// الدرجة المطلوبة أولاً، ثم أول درجة متوفرة إن لم تُختر درجة أو نفدت المختارة
+  /// وغيرها متوفر.
+  void _syncShadeSelection(Product product, {required bool complete}) {
     final shades = product.displayableShades;
-    if (!product.hasMultipleDisplayableShades) {
-      final sole = product.soleDisplayableShade;
-      if (_shade?.id != sole?.id) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _shade = sole);
-        });
+    // بذرة بلا درجات: ننتظر التفاصيل — لا نحكم على الدرجة المطلوبة بعد.
+    if (shades.isEmpty) return;
+    if (!_initialShadeHandled) {
+      final wanted = widget.initialShadeId;
+      final match = wanted == null ? null : shades.where((x) => x.id == wanted).firstOrNull;
+      // بذرة البطاقة قد لا تحمل كل الدرجات: لا نستسلم قبل وصول النسخة الكاملة.
+      if (match != null || wanted == null || complete) {
+        _initialShadeHandled = true;
+        if (match != null) {
+          _shadeId = match.id;
+          if (!match.inStock && shades.any((x) => x.inStock)) {
+            final name = match.name;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) AppSnackbar.show(context, ref.read(stringsProvider).shadeSoldOut(name));
+            });
+          }
+        }
       }
-      return;
     }
-    if (shades.isEmpty) {
-      if (_shade != null) setState(() => _shade = null);
-      return;
+    if (!product.hasMultipleDisplayableShades) return;
+    final current = shades.where((x) => x.id == _shadeId).firstOrNull;
+    final anyInStock = shades.any((x) => x.inStock);
+    if (current == null || (!current.inStock && anyInStock)) {
+      _shadeId = (shades.where((x) => x.inStock).firstOrNull ?? shades.first).id;
     }
-    if (_shade != null && shades.any((s) => s.id == _shade!.id)) return;
-    final pick = shades.firstWhere((s) => s.inStock, orElse: () => shades.first);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _shade = pick);
+  }
+
+  void _onShadeSelected(Product product, ProductShade shade) {
+    setState(() {
+      _shadeId = shade.id;
+      _quantity = _quantity.clamp(1, _maxQtyFor(product, shade));
+      _imageIndex = 0;
     });
+    // صورة الدرجة أول المعرض: نعود إليها لترى اللون فوراً.
+    if (_pageCtrl.hasClients) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _pageCtrl.jumpToPage(0);
+      } else {
+        _pageCtrl.animateToPage(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+      }
+    }
   }
 
   /// يظهر اسم المنتج في الشريط العلوي بعد تجاوز المعرض.
   final _collapsed = ValueNotifier<bool>(false);
 
-  Widget _buildContent(Product product) {
+  /// [onRefreshFailed]: عُرضت بيانات البطاقة لأن التفاصيل لم تصل — شريحة «إعادة المحاولة».
+  /// [complete]: نسخة التفاصيل الكاملة (لا بذرة البطاقة).
+  Widget _buildContent(Product product, {bool complete = false, VoidCallback? onRefreshFailed}) {
     final shades = product.displayableShades;
-    _syncShadeSelection(product);
+    _syncShadeSelection(product, complete: complete);
+    final shade = _shadeOf(product);
+    // الكمية لا تتجاوز ما يمكن إضافته من هذه الدرجة الآن (المخزون ناقص ما في السلة).
+    final maxQty = _maxQtyFor(product, shade);
+    if (_quantity > maxQty) _quantity = maxQty;
     _precacheGallery(context, product);
-    final gallery = _galleryUrls(product, _shade);
+    final gallery = _galleryUrls(product, shade);
+    if (_imageIndex >= gallery.length) _imageIndex = gallery.length - 1;
     final zoomableUrls = gallery.where((u) => u.trim().isNotEmpty).toList();
 
     final collapseAt = Responsive.galleryExpandedHeight(context, hasThumbs: gallery.length > 1) -
@@ -217,7 +331,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           zoomableUrls: zoomableUrls,
           imageIndex: _imageIndex,
           pageCtrl: _pageCtrl,
-          selectedShade: _shade,
+          selectedShade: shade,
           onPageChanged: (i) => setState(() => _imageIndex = i),
         ),
         SliverToBoxAdapter(
@@ -241,6 +355,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   _ProductTitleBlock(product: product),
+                  if (onRefreshFailed != null) _RefreshFailedPill(onRetry: onRefreshFailed),
                   if (product.hasMultipleDisplayableShades) ...[
                     Container(
                       margin: const EdgeInsets.fromLTRB(
@@ -253,24 +368,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       decoration: ProductDetailTheme.shadeSectionDecoration(context),
                       child: ProductShadePicker(
                         shades: shades,
-                        selected: _shade,
+                        selected: shade,
                         strings: ref.s,
-                        // الكمية لا تتجاوز مخزون الدرجة الجديدة.
-                        onSelect: (s) => setState(() {
-                          _shade = s;
-                          if (s.stock > 0 && _quantity > s.stock) _quantity = s.stock;
-                          if (_quantity < 1) _quantity = 1;
-                        }),
+                        onSelect: (s) => _onShadeSelected(product, s),
                       ),
                     ),
                   ],
                   _ProductCommerceBlock(
                     product: product,
-                    shade: _shade,
+                    shade: shade,
                     quantity: _quantity,
+                    maxQuantity: maxQty,
                     onQuantityChanged: (v) {
                       HapticFeedback.selectionClick();
-                      setState(() => _quantity = v);
+                      setState(() => _quantity = v.clamp(1, maxQty));
                     },
                   ),
                   const _TrustStrip(),
@@ -303,6 +414,112 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 }
 
+/// تعذّر جلب التفاصيل وعُرضت بيانات البطاقة: تنبيه صغير تحت العنوان مع إعادة المحاولة.
+class _RefreshFailedPill extends ConsumerWidget {
+  final VoidCallback onRetry;
+  const _RefreshFailedPill({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(ProductDetailTheme.padH, 10, ProductDetailTheme.padH, 0),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Semantics(
+          button: true,
+          label: '${s.detailsRefreshFailed}${s.isAr ? '، ' : ', '}${s.retryAction}',
+          excludeSemantics: true,
+          child: Material(
+            color: AppColors.warning.withValues(alpha: 0.1),
+            shape: StadiumBorder(side: BorderSide(color: AppColors.warning.withValues(alpha: 0.3))),
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onRetry();
+              },
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: kMinTapTarget),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 14, 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_off_rounded, size: 16, color: AppColors.warning),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text.rich(
+                          TextSpan(children: [
+                            TextSpan(text: '${s.detailsRefreshFailed} · '),
+                            TextSpan(
+                              text: s.retryAction,
+                              style: TextStyle(color: t.accentDark, fontWeight: FontWeight.w800),
+                            ),
+                          ]),
+                          style: AppText.caption.copyWith(color: t.inkSoft, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// المنتج حُذف أو أُوقف (404): رسالة واضحة وطريق لبدائل قريبة بدل نسخة قديمة.
+class _GoneView extends ConsumerWidget {
+  final Product? seed;
+  const _GoneView({this.seed});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final category = seed?.category;
+    final lang = ref.watch(languageCodeProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
+            child: Align(alignment: AlignmentDirectional.centerStart, child: AppBackButton()),
+          ),
+        ),
+        Expanded(
+          child: EmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: s.productNoLongerAvailable,
+            subtitle: s.productRemovedHint,
+            action: FilledButton.icon(
+              onPressed: () {
+                if (category != null && category.id.isNotEmpty) {
+                  context.pushReplacement(Uri(path: '/products', queryParameters: {
+                    'categoryId': category.id,
+                    'title': category.localizedName(lang),
+                  }).toString());
+                } else {
+                  openCategoriesTab(context, ProviderScope.containerOf(context));
+                }
+              },
+              style: FilledButton.styleFrom(minimumSize: const Size(0, kMinTapTarget)),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: Text(category != null ? s.browseSimilar : s.browseCategories),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// معرض الصور — خلفية بيضاء، أزرار عائمة، مصغّرات أسفل الصورة.
 class _GalleryAppBar extends ConsumerWidget {
   final ValueListenable<bool> collapsed;
@@ -324,6 +541,30 @@ class _GalleryAppBar extends ConsumerWidget {
     this.selectedShade,
     required this.onPageChanged,
   });
+
+  /// القلب: يتغيّر فوراً (المزوّد متفائل)، والخطأ يُعرض بدل أن يضيع. الزائرة تسجّل
+  /// الدخول ثم يُحفظ المنتج تلقائياً — لا تعود لتضغط مرة ثانية.
+  Future<void> _toggleWishlist(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.selectionClick();
+    if (!ref.read(authProvider).isAuthenticated) {
+      await context.push<bool>('/login');
+      if (!context.mounted || !ref.read(authProvider).isAuthenticated) return;
+    }
+    try {
+      final saved = await ref.read(wishlistProvider.notifier).toggle(product);
+      if (!saved || !context.mounted) return;
+      final s = ref.read(stringsProvider);
+      AppSnackbar.action(
+        context,
+        message: s.savedToWishlist,
+        actionLabel: s.viewWishlist,
+        onAction: () => context.push('/wishlist'),
+      );
+      PushService.maybeSoftAsk(context, reason: s.dsWishlistPushReason);
+    } catch (e) {
+      if (context.mounted) AppSnackbar.error(context, ref.friendly(e));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -359,9 +600,10 @@ class _GalleryAppBar extends ConsumerWidget {
           ),
         ),
       ),
-          actions: [
+      actions: [
         _CircleAction(
           icon: Icons.ios_share_rounded,
+          tooltip: s.shareProduct,
           onTap: () {
             final slug = product.slug.isNotEmpty ? product.slug : product.id;
             final url = AppConfig.productShareUrl(slug);
@@ -372,24 +614,12 @@ class _GalleryAppBar extends ConsumerWidget {
         _CircleAction(
           icon: wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           color: wished ? AppColors.sale : context.worldTheme.ink,
-          onTap: () async {
-            HapticFeedback.selectionClick();
-                if (!ref.read(authProvider).isAuthenticated) {
-                  context.push('/login');
-                  return;
-                }
-                try {
-                  final saved = await ref.read(wishlistProvider.notifier).toggle(product);
-                  if (saved && context.mounted) {
-                    PushService.maybeSoftAsk(context, reason: ref.s.dsWishlistPushReason);
-                  }
-                } catch (e) {
-                  if (context.mounted) AppSnackbar.error(context, ref.friendly(e));
-                }
-              },
-            ),
-        const SizedBox(width: 10),
-          ],
+          tooltip: wished ? s.removeFromWishlist : s.addToWishlist,
+          toggled: wished,
+          onTap: () => _toggleWishlist(context, ref),
+        ),
+        const SizedBox(width: 6),
+      ],
           flexibleSpace: FlexibleSpaceBar(
         background: DecoratedBox(
           decoration: BoxDecoration(
@@ -431,9 +661,10 @@ class _GalleryAppBar extends ConsumerWidget {
                       bottom: 12,
                       child: Row(
                         children: [
-                          if (product.hasDiscount)
+                          // خصم الدرجة المختارة نفسها — لا أعلى خصم بين الدرجات.
+                          if (product.pctFor(selectedShade) > 0)
                             _GalleryBadge(
-                              label: formatDiscount(product.discountPercent),
+                              label: formatDiscount(product.pctFor(selectedShade)),
                               color: AppColors.sale,
                             )
                           else if (product.isNew)
@@ -513,12 +744,19 @@ class _GalleryAppBar extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (_, i) {
                       final active = i == imageIndex;
-                      return GestureDetector(
-                        onTap: () => pageCtrl.animateToPage(
-                          i,
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOutCubic,
-                        ),
+                      return Semantics(
+                        button: true,
+                        selected: active,
+                        label: s.imageOf(i + 1, gallery.length),
+                        excludeSemantics: true,
+                        child: GestureDetector(
+                        onTap: () => MediaQuery.disableAnimationsOf(context)
+                            ? pageCtrl.jumpToPage(i)
+                            : pageCtrl.animateToPage(
+                                i,
+                                duration: const Duration(milliseconds: 260),
+                                curve: Curves.easeOutCubic,
+                              ),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           width: 54,
@@ -539,6 +777,7 @@ class _GalleryAppBar extends ConsumerWidget {
                               fit: BoxFit.contain,
                             ),
                           ),
+                        ),
                         ),
                       );
                     },
@@ -607,29 +846,59 @@ class _CircleAction extends StatelessWidget {
   final VoidCallback onTap;
   final Color color;
 
+  /// وصف الزر لقارئ الشاشة وتلميح الضغط المطوّل.
+  final String tooltip;
+
+  /// زر بحالتين (المفضلة): يُعلن «مفعّل/غير مفعّل».
+  final bool? toggled;
+
   const _CircleAction({
     required this.icon,
     required this.onTap,
+    required this.tooltip,
     this.color = AppColors.ink,
+    this.toggled,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Material(
-        color: context.worldTheme.surface,
-        elevation: 0,
-        shadowColor: context.worldTheme.accentDark.withValues(alpha: 0.1),
-        shape: CircleBorder(
-          side: BorderSide(color: context.worldTheme.hairline.withValues(alpha: 0.7), width: 0.6),
-        ),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, size: 20, color: color),
+      child: Tooltip(
+        message: tooltip,
+        excludeFromSemantics: true,
+        child: Semantics(
+          button: true,
+          label: tooltip,
+          toggled: toggled,
+          excludeSemantics: true,
+          // الدائرة 40 والمساحة القابلة للمس 44 — الهامش يلتقط الضغطة دون تكبير الشكل.
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            excludeFromSemantics: true,
+            onTap: onTap,
+            child: SizedBox(
+            width: kMinTapTarget,
+            height: kMinTapTarget,
+            child: Center(
+              child: Material(
+                color: context.worldTheme.surface,
+                elevation: 0,
+                shadowColor: context.worldTheme.accentDark.withValues(alpha: 0.1),
+                shape: CircleBorder(
+                  side: BorderSide(color: context.worldTheme.hairline.withValues(alpha: 0.7), width: 0.6),
+                ),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onTap,
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Icon(icon, size: 20, color: color),
+                  ),
+                ),
+              ),
+            ),
+          ),
           ),
         ),
       ),
@@ -857,19 +1126,25 @@ class _ProductCommerceBlock extends ConsumerWidget {
   final Product product;
   final ProductShade? shade;
   final int quantity;
+
+  /// أقصى ما يمكن إضافته الآن من هذه الدرجة (المخزون ناقص ما في السلة).
+  final int maxQuantity;
   final ValueChanged<int> onQuantityChanged;
 
   const _ProductCommerceBlock({
     required this.product,
     required this.shade,
     required this.quantity,
+    required this.maxQuantity,
     required this.onQuantityChanged,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
-    final price = shade?.price ?? product.price;
+    // سعر الدرجة المختارة وخصمها — نفس ما يُحاسب عليه السيرفر.
+    final price = product.unitFor(shade);
+    final discounted = product.hasDiscountFor(shade);
     final t = context.worldTheme;
     final stock = shade?.stock ?? product.stock;
 
@@ -892,7 +1167,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: product.hasDiscount
+                    colors: discounted
                         ? [AppColors.sale, AppColors.sale.withValues(alpha: 0.35)]
                         : [t.accent, t.accent.withValues(alpha: 0.35)],
                   ),
@@ -911,14 +1186,14 @@ class _ProductCommerceBlock extends ConsumerWidget {
                         fontSize: Responsive.priceDisplaySize(context),
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.6,
-                        color: product.hasDiscount ? AppColors.sale : t.ink,
+                        color: discounted ? AppColors.sale : t.ink,
                       ),
                     ),
-                    if (product.hasDiscount) ...[
+                    if (discounted) ...[
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
-                          formatPrice(product.originalPrice),
+                          formatPrice(product.origFor(shade)),
                           style: TextStyle(
                             color: t.inkMuted,
                             decoration: TextDecoration.lineThrough,
@@ -926,6 +1201,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      if (product.pctFor(shade) > 0)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 2),
                         child: Container(
@@ -941,8 +1217,8 @@ class _ProductCommerceBlock extends ConsumerWidget {
                             border: Border.all(color: AppColors.sale.withValues(alpha: 0.35)),
                           ),
                           child: Text(
-                            s.savePercent(product.discountPercent),
-                            style: TextStyle(
+                            s.savePercent(product.pctFor(shade)),
+                            style: const TextStyle(
                               color: AppColors.sale,
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,
@@ -971,7 +1247,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
                 QuantityStepper(
                   quantity: quantity,
                   onChanged: onQuantityChanged,
-                  max: stock.clamp(1, 99),
+                  max: maxQuantity,
                   compact: true,
                 ),
             ],
@@ -1403,12 +1679,14 @@ class _InfoExpandableState extends State<_InfoExpandable> {
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
             child: Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                widget.body,
-                style: TextStyle(
-                  height: 1.7,
-                  color: context.worldTheme.inkSoft,
-                  fontSize: 13.5,
+              child: _ReadableTextScale(
+                child: Text(
+                  widget.body,
+                  style: TextStyle(
+                    height: 1.7,
+                    color: context.worldTheme.inkSoft,
+                    fontSize: 13.5,
+                  ),
                 ),
               ),
             ),
@@ -1422,7 +1700,28 @@ class _InfoExpandableState extends State<_InfoExpandable> {
   }
 }
 
-/// التقييمات — ملخّص واضح + نموذج + قائمة.
+/// نص طويل يُقرأ (الوصف، طريقة الاستخدام، المكوّنات): يتبع تكبير خط النظام حتى 1.6×
+/// بدل سقف التطبيق العام 1.25× (المفروض لحماية البطاقات ذات الارتفاع الثابت).
+class _ReadableTextScale extends StatelessWidget {
+  final Widget child;
+  const _ReadableTextScale({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    // سقف التطبيق مطبّق على MediaQuery فوقنا — نعود لتكبير النظام الأصلي ثم نحدّه بـ 1.6.
+    final system = MediaQueryData.fromView(View.of(context)).textScaler;
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: system),
+      child: MediaQuery.withClampedTextScaling(
+        minScaleFactor: 0.85,
+        maxScaleFactor: 1.6,
+        child: child,
+      ),
+    );
+  }
+}
+
+/// التقييمات — ملخّص واضح + توزيع النجوم + نموذج + أحدث التقييمات و«عرض الكل».
 class _ReviewsSection extends ConsumerStatefulWidget {
   final Product product;
   final String idOrSlug;
@@ -1444,6 +1743,21 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
     super.dispose();
   }
 
+  /// يفتح النموذج (أو يغلقه). تقييم سابق للزبونة يُعبّأ ليُعدَّل بدل تقييم مكرر.
+  void _toggleForm(Review? mine) {
+    if (!ref.read(authProvider).isAuthenticated) {
+      context.push('/login');
+      return;
+    }
+    setState(() {
+      _showForm = !_showForm;
+      if (_showForm && mine != null) {
+        _rating = mine.rating.clamp(1, 5).toDouble();
+        _commentCtrl.text = mine.comment;
+      }
+    });
+  }
+
   Future<void> _submit() async {
     if (!ref.read(authProvider).isAuthenticated) {
       context.push('/login');
@@ -1451,16 +1765,14 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
     }
     setState(() => _submitting = true);
     try {
-      await ref.read(apiServiceProvider).addReview(
-            widget.product.id,
-            _rating,
-            _commentCtrl.text.trim(),
-          );
-      ref.invalidate(productReviewsProvider(widget.product.id));
+      final api = ref.read(apiServiceProvider);
+      await api.addReview(widget.product.id, _rating, _commentCtrl.text.trim());
       // التقييم والعدد تغيّرا على السيرفر: نسخة جديدة بدل المحفوظة قبل إعادة البناء.
       try {
-        await ref.read(apiServiceProvider).getProduct(widget.idOrSlug, forceRefresh: true);
+        await api.getProduct(widget.idOrSlug, forceRefresh: true);
       } catch (_) {}
+      ref.invalidate(_reviewsPreviewProvider(widget.product.id));
+      ref.invalidate(productReviewsProvider(widget.product.id));
       ref.invalidate(productDetailProvider(widget.idOrSlug));
       if (mounted) {
         setState(() {
@@ -1468,7 +1780,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           _commentCtrl.clear();
           _rating = 5;
         });
-        AppSnackbar.success(context, ref.s.thanksForReview);
+        AppSnackbar.success(context, ref.read(stringsProvider).thanksForReview);
       }
     } catch (e) {
       if (mounted) {
@@ -1479,13 +1791,24 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
     }
   }
 
+  void _openAll(int total) {
+    final s = ref.read(stringsProvider);
+    showAppSheet<void>(
+      context: context,
+      title: s.ratingsTitle,
+      expand: true,
+      builder: (_) => _AllReviewsSheet(productId: widget.product.id, total: total),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(productReviewsProvider(widget.product.id));
+    final async = ref.watch(_reviewsPreviewProvider(widget.product.id));
     final authed = ref.watch(authProvider).isAuthenticated;
     final product = widget.product;
     final s = ref.s;
     final t = context.worldTheme;
+    final mine = authed ? async.valueOrNull?.mine : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1498,24 +1821,24 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 style: ProductDetailTheme.sectionTitleStyle(context),
               ),
             ),
-              TextButton.icon(
-              onPressed: () {
-                if (!authed) {
-                  context.push('/login');
-                  return;
-                }
-                setState(() => _showForm = !_showForm);
-              },
+            TextButton.icon(
+              onPressed: () => _toggleForm(mine),
               style: TextButton.styleFrom(
                 foregroundColor: context.worldTheme.accent,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, kMinTapTarget),
               ),
-              icon: Icon(_showForm ? Icons.close_rounded : Icons.rate_review_outlined, size: 17),
+              icon: Icon(
+                _showForm
+                    ? Icons.close_rounded
+                    : (mine != null ? Icons.edit_rounded : Icons.rate_review_outlined),
+                size: 17,
+              ),
               label: Text(
-                _showForm ? s.cancel : s.addReview,
+                _showForm ? s.cancel : (mine != null ? s.editYourReview : s.addReview),
                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
               ),
-              ),
+            ),
           ],
         ),
         if (product.rating > 0) ...[
@@ -1598,22 +1921,23 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           const SizedBox(height: 14),
           Center(
             child: RatingBar.builder(
-            initialRating: _rating,
-            minRating: 1,
-            direction: Axis.horizontal,
-            allowHalfRating: true,
-            itemCount: 5,
+              initialRating: _rating,
+              minRating: 1,
+              direction: Axis.horizontal,
+              allowHalfRating: true,
+              itemCount: 5,
               itemSize: 32,
-            unratedColor: context.worldTheme.hairline,
-            itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.star),
-            onRatingUpdate: (v) => setState(() => _rating = v),
-          ),
+              unratedColor: context.worldTheme.hairline,
+              itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.star),
+              onRatingUpdate: (v) => setState(() => _rating = v),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _commentCtrl,
             maxLines: 3,
-            decoration: InputDecoration(hintText: s.reviewHint),
+            maxLength: 1000,
+            decoration: InputDecoration(hintText: s.reviewHint, counterText: ''),
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -1636,7 +1960,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                             height: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Text(
-                            s.submitReview,
+                            mine != null ? s.updateReview : s.submitReview,
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
                           ),
                   ),
@@ -1652,11 +1976,13 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             child: Center(
                 child: CircularProgressIndicator(color: context.worldTheme.accent, strokeWidth: 2)),
           ),
-          error: (e, _) => ErrorView.from(
-            e,
-            onRetry: () => ref.invalidate(productReviewsProvider(widget.product.id)),
+          // سطر صغير بدل شاشة خطأ كاملة داخل البطاقة.
+          error: (e, _) => _InlineRetryRow(
+            message: s.reviewsLoadFailed,
+            onRetry: () => ref.invalidate(_reviewsPreviewProvider(widget.product.id)),
           ),
-          data: (reviews) {
+          data: (r) {
+            final reviews = r.page.items;
             if (reviews.isEmpty && !_showForm) {
               return Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -1666,14 +1992,279 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 ),
               );
             }
+            final total = math.max(r.page.total, reviews.length);
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (reviews.length >= 3) ...[
+                  const SizedBox(height: 8),
+                  _RatingBars(reviews: reviews),
+                  const SizedBox(height: 6),
+                ],
                 const SizedBox(height: 4),
-                for (final Review r in reviews.take(5)) _ReviewTile(review: r),
+                for (final Review x in reviews.take(_reviewsInline)) _ReviewTile(review: x),
+                if (total > _reviewsInline)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: OutlinedButton(
+                      onPressed: () => _openAll(total),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(kMinTapTarget),
+                        side: BorderSide(color: t.accentSoft),
+                        shape: const StadiumBorder(),
+                        foregroundColor: t.accentDark,
+                      ),
+                      child: Text(
+                        s.seeAllReviews(total),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
+                    ),
+                  ),
               ],
             );
           },
         ),
+      ],
+    );
+  }
+}
+
+/// توزيع 5→1 نجوم من التقييمات المجلوبة (لا من كل التقييمات — والعنوان يقول ذلك).
+class _RatingBars extends ConsumerWidget {
+  final List<Review> reviews;
+  const _RatingBars({required this.reviews});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final counts = List<int>.filled(6, 0);
+    for (final r in reviews) {
+      counts[r.rating.round().clamp(1, 5)]++;
+    }
+    final n = reviews.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var star = 5; star >= 1; star--)
+          Semantics(
+            label: '${s.starsCount(star)}: ${counts[star]}',
+            excludeSemantics: true,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2.5),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 14,
+                    child: Text('$star', textAlign: TextAlign.center, style: AppText.micro.copyWith(color: t.inkSoft)),
+                  ),
+                  const Icon(Icons.star_rounded, color: AppColors.star, size: 13),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppCorners.pill),
+                      child: LinearProgressIndicator(
+                        value: n == 0 ? 0 : counts[star] / n,
+                        minHeight: 6,
+                        backgroundColor: t.accentLight,
+                        color: AppColors.star,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 24,
+                    child: Text(
+                      '${counts[star]}',
+                      textAlign: TextAlign.end,
+                      style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 4),
+        Text(s.fromLatestReviews(n), style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
+/// خطأ صغير داخل بطاقة: نص + «إعادة المحاولة».
+class _InlineRetryRow extends ConsumerWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _InlineRetryRow({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    return Row(
+      children: [
+        Icon(Icons.cloud_off_rounded, size: 17, color: t.inkMuted),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(message, style: AppText.caption.copyWith(color: t.inkSoft, fontWeight: FontWeight.w600)),
+        ),
+        TextButton(
+          onPressed: onRetry,
+          style: TextButton.styleFrom(
+            foregroundColor: t.accentDark,
+            minimumSize: const Size(kMinTapTarget, kMinTapTarget),
+          ),
+          child: Text(ref.s.retryAction, style: const TextStyle(fontWeight: FontWeight.w800)),
+        ),
+      ],
+    );
+  }
+}
+
+/// كل التقييمات: صفحات متتالية مع ترتيب (الأحدث / الأعلى / الأقل).
+class _AllReviewsSheet extends ConsumerStatefulWidget {
+  final String productId;
+  final int total;
+  const _AllReviewsSheet({required this.productId, required this.total});
+
+  @override
+  ConsumerState<_AllReviewsSheet> createState() => _AllReviewsSheetState();
+}
+
+class _AllReviewsSheetState extends ConsumerState<_AllReviewsSheet> {
+  static const _pageSize = 20;
+
+  final _scroll = ScrollController();
+  String _sort = 'newest';
+  final _items = <Review>[];
+  int _page = 0;
+  bool _hasNext = true;
+  bool _loading = false;
+  Object? _error;
+
+  /// يُهمل ردّ طلب قديم إن تغيّر الترتيب أثناءه.
+  int _request = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_maybeLoadMore);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _maybeLoadMore() {
+    if (!_scroll.hasClients || _loading || !_hasNext || _error != null) return;
+    if (_scroll.position.extentAfter < 400) _load();
+  }
+
+  Future<void> _load({bool reset = false}) async {
+    final id = ++_request;
+    setState(() {
+      if (reset) {
+        _items.clear();
+        _page = 0;
+        _hasNext = true;
+      }
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final r = await ref
+          .read(apiServiceProvider)
+          .getProductReviewsPage(widget.productId, page: _page + 1, limit: _pageSize, sort: _sort);
+      if (!mounted || id != _request) return;
+      setState(() {
+        final seen = {for (final x in _items) x.id};
+        _items.addAll(r.page.items.where((x) => x.id.isEmpty || !seen.contains(x.id)));
+        _page = r.page.page;
+        _hasNext = r.page.hasNext && r.page.items.isNotEmpty;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted || id != _request) return;
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  void _setSort(String sort) {
+    if (sort == _sort) return;
+    _sort = sort;
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+    _load(reset: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final sorts = [
+      ('newest', s.reviewsNewest),
+      ('highest', s.reviewsHighest),
+      ('lowest', s.reviewsLowest),
+    ];
+
+    Widget body;
+    if (_items.isEmpty && _loading) {
+      body = Center(child: CircularProgressIndicator(color: t.accent, strokeWidth: 2));
+    } else if (_items.isEmpty && _error != null) {
+      body = ErrorView.from(_error, onRetry: () => _load(reset: true));
+    } else if (_items.isEmpty) {
+      body = EmptyState(icon: Icons.rate_review_outlined, title: s.beFirstToReview);
+    } else {
+      body = ListView.builder(
+        controller: _scroll,
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+        itemCount: _items.length + 1,
+        itemBuilder: (_, i) {
+          if (i < _items.length) return _ReviewTile(review: _items[i]);
+          if (_error != null) {
+            return _InlineRetryRow(message: s.loadMoreFailed, onRetry: _load);
+          }
+          if (_hasNext) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(color: t.accent, strokeWidth: 2),
+                ),
+              ),
+            );
+          }
+          return const SizedBox(height: 8);
+        },
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 2),
+          child: Text(s.fromReviews(widget.total), style: AppText.caption.copyWith(color: t.inkMuted)),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              for (final (key, label) in sorts) ...[
+                AppChoiceChip(label: label, selected: _sort == key, onTap: () => _setSort(key)),
+                const SizedBox(width: 8),
+              ],
+            ],
+          ),
+        ),
+        Expanded(child: body),
       ],
     );
   }
@@ -1930,7 +2521,7 @@ class _BottomBar extends ConsumerWidget {
   final int quantity;
   final ProductShade? shade;
 
-  /// null = التفاصيل لم تصل بعد (الزر ظاهر لكن معطّل).
+  /// null = التفاصيل لم تصل بعد (الزر ظاهر لكن معطّل مع مؤشر تحميل).
   final VoidCallback? onAdd;
 
   const _BottomBar({
@@ -1945,7 +2536,7 @@ class _BottomBar extends ConsumerWidget {
     final s = ref.s;
     final stock = shade?.stock ?? product.stock;
     final enabled = stock > 0;
-    final unitPrice = shade?.price ?? product.price;
+    final unitPrice = product.unitFor(shade);
     final total = unitPrice * quantity;
 
     final narrow = Responsive.isNarrow(context);
@@ -2054,7 +2645,15 @@ class _BottomBar extends ConsumerWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.shopping_bag_rounded, size: narrow ? 18 : 20, color: Colors.white),
+                                // التفاصيل لم تصل بعد: مؤشر صغير بدل الأيقونة — الزر يتفعّل وحده.
+                                if (onAdd == null)
+                                  SizedBox(
+                                    width: narrow ? 16 : 18,
+                                    height: narrow ? 16 : 18,
+                                    child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                else
+                                  Icon(Icons.shopping_bag_rounded, size: narrow ? 18 : 20, color: Colors.white),
                                 SizedBox(width: narrow ? 6 : 8),
                                 Flexible(
                                   child: FittedBox(

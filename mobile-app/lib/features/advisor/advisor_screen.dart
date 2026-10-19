@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,13 +7,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/brand/brand_logo.dart';
+import '../../core/l10n/app_strings.dart';
+import '../../core/l10n/locale_provider.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/app_snackbar.dart';
+import '../cart/cart_provider.dart';
 import 'advisor_cart.dart';
 import 'advisor_controller.dart';
 import 'advisor_models.dart';
 import 'advisor_profile.dart';
+import 'advisor_strings.dart';
 import 'widgets/advisor_insight_cards.dart';
 import 'widgets/advisor_knowledge_card.dart';
 import 'widgets/advisor_profile_sheet.dart';
@@ -45,7 +51,10 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   final _scroll = ScrollController();
   final _input = TextEditingController();
   final _focus = FocusNode();
-  final _lastUserKey = GlobalKey();
+  /// مفتاح ثابت لكل عنصر (الرد بمعرّفه، رسالتها بموضعها) — للتمرير إليه.
+  /// لا نُنقل مفتاحاً من عنصر لآخر، وإلا انتقلت حالته (وحركته) معه.
+  final _itemKeys = <String, GlobalKey>{};
+  GlobalKey _keyFor(String id) => _itemKeys.putIfAbsent(id, GlobalKey.new);
 
   /// العناصر التي ظهرت من قبل لا تُعاد حركتها عند التمرير إليها.
   int _animatedCount = 0;
@@ -57,6 +66,9 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   Timer? _noticeTimer;
 
   AdvisorController get _ctl => ref.read(advisorProvider.notifier);
+
+  /// «ديما» تتكلم العربية فقط — الشاشة لا تُفتح بالواجهة الإنجليزية (رابط قديم مثلاً).
+  bool get _isAr => ref.read(languageCodeProvider) == 'ar';
 
   @override
   void initState() {
@@ -74,9 +86,10 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
       _showJump.value = _scroll.position.maxScrollExtent - _scroll.offset > 700;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!_isAr) return;
       await _ctl.start(productId: widget.productId, ask: widget.ask);
       final m = widget.initialMessage?.trim();
-      if (m != null && m.isNotEmpty && mounted) _ctl.send(m);
+      if (m != null && m.isNotEmpty && mounted) _ctl.sendWhenReady(m);
     });
     if (_animatedCount > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToEnd());
@@ -87,9 +100,10 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   @override
   void didUpdateWidget(covariant AdvisorScreen old) {
     super.didUpdateWidget(old);
+    if (!_isAr) return;
     final m = widget.initialMessage?.trim();
     if (m != null && m.isNotEmpty && m != old.initialMessage) {
-      _ctl.send(m);
+      _ctl.sendWhenReady(m);
     } else if (widget.productId != null && widget.productId != old.productId) {
       _ctl.start(productId: widget.productId, ask: widget.ask);
     }
@@ -113,13 +127,24 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     });
   }
 
-  void _jumpToEnd() {
-    if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+  bool get _still => MediaQuery.disableAnimationsOf(context);
+
+  /// القفز لآخر المحادثة. الطول الكلي تقديري حتى تُبنى العناصر، فنعيد القفز
+  /// بعد كل إطار (حتى 4 مرات) إلى أن يستقر في الأسفل فعلاً.
+  void _jumpToEnd([int tries = 0]) {
+    if (!_scroll.hasClients) return;
+    _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    if (tries >= 4) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      if ((_scroll.position.maxScrollExtent - _scroll.offset).abs() > 1) _jumpToEnd(tries + 1);
+    });
   }
 
   void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
+      if (!mounted || !_scroll.hasClients) return;
+      if (_still) return _jumpToEnd();
       _scroll.animateTo(
         _scroll.position.maxScrollExtent,
         duration: const Duration(milliseconds: 420),
@@ -129,25 +154,43 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   }
 
   /// بعد الرد: نضع سؤال الزبونة أعلى الشاشة فيظهر الرد كاملاً من بدايته.
-  void _revealReply() {
+  void _revealReply(List<AdvisorEntry> entries) => _reveal('u${entries.lastIndexWhere((e) => e is UserEntry)}');
+
+  /// رد بلا سؤال قبله (فُتحت على منتج، أو «إعادة» لطلب منتج): بداية الرد نفسه أعلى الشاشة.
+  void _revealLastBot(List<AdvisorEntry> entries) {
+    final last = entries.lastWhere((e) => e is BotEntry) as BotEntry;
+    _reveal('b${last.id}');
+  }
+
+  void _reveal(String id) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _lastUserKey.currentContext;
+      if (!mounted) return;
+      final ctx = _itemKeys[id]?.currentContext;
       if (ctx == null) return _scrollToEnd();
       Scrollable.ensureVisible(
         ctx,
         alignment: 0.02,
-        duration: const Duration(milliseconds: 520),
+        duration: _still ? Duration.zero : const Duration(milliseconds: 520),
         curve: Curves.easeOutCubic,
       );
     });
   }
 
+  /// [text] من اقتراح جاهز (لا يمس ما كتبته)؛ بدونه نرسل نص الحقل.
   void _send([String? text]) {
+    final fromField = text == null;
     final t = (text ?? _input.text).trim();
     if (t.isEmpty) return;
+    // «ديما» ما زالت ترد: لا نمسح ما كتبته — يبقى بالحقل لترسله بعد لحظة.
+    if (ref.read(advisorProvider).thinking) {
+      HapticFeedback.heavyImpact();
+      return;
+    }
     HapticFeedback.lightImpact();
-    _input.clear();
-    _focus.unfocus();
+    if (fromField) {
+      _input.clear();
+      _focus.unfocus();
+    }
     _ctl.send(t);
   }
 
@@ -165,27 +208,58 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     await _ctl.askScanned(code);
   }
 
+  /// «ملفكِ الجمالي»: إن غيّرت نوع بشرتها والمحادثة فيها ترشيح، نعيده بالنوع الجديد؛
+  /// وإلا نطمئنها أن التعديل يُعتمد بطلبها القادم.
+  Future<void> _openProfile() async {
+    final before = ref.read(advisorProfileProvider);
+    final after = await showAdvisorProfileSheet(context);
+    if (!mounted || after == null) return;
+    final session = ref.read(advisorProvider);
+    if (session.entries.length < 2) return;
+    final skinChanged = after.skinType != before.skinType;
+    if (skinChanged && _ctl.applySkinType(after.skinType)) return;
+    if (skinChanged || jsonEncode(after.toJson()) != jsonEncode(before.toJson())) {
+      AppSnackbar.success(context, ref.read(stringsProvider).advisorWillApplyNext);
+    }
+  }
+
+  void _leave() => context.canPop() ? context.pop() : context.go('/');
+
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
+    if (!s.isAr) {
+      // دخلت برابط والواجهة إنجليزية: نعود فوراً بدل عرض واجهة لا تخصها.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _leave();
+      });
+      return const Scaffold(backgroundColor: AdvisorStyle.bg);
+    }
     final session = ref.watch(advisorProvider);
     ref.listen<AdvisorSession>(advisorProvider, (prev, next) {
+      final before = prev?.entries.length ?? 0;
+      final n = next.entries.length;
+      // قصُرت المحادثة («محادثة جديدة» أو تبديل الحساب): ما يأتي بعدها يتحرك من جديد.
+      if (n < before) {
+        _animatedCount = n;
+        _itemKeys.clear();
+      }
       // محادثة مستعادة من الجهاز: تظهر كما هي بلا حركة، ونذهب لآخرها.
       // (أو «تراجع» بعد محادثة جديدة): قفزة بأكثر من عنصر واحد دفعة واحدة.
-      if (next.entries.length - (prev?.entries.length ?? 0) >= 2 && !next.thinking) {
-        _animatedCount = next.entries.length;
+      if (n - before >= 2 && !next.thinking) {
+        _animatedCount = n;
         WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToEnd());
         return;
       }
       if (next.notice != null && next.notice?.id != prev?.notice?.id) _showNotice(next.notice!.text);
       // الترحيب وحده يبقى من أعلاه.
-      if (next.entries.length <= 1 && !next.thinking) return;
-      final grew = next.entries.length > (prev?.entries.length ?? 0);
-      if (grew && next.entries.last is BotEntry && next.entries.length > 1) {
-        _revealReply();
+      if (n <= 1 && !next.thinking) return;
+      final grew = n > before;
+      if (grew && next.entries.last is BotEntry && n > 1) {
+        next.entries[n - 2] is UserEntry ? _revealReply(next.entries) : _revealLastBot(next.entries);
       } else if (grew || (next.thinking && !(prev?.thinking ?? false))) {
         _scrollToEnd();
       }
-      if (next.entries.length < (prev?.entries.length ?? 0)) _animatedCount = 0;
     });
 
     // لوحة المفاتيح: نبقي آخر المحادثة ظاهراً إن كانت الزبونة في أسفلها.
@@ -197,7 +271,8 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     _lastInset = inset;
 
     final entries = session.entries;
-    final animateFrom = _animatedCount;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final animateFrom = still ? entries.length : _animatedCount;
     if (entries.length > _animatedCount) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _animatedCount = entries.length);
     }
@@ -210,12 +285,11 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     final rail = last?.routine != null
         ? railAll.where((c) => c.value != 'act:cheaper' && c.value != 'act:recommend').toList()
         : railAll;
-    final lastUserIndex = entries.lastIndexWhere((e) => e is UserEntry);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: const Color(0xFFFFFAFB),
+        backgroundColor: AdvisorStyle.bg,
         resizeToAvoidBottomInset: true,
         body: AuroraBackground(
           child: SafeArea(
@@ -226,23 +300,24 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                   thinking: session.thinking,
                   canReset: started,
                   hasProfile: !ref.watch(advisorProfileProvider).isEmpty,
-                  onProfile: () => showAdvisorProfileSheet(context),
-                  onBack: () => context.canPop() ? context.pop() : context.go('/'),
+                  onProfile: _openProfile,
+                  onBack: _leave,
                   onReset: () {
                     HapticFeedback.mediumImpact();
+                    _animatedCount = 0;
                     _input.clear();
                     _focus.unfocus();
                     _ctl.reset();
                     AppSnackbar.action(
                       context,
-                      message: 'بدأتِ محادثة جديدة ✨',
-                      actionLabel: 'تراجع',
+                      message: s.advisorNewChatStarted,
+                      actionLabel: s.undo,
                       onAction: _ctl.undoReset,
                     );
                   },
                 ),
                 AnimatedSize(
-                  duration: const Duration(milliseconds: 280),
+                  duration: still ? Duration.zero : const Duration(milliseconds: 280),
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.topCenter,
                   child: _notice == null
@@ -251,13 +326,14 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
                           child: StaggerIn(
                             key: ValueKey(_notice),
+                            animate: !still,
                             from: const Offset(0, -10),
-                            child: _NoticePill(text: _notice!, onTap: () => showAdvisorProfileSheet(context)),
+                            child: _NoticePill(text: _notice!, editLabel: s.edit, onTap: _openProfile),
                           ),
                         ),
                 ),
                 AnimatedSize(
-                  duration: const Duration(milliseconds: 300),
+                  duration: still ? Duration.zero : const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.topCenter,
                   child: started && last != null && last.understood.isNotEmpty
@@ -289,6 +365,7 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                               return _Tail(
                                 thinking: session.thinking,
                                 error: session.error,
+                                canRetry: _ctl.canRetry,
                                 onRetry: _ctl.retry,
                               );
                             }
@@ -296,7 +373,7 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                             final animate = i >= animateFrom;
                             return switch (e) {
                               UserEntry(:final text) => Padding(
-                                  key: i == lastUserIndex ? _lastUserKey : null,
+                                  key: _keyFor('u$i'),
                                   padding: const EdgeInsets.only(top: 14, bottom: 4),
                                   child: StaggerIn(
                                     animate: animate,
@@ -306,24 +383,29 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                                     child: UserBubble(text: text),
                                   ),
                                 ),
-                              BotEntry(:final reply) => i == 0
-                                  ? AdvisorWelcome(
-                                      reply: reply,
-                                      prompts: session.prompts,
-                                      animate: animate,
-                                      onChip: _tapChip,
-                                      onPrompt: _send,
-                                    )
-                                  : _BotTurn(
-                                      reply: reply,
-                                      animate: animate,
-                                      isLast: i == entries.length - 1,
-                                      quizActive: quizActive && i == entries.length - 1 && !session.thinking,
-                                      onQuizAnswer: (picked) {
-                                        _focus.unfocus();
-                                        _ctl.answerQuiz(picked);
-                                      },
-                                    ),
+                              BotEntry(:final reply, :final id, :final welcome) => KeyedSubtree(
+                                  key: _keyFor('b$id'),
+                                  child: welcome
+                                      ? AdvisorWelcome(
+                                          reply: reply,
+                                          prompts: session.prompts,
+                                          animate: animate,
+                                          onChip: _tapChip,
+                                          onPrompt: _send,
+                                        )
+                                      : _BotTurn(
+                                          entryId: id,
+                                          reply: reply,
+                                          animate: animate,
+                                          isLast: i == entries.length - 1,
+                                          quizActive: quizActive && i == entries.length - 1 && !session.thinking,
+                                          onQuizAnswer: (picked) {
+                                            _focus.unfocus();
+                                            _ctl.answerQuiz(picked);
+                                          },
+                                          onClarify: () => _focus.requestFocus(),
+                                        ),
+                                ),
                             };
                           },
                         )),
@@ -335,10 +417,10 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                           builder: (_, show, __) => IgnorePointer(
                             ignoring: !show,
                             child: AnimatedScale(
-                              duration: const Duration(milliseconds: 220),
+                              duration: still ? Duration.zero : const Duration(milliseconds: 220),
                               scale: show ? 1 : 0.6,
                               child: AnimatedOpacity(
-                                duration: const Duration(milliseconds: 200),
+                                duration: still ? Duration.zero : const Duration(milliseconds: 200),
                                 opacity: show ? 1 : 0,
                                 child: _JumpButton(onTap: _scrollToEnd),
                               ),
@@ -354,7 +436,10 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                     items: session.comparing,
                     busy: session.thinking,
                     onRemove: (p) => _ctl.toggleCompare(p),
-                    onClear: _ctl.clearCompare,
+                    onClear: () {
+                      HapticFeedback.selectionClick();
+                      _ctl.clearCompare();
+                    },
                     onCompare: () {
                       HapticFeedback.mediumImpact();
                       _ctl.compareNow();
@@ -382,7 +467,7 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
 
 // ───────────────────────────────────────────── الرأس
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   final bool thinking;
   final bool canReset;
   final VoidCallback onBack;
@@ -399,12 +484,16 @@ class _Header extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    // شاشة ضيقة أو خط كبير: «محادثة جديدة» أيقونة فقط حتى يبقى للاسم والحالة مكان.
+    final compact = MediaQuery.sizeOf(context).width < 380 || MediaQuery.textScalerOf(context).scale(1) > 1.1;
+    final still = MediaQuery.disableAnimationsOf(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
       child: Row(
         children: [
-          _GlassIcon(icon: Icons.arrow_back_rounded, onTap: onBack, tooltip: 'رجوع'),
+          _GlassIcon(icon: Icons.arrow_back_rounded, onTap: onBack, tooltip: s.advisorBack),
           const SizedBox(width: 8),
           AdvisorOrb(size: 38, thinking: thinking),
           const SizedBox(width: 8),
@@ -413,10 +502,13 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('ديما', style: AdvisorStyle.text(size: 16.5, weight: FontWeight.w800, height: 1.2)),
+                Text(s.advisorName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AdvisorStyle.text(size: 16.5, weight: FontWeight.w800, height: 1.2)),
                 const SizedBox(height: 2),
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
+                  duration: still ? Duration.zero : const Duration(milliseconds: 250),
                   child: Row(
                     key: ValueKey(thinking),
                     mainAxisSize: MainAxisSize.min,
@@ -426,13 +518,17 @@ class _Header extends StatelessWidget {
                         height: 7,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: thinking ? BrandColors.rose : const Color(0xFF2BB673),
+                          color: thinking ? BrandColors.rose : AdvisorStyle.successFg,
                         ),
                       ),
                       const SizedBox(width: 5),
-                      Text(
-                        thinking ? 'تكتب…' : 'متاحة الآن',
-                        style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2),
+                      Flexible(
+                        child: Text(
+                          thinking ? s.advisorTyping : s.advisorOnline,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2),
+                        ),
                       ),
                     ],
                   ),
@@ -440,26 +536,30 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
+          const _CartIcon(),
+          const SizedBox(width: 6),
           Stack(
             clipBehavior: Clip.none,
             children: [
-              _GlassIcon(icon: hasProfile ? Icons.favorite_rounded : Icons.favorite_border_rounded, onTap: onProfile, tooltip: 'ملفكِ الجمالي'),
+              _GlassIcon(icon: hasProfile ? Icons.favorite_rounded : Icons.favorite_border_rounded, onTap: onProfile, tooltip: s.advisorProfileTitle),
               if (hasProfile)
                 PositionedDirectional(
-                  top: 2,
-                  end: 2,
-                  child: Container(width: 9, height: 9, decoration: BoxDecoration(shape: BoxShape.circle, gradient: AdvisorStyle.gradient, border: Border.all(color: Colors.white, width: 1.5))),
+                  top: 3,
+                  end: 3,
+                  child: IgnorePointer(
+                    child: Container(width: 9, height: 9, decoration: BoxDecoration(shape: BoxShape.circle, gradient: AdvisorStyle.gradient, border: Border.all(color: Colors.white, width: 1.5))),
+                  ),
                 ),
             ],
           ),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
+            duration: still ? Duration.zero : const Duration(milliseconds: 260),
             transitionBuilder: (c, a) => FadeTransition(opacity: a, child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(a), child: c)),
             child: canReset
                 ? Padding(
-                    key: const ValueKey('new'),
-                    padding: const EdgeInsetsDirectional.only(start: 8),
-                    child: _NewChatButton(onTap: onReset),
+                    key: ValueKey(compact ? 'new-c' : 'new'),
+                    padding: const EdgeInsetsDirectional.only(start: 6),
+                    child: _NewChatButton(label: s.advisorNewChat, compact: compact, onTap: onReset),
                   )
                 : const SizedBox.shrink(key: ValueKey('none')),
           ),
@@ -469,41 +569,123 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// «محادثة جديدة» — زر واضح بنص وأيقونة بدل أيقونة مبهمة.
+/// «محادثة جديدة» — زر واضح بنص وأيقونة؛ على الشاشات الضيقة أيقونة بتلميح.
 class _NewChatButton extends StatelessWidget {
+  final String label;
+  final bool compact;
   final VoidCallback onTap;
-  const _NewChatButton({required this.onTap});
+  const _NewChatButton({required this.label, required this.compact, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
+    final radius = BorderRadius.circular(compact ? 22 : 20);
+    final button = Semantics(
       button: true,
-      label: 'محادثة جديدة',
+      label: label,
+      excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: AdvisorStyle.gradient,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: radius,
           boxShadow: [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.30), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: radius,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text('محادثة جديدة', style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
-                ],
-              ),
-            ),
+            child: compact
+                ? const SizedBox.square(dimension: 44, child: Icon(Icons.add_rounded, size: 22, color: Colors.white))
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 44),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(label, style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         ),
+      ),
+    );
+    return compact ? Tooltip(message: label, child: button) : button;
+  }
+}
+
+/// السلة من داخل «ديما»: عدد ما أضافته ظاهر دائماً، ولمسة تفتح السلة.
+class _CartIcon extends ConsumerStatefulWidget {
+  const _CartIcon();
+
+  @override
+  ConsumerState<_CartIcon> createState() => _CartIconState();
+}
+
+class _CartIconState extends ConsumerState<_CartIcon> {
+  int? _count;
+  /// يزداد مع كل تغيّر في العدد — فتنبض الشارة مرة واحدة.
+  int _bump = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.s;
+    final count = ref.watch(cartProvider.select((c) => c.count));
+    if (_count != null && _count != count) _bump++;
+    _count = count;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final label = count > 0 ? '${s.advisorCart} — ${s.itemsCount(count)}' : s.advisorCart;
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _GlassIcon(
+            icon: Icons.shopping_bag_outlined,
+            tooltip: label,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              openCartTab(context, ProviderScope.containerOf(context, listen: false));
+            },
+          ),
+          if (count > 0)
+            PositionedDirectional(
+              top: -2,
+              end: -2,
+              child: IgnorePointer(
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey(_bump),
+                  tween: Tween(begin: _bump == 0 || still ? 1.0 : 1.4, end: 1.0),
+                  duration: still ? Duration.zero : const Duration(milliseconds: 360),
+                  curve: Curves.easeOutBack,
+                  builder: (_, k, child) => Transform.scale(scale: k, child: child),
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 18),
+                    height: 18,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: AdvisorStyle.gradient,
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      textScaler: TextScaler.noScaling,
+                      style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: Colors.white, height: 1),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -525,7 +707,7 @@ class _GlassIcon extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: SizedBox.square(dimension: 40, child: Icon(icon, size: 20, color: AdvisorStyle.ink)),
+          child: SizedBox.square(dimension: 44, child: Icon(icon, size: 21, color: AdvisorStyle.ink)),
         ),
       ),
     );
@@ -534,31 +716,40 @@ class _GlassIcon extends StatelessWidget {
 
 // ───────────────────────────────────────────── ما فهمته
 
-class _UnderstoodStrip extends StatelessWidget {
+class _UnderstoodStrip extends ConsumerWidget {
   final List<AdvisorUnderstood> items;
   final bool enabled;
   final ValueChanged<AdvisorUnderstood> onRemove;
   const _UnderstoodStrip({required this.items, required this.enabled, required this.onRemove});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    // الارتفاع يتبع حجم الخط حتى لا تُقص الشرائح مع الخط الكبير.
+    final h = 34 + MediaQuery.textScalerOf(context).scale(14);
     return SizedBox(
-      height: 40,
+      height: h,
       child: ListView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+        padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
         children: [
           Center(
-            child: Text('فهمت منكِ:', style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w700, color: AdvisorStyle.inkMuted, height: 1.2)),
+            child: Text(s.advisorUnderstood, style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w700, color: AdvisorStyle.inkMuted, height: 1.2)),
           ),
           const SizedBox(width: 6),
           for (final u in items)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 6),
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: _UnderstoodChip(key: ValueKey(u.key), item: u, enabled: enabled, onRemove: () => onRemove(u)),
+                duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 250),
+                child: _UnderstoodChip(
+                  key: ValueKey(u.key),
+                  item: u,
+                  enabled: enabled,
+                  removeLabel: s.advisorRemove(u.label),
+                  onRemove: () => onRemove(u),
+                ),
               ),
             ),
         ],
@@ -567,34 +758,48 @@ class _UnderstoodStrip extends StatelessWidget {
   }
 }
 
+/// شريحة «فهمت منكِ»: النص للقراءة فقط، والإزالة من زر × وحده (32px) — لمسة عابرة لا تعيد الترشيح.
 class _UnderstoodChip extends StatelessWidget {
   final AdvisorUnderstood item;
   final bool enabled;
+  final String removeLabel;
   final VoidCallback onRemove;
-  const _UnderstoodChip({super.key, required this.item, required this.enabled, required this.onRemove});
+  const _UnderstoodChip({super.key, required this.item, required this.enabled, required this.removeLabel, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onRemove : null,
+    return Center(
       child: Container(
-        padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 6, 0),
+        padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 0, 0),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.86),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFFEBDDF2)),
         ),
-        alignment: Alignment.center,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(item.label, style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w700, color: const Color(0xFF6A3FA0), height: 1.2)),
-            const SizedBox(width: 4),
-            Container(
-              width: 16,
-              height: 16,
-              decoration: const BoxDecoration(color: Color(0xFFF3EAF8), shape: BoxShape.circle),
-              child: const Icon(Icons.close_rounded, size: 11, color: Color(0xFF8C6BAE)),
+            Text(item.label, style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w700, color: AdvisorStyle.accentText, height: 1.2)),
+            Semantics(
+              button: true,
+              enabled: enabled,
+              label: removeLabel,
+              excludeSemantics: true,
+              child: InkResponse(
+                onTap: enabled ? onRemove : null,
+                radius: 18,
+                child: SizedBox.square(
+                  dimension: 32,
+                  child: Center(
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: const BoxDecoration(color: Color(0xFFF3EAF8), shape: BoxShape.circle),
+                      child: const Icon(Icons.close_rounded, size: 12, color: Color(0xFF8C6BAE)),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -605,23 +810,30 @@ class _UnderstoodChip extends StatelessWidget {
 
 // ───────────────────────────────────────────── رد «ديما»
 
-class _BotTurn extends StatelessWidget {
+class _BotTurn extends ConsumerWidget {
+  /// معرّف الرد — تُقرأ به حالة التقييم والإضافة من الجلسة.
+  final int entryId;
   final AdvisorReply reply;
   final bool animate;
   final bool quizActive;
   final bool isLast;
   final ValueChanged<List<AdvisorChip>> onQuizAnswer;
+  /// «أوضّح أكثر» بعد عدم الإعجاب: يفتح حقل الكتابة.
+  final VoidCallback onClarify;
 
   const _BotTurn({
+    required this.entryId,
     required this.reply,
     required this.animate,
     required this.quizActive,
     required this.isLast,
     required this.onQuizAnswer,
+    required this.onClarify,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     // الرسائل تُكتب بالتتابع؛ البطاقات تظهر بعد أول رسالة بقليل (لا تنتظر الكل).
     final parts = <({Widget w, Duration at})>[];
     var first = true;
@@ -659,14 +871,16 @@ class _BotTurn extends StatelessWidget {
         ),
       ));
     }
-    if (reply.routine != null && reply.routine!.steps.isNotEmpty) card(AdvisorRoutineCard(routine: reply.routine!, animate: animate));
+    if (reply.routine != null && reply.routine!.steps.isNotEmpty) {
+      card(AdvisorRoutineCard(routine: reply.routine!, animate: animate, entryId: entryId, showActions: isLast));
+    }
     if (reply.products.isNotEmpty) {
       final similar = reply.products.first.similarity != null;
       card(AdvisorProductRail(
         title: similar
-            ? (reply.anchor != null ? 'يشبهه' : 'بنفس البصمة')
+            ? (reply.anchor != null ? (s.isAr ? 'يشبهه' : 'Similar to it') : (s.isAr ? 'بنفس البصمة' : 'Same signature'))
             : reply.knowledge != null
-                ? 'منتجات متوفرة فيها المكوّن'
+                ? (s.isAr ? 'منتجات متوفرة فيها المكوّن' : 'Products with this ingredient')
                 : null,
         products: reply.products,
         animate: animate,
@@ -681,13 +895,13 @@ class _BotTurn extends StatelessWidget {
     }
     // أكثر من نوع بطلب واحد: إضافة الأفضل من كل نوع بلمسة.
     if (reply.products.isEmpty && reply.groups.length >= 2 && reply.routine == null) {
-      card(_AddBestOfEach(products: reply.groups.map((g) => g.products.first).toList()));
+      card(_AddBestOfEach(entryId: entryId, products: reply.groups.map((g) => g.products.first).toList()));
     }
     for (final tip in tips) {
       card(TipCard(text: tip));
     }
     final hasPicks = reply.products.isNotEmpty || reply.groups.isNotEmpty || reply.routine != null;
-    if (hasPicks) card(_Feedback(reply: reply));
+    if (hasPicks) card(_Feedback(entryId: entryId, reply: reply, isLast: isLast, onClarify: onClarify));
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -705,47 +919,74 @@ class _BotTurn extends StatelessWidget {
   }
 }
 
-/// «هل أفادتكِ؟» — إشارة تتعلم منها «ديما» ترتيبها.
-class _Feedback extends ConsumerStatefulWidget {
+/// «هل أفادتكِ؟» — إشارة تتعلم منها «ديما» ترتيبها. التقييم محفوظ بالجلسة (مرة لكل رد).
+class _Feedback extends ConsumerWidget {
+  final int entryId;
   final AdvisorReply reply;
-  const _Feedback({required this.reply});
+  final bool isLast;
+  final VoidCallback onClarify;
+  const _Feedback({required this.entryId, required this.reply, required this.isLast, required this.onClarify});
 
-  @override
-  ConsumerState<_Feedback> createState() => _FeedbackState();
-}
-
-class _FeedbackState extends ConsumerState<_Feedback> {
-  bool? _liked;
-
-  void _rate(bool liked) {
-    if (_liked != null) return;
+  void _rate(WidgetRef ref, bool liked) {
     HapticFeedback.selectionClick();
-    setState(() => _liked = liked);
-    ref.read(advisorProvider.notifier).rate(widget.reply, liked);
+    ref.read(advisorProvider.notifier).rate(entryId, reply, liked);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final liked = ref.watch(advisorProvider.select((x) => x.rated[entryId]));
+    final busy = ref.watch(advisorProvider.select((x) => x.thinking));
+    final style = AdvisorStyle.text(size: 12, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.4);
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 52, end: 16),
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: _liked != null
-            ? Align(
+        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 250),
+        child: liked != null
+            ? Column(
                 key: const ValueKey('done'),
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  _liked! ? 'شكراً! راح أتذكر ذوقكِ 💜' : 'شكراً لصراحتكِ — جربي «غيرهم» أو وضحيلي أكثر',
-                  style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.4),
-                ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(liked ? s.advisorFeedbackThanks : s.advisorFeedbackSorry, style: style),
+                  ),
+                  // لم تعجبها: خطوة تالية واضحة بدل أن تخمّن ماذا تكتب.
+                  if (!liked) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        if (isLast)
+                          _NextChip(
+                            label: '🔄 ${s.advisorChangeThem}',
+                            enabled: !busy,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              ref.read(advisorProvider.notifier).tap(AdvisorChip(label: s.advisorChangeThem, value: 'act:more', emoji: '🔄'));
+                            },
+                          ),
+                        _NextChip(
+                          label: s.isAr ? '✍️ أوضّح أكثر' : '✍️ Let me explain',
+                          enabled: true,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onClarify();
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               )
             : Row(
                 key: const ValueKey('ask'),
                 children: [
-                  Text('أفادتكِ الترشيحات؟', style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2)),
-                  const SizedBox(width: 6),
-                  _Thumb(icon: Icons.thumb_up_alt_outlined, onTap: () => _rate(true)),
-                  _Thumb(icon: Icons.thumb_down_alt_outlined, onTap: () => _rate(false)),
+                  Flexible(child: Text(s.advisorFeedbackAsk, style: style.copyWith(height: 1.2))),
+                  const SizedBox(width: 2),
+                  _Thumb(icon: Icons.thumb_up_alt_outlined, label: s.advisorHelpful, onTap: () => _rate(ref, true)),
+                  _Thumb(icon: Icons.thumb_down_alt_outlined, label: s.advisorNotHelpful, onTap: () => _rate(ref, false)),
                 ],
               ),
       ),
@@ -753,27 +994,67 @@ class _FeedbackState extends ConsumerState<_Feedback> {
   }
 }
 
-class _Thumb extends StatelessWidget {
-  final IconData icon;
+class _NextChip extends StatelessWidget {
+  final String label;
+  final bool enabled;
   final VoidCallback onTap;
-  const _Thumb({required this.icon, required this.onTap});
+  const _NextChip({required this.label, required this.enabled, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return InkResponse(
-      onTap: onTap,
-      radius: 20,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Icon(icon, size: 17, color: AdvisorStyle.inkMuted),
+    return Opacity(
+      opacity: enabled ? 1 : 0.5,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.9),
+        shape: const StadiumBorder(side: BorderSide(color: AdvisorStyle.glassBorder)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 40),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+              child: Text(label, style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, height: 1.2)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Thumb extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _Thumb({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        child: InkResponse(
+          onTap: onTap,
+          radius: 22,
+          // 17 + 13.5×2 ≈ 44: مساحة لمس مريحة لأيقونة صغيرة.
+          child: Padding(
+            padding: const EdgeInsets.all(13.5),
+            child: Icon(icon, size: 17, color: AdvisorStyle.inkMuted),
+          ),
+        ),
       ),
     );
   }
 }
 
 class _AddBestOfEach extends ConsumerStatefulWidget {
+  final int entryId;
   final List<AdvisorProduct> products;
-  const _AddBestOfEach({required this.products});
+  const _AddBestOfEach({required this.entryId, required this.products});
 
   @override
   ConsumerState<_AddBestOfEach> createState() => _AddBestOfEachState();
@@ -781,60 +1062,79 @@ class _AddBestOfEach extends ConsumerStatefulWidget {
 
 class _AddBestOfEachState extends ConsumerState<_AddBestOfEach> {
   bool _busy = false;
-  bool _done = false;
+
+  Future<void> _add() async {
+    setState(() => _busy = true);
+    final added = await advisorAddRoutine(context, ref, widget.products);
+    if (!mounted) return;
+    final ctl = ref.read(advisorProvider.notifier);
+    for (final p in widget.products.take(added)) {
+      ctl.track('cart', productId: p.id);
+    }
+    if (added > 0) ctl.markAdded(widget.entryId);
+    setState(() => _busy = false);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
+    // «أُضيفت» محفوظة بالجلسة: لا يعود الزر بعد التمرير فتتضاعف الكميات بالسلة.
+    final done = ref.watch(advisorProvider.select((x) => x.added.contains(widget.entryId)));
     final total = widget.products.fold<int>(0, (a, p) => a + p.price);
+    final label = done
+        ? (s.isAr ? 'أُضيفت للسلة ✓  •  ${s.advisorViewCart}' : 'Added to bag ✓  •  ${s.advisorViewCart}')
+        : (s.isAr ? 'أضيفي الأفضل من كل نوع  •  ${formatPrice(total)}' : 'Add the best of each  •  ${formatPrice(total)}');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: _busy || _done
-            ? null
-            : () async {
-                setState(() => _busy = true);
-                final added = await advisorAddRoutine(context, ref, widget.products);
-                if (!mounted) return;
-                for (final p in widget.products.take(added)) {
-                  ref.read(advisorProvider.notifier).track('cart', productId: p.id);
-                }
-                setState(() {
-                  _busy = false;
-                  _done = added > 0;
-                });
-              },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: _done ? null : AdvisorStyle.gradient,
-            color: _done ? const Color(0xFFE9F7EF) : null,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: _done ? null : [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.3), blurRadius: 14, offset: const Offset(0, 5))],
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: _busy
+              ? null
+              : done
+                  ? () => openCartTab(context, ProviderScope.containerOf(context, listen: false))
+                  : _add,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            constraints: const BoxConstraints(minHeight: 50),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: done ? null : AdvisorStyle.gradient,
+              color: done ? AdvisorStyle.successBg : null,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: done ? null : [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.3), blurRadius: 14, offset: const Offset(0, 5))],
+            ),
+            alignment: Alignment.center,
+            child: _busy
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+                : Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, color: done ? AdvisorStyle.successFg : Colors.white, height: 1.2),
+                  ),
           ),
-          alignment: Alignment.center,
-          child: _busy
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-              : Text(
-                  _done ? 'أُضيفت للسلة ✓' : 'أضيفي الأفضل من كل نوع  •  ${formatPrice(total)}',
-                  style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, color: _done ? const Color(0xFF137A48) : Colors.white, height: 1.2),
-                ),
         ),
       ),
     );
   }
 }
 
-class _Tail extends StatelessWidget {
+class _Tail extends ConsumerWidget {
   final bool thinking;
   final String? error;
+  /// لا يُعرض «إعادة» لطلب لن ينجح بتكراره (رسالة أطول من المسموح).
+  final bool canRetry;
   final VoidCallback onRetry;
-  const _Tail({required this.thinking, required this.error, required this.onRetry});
+  const _Tail({required this.thinking, required this.error, required this.canRetry, required this.onRetry});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 260),
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 260),
       child: thinking
           ? const Padding(
               key: ValueKey('t'),
@@ -845,25 +1145,30 @@ class _Tail extends StatelessWidget {
               ? Padding(
                   key: const ValueKey('e'),
                   padding: const EdgeInsetsDirectional.fromSTEB(52, 14, 48, 0),
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF1F3),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFF8D5DC)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.wifi_off_rounded, size: 18, color: Color(0xFFD0506E)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(error!, style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w600, color: const Color(0xFF9A3550), height: 1.4)),
-                        ),
-                        TextButton(
-                          onPressed: onRetry,
-                          child: Text('إعادة', style: AdvisorStyle.text(size: 13, weight: FontWeight.w800, color: BrandColors.rose, height: 1.2)),
-                        ),
-                      ],
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Container(
+                      padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 8, 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF1F3),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFF8D5DC)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(canRetry ? Icons.wifi_off_rounded : Icons.info_outline_rounded, size: 18, color: const Color(0xFFD0506E)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(error!, style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w600, color: const Color(0xFF9A3550), height: 1.4)),
+                          ),
+                          if (canRetry)
+                            TextButton(
+                              style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
+                              onPressed: onRetry,
+                              child: Text(s.advisorRetry, style: AdvisorStyle.text(size: 13, weight: FontWeight.w800, color: BrandColors.rose, height: 1.2)),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 )
@@ -872,15 +1177,16 @@ class _Tail extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   final String? error;
   final VoidCallback onRetry;
   const _EmptyState({required this.error, required this.onRetry});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -888,7 +1194,7 @@ class _EmptyState extends StatelessWidget {
             AdvisorOrb(size: 108, thinking: error == null),
             const SizedBox(height: 18),
             Text(
-              error == null ? 'ديما تستعد لكِ…' : error!,
+              error ?? s.advisorPreparing,
               textAlign: TextAlign.center,
               style: AdvisorStyle.text(size: 14.5, weight: FontWeight.w700, color: error == null ? AdvisorStyle.inkSoft : AdvisorStyle.ink),
             ),
@@ -898,11 +1204,12 @@ class _EmptyState extends StatelessWidget {
                 onPressed: onRetry,
                 style: FilledButton.styleFrom(
                   backgroundColor: BrandColors.orchid,
+                  minimumSize: const Size(44, 46),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                 ),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text('حاولي مجدداً', style: AdvisorStyle.text(size: 14, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+                label: Text(s.advisorTryAgain, style: AdvisorStyle.text(size: 14, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
               ),
             ],
           ],
@@ -914,7 +1221,12 @@ class _EmptyState extends StatelessWidget {
 
 // ───────────────────────────────────────────── الإدخال
 
-class _Composer extends StatelessWidget {
+/// حد الرسالة عند السيرفر — نمنع ما بعده بدل أن يُرفض الطلب.
+const _maxMessage = 600;
+/// يظهر عداد المتبقي حين تقترب منه.
+const _counterFrom = 520;
+
+class _Composer extends ConsumerWidget {
   final TextEditingController controller;
   final FocusNode focus;
   final bool hasText;
@@ -938,16 +1250,20 @@ class _Composer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final bottom = MediaQuery.paddingOf(context).bottom;
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final still = MediaQuery.disableAnimationsOf(context);
     final canSend = hasText && !busy;
+    // شريط الاقتراحات يتبع حجم الخط حتى لا يُقص نصها.
+    final railH = 32 + MediaQuery.textScalerOf(context).scale(14);
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFFFFFAFB).withValues(alpha: 0), const Color(0xFFFFFAFB).withValues(alpha: 0.92)],
+          colors: [AdvisorStyle.bg.withValues(alpha: 0), AdvisorStyle.bg.withValues(alpha: 0.92)],
           stops: const [0, 0.35],
         ),
       ),
@@ -956,12 +1272,12 @@ class _Composer extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           AnimatedSize(
-            duration: const Duration(milliseconds: 280),
+            duration: still ? Duration.zero : const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
             child: chips.isEmpty
                 ? const SizedBox(width: double.infinity)
                 : SizedBox(
-                    height: 46,
+                    height: railH,
                     child: ListView.separated(
                       key: ValueKey(chipsKey),
                       scrollDirection: Axis.horizontal,
@@ -971,6 +1287,7 @@ class _Composer extends StatelessWidget {
                       separatorBuilder: (_, __) => const SizedBox(width: 8),
                       itemBuilder: (_, i) => StaggerIn(
                         index: i,
+                        animate: !still,
                         step: const Duration(milliseconds: 60),
                         from: const Offset(-14, 0),
                         child: _RailChip(chip: chips[i], enabled: !busy, primary: i == 0, onTap: () => onChip(chips[i])),
@@ -998,7 +1315,9 @@ class _Composer extends StatelessWidget {
                       minLines: 1,
                       maxLines: 4,
                       textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => onSend(null),
+                      // أثناء الرد لا يُرسل زر لوحة المفاتيح — والنص يبقى بالحقل.
+                      onSubmitted: busy ? null : (_) => onSend(null),
+                      inputFormatters: [LengthLimitingTextInputFormatter(_maxMessage)],
                       style: AdvisorStyle.text(size: 14.5, weight: FontWeight.w500, height: 1.45),
                       cursorColor: BrandColors.orchid,
                       decoration: InputDecoration(
@@ -1008,69 +1327,108 @@ class _Composer extends StatelessWidget {
                         focusedBorder: InputBorder.none,
                         filled: false,
                         contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                        hintText: 'اسألي ديما… مثل «عطر خشبي للسهرة»',
+                        hintText: s.advisorHint,
+                        hintMaxLines: 1,
                         hintStyle: AdvisorStyle.text(size: 13.5, color: AdvisorStyle.inkMuted, height: 1.45),
                       ),
                     ),
                   ),
+                  // كم بقي حين تقترب من الحد.
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder: (_, v, __) {
+                      final left = _maxMessage - v.text.characters.length;
+                      if (v.text.characters.length <= _counterFrom) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsetsDirectional.only(start: 4, bottom: 14),
+                        child: Text(
+                          '$left',
+                          style: AdvisorStyle.text(
+                            size: 11,
+                            weight: FontWeight.w700,
+                            color: left <= 20 ? const Color(0xFFD0506E) : AdvisorStyle.inkMuted,
+                            height: 1.2,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   // مسح باركود منتج: يظهر حين لا نص (المساحة للكتابة حين تكتب).
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
+                    duration: still ? Duration.zero : const Duration(milliseconds: 200),
                     transitionBuilder: (c, a) => FadeTransition(opacity: a, child: ScaleTransition(scale: a, child: c)),
                     child: hasText
                         ? const SizedBox.shrink()
                         : Padding(
                             key: const ValueKey('scan'),
-                            padding: const EdgeInsetsDirectional.only(start: 4, bottom: 3),
-                            child: Tooltip(
-                              message: 'امسحي باركود منتج — هل يناسبني؟',
-                              child: InkResponse(
-                                onTap: busy ? null : onScan,
-                                radius: 22,
-                                child: Container(
-                                  width: 38,
-                                  height: 38,
-                                  alignment: Alignment.center,
-                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF7F0FC)),
-                                  child: const Icon(Icons.qr_code_scanner_rounded, size: 19, color: BrandColors.orchid),
+                            padding: const EdgeInsetsDirectional.only(start: 2),
+                            child: Semantics(
+                              button: true,
+                              enabled: !busy,
+                              label: s.advisorScanHint,
+                              excludeSemantics: true,
+                              child: Tooltip(
+                                message: s.advisorScanHint,
+                                child: InkResponse(
+                                  onTap: busy ? null : onScan,
+                                  radius: 22,
+                                  child: SizedBox.square(
+                                    dimension: 44,
+                                    child: Center(
+                                      child: Container(
+                                        width: 38,
+                                        height: 38,
+                                        alignment: Alignment.center,
+                                        decoration: const BoxDecoration(shape: BoxShape.circle, color: AdvisorStyle.tint),
+                                        child: const Icon(Icons.qr_code_scanner_rounded, size: 19, color: BrandColors.orchid),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 1),
-                    child: GestureDetector(
-                      onTap: canSend ? () => onSend(null) : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 240),
-                        curve: Curves.easeOutCubic,
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: canSend ? AdvisorStyle.gradient : null,
-                          color: canSend ? null : const Color(0xFFF3EDF7),
-                          boxShadow: canSend
-                              ? [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))]
-                              : null,
-                        ),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
-                          child: busy
-                              ? const Padding(
-                                  key: ValueKey('busy'),
-                                  padding: EdgeInsets.all(13),
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: BrandColors.orchid),
-                                )
-                              : Icon(
-                                  canSend ? Icons.arrow_upward_rounded : Icons.auto_awesome_rounded,
-                                  key: ValueKey(canSend),
-                                  size: canSend ? 22 : 19,
-                                  color: canSend ? Colors.white : BrandColors.orchidLight,
-                                ),
+                    child: Semantics(
+                      button: true,
+                      enabled: canSend,
+                      label: s.advisorSend,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: canSend ? () => onSend(null) : null,
+                        child: AnimatedContainer(
+                          duration: still ? Duration.zero : const Duration(milliseconds: 240),
+                          curve: Curves.easeOutCubic,
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: canSend ? AdvisorStyle.gradient : null,
+                            color: canSend ? null : const Color(0xFFF3EDF7),
+                            boxShadow: canSend
+                                ? [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))]
+                                : null,
+                          ),
+                          child: AnimatedSwitcher(
+                            duration: still ? Duration.zero : const Duration(milliseconds: 200),
+                            transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+                            child: busy
+                                ? const Padding(
+                                    key: ValueKey('busy'),
+                                    padding: EdgeInsets.all(13),
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: BrandColors.orchid),
+                                  )
+                                : Icon(
+                                    canSend ? Icons.arrow_upward_rounded : Icons.auto_awesome_rounded,
+                                    key: ValueKey(canSend),
+                                    size: canSend ? 22 : 19,
+                                    color: canSend ? Colors.white : BrandColors.orchidLight,
+                                  ),
+                          ),
                         ),
                       ),
                     ),
@@ -1101,7 +1459,7 @@ class _RailChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           gradient: primary ? AdvisorStyle.softGradient : null,
           color: primary ? null : Colors.white.withValues(alpha: 0.9),
-          border: Border.all(color: primary ? const Color(0xFFEBD3EE) : AdvisorStyle.glassBorder),
+          border: Border.all(color: primary ? AdvisorStyle.accentBorder : AdvisorStyle.glassBorder),
           boxShadow: AdvisorStyle.shadow(0.4),
         ),
         child: Material(
@@ -1118,7 +1476,7 @@ class _RailChip extends StatelessWidget {
                   style: AdvisorStyle.text(
                     size: 12.5,
                     weight: FontWeight.w700,
-                    color: primary ? const Color(0xFF6A3FA0) : AdvisorStyle.ink,
+                    color: primary ? AdvisorStyle.accentText : AdvisorStyle.ink,
                     height: 1.2,
                   ),
                 ),
@@ -1131,61 +1489,72 @@ class _RailChip extends StatelessWidget {
   }
 }
 
-
 class _NoticePill extends StatelessWidget {
   final String text;
+  final String editLabel;
   final VoidCallback onTap;
-  const _NoticePill({required this.text, required this.onTap});
+  const _NoticePill({required this.text, required this.editLabel, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AdvisorStyle.ink,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: AdvisorStyle.ink.withValues(alpha: 0.22), blurRadius: 14, offset: const Offset(0, 5))],
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.favorite_rounded, size: 16, color: BrandColors.roseLight),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: Colors.white, height: 1.4)),
-            ),
-            const SizedBox(width: 6),
-            Text('تعديل', style: AdvisorStyle.text(size: 12, weight: FontWeight.w800, color: BrandColors.roseLight, height: 1.2)),
-          ],
+    return Semantics(
+      button: true,
+      liveRegion: true,
+      label: '$text — $editLabel',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AdvisorStyle.ink,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: AdvisorStyle.ink.withValues(alpha: 0.22), blurRadius: 14, offset: const Offset(0, 5))],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.favorite_rounded, size: 16, color: BrandColors.roseLight),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: Colors.white, height: 1.4)),
+              ),
+              const SizedBox(width: 6),
+              Text(editLabel, style: AdvisorStyle.text(size: 12, weight: FontWeight.w800, color: BrandColors.roseLight, height: 1.2)),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _JumpButton extends StatelessWidget {
+class _JumpButton extends ConsumerWidget {
   final VoidCallback onTap;
   const _JumpButton({required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(side: BorderSide(color: AdvisorStyle.glassBorder)),
-      elevation: 3,
-      shadowColor: BrandColors.orchid.withValues(alpha: 0.3),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: const SizedBox.square(dimension: 42, child: Icon(Icons.keyboard_arrow_down_rounded, color: BrandColors.orchid, size: 26)),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final label = ref.s.isAr ? 'إلى آخر المحادثة' : 'Jump to latest';
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: Colors.white,
+        shape: const CircleBorder(side: BorderSide(color: AdvisorStyle.glassBorder)),
+        elevation: 3,
+        shadowColor: BrandColors.orchid.withValues(alpha: 0.3),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const SizedBox.square(dimension: 44, child: Icon(Icons.keyboard_arrow_down_rounded, color: BrandColors.orchid, size: 26)),
+        ),
       ),
     );
   }
 }
 
-/// سلة المقارنة: صور مصغرة لما اختارته + «قارني الآن».
-class _CompareTray extends StatelessWidget {
+/// سلة المقارنة: صور مصغرة لما اختارته + «قارني الآن» + مسح الكل بلمسة.
+class _CompareTray extends ConsumerWidget {
   final List<AdvisorProduct> items;
   final bool busy;
   final ValueChanged<AdvisorProduct> onRemove;
@@ -1194,66 +1563,102 @@ class _CompareTray extends StatelessWidget {
   const _CompareTray({required this.items, required this.busy, required this.onRemove, required this.onClear, required this.onCompare});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final ready = items.length >= 2 && !busy;
     return StaggerIn(
+      animate: !MediaQuery.disableAnimationsOf(context),
       from: const Offset(0, 16),
       child: Container(
         margin: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+        padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 8, 6),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFEBD3EE)),
+          border: Border.all(color: AdvisorStyle.accentBorder),
           boxShadow: AdvisorStyle.shadow(1),
         ),
         child: Row(
           children: [
-            const SizedBox(width: 4),
+            Semantics(
+              button: true,
+              label: s.clear,
+              excludeSemantics: true,
+              child: IconButton(
+                tooltip: s.clear,
+                onPressed: onClear,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(width: 32, height: 44),
+                icon: const Icon(Icons.close_rounded, size: 18, color: AdvisorStyle.inkMuted),
+              ),
+            ),
             const Icon(Icons.balance_rounded, size: 18, color: BrandColors.orchid),
             const SizedBox(width: 6),
             for (final p in items)
               Padding(
                 padding: const EdgeInsetsDirectional.only(end: 6),
-                child: GestureDetector(
-                  onTap: () => onRemove(p),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(color: const Color(0xFFFAF6FC), borderRadius: BorderRadius.circular(12)),
-                        child: AppNetworkImage(url: p.image, fit: BoxFit.contain),
+                child: Semantics(
+                  button: true,
+                  label: s.advisorRemove(p.name),
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onRemove(p),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(color: AdvisorStyle.surface, borderRadius: BorderRadius.circular(12)),
+                            child: AppNetworkImage(url: p.image, width: 34, height: 34, fit: BoxFit.contain),
+                          ),
+                          PositionedDirectional(
+                            top: -4,
+                            end: -4,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(color: AdvisorStyle.ink, shape: BoxShape.circle),
+                              child: const Icon(Icons.close_rounded, size: 11, color: Colors.white),
+                            ),
+                          ),
+                        ],
                       ),
-                      PositionedDirectional(
-                        top: -4,
-                        end: -4,
-                        child: Container(
-                          width: 16,
-                          height: 16,
-                          decoration: const BoxDecoration(color: AdvisorStyle.ink, shape: BoxShape.circle),
-                          child: const Icon(Icons.close_rounded, size: 11, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             const Spacer(),
             if (items.length < 2)
-              Text('اختاري منتجاً آخر', style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2)),
+              Flexible(
+                flex: 4,
+                child: Text(s.advisorPickAnother,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2)),
+              ),
             const SizedBox(width: 6),
-            GestureDetector(
-              onTap: ready ? onCompare : null,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: ready ? 1 : 0.45,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(gradient: AdvisorStyle.gradient, borderRadius: BorderRadius.circular(16)),
-                  child: Text('قارني (${items.length})', style: AdvisorStyle.text(size: 13, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+            Semantics(
+              button: true,
+              enabled: ready,
+              label: s.advisorCompare(items.length),
+              excludeSemantics: true,
+              child: GestureDetector(
+                onTap: ready ? onCompare : null,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: ready ? 1 : 0.45,
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 44),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(gradient: AdvisorStyle.gradient, borderRadius: BorderRadius.circular(16)),
+                    child: Text(s.advisorCompare(items.length), style: AdvisorStyle.text(size: 13, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+                  ),
                 ),
               ),
             ),

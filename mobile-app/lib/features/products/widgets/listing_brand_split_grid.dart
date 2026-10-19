@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/product_grid.dart';
 import '../../../core/widgets/scroll_perf.dart';
@@ -15,15 +14,13 @@ class BrandCategoryGroup {
   final String categoryId;
   final String label;
   final List<Product> products;
-  const BrandCategoryGroup({
-    required this.categoryId,
-    required this.label,
-    required this.products,
-  });
+  const BrandCategoryGroup({required this.categoryId, required this.label, required this.products});
 }
 
 /// قائمة منتجات براند مقسّمة: داخل القسم ثم فاصل ثم باقي منتجات البراند
-/// مجمّعة حسب الأقسام الرئيسية، كل قسم بعنوان وفاصل.
+/// مجمّعة حسب الأقسام، كل قسم بعنوان وفاصل.
+///
+/// [ListingBrandSplitGrid.sliver] يعيدها كـ sliver داخل `CustomScrollView` الأب (مع الفلاتر).
 class ListingBrandSplitGrid extends StatelessWidget {
   final ScrollController? controller;
   final List<Product> inCategory;
@@ -36,6 +33,11 @@ class ListingBrandSplitGrid extends StatelessWidget {
   final bool showRating;
   final int extraSlots;
   final EdgeInsetsGeometry padding;
+
+  /// بعد آخر مجموعة (خطأ «تعذّر تحميل المزيد» مع إعادة المحاولة مثلاً).
+  final Widget? footer;
+
+  final bool _sliver;
 
   const ListingBrandSplitGrid({
     super.key,
@@ -50,61 +52,77 @@ class ListingBrandSplitGrid extends StatelessWidget {
     this.showRating = true,
     this.extraSlots = 0,
     this.padding = const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 32),
-  });
+    this.footer,
+  }) : _sliver = false;
+
+  /// المجموعات كـ sliver — بلا متحكّم تمرير ولا رأس: يضعهما الأب.
+  const ListingBrandSplitGrid.sliver({
+    super.key,
+    required this.inCategory,
+    required this.otherGroups,
+    required this.inCategoryLabel,
+    required this.otherLabel,
+    required this.dividerLabel,
+    this.showPromoBadge = false,
+    this.showRating = true,
+    this.extraSlots = 0,
+    this.padding = const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 32),
+    this.footer,
+  }) : controller = null,
+       header = null,
+       _sliver = true;
 
   @override
   Widget build(BuildContext context) {
-    final delegate = ProductGrid.delegateFor(context, listing: true);
-    final hasOther = otherGroups.any((g) => g.products.isNotEmpty);
-    final showDivider = inCategory.isNotEmpty && hasOther;
-
-    final groupSlivers = <Widget>[
-      for (var i = 0; i < otherGroups.length; i++)
-        if (otherGroups[i].products.isNotEmpty) ..._buildGroupSlivers(
-          delegate,
-          otherGroups[i],
-          isFirst: i == 0,
-          isLast: i == otherGroups.length - 1,
-        ),
-    ];
-
+    final slivers = _slivers(context);
+    if (_sliver) return SliverMainAxisGroup(slivers: slivers);
     return CustomScrollView(
       controller: controller,
       physics: AppScrollPerf.physics,
       cacheExtent: AppScrollPerf.gridCacheExtent,
       slivers: [
         if (header != null) SliverToBoxAdapter(child: header!),
-        if (inCategory.isNotEmpty) ...[
-          SliverToBoxAdapter(
-            child: _SectionHeading(
-              label: inCategoryLabel,
-              icon: Icons.grid_view_rounded,
-              emphasized: true,
-            ),
-          ),
-          _productSliver(
-            delegate: delegate,
-            products: inCategory,
-            extraSlots: 0,
-            padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 6),
-          ),
-        ],
-        if (showDivider)
-          SliverToBoxAdapter(child: BrandCategorySectionDivider(label: dividerLabel)),
-        ...groupSlivers,
-        if (extraSlots > 0 && !hasOther && inCategory.isNotEmpty)
-          SliverPadding(
-            padding: padding,
-            sliver: SliverGrid(
-              gridDelegate: delegate,
-              delegate: SliverChildBuilderDelegate(
-                (_, __) => ShimmerBox(height: double.infinity, radius: AppRadius.lg),
-                childCount: extraSlots,
-              ),
-            ),
-          ),
+        ...slivers,
       ],
     );
+  }
+
+  List<Widget> _slivers(BuildContext context) {
+    final delegate = ProductGrid.delegateFor(context, listing: true);
+    final hasOther = otherGroups.any((g) => g.products.isNotEmpty);
+    final showDivider = inCategory.isNotEmpty && hasOther;
+
+    final groupSlivers = <Widget>[
+      for (var i = 0; i < otherGroups.length; i++)
+        if (otherGroups[i].products.isNotEmpty)
+          ..._buildGroupSlivers(delegate, otherGroups[i], isFirst: i == 0, isLast: i == otherGroups.length - 1),
+    ];
+
+    return [
+      if (inCategory.isNotEmpty) ...[
+        SliverToBoxAdapter(
+          child: _SectionHeading(label: inCategoryLabel, icon: Icons.grid_view_rounded, emphasized: true),
+        ),
+        _productSliver(
+          delegate: delegate,
+          products: inCategory,
+          extraSlots: 0,
+          padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 6),
+        ),
+      ],
+      if (showDivider) SliverToBoxAdapter(child: BrandCategorySectionDivider(label: dividerLabel)),
+      ...groupSlivers,
+      // الصفحة التالية في الطريق ولا مجموعات أخرى بعد: هياكل بطاقات تحت القسم.
+      if (extraSlots > 0 && !hasOther && inCategory.isNotEmpty)
+        SliverPadding(
+          padding: padding,
+          sliver: SliverGrid(
+            gridDelegate: delegate,
+            delegate: SliverChildBuilderDelegate((_, __) => const ProductCardSkeleton(), childCount: extraSlots),
+          ),
+        ),
+      if (footer != null) SliverToBoxAdapter(child: footer!),
+    ];
   }
 
   List<Widget> _buildGroupSlivers(
@@ -116,11 +134,7 @@ class ListingBrandSplitGrid extends StatelessWidget {
     return [
       if (isFirst)
         SliverToBoxAdapter(
-          child: _SectionHeading(
-            label: otherLabel,
-            icon: Icons.layers_rounded,
-            emphasized: false,
-          ),
+          child: _SectionHeading(label: otherLabel, icon: Icons.layers_rounded, emphasized: false),
         )
       else
         SliverToBoxAdapter(child: BrandCategorySectionDivider(label: group.label)),
@@ -131,12 +145,7 @@ class ListingBrandSplitGrid extends StatelessWidget {
         delegate: delegate,
         products: group.products,
         extraSlots: isLast ? extraSlots : 0,
-        padding: EdgeInsets.fromLTRB(
-          ListingTheme.padH,
-          4,
-          ListingTheme.padH,
-          isLast ? 32 : 8,
-        ),
+        padding: EdgeInsets.fromLTRB(ListingTheme.padH, 4, ListingTheme.padH, isLast ? 32 : 8),
       ),
     ];
   }
@@ -155,9 +164,7 @@ class ListingBrandSplitGrid extends StatelessWidget {
         gridDelegate: delegate,
         delegate: SliverChildBuilderDelegate(
           (context, i) {
-            if (i >= products.length) {
-              return ShimmerBox(height: double.infinity, radius: AppRadius.lg);
-            }
+            if (i >= products.length) return const ProductCardSkeleton();
             final product = products[i];
             return RepaintBoundary(
               child: ProductCard(
@@ -192,11 +199,7 @@ class _SectionHeading extends StatelessWidget {
   final IconData icon;
   final bool emphasized;
 
-  const _SectionHeading({
-    required this.label,
-    required this.icon,
-    required this.emphasized,
-  });
+  const _SectionHeading({required this.label, required this.icon, required this.emphasized});
 
   @override
   Widget build(BuildContext context) {
@@ -211,15 +214,9 @@ class _SectionHeading extends StatelessWidget {
             decoration: BoxDecoration(
               color: emphasized ? t.accentLight : t.surface,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: emphasized ? t.accentSoft : t.hairline,
-              ),
+              border: Border.all(color: emphasized ? t.accentSoft : t.hairline),
             ),
-            child: Icon(
-              icon,
-              size: 15,
-              color: emphasized ? t.accent : t.inkMuted,
-            ),
+            child: Icon(icon, size: 15, color: emphasized ? t.accent : t.inkMuted),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -294,30 +291,21 @@ class BrandCategorySectionDivider extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 14, ListingTheme.padH, 4),
       child: Row(
         children: [
-          Expanded(
-            child: _DividerLine(color: t.accent.withValues(alpha: 0.18)),
-          ),
+          Expanded(child: _DividerLine(color: t.accent.withValues(alpha: 0.18))),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    t.accentLight.withValues(alpha: 0.95),
-                    t.surface,
-                  ],
+                  colors: [t.accentLight.withValues(alpha: 0.95), t.surface],
                   begin: AlignmentDirectional.centerStart,
                   end: AlignmentDirectional.centerEnd,
                 ),
                 borderRadius: BorderRadius.circular(99),
                 border: Border.all(color: t.accentSoft.withValues(alpha: 0.85)),
                 boxShadow: [
-                  BoxShadow(
-                    color: t.accent.withValues(alpha: 0.08),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
+                  BoxShadow(color: t.accent.withValues(alpha: 0.08), blurRadius: 14, offset: const Offset(0, 4)),
                 ],
               ),
               child: Row(
@@ -331,21 +319,14 @@ class BrandCategorySectionDivider extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w800,
-                        color: t.accentDark,
-                        height: 1.15,
-                      ),
+                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: t.accentDark, height: 1.15),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          Expanded(
-            child: _DividerLine(color: t.accent.withValues(alpha: 0.18)),
-          ),
+          Expanded(child: _DividerLine(color: t.accent.withValues(alpha: 0.18))),
         ],
       ),
     );
@@ -362,9 +343,7 @@ class _DividerLine extends StatelessWidget {
     return Container(
       height: 1,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withValues(alpha: 0.05), color, color.withValues(alpha: 0.05)],
-        ),
+        gradient: LinearGradient(colors: [color.withValues(alpha: 0.05), color, color.withValues(alpha: 0.05)]),
       ),
     );
   }
@@ -379,11 +358,9 @@ extension BrandSplitListingLabels on AppStrings {
       ? 'باقي $brandName · $count ${count == 1 ? 'منتج' : 'منتجات'}'
       : 'More $brandName · $count ${count == 1 ? 'product' : 'products'}';
 
-  String brandSplitDivider(String brandName) => isAr
-      ? 'منتجات $brandName في أقسام أخرى'
-      : '$brandName in other categories';
+  String brandSplitDivider(String brandName) =>
+      isAr ? 'منتجات $brandName في أقسام أخرى' : '$brandName in other categories';
 
-  String brandGroupCount(int count) => isAr
-      ? '$count ${count == 1 ? 'منتج' : 'منتجات'}'
-      : '$count ${count == 1 ? 'product' : 'products'}';
+  String brandGroupCount(int count) =>
+      isAr ? '$count ${count == 1 ? 'منتج' : 'منتجات'}' : '$count ${count == 1 ? 'product' : 'products'}';
 }

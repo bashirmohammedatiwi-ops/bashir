@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_text.dart';
+import '../../core/l10n/app_strings.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/ui/ui.dart';
 import '../../data/models/beauty.dart';
 import '../../data/models/home_section.dart';
 import '../home/widgets/home_section_shell.dart';
 import '../worlds/world_theme.dart';
 import 'beauty_providers.dart';
+import 'beauty_strings.dart';
 import 'beauty_widgets.dart';
 
 // ─── دليل البشرة ─────────────────────────────────────────────────────────────
@@ -29,7 +31,7 @@ class SkinGuideHomeSection extends ConsumerWidget {
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
-      actionLabel: 'الدليل كامل',
+      actionLabel: ref.watch(stringsProvider).beautyFullGuide,
       onAction: () => context.push('/skin-guide'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -99,8 +101,10 @@ class _ConcernCircles extends StatelessWidget {
         itemBuilder: (context, i) {
           final c = concerns[i];
           final color = parseHex(c.color) ?? t.accent;
-          return GestureDetector(
+          return AppTap(
             onTap: () => openConcern(context, c),
+            radius: BorderRadius.circular(AppCorners.md),
+            haptic: false,
             child: SizedBox(
               width: 76,
               child: Column(
@@ -117,7 +121,7 @@ class _ConcernCircles extends StatelessWidget {
                       decoration: BoxDecoration(shape: BoxShape.circle, color: Color.lerp(color, Colors.white, 0.85)),
                       clipBehavior: Clip.antiAlias,
                       child: c.imageUrl != null
-                          ? AppNetworkImage(url: c.imageUrl!, fit: BoxFit.cover)
+                          ? AppNetworkImage(url: c.imageUrl!, width: 66, fit: BoxFit.cover)
                           : Center(child: Text(c.icon ?? '✨', style: const TextStyle(fontSize: 28))),
                     ),
                   ),
@@ -151,8 +155,10 @@ class _ConcernChips extends StatelessWidget {
         itemBuilder: (context, i) {
           final c = concerns[i];
           final color = parseHex(c.color) ?? t.accent;
-          return GestureDetector(
+          return AppTap(
             onTap: () => openConcern(context, c),
+            radius: BorderRadius.circular(AppCorners.pill),
+            haptic: false,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               alignment: Alignment.center,
@@ -178,19 +184,19 @@ class SkinQuizBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final t = context.worldTheme;
     final profile = ref.watch(skinProfileProvider);
-    final title = profile == null ? 'اكتشفي نوع بشرتكِ في دقيقة' : 'بشرتكِ ${profile.skinType.labelAr} ${profile.skinType.emoji}';
-    final sub = profile == null ? '5 أسئلة سريعة ونرشّحلكِ روتين الصباح والمساء' : 'روتينكِ المقترح جاهز — اضغطي لعرضه';
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        context.push(profile == null ? '/skin-quiz' : '/skin-quiz?result=1');
-      },
+    final title = profile == null ? s.beautyQuizBannerTitle : s.beautyQuizBannerResult(profile.skinType);
+    final sub = profile == null ? s.beautyQuizBannerSubtitle : s.beautyQuizBannerResultSubtitle;
+    final radius = BorderRadius.circular(AppCorners.md + 2);
+    return AppTap(
+      onTap: () => context.push(profile == null ? '/skin-quiz' : '/skin-quiz?result=1'),
+      radius: radius,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 14, vertical: compact ? 10 : 14),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: radius,
           gradient: LinearGradient(
             begin: AlignmentDirectional.centerStart,
             end: AlignmentDirectional.centerEnd,
@@ -205,7 +211,7 @@ class SkinQuizBanner extends ConsumerWidget {
               height: compact ? 38 : 46,
               decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
               alignment: Alignment.center,
-              child: Text(profile == null ? '🔍' : '✨', style: TextStyle(fontSize: compact ? 18 : 22)),
+              child: ExcludeSemantics(child: Text(profile == null ? '🔍' : '✨', style: TextStyle(fontSize: compact ? 18 : 22))),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -221,7 +227,7 @@ class SkinQuizBanner extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppCorners.pill)),
-              child: Text(profile == null ? 'ابدئي' : 'روتيني', style: AppText.label.copyWith(color: t.accentDark)),
+              child: Text(profile == null ? s.beautyQuizStart : s.beautyMyRoutine, style: AppText.label.copyWith(color: t.accentDark)),
             ),
           ],
         ),
@@ -256,10 +262,11 @@ class _RoutinesHomeSectionState extends ConsumerState<RoutinesHomeSection> {
     final eveningOn = both ? _evening : evening.isNotEmpty;
     final list = both ? (eveningOn ? evening : morning) : all;
     final stacked = widget.section.display == 'stacked';
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return HomeSectionShell(
       section: widget.section,
       compactTop: widget.compactTop,
-      actionLabel: 'كل الروتينات',
+      actionLabel: ref.watch(stringsProvider).beautyAllRoutines,
       onAction: () => context.push('/packages?tab=routines'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -270,7 +277,7 @@ class _RoutinesHomeSectionState extends ConsumerState<RoutinesHomeSection> {
               child: DayNightToggle(evening: eveningOn, onChanged: (v) => setState(() => _evening = v)),
             ),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
+            duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 280),
             switchInCurve: Curves.easeOutCubic,
             child: stacked
                 ? Padding(
@@ -314,24 +321,25 @@ class _RoutinesHomeSectionState extends ConsumerState<RoutinesHomeSection> {
 }
 
 /// تبديل ☀️ الصباح / 🌙 المساء.
-class DayNightToggle extends StatelessWidget {
+class DayNightToggle extends ConsumerWidget {
   final bool evening;
   final ValueChanged<bool> onChanged;
   const DayNightToggle({super.key, required this.evening, required this.onChanged});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final t = context.worldTheme;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     Widget tab(String label, String icon, bool on, List<Color> colors, VoidCallback tap) => Expanded(
-          child: GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              tap();
-            },
+          child: AppTap(
+            onTap: tap,
+            selected: on,
+            radius: BorderRadius.circular(AppCorners.pill),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 240),
+              duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 240),
               curve: Curves.easeOutCubic,
-              height: 40,
+              height: kMinTapTarget,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppCorners.pill),
@@ -339,6 +347,8 @@ class DayNightToggle extends StatelessWidget {
                 boxShadow: on ? [BoxShadow(color: colors.last.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))] : null,
               ),
               child: Text('$icon  $label',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppText.label.copyWith(color: on ? Colors.white : t.inkSoft, fontWeight: on ? FontWeight.w800 : FontWeight.w600)),
             ),
           ),
@@ -352,8 +362,8 @@ class DayNightToggle extends StatelessWidget {
       ),
       child: Row(
         children: [
-          tab('الصباح', '☀️', !evening, const [Color(0xFFFFC46B), Color(0xFFF08A5D)], () => onChanged(false)),
-          tab('المساء', '🌙', evening, const [Color(0xFF6C5BD4), Color(0xFF2E2A6B)], () => onChanged(true)),
+          tab(s.beautyMorning, '☀️', !evening, RoutinePalette.morning.colors, () => onChanged(false)),
+          tab(s.beautyEvening, '🌙', evening, RoutinePalette.evening.colors, () => onChanged(true)),
         ],
       ),
     );
@@ -363,13 +373,13 @@ class DayNightToggle extends StatelessWidget {
 // ─── الباقات ─────────────────────────────────────────────────────────────────
 
 /// «الباقات» في الرئيسية: carousel | hero | grid.
-class PackagesShowcaseSection extends StatelessWidget {
+class PackagesShowcaseSection extends ConsumerWidget {
   final HomeSection section;
   final bool compactTop;
   const PackagesShowcaseSection({super.key, required this.section, this.compactTop = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final list = section.beautyPackages;
     if (list.isEmpty) return const SizedBox.shrink();
     final routinesOnly = list.every((p) => p.isRoutine);
@@ -377,7 +387,7 @@ class PackagesShowcaseSection extends StatelessWidget {
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
-      actionLabel: 'عرض الكل',
+      actionLabel: ref.watch(stringsProvider).beautyViewAll,
       onAction: () => context.push('/packages?tab=${routinesOnly ? 'routines' : 'bundles'}'),
       child: LayoutBuilder(
         builder: (context, c) {
@@ -439,6 +449,7 @@ class HomeMyRoutineCard extends ConsumerWidget {
     final evening = DateTime.now().hour >= 15;
     final pick = (evening ? match.evening : match.morning) ?? match.morning ?? match.evening;
     if (pick == null) return const SizedBox.shrink();
+    final s = ref.watch(stringsProvider);
     final t = context.worldTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -452,11 +463,11 @@ class HomeMyRoutineCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      pick.isEvening ? 'روتينكِ الليلة 🌙' : 'روتينكِ اليوم ☀️',
+                      pick.isEvening ? s.beautyRoutineTonight : s.beautyRoutineToday,
                       style: AppText.title2.copyWith(color: t.ink),
                     ),
                     Text(
-                      'مختار لبشرتكِ ${profile.skinType.labelAr} ${profile.skinType.emoji}',
+                      s.beautyPickedForSkin(profile.skinType),
                       style: AppText.caption.copyWith(color: t.inkMuted),
                     ),
                   ],
@@ -464,7 +475,8 @@ class HomeMyRoutineCard extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => context.push('/skin-quiz?result=1'),
-                child: Text('روتيني كامل', style: AppText.label.copyWith(color: t.accentDark)),
+                style: TextButton.styleFrom(minimumSize: const Size(kMinTapTarget, kMinTapTarget)),
+                child: Text(s.beautyFullRoutine, style: AppText.label.copyWith(color: t.accentDark)),
               ),
             ],
           ),

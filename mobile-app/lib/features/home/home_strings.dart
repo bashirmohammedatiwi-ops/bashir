@@ -23,7 +23,11 @@ extension HomeStringsX on AppStrings {
   String get homeFooterHelp => isAr ? 'تحتاجين مساعدة في الاختيار؟' : 'Need help choosing?';
   String get homeFooterChat => isAr ? 'تحدّثي معنا' : 'Chat with us';
   String get homeFooterBrowse => isAr ? 'كل الأقسام' : 'All categories';
-  String get homeRefreshFailed => isAr
-      ? 'تعذّر التحديث — نعرض آخر نسخة محفوظة'
-      : "Couldn't refresh — showing the saved version";
+  String get homeSpotlightBadge => isAr ? 'الأكثر حباً' : 'Most loved';
+  String get homeFeedLoadFailed => isAr ? 'تعذّر تحميل أقسام هذا العالم' : "Couldn't load this world's sections";
+  String get homeFeedLoadFailedSub =>
+      isAr ? 'تأكدي من الاتصال ثم أعيدي المحاولة، أو اختاري عالماً آخر' : 'Check your connection and try again, or pick another world';
+  String get homeFlashSaleTitle => isAr ? 'عروض لوقت محدود' : 'Limited-time deals';
+  String get careHubConcerns => isAr ? 'حسب مشكلة البشرة' : 'Shop by skin concern';
+  String get careHubCategories => isAr ? 'أقسام العناية' : 'Care categories';
 }

@@ -9,12 +9,20 @@ import '../../worlds/world_theme.dart';
 /// مسار حالات الطلب الطبيعي (بدون الإلغاء/الإرجاع).
 const orderStatusFlow = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 
-bool isOrderClosedNegative(String status) => status == 'CANCELLED' || status == 'RETURNED';
+/// حالات منتهية بلا تسليم: ملغي أو مُسترجع (REFUNDED من السيرفر، وRETURNED اسم قديم).
+bool isOrderClosedNegative(String status) =>
+    status == 'CANCELLED' || status == 'REFUNDED' || status == 'RETURNED';
+
+/// طلب ما زال في الطريق (من الاستلام حتى الشحن) — يُحدَّث تلقائياً ويُعرض فيه التواصل أولاً.
+bool isOrderActive(String status) => const ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED'].contains(status);
+
+/// الزبونة تستطيع الإلغاء قبل بدء التجهيز فقط (نفس قاعدة السيرفر).
+bool isOrderCancellable(String status) => status == 'PENDING' || status == 'CONFIRMED';
 
 /// لون دلالي لكل حالة: انتظار = تحذير، جارٍ = لون العالم، تم = نجاح، ملغي = تنبيه.
 Color orderStatusColor(BuildContext context, String status) => switch (status) {
   'DELIVERED' => AppColors.success,
-  'CANCELLED' || 'RETURNED' => AppColors.sale,
+  'CANCELLED' || 'REFUNDED' || 'RETURNED' => AppColors.sale,
   'PENDING' => AppColors.warning,
   _ => context.worldTheme.accentDark,
 };
@@ -26,7 +34,7 @@ IconData orderStatusIcon(String status) => switch (status) {
   'SHIPPED' => Icons.local_shipping_outlined,
   'DELIVERED' => Icons.check_circle_outline_rounded,
   'CANCELLED' => Icons.cancel_outlined,
-  'RETURNED' => Icons.assignment_return_outlined,
+  'REFUNDED' || 'RETURNED' => Icons.currency_exchange_rounded,
   _ => Icons.receipt_long_outlined,
 };
 

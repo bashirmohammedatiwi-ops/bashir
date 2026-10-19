@@ -6,12 +6,13 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/cart_item.dart';
+import '../../../data/models/coupon.dart';
 import '../../../data/models/loyalty_rules.dart';
 import '../../cart/cart_strings.dart';
+import '../../cart/widgets/cart_coupon.dart';
 import '../../cart/widgets/cart_theme.dart';
 import '../../cart/widgets/pill_buttons.dart';
 import '../../worlds/world_theme.dart';
@@ -22,86 +23,55 @@ import 'checkout_theme.dart';
 const _cardMargin = EdgeInsets.symmetric(horizontal: CartTheme.hPad);
 const _cardPadding = EdgeInsets.all(16);
 
+/// كود الخصم في الدفع — نفس قسم السلة (تذاكر الكوبونات، الإزالة، حالة التحميل)
+/// داخل بطاقة إتمام الطلب، فلا تختلف الشاشتان في السلوك.
 class CheckoutCouponCard extends StatelessWidget {
-  final AppStrings s;
   final TextEditingController controller;
+  final FocusNode focusNode;
   final String? error;
-  final String? appliedCode;
+  final bool loading;
+  final Coupon? applied;
+  final int discount;
+
+  /// أساس الكوبون: المجموع بعد توفير الباقات (نفس قاعدة السيرفر).
+  final int couponBase;
   final VoidCallback onApply;
+  final VoidCallback onRemove;
 
   const CheckoutCouponCard({
     super.key,
-    required this.s,
     required this.controller,
+    required this.focusNode,
     required this.error,
-    required this.appliedCode,
+    required this.loading,
+    required this.applied,
+    required this.discount,
+    required this.couponBase,
     required this.onApply,
+    required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
-    final narrow = Responsive.isNarrow(context);
-    final field = TextField(
-      controller: controller,
-      textCapitalization: TextCapitalization.characters,
-      textInputAction: TextInputAction.done,
-      onSubmitted: (_) => onApply(),
-      decoration: CheckoutTheme.fieldDecoration(
-        context,
-        label: s.enterCode,
-        hint: s.couponPlaceholder,
-        icon: Icons.confirmation_number_outlined,
-      ).copyWith(errorText: error),
-    );
     return Container(
       margin: _cardMargin,
       decoration: CheckoutTheme.cardDecoration(
         context,
-        color: appliedCode != null
+        color: applied != null
             ? Color.alphaBlend(AppColors.success.withValues(alpha: 0.05), context.worldTheme.surface)
             : null,
       ),
-      padding: _cardPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CheckoutSectionHeader(icon: Icons.local_offer_outlined, title: s.discountCodeLabel),
-          if (narrow) ...[
-            field,
-            const SizedBox(height: 10),
-            _ApplyCouponButton(s: s, onApply: onApply, fullWidth: true),
-          ] else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: field),
-                const SizedBox(width: 10),
-                _ApplyCouponButton(s: s, onApply: onApply),
-              ],
-            ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 220),
-            child: appliedCode == null
-                ? const SizedBox(width: double.infinity)
-                : Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.verified_rounded, color: AppColors.success, size: 18),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            s.couponAppliedShort(appliedCode!),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.label.copyWith(color: AppColors.success),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ],
+      padding: const EdgeInsets.all(12),
+      child: CartCouponSection(
+        controller: controller,
+        focusNode: focusNode,
+        error: error,
+        loading: loading,
+        applied: applied,
+        discount: discount,
+        onApply: onApply,
+        onRemove: onRemove,
+        subtotal: couponBase,
       ),
     );
   }
@@ -114,6 +84,9 @@ class CheckoutPaymentCard extends StatelessWidget {
   final bool cardEnabled;
   final bool sandbox;
 
+  /// الطلب مغطّى بالكامل (نقاط/كوبون): البطاقة معطّلة مع هذا التوضيح.
+  final String? cardCoveredHint;
+
   const CheckoutPaymentCard({
     super.key,
     required this.s,
@@ -121,6 +94,7 @@ class CheckoutPaymentCard extends StatelessWidget {
     required this.onChanged,
     this.cardEnabled = false,
     this.sandbox = false,
+    this.cardCoveredHint,
   });
 
   @override
@@ -141,7 +115,15 @@ class CheckoutPaymentCard extends StatelessWidget {
             onTap: () => onChanged('COD'),
           ),
           const SizedBox(height: 10),
-          if (cardEnabled)
+          if (cardEnabled && cardCoveredHint != null)
+            _Option(
+              title: s.cardPaymentTitle,
+              subtitle: cardCoveredHint!,
+              icon: Icons.credit_card_rounded,
+              selected: false,
+              onTap: null,
+            )
+          else if (cardEnabled)
             _Option(
               title: s.cardPaymentTitle,
               subtitle: s.cardPaymentSubtitle,
@@ -356,12 +338,17 @@ class _SecureCardNote extends StatelessWidget {
 
 class CheckoutLoyaltyCard extends StatelessWidget {
   final AppStrings s;
+
+  /// النقاط في العنوان: ما سيُستخدم فعلاً حين يكون مفعّلاً، وإلا الرصيد كله.
   final int points;
   final bool useLoyalty;
   final int loyaltyDiscount;
   final bool enabled;
   final ValueChanged<bool> onChanged;
   final LoyaltyRules rules;
+
+  /// سبب التعطيل حين يكفي الرصيد لكن قيمة الطلب لا تسمح (وإلا «تحتاجين X نقطة»).
+  final String? disabledHint;
 
   const CheckoutLoyaltyCard({
     super.key,
@@ -372,6 +359,7 @@ class CheckoutLoyaltyCard extends StatelessWidget {
     this.enabled = true,
     required this.onChanged,
     this.rules = const LoyaltyRules(),
+    this.disabledHint,
   });
 
   @override
@@ -399,10 +387,10 @@ class CheckoutLoyaltyCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   !enabled
-                      ? s.loyaltyPointsNeedMore(rules.redeemStep)
+                      ? (disabledHint ?? s.loyaltyPointsNeedMore(rules.redeemStep))
                       : useLoyalty && loyaltyDiscount > 0
-                      ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount))
-                      : s.loyaltyPointsRule(formatPrice(rules.pointValue)),
+                      ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount, lang: s.lang))
+                      : s.loyaltyPointsRule(formatPrice(rules.pointValue, lang: s.lang)),
                   style: AppText.caption.copyWith(
                     color: on && loyaltyDiscount > 0 ? AppColors.success : t.inkMuted,
                     fontWeight: on ? FontWeight.w700 : FontWeight.w500,
@@ -454,6 +442,7 @@ class CheckoutNotesCard extends StatelessWidget {
 
 /// «هذا الطلب هدية 🎁»: رسالة على بطاقة الهدية، وإخفاء الأسعار من الفاتورة داخل الطرد.
 class CheckoutGiftCard extends StatelessWidget {
+  final AppStrings s;
   final bool isGift;
   final ValueChanged<bool> onGiftChanged;
   final TextEditingController messageCtrl;
@@ -462,6 +451,7 @@ class CheckoutGiftCard extends StatelessWidget {
 
   const CheckoutGiftCard({
     super.key,
+    required this.s,
     required this.isGift,
     required this.onGiftChanged,
     required this.messageCtrl,
@@ -500,8 +490,8 @@ class CheckoutGiftCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('هذا الطلب هدية', style: AppText.title3.copyWith(color: t.ink)),
-                      Text('نغلّفه بعناية ونضيف بطاقة برسالتكِ', style: AppText.caption.copyWith(color: t.inkMuted)),
+                      Text(s.giftOrderTitle, style: AppText.title3.copyWith(color: t.ink)),
+                      Text(s.giftOrderSubtitle, style: AppText.caption.copyWith(color: t.inkMuted)),
                     ],
                   ),
                 ),
@@ -525,8 +515,8 @@ class CheckoutGiftCard extends StatelessWidget {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: CheckoutTheme.fieldDecoration(
                   context,
-                  label: 'رسالة بطاقة الهدية (اختياري)',
-                  hint: 'كل عام وأنتِ بخير يا أحلى صديقة 💕',
+                  label: s.giftMessageLabel,
+                  hint: s.giftMessageHint,
                   icon: Icons.favorite_border_rounded,
                 ),
               ),
@@ -547,8 +537,8 @@ class CheckoutGiftCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('إخفاء الأسعار', style: AppText.label.copyWith(color: t.ink)),
-                            Text('لا نضع الفاتورة داخل الطرد — تصلكِ على التطبيق فقط',
+                            Text(s.giftHidePricesTitle, style: AppText.label.copyWith(color: t.ink)),
+                            Text(s.giftHidePricesHint,
                                 style: AppText.caption.copyWith(color: t.inkMuted)),
                           ],
                         ),
@@ -565,6 +555,20 @@ class CheckoutGiftCard extends StatelessWidget {
   }
 }
 
+/// حالة رسوم التوصيل في الملخص — لا «مجاني» إلا إن قالها عرض السعر فعلاً.
+enum CheckoutShippingStatus {
+  /// لم تُختر المحافظة بعد.
+  needsGovernorate,
+  loading,
+
+  /// فشل عرض السعر: «إعادة».
+  failed,
+  ready,
+
+  /// استلام من الفرع — بلا رسوم.
+  pickup,
+}
+
 class CheckoutSummaryCard extends StatefulWidget {
   final AppStrings s;
   final int subtotal;
@@ -572,9 +576,14 @@ class CheckoutSummaryCard extends StatefulWidget {
   /// توفير الباقات المكتملة (سعر الباقة أقل من مجموع منتجاتها).
   final int packageSaving;
   final int loyaltyDiscount;
-  final int shipping;
-  final int total;
-  final bool shippingLoading;
+
+  /// رسوم التوصيل حين تكون معروفة ([CheckoutShippingStatus.ready]).
+  final int? shipping;
+  final CheckoutShippingStatus shippingStatus;
+  final VoidCallback? onRetryShipping;
+
+  /// null حتى تُعرف رسوم التوصيل.
+  final int? total;
   final List<CartItem> items;
 
   const CheckoutSummaryCard({
@@ -585,8 +594,9 @@ class CheckoutSummaryCard extends StatefulWidget {
     this.packageSaving = 0,
     required this.loyaltyDiscount,
     required this.shipping,
+    required this.shippingStatus,
+    this.onRetryShipping,
     required this.total,
-    required this.shippingLoading,
     this.items = const [],
   });
 
@@ -604,6 +614,7 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
     final t = context.worldTheme;
     final items = widget.items;
     final visible = _expanded ? items : items.take(_preview).toList();
+    String price(int v) => formatPrice(v, lang: s.lang);
 
     return Container(
       margin: _cardMargin,
@@ -646,24 +657,18 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
               child: Divider(height: 1, color: t.divider),
             ),
           ],
-          _Row(label: s.subtotal, value: formatPrice(widget.subtotal)),
+          _Row(label: s.subtotal, value: price(widget.subtotal)),
           if (widget.packageSaving > 0)
-            _Row(label: s.isAr ? 'توفير الباقات 🎁' : 'Bundle savings 🎁', value: '- ${formatPrice(widget.packageSaving)}', valueColor: AppColors.success),
+            _Row(label: s.bundleSavings, value: '- ${price(widget.packageSaving)}', valueColor: AppColors.success),
           if (widget.discount > 0)
-            _Row(label: s.couponDiscount, value: '- ${formatPrice(widget.discount)}', valueColor: AppColors.success),
+            _Row(label: s.couponDiscount, value: '- ${price(widget.discount)}', valueColor: AppColors.success),
           if (widget.loyaltyDiscount > 0)
             _Row(
               label: s.useLoyaltyPoints,
-              value: '- ${formatPrice(widget.loyaltyDiscount)}',
+              value: '- ${price(widget.loyaltyDiscount)}',
               valueColor: AppColors.success,
             ),
-          _Row(
-            label: s.shipping,
-            value: widget.shippingLoading
-                ? s.calculating
-                : (widget.shipping == 0 ? s.free : formatPrice(widget.shipping)),
-            valueColor: !widget.shippingLoading && widget.shipping == 0 ? AppColors.success : null,
-          ),
+          _shippingRow(s, t),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: t.divider),
@@ -678,7 +683,10 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: AlignmentDirectional.centerEnd,
-                  child: Text(formatPrice(widget.total), style: AppText.title1.copyWith(color: t.accentDark)),
+                  child: Text(
+                    widget.total == null ? '…' : price(widget.total!),
+                    style: AppText.title1.copyWith(color: t.accentDark),
+                  ),
                 ),
               ),
             ],
@@ -697,7 +705,7 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      s.youSaved(formatPrice(widget.discount + widget.loyaltyDiscount + widget.packageSaving)),
+                      s.youSaved(price(widget.discount + widget.loyaltyDiscount + widget.packageSaving)),
                       style: AppText.label.copyWith(color: AppColors.success),
                     ),
                   ),
@@ -708,6 +716,25 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
         ],
       ),
     );
+  }
+
+  Widget _shippingRow(AppStrings s, WorldThemePalette t) {
+    return switch (widget.shippingStatus) {
+      CheckoutShippingStatus.pickup => _Row(label: s.branchPickup, value: s.free, valueColor: AppColors.success),
+      CheckoutShippingStatus.needsGovernorate => _Row(label: s.shipping, value: s.selectGovernorate, valueColor: t.inkMuted),
+      CheckoutShippingStatus.loading => _Row(label: s.shipping, value: s.calculating, valueColor: t.inkMuted),
+      CheckoutShippingStatus.failed => _Row(
+          label: s.shipping,
+          value: s.shippingQuoteFailed,
+          valueColor: AppColors.sale,
+          onTap: widget.onRetryShipping,
+        ),
+      CheckoutShippingStatus.ready => _Row(
+          label: s.shipping,
+          value: (widget.shipping ?? 0) == 0 ? s.free : formatPrice(widget.shipping, lang: s.lang),
+          valueColor: (widget.shipping ?? 0) == 0 ? AppColors.success : null,
+        ),
+    };
   }
 }
 
@@ -767,7 +794,7 @@ class _SummaryItem extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(formatPrice(item.lineTotal), style: AppText.label.copyWith(color: t.ink)),
+        Text(formatPrice(item.lineTotal, lang: lang), style: AppText.label.copyWith(color: t.ink)),
       ],
     );
   }
@@ -778,12 +805,15 @@ class _Row extends StatelessWidget {
   final String value;
   final Color? valueColor;
 
-  const _Row({required this.label, required this.value, this.valueColor});
+  /// صف قابل للضغط (مثل «تعذّر الحساب — إعادة»).
+  final VoidCallback? onTap;
+
+  const _Row({required this.label, required this.value, this.valueColor, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
@@ -796,11 +826,23 @@ class _Row extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            value,
-            style: AppText.bodySmall.copyWith(fontWeight: FontWeight.w700, color: valueColor ?? t.ink),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: AppText.bodySmall.copyWith(fontWeight: FontWeight.w700, color: valueColor ?? t.ink),
+            ),
           ),
         ],
+      ),
+    );
+    if (onTap == null) return row;
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: kMinTapTarget), child: Center(child: row)),
       ),
     );
   }
@@ -809,13 +851,19 @@ class _Row extends StatelessWidget {
 /// شريط تأكيد الطلب الثابت — الإجمالي + زر قوي، ويحترم المنطقة الآمنة.
 class CheckoutBottomBar extends StatelessWidget {
   final AppStrings s;
-  final int total;
+
+  /// null حتى تُعرف رسوم التوصيل — يظهر «…» بدل رقم قد لا يكون ما سيُحتسب.
+  final int? total;
   final bool placing;
   final VoidCallback onPlace;
   final bool payByCard;
 
   /// سبب يمنع الإتمام الآن (لا اتصال، منتج غير متوفر) — الزر معطّل والسبب مكان سطر الأمان.
   final String? blockedReason;
+
+  /// طريق إصلاح السبب (مثل «السلة» لإزالة منتج غير متوفر).
+  final String? blockedActionLabel;
+  final VoidCallback? onBlockedAction;
 
   const CheckoutBottomBar({
     super.key,
@@ -825,6 +873,8 @@ class CheckoutBottomBar extends StatelessWidget {
     required this.onPlace,
     this.payByCard = false,
     this.blockedReason,
+    this.blockedActionLabel,
+    this.onBlockedAction,
   });
 
   @override
@@ -858,7 +908,10 @@ class CheckoutBottomBar extends StatelessWidget {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: AlignmentDirectional.centerStart,
-                          child: Text(formatPrice(total), style: AppText.title1.copyWith(color: t.ink)),
+                          child: Text(
+                            total == null ? '…' : formatPrice(total, lang: s.lang),
+                            style: AppText.title1.copyWith(color: t.ink),
+                          ),
                         ),
                       ],
                     ),
@@ -899,6 +952,16 @@ class CheckoutBottomBar extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (blockedReason != null && blockedActionLabel != null && onBlockedAction != null)
+                    TextButton(
+                      onPressed: onBlockedAction,
+                      style: TextButton.styleFrom(
+                        foregroundColor: t.accentDark,
+                        minimumSize: const Size(kMinTapTarget, kMinTapTarget),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: Text(blockedActionLabel!, style: AppText.label),
+                    ),
                 ],
               ),
             ],
@@ -946,42 +1009,5 @@ class CheckoutShippingBanner extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _ApplyCouponButton extends StatelessWidget {
-  final AppStrings s;
-  final VoidCallback onApply;
-  final bool fullWidth;
-
-  const _ApplyCouponButton({required this.s, required this.onApply, this.fullWidth = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.worldTheme;
-    final button = SizedBox(
-      height: 52,
-      child: DecoratedBox(
-        decoration: BoxDecoration(gradient: t.primaryGradient, borderRadius: BorderRadius.circular(AppCorners.md)),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onApply,
-            borderRadius: BorderRadius.circular(AppCorners.md),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Center(
-                child: Text(s.applyBtn, style: AppText.label.copyWith(color: Colors.white)),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    if (fullWidth) {
-      return SizedBox(width: double.infinity, child: button);
-    }
-    return button;
   }
 }

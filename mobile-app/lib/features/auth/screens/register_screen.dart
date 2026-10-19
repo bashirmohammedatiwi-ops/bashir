@@ -59,7 +59,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           );
       if (mounted) {
         HapticFeedback.mediumImpact();
-        context.go('/');
+        // يحفظ مدير كلمات المرور الحساب الجديد.
+        TextInput.finishAutofillContext();
+        // نرجع لمكانها بنتيجة `true` — الدخول تحتها يُغلق نفسه كذلك، فتكمل
+        // ما بدأته (المفضلة، الدفع…) بدل أن تبدأ من الرئيسية.
+        context.canPop() ? context.pop(true) : context.go('/');
       }
     } catch (e) {
       if (!mounted) return;
@@ -80,10 +84,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  /// صفحة الدخول تحتها عادةً؛ وإن فُتحت من رابط (/signup) وحدها نفتح الدخول.
+  /// «سجّلي الدخول»: إن جاءت من صفحة الدخول نرجع إليها ومعنا الرقم المكتوب،
+  /// وإلا (من الحساب أو رابط /signup) نستبدل التسجيل بالدخول والرقم معبّأ.
   void _openLogin() {
     if (!mounted) return;
-    context.canPop() ? context.pop() : context.go('/login');
+    final phone = _phone.text.trim();
+    final fromLogin =
+        GoRouterState.of(context).uri.queryParameters['from'] == 'login';
+    if (fromLogin && context.canPop()) {
+      context.pop(phone);
+    } else {
+      context.pushReplacement('/login', extra: phone);
+    }
   }
 
   @override
@@ -100,82 +112,88 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
       child: Form(
         key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            authLabeledField(
-              label: s.fullName,
-              field: TextFormField(
-                controller: _name,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.name],
-                decoration: authFieldDecoration(
-                  context,
-                  label: s.fullName,
-                  icon: Icons.person_outline_rounded,
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().length < 2) ? s.enterYourName : null,
-              ),
-            ),
-            const SizedBox(height: 16),
-            authLabeledField(
-              label: s.phoneNumber,
-              field: TextFormField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                textDirection: TextDirection.ltr,
-                inputFormatters: phoneInputFormatters,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.telephoneNumber],
-                decoration: authFieldDecoration(
-                  context,
-                  label: s.phoneNumber,
-                  hint: '07701234567',
-                  icon: Icons.phone_iphone_rounded,
-                ),
-                validator: (v) => validateIraqiPhone(v, lang: s.lang),
-              ),
-            ),
-            const SizedBox(height: 16),
-            authLabeledField(
-              label: s.password,
-              field: TextFormField(
-                controller: _password,
-                obscureText: _obscure,
-                textInputAction: TextInputAction.done,
-                autofillHints: const [AutofillHints.newPassword],
-                onFieldSubmitted: (_) => _submit(),
-                decoration: authFieldDecoration(
-                  context,
-                  label: s.password,
-                  icon: Icons.lock_outline_rounded,
-                  suffix: AuthPasswordToggle(
-                    obscured: _obscure,
-                    onToggle: () => setState(() => _obscure = !_obscure),
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              authLabeledField(
+                label: s.fullName,
+                field: TextFormField(
+                  controller: _name,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.name],
+                  decoration: authFieldDecoration(
+                    context,
+                    label: s.fullName,
+                    icon: Icons.person_outline_rounded,
                   ),
+                  validator: (v) => (v == null || v.trim().length < 2)
+                      ? s.enterYourName
+                      : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.length < 6) ? s.passwordMin6 : null,
               ),
-            ),
-            const SizedBox(height: 14),
-            _TermsCheckbox(
-              s: s,
-              value: _acceptedTerms,
-              onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
-            ),
-            const SizedBox(height: 20),
-            authPrimaryButton(
-              label: s.createAccount,
-              onPressed: _loading ? null : _submit,
-              loading: _loading,
-            ),
-            const SizedBox(height: 22),
-            Divider(height: 1, color: context.worldTheme.divider),
-            const SizedBox(height: 18),
-            const LanguageToggleBar(embedded: true, showLabel: true),
-          ],
+              const SizedBox(height: 16),
+              authLabeledField(
+                label: s.phoneNumber,
+                field: TextFormField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  textDirection: TextDirection.ltr,
+                  inputFormatters: phoneInputFormatters,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.telephoneNumber,
+                  ],
+                  decoration: authFieldDecoration(
+                    context,
+                    label: s.phoneNumber,
+                    hint: '07701234567',
+                    icon: Icons.phone_iphone_rounded,
+                  ),
+                  validator: (v) => validateIraqiPhone(v, lang: s.lang),
+                ),
+              ),
+              const SizedBox(height: 16),
+              authLabeledField(
+                label: s.password,
+                field: TextFormField(
+                  controller: _password,
+                  obscureText: _obscure,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.newPassword],
+                  onFieldSubmitted: (_) => _submit(),
+                  decoration: authFieldDecoration(
+                    context,
+                    label: s.password,
+                    icon: Icons.lock_outline_rounded,
+                    suffix: AuthPasswordToggle(
+                      obscured: _obscure,
+                      onToggle: () => setState(() => _obscure = !_obscure),
+                    ),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.length < 6) ? s.passwordMin6 : null,
+                ),
+              ),
+              const SizedBox(height: 14),
+              _TermsCheckbox(
+                s: s,
+                value: _acceptedTerms,
+                onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+              ),
+              const SizedBox(height: 20),
+              authPrimaryButton(
+                label: s.createAccount,
+                onPressed: _loading ? null : _submit,
+                loading: _loading,
+              ),
+              const SizedBox(height: 22),
+              Divider(height: 1, color: context.worldTheme.divider),
+              const SizedBox(height: 18),
+              const LanguageToggleBar(embedded: true, showLabel: true),
+            ],
+          ),
         ),
       ),
     );

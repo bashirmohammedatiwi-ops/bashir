@@ -31,6 +31,7 @@ import '../../features/profile/notifications_screen.dart';
 import '../../features/search/qr_scan_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/about_app_screen.dart';
+import '../../features/settings/help_screen.dart';
 import '../../features/settings/language_picker_screen.dart';
 import '../../features/settings/legal_document_screen.dart';
 import '../../features/settings/open_source_licenses_screen.dart';
@@ -76,6 +77,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (mapped != null) {
         final current = state.uri.hasQuery ? '$path?${state.uri.query}' : path;
         if (mapped != current && mapped != path) return mapped;
+      }
+
+      // «ديما» بالعربية فقط — أي رابط إليها بلغة أخرى يعود للرئيسية.
+      final target = mapped ?? path;
+      if (!localeSettings.isArabic && (target == '/advisor' || target.startsWith('/advisor/') || target.startsWith('/advisor?'))) {
+        return '/';
       }
 
       if (path == '/cart') {
@@ -166,7 +173,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/brands', builder: (_, __) => const BrandsScreen()),
       GoRoute(
         path: '/product/:id',
-        builder: (_, s) => ProductDetailScreen(idOrSlug: s.pathParameters['id']!),
+        builder: (_, s) => ProductDetailScreen(
+          idOrSlug: s.pathParameters['id']!,
+          initialShadeId: s.uri.queryParameters['shade'],
+        ),
       ),
       GoRoute(
         path: '/category/:slug',
@@ -245,7 +255,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/about', builder: (_, __) => const AboutAppScreen()),
       // «المساعدة» في الموقع: التواصل والأسئلة — في التطبيق صفحة «عن التطبيق» وفيها التواصل.
-      GoRoute(path: '/help', builder: (_, __) => const AboutAppScreen()),
+      GoRoute(path: '/help', builder: (_, __) => const HelpScreen()),
       GoRoute(path: '/alerts', builder: (_, __) => const RestockAlertsScreen()),
       GoRoute(path: '/licenses', builder: (_, __) => const OpenSourceLicensesScreen()),
     ],

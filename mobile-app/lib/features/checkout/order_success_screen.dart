@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../data/models/order.dart';
@@ -29,8 +31,17 @@ class OrderSuccessScreen extends ConsumerWidget {
     final s = ref.s;
     final t = context.worldTheme;
     final order = ref.watch(orderDetailProvider(orderId));
+    // الإجمالي الذي احتسبه السيرفر غير ما عُرض قبل التأكيد: نقولها بوضوح.
+    final adjusted = GoRouterState.of(context).uri.queryParameters['adjusted'] == '1';
+    void goHome() => openHomeTab(context, ProviderScope.containerOf(context));
 
-    return Scaffold(
+    return PopScope(
+      // الرجوع لا يعيد صفحة الدفع (أُغلقت) ولا السلة الفارغة: للمتجر.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) goHome();
+      },
+      child: Scaffold(
       backgroundColor: t.canvas,
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -62,7 +73,7 @@ class OrderSuccessScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              order.valueOrNull?.paymentStatus == 'PAID'
+                              order.valueOrNull?.paymentStatus == 'PAID' && order.valueOrNull?.paymentMethod == 'CARD'
                                   ? s.orderPaidSuccess
                                   : s.orderPlacedSuccess,
                               textAlign: TextAlign.center,
@@ -81,13 +92,17 @@ class OrderSuccessScreen extends ConsumerWidget {
                         ),
                       ),
                       if (order.valueOrNull case final o?) ...[
+                        if (adjusted) ...[
+                          const SizedBox(height: 12),
+                          _FadeUp(delay: 430, child: _AdjustedTotalNotice(total: o.total)),
+                        ],
                         const SizedBox(height: 12),
                         _FadeUp(delay: 460, child: _OrderRecap(order: o)),
                       ],
                       const SizedBox(height: 16),
                       _FadeUp(
                         delay: 520,
-                        child: _NextSteps(s: s, paidByCard: order.valueOrNull?.paymentStatus == 'PAID'),
+                        child: _NextSteps(s: s, order: order.valueOrNull),
                       ),
                     ],
                   ),
@@ -107,13 +122,50 @@ class OrderSuccessScreen extends ConsumerWidget {
                     SecondaryPillButton(
                       label: s.continueShopping,
                       icon: Icons.storefront_outlined,
-                      onTap: () => context.go('/'),
+                      onTap: goHome,
                     ),
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+/// سطر واحد بالإجمالي النهائي حين يختلف عما عُرض في صفحة الدفع.
+class _AdjustedTotalNotice extends ConsumerWidget {
+  final int total;
+  const _AdjustedTotalNotice({required this.total});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 14, 10),
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(t.accent.withValues(alpha: 0.08), t.surface),
+          borderRadius: BorderRadius.circular(AppCorners.md),
+          border: Border.all(color: t.accentSoft),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline_rounded, size: 18, color: t.accentDark),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                s.orderTotalUpdated(formatPrice(total, lang: s.lang)),
+                style: AppText.label.copyWith(color: t.ink),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -230,7 +282,7 @@ class _OrderRecap extends ConsumerWidget {
                   style: AppText.label.copyWith(color: t.inkSoft),
                 ),
               ),
-              Text(order.totalLabel, style: AppText.title2.copyWith(color: t.ink)),
+              Text(formatPrice(order.total, lang: s.lang), style: AppText.title2.copyWith(color: t.ink)),
             ],
           ),
           if (window != null) line(Icons.schedule_rounded, window.labelFor(s)),
@@ -246,18 +298,26 @@ class _OrderRecap extends ConsumerWidget {
 
 class _NextSteps extends StatelessWidget {
   final AppStrings s;
-  final bool paidByCard;
-  const _NextSteps({required this.s, this.paidByCard = false});
+  final AppOrder? order;
+  const _NextSteps({required this.s, this.order});
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
+    final o = order;
+    final paid = o?.paymentStatus == 'PAID';
     final steps = [
       (Icons.support_agent_rounded, s.nextConfirmCall),
       (Icons.inventory_2_outlined, s.nextPrepare),
-      paidByCard
-          ? (Icons.verified_rounded, s.nextPaidByCard)
-          : (Icons.payments_outlined, s.nextPayOnDelivery),
+      // مدفوع بالبطاقة، أو مغطّى بالكامل بالنقاط/الكوبون (يُحفظ نقداً ومدفوعاً)، أو يُدفع عند الاستلام.
+      if (paid && o?.paymentMethod == 'CARD')
+        (Icons.verified_rounded, s.nextPaidByCard)
+      else if (paid)
+        (Icons.verified_rounded, s.nextNothingToPay)
+      else if (o?.deliveryOption == 'PICKUP')
+        (Icons.storefront_outlined, s.nextPayAtBranch)
+      else
+        (Icons.payments_outlined, s.nextPayOnDelivery),
     ];
     return Container(
       width: double.infinity,

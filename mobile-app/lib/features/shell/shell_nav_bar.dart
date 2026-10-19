@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +14,9 @@ import 'nav_tabs.dart';
 /// شريط التنقل: كبسولة زجاجية بيضاء عائمة بنفس لغة محدّد العوالم —
 /// التبويب المختار يتمدّد إلى حبّة بتدرّج لون العالم تحمل أيقونته واسمه،
 /// والبقية أيقونات رفيعة هادئة. كل الانتقالات ناعمة ومتزامنة.
+///
+/// بلا ضبابية خلفية: المحتوى يتوقف فوق الشريط ولا يمرّ تحته، فالتدرّج
+/// الأبيض وحده يعطي المظهر نفسه دون كلفة رسم في كل إطار.
 class ShellNavBar extends StatelessWidget {
   final int currentIndex;
   final int cartCount;
@@ -35,6 +38,17 @@ class ShellNavBar extends StatelessWidget {
   static const _curve = Curves.easeOutQuart;
   static const _pad = 7.0;
 
+  /// أضيق تبويب نقبله — تحته يصبح المختار أيقونة فقط ليبقى الجميع قابلاً للمس.
+  static const _minTabW = 44.0;
+
+  /// نمط اسم التبويب المختار — يُقاس به عرض الحبّة.
+  static final _labelStyle = AppText.label.copyWith(
+    color: Colors.white,
+    fontSize: 13,
+    height: 1,
+    fontWeight: FontWeight.w800,
+  );
+
   static double bottomGap(BuildContext context) {
     final inset = Responsive.systemBottomInset(context);
     return inset > 0 ? inset - 8 : 12;
@@ -49,11 +63,7 @@ class ShellNavBar extends StatelessWidget {
         HugeIcons.strokeRoundedDashboardSquare02,
         strings.navCategories,
       ),
-      _NavItem(
-        NavTabs.brands,
-        HugeIcons.strokeRoundedCrown,
-        strings.navBrands,
-      ),
+      _NavItem(NavTabs.brands, HugeIcons.strokeRoundedCrown, strings.navBrands),
       _NavItem(
         NavTabs.offers,
         HugeIcons.strokeRoundedDiscountTag02,
@@ -64,6 +74,7 @@ class ShellNavBar extends StatelessWidget {
         HugeIcons.strokeRoundedShoppingBag02,
         strings.navCart,
         badge: cartCount,
+        semanticValue: cartCount > 0 ? strings.cartItemsCount(cartCount) : null,
       ),
       _NavItem(
         NavTabs.account,
@@ -74,11 +85,25 @@ class ShellNavBar extends StatelessWidget {
 
     // نفس لون حبّة العالم المختار في الرئيسية.
     final pill = Color.lerp(theme.accent, Colors.black, 0.1)!;
+    final selected = items.firstWhere(
+      (e) => e.index == currentIndex,
+      orElse: () => items.first,
+    );
+    // عرض الاسم الفعلي بتكبير خط المستخدم — الحبّة تتّسع له بدل أن تقصّه.
+    final painter = TextPainter(
+      text: TextSpan(text: selected.label, style: _labelStyle),
+      textScaler: MediaQuery.textScalerOf(context),
+      textDirection: Directionality.of(context),
+      maxLines: 1,
+    )..layout();
+    final labelW = painter.width.ceilToDouble();
+    painter.dispose();
+    final still = MediaQuery.disableAnimationsOf(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 0, 16, bottomGap(context)),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 420),
+        duration: still ? Duration.zero : const Duration(milliseconds: 420),
         height: barHeight,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(barHeight / 2),
@@ -98,52 +123,58 @@ class ShellNavBar extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(barHeight / 2),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.92),
-                    Color.lerp(
-                      Colors.white,
-                      theme.accentLight,
-                      0.6,
-                    )!.withValues(alpha: 0.88),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(barHeight / 2),
-                border: Border.all(color: Colors.white, width: 1.2),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.92),
+                  Color.lerp(
+                    Colors.white,
+                    theme.accentLight,
+                    0.6,
+                  )!.withValues(alpha: 0.88),
+                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(_pad),
-                child: LayoutBuilder(
-                  builder: (context, c) {
-                    final w = c.maxWidth;
-                    final selW = (w * 0.36).clamp(108.0, 150.0);
-                    final otherW = (w - selW) / (items.length - 1);
-                    return Row(
-                      children: [
-                        for (final item in items)
-                          _NavTab(
-                            item: item,
-                            selected: item.index == currentIndex,
-                            width: item.index == currentIndex ? selW : otherW,
-                            pill: pill,
-                            idle: theme.ink.withValues(alpha: 0.5),
-                            onTap: () {
-                              if (item.index != currentIndex) {
-                                HapticFeedback.selectionClick();
-                              }
-                              onSelect(item.index);
-                            },
-                          ),
-                      ],
-                    );
-                  },
-                ),
+              borderRadius: BorderRadius.circular(barHeight / 2),
+              border: Border.all(color: Colors.white, width: 1.2),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(_pad),
+              child: LayoutBuilder(
+                builder: (context, c) {
+                  final w = c.maxWidth;
+                  final others = items.length - 1;
+                  // الحبّة = حشوة 14×2 + أيقونة 23 + فراغ 7 + الاسم.
+                  final maxSel = math.max(96.0, w * 0.42);
+                  var selW = (labelW + 58).clamp(96.0, maxSel);
+                  var otherW = (w - selW) / others;
+                  // شاشة ضيقة أو خط كبير جداً: المختار أيقونة فقط والكل بعرض واحد.
+                  final showLabel = otherW >= _minTabW;
+                  if (!showLabel) selW = otherW = w / items.length;
+                  return Row(
+                    children: [
+                      for (final item in items)
+                        _NavTab(
+                          item: item,
+                          selected: item.index == currentIndex,
+                          showLabel: showLabel,
+                          width: item.index == currentIndex ? selW : otherW,
+                          pill: pill,
+                          idle: theme.ink.withValues(alpha: 0.5),
+                          labelStyle: _labelStyle,
+                          still: still,
+                          onTap: () {
+                            if (item.index != currentIndex) {
+                              HapticFeedback.selectionClick();
+                            }
+                            onSelect(item.index);
+                          },
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -158,34 +189,52 @@ class _NavItem {
   final List<List<dynamic>> icon;
   final String label;
   final int badge;
-  const _NavItem(this.index, this.icon, this.label, {this.badge = 0});
+
+  /// ما يقرؤه قارئ الشاشة بعد الاسم — عدد قطع السلة.
+  final String? semanticValue;
+  const _NavItem(
+    this.index,
+    this.icon,
+    this.label, {
+    this.badge = 0,
+    this.semanticValue,
+  });
 }
 
 class _NavTab extends StatelessWidget {
   final _NavItem item;
   final bool selected;
+  final bool showLabel;
   final double width;
   final Color pill;
   final Color idle;
+  final TextStyle labelStyle;
+
+  /// «تقليل الحركة» مفعّل: التبديل فوري بلا انزلاق.
+  final bool still;
   final VoidCallback onTap;
 
   const _NavTab({
     required this.item,
     required this.selected,
+    required this.showLabel,
     required this.width,
     required this.pill,
     required this.idle,
+    required this.labelStyle,
+    required this.still,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final dur = still ? Duration.zero : ShellNavBar._dur;
     final icon = Stack(
       clipBehavior: Clip.none,
       children: [
         TweenAnimationBuilder<Color?>(
           tween: ColorTween(end: selected ? Colors.white : idle),
-          duration: const Duration(milliseconds: 300),
+          duration: still ? Duration.zero : const Duration(milliseconds: 300),
           builder: (_, c, __) => HugeIcon(
             icon: item.icon,
             color: c ?? idle,
@@ -198,7 +247,7 @@ class _NavTab extends StatelessWidget {
           PositionedDirectional(
             top: -6,
             start: -8,
-            child: _Badge(count: item.badge),
+            child: _Badge(count: item.badge, still: still),
           ),
       ],
     );
@@ -207,19 +256,29 @@ class _NavTab extends StatelessWidget {
       button: true,
       selected: selected,
       label: item.label,
+      value: item.semanticValue,
+      excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: ShellNavBar._dur,
+          duration: dur,
           curve: ShellNavBar._curve,
           width: width,
           alignment: Alignment.center,
+          // الحبّة بلا اسم: دائرة حول الأيقونة لا شريط بعرض التبويب.
+          padding: EdgeInsets.symmetric(
+            horizontal: selected && !showLabel
+                ? math.max(0.0, (width - ShellNavBar._minTabW) / 2)
+                : 0,
+          ),
           child: AnimatedContainer(
-            duration: ShellNavBar._dur,
+            duration: dur,
             curve: ShellNavBar._curve,
             height: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: selected ? 14 : 0),
+            padding: EdgeInsets.symmetric(
+              horizontal: selected && showLabel ? 14 : 0,
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
               gradient: LinearGradient(
@@ -245,7 +304,7 @@ class _NavTab extends StatelessWidget {
               children: [
                 AnimatedScale(
                   scale: selected ? 1.0 : 0.96,
-                  duration: ShellNavBar._dur,
+                  duration: dur,
                   curve: Curves.easeOutBack,
                   child: icon,
                 ),
@@ -253,17 +312,19 @@ class _NavTab extends StatelessWidget {
                 Flexible(
                   child: ClipRect(
                     child: AnimatedSize(
-                      duration: ShellNavBar._dur,
+                      duration: dur,
                       curve: ShellNavBar._curve,
                       alignment: AlignmentDirectional.centerStart,
-                      child: selected
+                      child: selected && showLabel
                           ? Padding(
                               padding: const EdgeInsetsDirectional.only(
                                 start: 7,
                               ),
                               child: TweenAnimationBuilder<double>(
-                                tween: Tween(begin: 0, end: 1),
-                                duration: const Duration(milliseconds: 380),
+                                tween: Tween(begin: still ? 1 : 0, end: 1),
+                                duration: still
+                                    ? Duration.zero
+                                    : const Duration(milliseconds: 380),
                                 curve: Curves.easeOut,
                                 builder: (_, v, child) => Opacity(
                                   opacity: v,
@@ -277,12 +338,7 @@ class _NavTab extends StatelessWidget {
                                   maxLines: 1,
                                   softWrap: false,
                                   overflow: TextOverflow.fade,
-                                  style: AppText.label.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    height: 1,
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                                  style: labelStyle,
                                 ),
                               ),
                             )
@@ -302,14 +358,15 @@ class _NavTab extends StatelessWidget {
 /// شارة السلة — تنبض عند تغيّر العدد.
 class _Badge extends StatelessWidget {
   final int count;
-  const _Badge({required this.count});
+  final bool still;
+  const _Badge({required this.count, required this.still});
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       key: ValueKey(count),
-      tween: Tween(begin: 1.45, end: 1.0),
-      duration: const Duration(milliseconds: 520),
+      tween: Tween(begin: still ? 1.0 : 1.45, end: 1.0),
+      duration: still ? Duration.zero : const Duration(milliseconds: 520),
       curve: Curves.elasticOut,
       builder: (_, s, child) => Transform.scale(scale: s, child: child),
       child: Container(

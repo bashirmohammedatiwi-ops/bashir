@@ -5,125 +5,216 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
-import '../../core/utils/formatters.dart';
+import '../../core/theme/app_fonts.dart';
+import '../../core/theme/app_text.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_network_image.dart';
-import '../../core/widgets/product_card_actions.dart';
+import '../../core/widgets/shimmer_box.dart';
+import '../../core/widgets/states.dart';
 import '../../data/models/banner.dart';
 import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
+import '../../data/models/home_feed.dart';
 import '../../data/models/product.dart';
 import '../../data/models/store_world.dart';
 import '../categories/widgets/category_line_art.dart';
 import '../home/home_link.dart';
 import '../home/home_section_renderer.dart';
+import '../home/widgets/home_product_row.dart';
+import 'world_strings.dart';
+import 'world_theme.dart';
 import 'worlds_provider.dart';
-import '../../core/navigation/product_nav.dart';
 
-/// رئيسية العالم: بنرات، أقسام، منتجات، وبراندات خاصة به.
+/// سحب للتحديث في شاشة العالم: تفاصيله (الأقسام والألوان) وواجهته (الأسعار والمخزون).
+/// الخطأ لا يُرمى — الحالة الظاهرة تعرضه هي، والمؤشر يتوقف.
+Future<void> refreshWorld(WidgetRef ref, String slug) async {
+  ref.invalidate(worldDetailProvider(slug));
+  ref.invalidate(worldFeedProvider(slug));
+  try {
+    await Future.wait([
+      ref.read(worldDetailProvider(slug).future),
+      ref.read(worldFeedProvider(slug).future),
+    ]);
+  } catch (_) {}
+}
+
+/// ارتفاع شريط البنرات — محجوز أثناء التحميل حتى لا تقفز الصفحة حين يصل.
+const double _bannerHeight = 132;
+
+/// رئيسية العالم: الفهرس فوراً من بيانات العالم، ثم البنرات والأقسام المخصّصة
+/// والمنتجات والبراندات حين تصل واجهته.
 class WorldExplore extends ConsumerWidget {
   final StoreWorld world;
-  final void Function(String? categoryId) onOpenSections;
+
+  /// يفتح القسم: بلا فروع → منتجاته، وغيره → الفهرس عنده. null → الفهرس كله.
+  final void Function(Category? category) onOpenSections;
 
   const WorldExplore({super.key, required this.world, required this.onOpenSections});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
-    final feed = ref.watch(worldFeedProvider(world.slug));
-    return feed.when(
-      loading: () => Center(child: CircularProgressIndicator(color: world.accent)),
-      error: (_, __) => _CategoryFallback(world: world, lang: lang, onOpenSections: onOpenSections),
-      data: (data) {
-        final customSections = data.sections.where((section) => section.type != 'HERO_BANNER').toList();
-        final products = <Product>[
-          ...data.bestSellers,
-          ...data.newArrivals.where((p) => data.bestSellers.every((b) => b.id != p.id)),
-          ...data.promoProducts.where(
-            (p) => data.bestSellers.every((b) => b.id != p.id) && data.newArrivals.every((b) => b.id != p.id),
-          ),
-        ];
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 16),
-          children: [
-            if (data.banners.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _BannerStrip(banners: data.banners, accent: world.accent, lang: lang),
-            ],
-            if (world.categories.isNotEmpty) ...[
-              _EditorialTitle(title: lang == 'en' ? 'Index' : 'الفهرس', ink: world.ink, accent: world.accent),
-              _FeaturedSection(
-                category: world.categories.first,
+    final s = ref.s;
+    final feedAsync = ref.watch(worldFeedProvider(world.slug));
+    final data = feedAsync.valueOrNull;
+    final loading = data == null && !feedAsync.hasError;
+    final failed = data == null && feedAsync.hasError;
+
+    final customSections =
+        data?.sections.where((section) => section.type != 'HERO_BANNER').toList() ?? const [];
+    final products = data == null ? const <Product>[] : _mixed(data);
+    final name = world.localizedName(lang);
+
+    String shelfLink(String flag, String shelf) =>
+        '/products?$flag=1&world=${Uri.encodeComponent(world.slug)}'
+        '&title=${Uri.encodeComponent(s.worldShelfTitle(shelf, name))}';
+
+    return RefreshIndicator(
+      color: world.accent,
+      onRefresh: () => refreshWorld(ref, world.slug),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 16),
+        children: [
+          if (loading)
+            const Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(16, 12, 16, 0),
+              child: ShimmerBox(height: _bannerHeight, radius: AppCorners.md),
+            )
+          else if (data != null && data.banners.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _BannerStrip(banners: data.banners, world: world, lang: lang),
+          ],
+          // الفهرس من بيانات العالم نفسها — لا ينتظر الواجهة ولا يختفي إن فشلت.
+          if (world.categories.isNotEmpty) ...[
+            _EditorialTitle(title: s.worldIndexTitle, lang: lang, ink: world.ink, accent: world.accent),
+            _FeaturedSection(
+              category: world.categories.first,
+              lang: lang,
+              world: world,
+              onTap: () => onOpenSections(world.categories.first),
+            ),
+            for (var i = 1; i < world.categories.length; i++)
+              _IndexLine(
+                category: world.categories[i],
+                index: i + 1,
                 lang: lang,
-                accent: world.accent,
-                ink: world.ink,
-                onTap: () => onOpenSections(world.categories.first.id),
+                world: world,
+                onTap: () => onOpenSections(world.categories[i]),
               ),
-              for (var i = 1; i < world.categories.length; i++)
-                _IndexLine(
-                  category: world.categories[i],
-                  index: i + 1,
-                  lang: lang,
-                  ink: world.ink,
-                  accent: world.accent,
-                  onTap: () => onOpenSections(world.categories[i].id),
-                ),
-            ],
-            if (customSections.isNotEmpty)
-              for (final section in customSections)
-                HomeSectionWidget(key: ValueKey(section.id), section: section),
+          ],
+          if (loading) const _FeedSkeleton(),
+          if (failed)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: ErrorView.from(
+                feedAsync.error,
+                onRetry: () => ref.invalidate(worldFeedProvider(world.slug)),
+              ),
+            ),
+          if (data != null) ...[
+            for (final section in customSections)
+              HomeSectionWidget(key: ValueKey(section.id), section: section),
             if (customSections.isEmpty && data.bestSellers.isNotEmpty) ...[
-              _EditorialTitle(title: lang == 'en' ? 'Best sellers' : 'الأكثر مبيعاً', ink: world.ink, accent: world.accent),
-              _WorldProductStrip(products: data.bestSellers.take(12).toList(), lang: lang, accent: world.accent, ink: world.ink),
+              _EditorialTitle(title: s.worldBestSellers, lang: lang, ink: world.ink, accent: world.accent),
+              HomeProductRow(
+                products: data.bestSellers.take(12).toList(),
+                showPromoBadge: true,
+                viewAllLabel: s.viewAll,
+                onViewAll: () => context.push(shelfLink('isBestSeller', s.worldBestSellersTitle)),
+              ),
             ],
             if (customSections.isEmpty && data.newArrivals.isNotEmpty) ...[
-              _EditorialTitle(title: lang == 'en' ? 'Just in' : 'وصل حديثاً', ink: world.ink, accent: world.accent),
-              _WorldProductStrip(products: data.newArrivals.take(12).toList(), lang: lang, accent: world.accent, ink: world.ink),
+              _EditorialTitle(title: s.worldJustIn, lang: lang, ink: world.ink, accent: world.accent),
+              HomeProductRow(
+                products: data.newArrivals.take(12).toList(),
+                showPromoBadge: true,
+                viewAllLabel: s.viewAll,
+                onViewAll: () => context.push(shelfLink('isNew', s.worldJustInTitle)),
+              ),
             ],
             if (customSections.isEmpty && data.bestSellers.isEmpty && data.newArrivals.isEmpty && products.isNotEmpty) ...[
-              _EditorialTitle(title: lang == 'en' ? 'From this world' : 'من هذا العالم', ink: world.ink, accent: world.accent),
-              _WorldProductStrip(products: products.take(12).toList(), lang: lang, accent: world.accent, ink: world.ink),
+              _EditorialTitle(title: s.worldFromThisWorld, lang: lang, ink: world.ink, accent: world.accent),
+              HomeProductRow(
+                products: products.take(12).toList(),
+                showPromoBadge: true,
+                viewAllLabel: s.viewAll,
+                onViewAll: () => context.push(
+                  '/products?world=${Uri.encodeComponent(world.slug)}&title=${Uri.encodeComponent(name)}',
+                ),
+              ),
             ],
             if (customSections.isEmpty && data.brands.isNotEmpty) ...[
-              _EditorialTitle(title: lang == 'en' ? 'Brands' : 'البراندات', ink: world.ink, accent: world.accent),
+              _EditorialTitle(title: s.worldBrands, lang: lang, ink: world.ink, accent: world.accent),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final brand in data.brands)
-                      _BrandName(
-                        brand: brand,
-                        lang: lang,
-                        accent: world.accent,
-                        ink: world.ink,
-                      ),
+                    for (final brand in data.brands) _BrandName(brand: brand, lang: lang, world: world),
                   ],
                 ),
               ),
             ],
-            if (data.banners.isEmpty && products.isEmpty && world.categories.isEmpty)
+            if (data.banners.isEmpty && products.isEmpty && customSections.isEmpty && world.categories.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(28),
                 child: Text(
-                  lang == 'en' ? 'Link sections to this world from the admin' : 'اربطي أقسام هذا العالم من لوحة التحكم',
+                  s.worldComingSoon,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.w800, color: world.ink),
+                  style: AppText.title3.copyWith(color: world.ink),
                 ),
               ),
           ],
-        );
-      },
+        ],
+      ),
+    );
+  }
+
+  /// الأكثر مبيعاً ثم الجديد ثم العروض بلا تكرار — لرفّ «من هذا العالم».
+  static List<Product> _mixed(HomeFeed data) {
+    final seen = <String>{};
+    return [
+      for (final p in [...data.bestSellers, ...data.newArrivals, ...data.promoProducts])
+        if (seen.add(p.id)) p,
+    ];
+  }
+}
+
+/// مكان رفّ المنتجات أثناء وصول الواجهة — بنفس ارتفاعه.
+class _FeedSkeleton extends StatelessWidget {
+  const _FeedSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final width = Responsive.productCardWidth(context);
+    final height = Responsive.productCardHeight(context);
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 22),
+        child: SizedBox(
+          height: height + 4,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
+            itemCount: 3,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, __) => ShimmerBox(width: width, height: height, radius: AppCorners.md),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _BannerStrip extends StatefulWidget {
   final List<AppBanner> banners;
-  final Color accent;
+  final StoreWorld world;
   final String lang;
 
-  const _BannerStrip({required this.banners, required this.accent, required this.lang});
+  const _BannerStrip({required this.banners, required this.world, required this.lang});
 
   @override
   State<_BannerStrip> createState() => _BannerStripState();
@@ -142,12 +233,14 @@ class _BannerStripState extends State<_BannerStrip> {
   @override
   Widget build(BuildContext context) {
     final banners = widget.banners;
+    final accent = widget.world.accent;
     if (banners.length == 1) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _BannerCard(banner: banners.first, accent: widget.accent, lang: widget.lang, height: 132),
+        child: _BannerCard(banner: banners.first, world: widget.world, lang: widget.lang, height: _bannerHeight),
       );
     }
+    final motion = MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 260);
     return Column(
       children: [
         SizedBox(
@@ -157,47 +250,41 @@ class _BannerStripState extends State<_BannerStrip> {
             itemCount: banners.length,
             onPageChanged: (i) => setState(() => _index = i),
             itemBuilder: (_, i) {
-              final banner = banners[i];
               final active = i == _index;
               return AnimatedScale(
-                duration: const Duration(milliseconds: 260),
+                duration: motion,
                 curve: Curves.easeOutCubic,
                 scale: active ? 1.0 : 0.94,
                 child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 260),
+                  duration: motion,
                   opacity: active ? 1.0 : 0.55,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: _BannerCard(banner: banner, accent: widget.accent, lang: widget.lang, height: 122),
+                    child: _BannerCard(banner: banners[i], world: widget.world, lang: widget.lang, height: 122),
                   ),
                 ),
               );
             },
           ),
         ),
-        if (banners.length > 1) ...[
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < banners.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 240),
-                  curve: Curves.easeOutCubic,
-                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                  width: i == _index ? 16 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: i == _index ? widget.accent : widget.accent.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(99),
-                    boxShadow: i == _index
-                        ? [BoxShadow(color: widget.accent.withValues(alpha: 0.35), blurRadius: 6)]
-                        : null,
-                  ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < banners.length; i++)
+              AnimatedContainer(
+                duration: motion,
+                curve: Curves.easeOutCubic,
+                margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                width: i == _index ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: i == _index ? accent : accent.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
                 ),
-            ],
-          ),
-        ],
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -205,53 +292,60 @@ class _BannerStripState extends State<_BannerStrip> {
 
 class _BannerCard extends StatelessWidget {
   final AppBanner banner;
-  final Color accent;
+  final StoreWorld world;
   final String lang;
   final double height;
 
   const _BannerCard({
     required this.banner,
-    required this.accent,
+    required this.world,
     required this.lang,
     required this.height,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => openBannerLink(context, banner),
+    final title = banner.titleForLang(lang) ?? '';
+    // التعبئة ولون النص من لوحة العالم — تباين مقروء حتى مع الألوان الفاتحة كالذهبي.
+    final palette = WorldThemePalette.fromWorld(world);
+    return Semantics(
+      button: true,
+      label: title.isEmpty ? null : title,
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: world.surface,
+        borderRadius: BorderRadius.circular(AppCorners.md),
         clipBehavior: Clip.antiAlias,
         elevation: 1.5,
-        shadowColor: accent.withValues(alpha: 0.20),
-        child: SizedBox(
-          height: height,
-          width: double.infinity,
-          child: banner.hasImage
-              ? AppNetworkImage(url: banner.imageUrl, fit: BoxFit.cover, backgroundColor: Colors.white)
-              : DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [accent, Color.lerp(accent, Colors.black, 0.18)!],
+        shadowColor: world.accent.withValues(alpha: 0.20),
+        child: InkWell(
+          onTap: () => openBannerLink(context, banner),
+          child: SizedBox(
+            height: height,
+            width: double.infinity,
+            child: banner.hasImage
+                ? AppNetworkImage(url: banner.imageUrl, fit: BoxFit.cover, backgroundColor: Colors.white)
+                : DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: AlignmentDirectional.topStart,
+                        end: AlignmentDirectional.bottomEnd,
+                        colors: [palette.buttonFill, Color.lerp(palette.buttonFill, Colors.black, 0.12)!],
+                      ),
                     ),
-                  ),
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        banner.titleForLang(lang) ?? '',
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.title3.copyWith(fontSize: 16, fontWeight: FontWeight.w800, color: palette.onAccent),
+                        ),
                       ),
                     ),
                   ),
-                ),
+          ),
         ),
       ),
     );
@@ -260,10 +354,11 @@ class _BannerCard extends StatelessWidget {
 
 class _EditorialTitle extends StatelessWidget {
   final String title;
+  final String lang;
   final Color ink;
   final Color accent;
 
-  const _EditorialTitle({required this.title, required this.ink, required this.accent});
+  const _EditorialTitle({required this.title, required this.lang, required this.ink, required this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -277,6 +372,8 @@ class _EditorialTitle extends StatelessWidget {
               height: 1,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
                   colors: [Colors.transparent, line],
                 ),
               ),
@@ -284,9 +381,16 @@ class _EditorialTitle extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              title,
-              style: TextStyle(fontSize: 12, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: ink),
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: AppText.caption.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: tracking(lang, 0.8),
+                  color: ink,
+                ),
+              ),
             ),
           ),
           Expanded(
@@ -294,6 +398,8 @@ class _EditorialTitle extends StatelessWidget {
               height: 1,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
                   colors: [line, Colors.transparent],
                 ),
               ),
@@ -305,32 +411,33 @@ class _EditorialTitle extends StatelessWidget {
   }
 }
 
-class _FeaturedSection extends StatelessWidget {
+class _FeaturedSection extends ConsumerWidget {
   final Category category;
   final String lang;
-  final Color accent;
-  final Color ink;
+  final StoreWorld world;
   final VoidCallback onTap;
 
   const _FeaturedSection({
     required this.category,
     required this.lang,
-    required this.accent,
-    required this.ink,
+    required this.world,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final accent = world.accent;
+    final ink = world.ink;
     final count = category.children.length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
       child: Material(
-        color: Colors.white,
+        color: world.surface,
         elevation: 1.5,
         shadowColor: accent.withValues(alpha: 0.18),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppCorners.md),
           side: BorderSide(color: accent.withValues(alpha: 0.28)),
         ),
         clipBehavior: Clip.antiAlias,
@@ -339,36 +446,44 @@ class _FeaturedSection extends StatelessWidget {
             HapticFeedback.selectionClick();
             onTap();
           },
-          child: SizedBox(
-            height: 92,
+          child: ConstrainedBox(
+            // يتمدد مع تكبير الخط بدل أن يقصّ الاسم والعدد.
+            constraints: const BoxConstraints(minHeight: 92),
             child: Row(
               children: [
                 SizedBox(
                   width: 92,
                   height: 92,
                   child: ColoredBox(
-                    color: Color.alphaBlend(accent.withValues(alpha: 0.07), Colors.white),
+                    color: Color.alphaBlend(accent.withValues(alpha: 0.07), world.surface),
                     child: CategoryLineArt(category: category, size: 92),
                   ),
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('01', style: TextStyle(fontSize: 12, letterSpacing: 0.3, fontWeight: FontWeight.w800, color: accent)),
-                        const Spacer(),
+                        Text('01', style: AppText.caption.copyWith(fontWeight: FontWeight.w800, color: accent)),
+                        const SizedBox(height: 6),
                         Text(
                           category.localizedName(lang),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 16, height: 1.15, letterSpacing: -0.2, fontWeight: FontWeight.w800, color: ink),
+                          style: AppText.title3.copyWith(
+                            fontSize: 16,
+                            height: 1.2,
+                            letterSpacing: tracking(lang, -0.2),
+                            fontWeight: FontWeight.w800,
+                            color: ink,
+                          ),
                         ),
                         if (count > 0)
                           Text(
-                            AppStrings(lang).sectionCount(count),
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ink.withValues(alpha: 0.5)),
+                            s.sectionCount(count),
+                            style: AppText.micro.copyWith(fontWeight: FontWeight.w600, color: ink.withValues(alpha: 0.55)),
                           ),
                       ],
                     ),
@@ -376,11 +491,7 @@ class _FeaturedSection extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 12),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    size: 20,
-                    color: accent.withValues(alpha: 0.6),
-                  ),
+                  child: Icon(Icons.chevron_right_rounded, size: 20, color: accent.withValues(alpha: 0.6)),
                 ),
               ],
             ),
@@ -391,260 +502,89 @@ class _FeaturedSection extends StatelessWidget {
   }
 }
 
-class _IndexLine extends StatelessWidget {
+class _IndexLine extends ConsumerWidget {
   final Category category;
   final int index;
   final String lang;
-  final Color ink;
-  final Color accent;
+  final StoreWorld world;
   final VoidCallback onTap;
 
   const _IndexLine({
     required this.category,
     required this.index,
     required this.lang,
-    required this.ink,
-    required this.accent,
+    required this.world,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final accent = world.accent;
     final mark = index.toString().padLeft(2, '0');
     final count = category.children.length;
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: accent.withValues(alpha: 0.16))),
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 28,
-                child: Text(mark, style: TextStyle(fontSize: 12, letterSpacing: 0.2, fontWeight: FontWeight.w800, color: accent)),
-              ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: accent.withValues(alpha: 0.2)),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: ColoredBox(color: Colors.white, child: CategoryLineArt(category: category, size: 36)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  category.localizedName(lang),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 14, letterSpacing: -0.1, fontWeight: FontWeight.w700, color: ink),
-                ),
-              ),
-              if (count > 0)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      '$count',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent.withValues(alpha: 0.85)),
-                    ),
-                  ),
-                ),
-              Icon(
-                Icons.arrow_forward_rounded,
-                size: 16,
-                color: accent.withValues(alpha: 0.7),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WorldProductStrip extends StatelessWidget {
-  final List<Product> products;
-  final String lang;
-  final Color accent;
-  final Color ink;
-
-  const _WorldProductStrip({
-    required this.products,
-    required this.lang,
-    required this.accent,
-    required this.ink,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final lead = products.first;
-    final rest = products.skip(1).toList();
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _LeadProduct(product: lead, lang: lang, accent: accent, ink: ink),
-        ),
-        if (rest.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 206,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: rest.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, i) => _WorldProductTile(product: rest[i], lang: lang, accent: accent, ink: ink),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _LeadProduct extends StatelessWidget {
-  final Product product;
-  final String lang;
-  final Color accent;
-  final Color ink;
-
-  const _LeadProduct({
-    required this.product,
-    required this.lang,
-    required this.accent,
-    required this.ink,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(side: BorderSide(color: accent.withValues(alpha: 0.28))),
-      clipBehavior: Clip.antiAlias,
+    return Semantics(
+      button: true,
+      label: category.localizedName(lang),
+      hint: count > 0 ? s.sectionCount(count) : null,
+      excludeSemantics: true,
       child: InkWell(
-        onTap: () => openProduct(context, product),
-        child: SizedBox(
-          height: 108,
-          child: Row(
-            children: [
-              SizedBox(
-                width: 108,
-                height: 108,
-                child: AppNetworkImage(url: product.coverUrl, fit: BoxFit.contain, backgroundColor: Colors.white),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.localizedName(lang),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 14, height: 1.25, fontWeight: FontWeight.w800, color: ink),
-                      ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              formatPrice(product.price),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: ink),
-                            ),
-                          ),
-                          ProductCardCartControl(product: product, compact: true, style: ProductCardCartStyle.homeBadge),
-                        ],
-                      ),
-                    ],
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: accent.withValues(alpha: 0.16))),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 28,
+                  child: Text(mark, style: AppText.caption.copyWith(fontWeight: FontWeight.w800, color: accent)),
+                ),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppCorners.xs),
+                    border: Border.all(color: accent.withValues(alpha: 0.2)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ColoredBox(color: world.surface, child: CategoryLineArt(category: category, size: 36)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    category.localizedName(lang),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.label.copyWith(fontSize: 14, color: world.ink),
                   ),
                 ),
-              ),
-            ],
+                if (count > 0)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppCorners.pill),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: AppText.micro.copyWith(color: accent.withValues(alpha: 0.9)),
+                      ),
+                    ),
+                  ),
+                Icon(Icons.arrow_forward_rounded, size: 16, color: accent.withValues(alpha: 0.7)),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _WorldProductTile extends StatelessWidget {
-  final Product product;
-  final String lang;
-  final Color accent;
-  final Color ink;
-
-  const _WorldProductTile({
-    required this.product,
-    required this.lang,
-    required this.accent,
-    required this.ink,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 124,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: () => openProduct(context, product),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: accent, width: 2)),
-              ),
-              child: SizedBox(
-                width: 124,
-                height: 124,
-                child: AppNetworkImage(url: product.coverUrl, fit: BoxFit.contain, backgroundColor: Colors.white),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          // مرن: مع تكبير الخط يتقلّص الاسم بدل أن يدفع السعر خارج البطاقة.
-          Flexible(
-            child: Text(
-              product.localizedName(lang),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, height: 1.25, fontWeight: FontWeight.w700, color: ink),
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  formatPrice(product.price),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: ink),
-                ),
-              ),
-              ProductCardCartControl(product: product, compact: true, style: ProductCardCartStyle.homeBadge),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -653,50 +593,34 @@ class _WorldProductTile extends StatelessWidget {
 class _BrandName extends StatelessWidget {
   final Brand brand;
   final String lang;
-  final Color accent;
-  final Color ink;
-
-  const _BrandName({
-    required this.brand,
-    required this.lang,
-    required this.accent,
-    required this.ink,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        context.push('/products?brandId=${brand.id}&title=${Uri.encodeComponent(brand.localizedName(lang))}');
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: accent.withValues(alpha: 0.28)),
-        ),
-        child: Text(
-          brand.localizedName(lang),
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: ink),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryFallback extends StatelessWidget {
   final StoreWorld world;
-  final String lang;
-  final void Function(String? categoryId) onOpenSections;
 
-  const _CategoryFallback({required this.world, required this.lang, required this.onOpenSections});
+  const _BrandName({required this.brand, required this.lang, required this.world});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: TextButton(
-        onPressed: () => onOpenSections(null),
-        child: Text(lang == 'en' ? 'Browse sections' : 'تصفّح الأقسام', style: TextStyle(color: world.accent, fontWeight: FontWeight.w800)),
+    final name = brand.localizedName(lang);
+    final shape = StadiumBorder(side: BorderSide(color: world.accent.withValues(alpha: 0.28)));
+    return Material(
+      color: world.surface,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        customBorder: shape,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.push('/products?brandId=${brand.id}&title=${Uri.encodeComponent(name)}');
+        },
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: kMinTapTarget),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Center(
+              widthFactor: 1,
+              child: Text(name, style: AppText.label.copyWith(fontSize: 12.5, color: world.ink)),
+            ),
+          ),
+        ),
       ),
     );
   }

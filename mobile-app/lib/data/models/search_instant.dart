@@ -130,18 +130,6 @@ enum SearchSort {
 
   final String api;
   const SearchSort(this.api);
-
-  /// عربي فقط — للواجهة استخدمي نص الترتيب المترجم في SearchStringsX.
-  @Deprecated('Arabic-only label; use the localized sort label from SearchStringsX')
-  String get label => switch (this) {
-        SearchSort.relevance => 'الأنسب',
-        SearchSort.priceAsc => 'الأرخص',
-        SearchSort.priceDesc => 'الأغلى',
-        SearchSort.best => 'الأكثر مبيعاً',
-        SearchSort.rating => 'الأعلى تقييماً',
-        SearchSort.newest => 'الأحدث',
-        SearchSort.discount => 'أعلى خصم',
-      };
 }
 
 /// فلاتر صفحة النتائج.

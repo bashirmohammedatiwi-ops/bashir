@@ -238,7 +238,16 @@ class AdvisorRoutine {
   final String emoji;
   /// براند الخط المتناسق (إن كانت أغلب الخطوات منه).
   final String? brand;
-  const AdvisorRoutine({required this.title, required this.steps, required this.total, this.emoji = '🧖‍♀️', this.brand});
+  /// الروتين كما وصل — لحفظه في «روتيناتي» وإعادة عرضه لاحقاً.
+  final Map<String, dynamic> raw;
+  const AdvisorRoutine({
+    required this.title,
+    required this.steps,
+    required this.total,
+    this.emoji = '🧖‍♀️',
+    this.brand,
+    this.raw = const {},
+  });
 
   /// لوك مكياج (قطع) لا روتين عناية (خطوات صباح/مساء).
   bool get isLook => steps.isNotEmpty && steps.every((s) => s.when == 'any');
@@ -249,6 +258,7 @@ class AdvisorRoutine {
         total: asInt(j['total']),
         emoji: asString(j['emoji'], '🧖‍♀️'),
         brand: (j['brand']?.toString().isNotEmpty ?? false) ? j['brand'].toString() : null,
+        raw: j,
       );
 }
 
@@ -385,5 +395,9 @@ class UserEntry extends AdvisorEntry {
 
 class BotEntry extends AdvisorEntry {
   final AdvisorReply reply;
-  const BotEntry(this.reply);
+  /// معرّف ثابت (يُحفظ مع المحادثة) — تُربط به حالة «قيّمتِ» و«أضفتِ» فلا تضيع بالتمرير أو الاستعادة.
+  final int id;
+  /// رد الترحيب الافتتاحي — وحده يُعرض بواجهة الترحيب.
+  final bool welcome;
+  const BotEntry(this.reply, {this.id = 0, this.welcome = false});
 }

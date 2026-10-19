@@ -7,6 +7,8 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../home_link.dart';
 import '../widgets/circle_tile.dart';
+import '../../worlds/world_theme.dart';
+import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
 /// شريط مشاكل البشرة — pills / circles / cards بأسلوب Beautief.
@@ -36,7 +38,7 @@ class SkinConcernsStrip extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showTitle && title != null && title!.isNotEmpty)
-          HomeEditorialHeader(title: title!, compact: true),
+          HomeSectionHeader(title: title!, subtitle: subtitle, compact: true),
         if (display == 'circles') _CirclesRow(concerns: concerns, lang: lang),
         if (display == 'cards') _CardsList(concerns: concerns, lang: lang),
         if (display != 'circles' && display != 'cards')
@@ -92,10 +94,15 @@ class _CirclesRow extends StatelessWidget {
 
   const _CirclesRow({required this.concerns, required this.lang});
 
+  /// دائرة 68 + فراغ 8 + سطرا الاسم بخط 11 (ارتفاع سطر 1.15) بمقياس خط الجهاز —
+  /// فلا يُقصّ الاسم الطويل عند تكبير الخط.
+  static double _height(BuildContext context) =>
+      68 + 8 + MediaQuery.textScalerOf(context).scale(11) * 1.15 * 2 + 4;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 100,
+      height: _height(context),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
@@ -124,6 +131,7 @@ class _CardsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return SizedBox(
       height: 116,
       child: ListView.separated(
@@ -135,8 +143,11 @@ class _CardsList extends StatelessWidget {
           final c = concerns[i];
           final description = c.localizedDescription(lang);
           return Material(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
+            color: t.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(HomeTheme.radiusCard),
+              side: BorderSide(color: t.divider),
+            ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () => _openConcern(context, c),
@@ -150,7 +161,7 @@ class _CardsList extends StatelessWidget {
                       child: c.imageUrl.isNotEmpty
                           ? AppNetworkImage(url: c.imageUrl, fit: BoxFit.cover)
                           : ColoredBox(
-                              color: HomeTheme.blush,
+                              color: t.accentLight,
                               child: Center(
                                 child: Text(
                                   c.icon ?? '✨',
@@ -170,7 +181,7 @@ class _CardsList extends StatelessWidget {
                               c.localizedName(lang),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: HomeTheme.chipLabel,
+                              style: HomeTheme.chipLabel.copyWith(color: t.ink),
                             ),
                             if (description.isNotEmpty) ...[
                               const SizedBox(height: 4),
@@ -178,7 +189,7 @@ class _CardsList extends StatelessWidget {
                                 description,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: HomeTheme.body(size: 11),
+                                style: HomeTheme.body(size: 11, color: t.inkSoft),
                               ),
                             ],
                           ],

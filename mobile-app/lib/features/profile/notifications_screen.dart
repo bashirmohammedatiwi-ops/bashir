@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/navigation/notification_navigation.dart';
+import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/responsive_app.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/notification.dart';
@@ -47,88 +48,188 @@ class NotificationsScreen extends ConsumerWidget {
 
     return ProfileScaffold(
       title: s.notifications,
-      body: async.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: context.worldTheme.accent),
-        ),
-        error: (e, _) => ErrorView.from(
-          e,
-          onRetry: () => ref.invalidate(notificationsProvider),
-        ),
-        data: (list) {
-          if (list.isEmpty) {
+      // نصوص للقراءة: تتبع تكبير الخط في النظام حتى 1.6.
+      body: LargeTextScope(
+        child: async.when(
+          loading: () => Center(
+            child: CircularProgressIndicator(color: context.worldTheme.accent),
+          ),
+          error: (e, _) => ErrorView.from(
+            e,
+            onRetry: () => ref.invalidate(notificationsProvider),
+          ),
+          data: (list) {
+            if (list.isEmpty) {
+              return RefreshIndicator(
+                color: context.worldTheme.accent,
+                onRefresh: () => _refresh(ref),
+                child: ProfileEmptyState(
+                  icon: Icons.notifications_none_rounded,
+                  title: s.noNotifications,
+                  subtitle: s.notificationsEmptySubtitle,
+                  action: ProfilePrimaryButton(
+                    label: s.acctBrowseOffers,
+                    onPressed: () => openOffersTab(
+                      context,
+                      ProviderScope.containerOf(context, listen: false),
+                    ),
+                  ),
+                ),
+              );
+            }
             return RefreshIndicator(
               color: context.worldTheme.accent,
               onRefresh: () => _refresh(ref),
-              child: ProfileEmptyState(
-                icon: Icons.notifications_none_rounded,
-                title: s.noNotifications,
-                subtitle: s.notificationsEmptySubtitle,
-                action: ProfilePrimaryButton(
-                  label: s.isAr ? 'تصفحي العروض' : 'Browse offers',
-                  onPressed: () => openOffersTab(context, ProviderScope.containerOf(context, listen: false)),
-                ),
-              ),
+              child: _NotificationsList(list: list, unread: unread),
             );
-          }
-          return RefreshIndicator(
-            color: context.worldTheme.accent,
-            onRefresh: () => _refresh(ref),
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              slivers: [
-                // الإشعارات مرفوضة على الجهاز: دعوة لتفعيلها فوق القائمة.
-                const SliverPadding(
-                  padding: EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 0),
-                  sliver: SliverToBoxAdapter(child: NotificationPermissionTile()),
-                ),
-                if (unread > 0)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        ProfileUi.hPad,
-                        16,
-                        ProfileUi.hPad,
-                        0,
-                      ),
-                      child: _UnreadSummary(
-                        count: unread,
-                        label: s.acctNewNotifications(unread),
-                        actionLabel: s.markAllRead,
-                        // فوراً على الجهاز، والسيرفر في الخلفية.
-                        onMarkAll: () => ref.read(notificationsProvider.notifier).markAllRead(),
-                      ),
-                    ),
-                  ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    ProfileUi.hPad,
-                    16,
-                    ProfileUi.hPad,
-                    28,
-                  ),
-                  sliver: SliverList.separated(
-                    itemCount: list.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) {
-                      // آخر بطاقة ظهرت: الصفحة التالية (الدالة تتجاهل الطلب المكرر).
-                      if (i == list.length - 1) {
-                        final notifier = ref.read(notificationsProvider.notifier);
-                        if (notifier.hasMore) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) => notifier.loadMore());
-                        }
-                      }
-                      return _NotificationCard(notification: list[i], s: s);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+          },
+        ),
       ),
+    );
+  }
+}
+
+/// القائمة مع الصفحات التالية: تُطلب تلقائياً قرب آخر عنصر، وإن فشل الطلب (بلا
+/// اتصال) يظهر زر «عرض المزيد» بدل مؤشر يدور بلا نهاية أو محاولات متكررة.
+class _NotificationsList extends ConsumerStatefulWidget {
+  final List<AppNotification> list;
+  final int unread;
+
+  const _NotificationsList({required this.list, required this.unread});
+
+  @override
+  ConsumerState<_NotificationsList> createState() => _NotificationsListState();
+}
+
+class _NotificationsListState extends ConsumerState<_NotificationsList> {
+  bool _loadingMore = false;
+  bool _loadFailed = false;
+
+  @override
+  void didUpdateWidget(covariant _NotificationsList old) {
+    super.didUpdateWidget(old);
+    // سحب للتحديث أعاد الصفحة الأولى: محاولة تلقائية جديدة مسموحة.
+    if (widget.list.length < old.list.length) _loadFailed = false;
+  }
+
+  void _autoLoad() {
+    if (_loadingMore || _loadFailed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadMore();
+    });
+  }
+
+  Future<void> _loadMore() async {
+    final notifier = ref.read(notificationsProvider.notifier);
+    if (_loadingMore || !notifier.hasMore) return;
+    final before = widget.list.length;
+    setState(() {
+      _loadingMore = true;
+      _loadFailed = false;
+    });
+    await notifier.loadMore();
+    if (!mounted) return;
+    final after = ref.read(notificationsProvider).valueOrNull?.length ?? before;
+    setState(() {
+      _loadingMore = false;
+      // لم يصل شيء والمزيد ما زال موجوداً: فشل — ننتظر ضغطة الزر.
+      _loadFailed = notifier.hasMore && after <= before;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final list = widget.list;
+    final unread = widget.unread;
+    final hasMore = ref.read(notificationsProvider.notifier).hasMore;
+
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      slivers: [
+        // الإشعارات مرفوضة على الجهاز: دعوة لتفعيلها فوق القائمة.
+        // (البطاقة تضيف مسافتها السفلية بنفسها حين تظهر.)
+        const SliverPadding(
+          padding: EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 0),
+          sliver: SliverToBoxAdapter(
+            child: NotificationPermissionTile(standalone: true),
+          ),
+        ),
+        if (unread > 0)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: ProfileUi.hPad),
+            sliver: SliverToBoxAdapter(
+              child: _UnreadSummary(
+                count: unread,
+                label: s.acctNewNotifications(unread),
+                actionLabel: s.markAllRead,
+                // فوراً على الجهاز، والسيرفر في الخلفية.
+                onMarkAll: () =>
+                    ref.read(notificationsProvider.notifier).markAllRead(),
+              ),
+            ),
+          ),
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            ProfileUi.hPad,
+            unread > 0 ? 14 : 0,
+            ProfileUi.hPad,
+            hasMore ? 12 : 28,
+          ),
+          sliver: SliverList.separated(
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) {
+              // قرب آخر القائمة: الصفحة التالية مسبقاً.
+              if (hasMore && i >= list.length - 3) _autoLoad();
+              return _NotificationCard(
+                key: ValueKey(list[i].id),
+                notification: list[i],
+                s: s,
+              );
+            },
+          ),
+        ),
+        if (hasMore)
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 28),
+            sliver: SliverToBoxAdapter(
+              child: SizedBox(
+                height: kMinTapTarget,
+                child: Center(
+                  child: _loadingMore
+                      ? SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: t.accent,
+                          ),
+                        )
+                      : TextButton.icon(
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            _loadMore();
+                          },
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, kMinTapTarget),
+                            foregroundColor: t.accentDark,
+                            shape: const StadiumBorder(),
+                          ),
+                          icon: const Icon(Icons.expand_more_rounded, size: 20),
+                          label: Text(
+                            s.acctShowMore,
+                            style: AppText.label.copyWith(color: t.accentDark),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -189,39 +290,91 @@ class _UnreadSummary extends StatelessWidget {
   }
 }
 
-class _NotificationCard extends ConsumerWidget {
+class _NotificationCard extends ConsumerStatefulWidget {
   final AppNotification notification;
   final AppStrings s;
-  const _NotificationCard({required this.notification, required this.s});
+  const _NotificationCard({
+    super.key,
+    required this.notification,
+    required this.s,
+  });
 
-  IconData get _icon => switch (notification.type.toUpperCase()) {
-    'OFFER' || 'PROMO' => Icons.local_offer_rounded,
-    'NEW_ARRIVAL' => Icons.auto_awesome_rounded,
-    'REMINDER' => Icons.campaign_rounded,
-    _ => Icons.notifications_active_rounded,
-  };
+  @override
+  ConsumerState<_NotificationCard> createState() => _NotificationCardState();
+}
 
-  String get _typeLabel => switch (notification.type.toUpperCase()) {
-    'OFFER' || 'PROMO' => s.acctNotifOffer,
-    'NEW_ARRIVAL' => s.acctNotifNew,
-    'REMINDER' => s.acctNotifReminder,
-    _ => s.acctNotifGeneral,
-  };
+class _NotificationCardState extends ConsumerState<_NotificationCard> {
+  static const _collapsedLines = 4;
 
-  void _open(BuildContext context, WidgetRef ref) {
+  /// إشعار بلا رابط: اللمسة تفتح نصه كاملاً بدل أن لا تفعل شيئاً.
+  bool _expanded = false;
+
+  AppNotification get notification => widget.notification;
+  AppStrings get s => widget.s;
+
+  /// تنبيهات التوفّر وانخفاض السعر تصل «تذكيراً» برابط منتج — نميّزها بشكلها.
+  bool get _isProductAlert =>
+      notification.type.toUpperCase() == 'REMINDER' &&
+      (notification.linkType ?? '').toUpperCase() == 'PRODUCT';
+
+  IconData get _icon {
+    if (_isProductAlert) return Icons.notifications_active_outlined;
+    return switch (notification.type.toUpperCase()) {
+      'OFFER' || 'PROMO' => Icons.local_offer_rounded,
+      'NEW_ARRIVAL' => Icons.auto_awesome_rounded,
+      'REMINDER' => Icons.campaign_rounded,
+      _ => Icons.notifications_rounded,
+    };
+  }
+
+  String get _typeLabel {
+    if (_isProductAlert) return s.acctNotifProductAlert;
+    return switch (notification.type.toUpperCase()) {
+      'OFFER' || 'PROMO' => s.acctNotifOffer,
+      'NEW_ARRIVAL' => s.acctNotifNew,
+      'REMINDER' => s.acctNotifReminder,
+      _ => s.acctNotifGeneral,
+    };
+  }
+
+  void _onTap(bool hasLink) {
+    HapticFeedback.selectionClick();
     // الوجهة أولاً بلا انتظار، ثم «مقروء» فوراً على الجهاز والسيرفر في الخلفية.
-    openNotificationLink(context, notification);
-    if (!notification.read) ref.read(notificationsProvider.notifier).markRead(notification.id);
+    if (hasLink) {
+      openNotificationLink(context, notification);
+    } else {
+      setState(() => _expanded = !_expanded);
+    }
+    if (!notification.read) {
+      ref.read(notificationsProvider.notifier).markRead(notification.id);
+    }
+  }
+
+  /// هل يتجاوز النص الأسطر المطوية؟ (لإظهار «عرض المزيد» فقط حين يلزم)
+  bool _bodyOverflows(BoxConstraints c, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: notification.body, style: style),
+      maxLines: _collapsedLines,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: c.maxWidth);
+    final overflows = painter.didExceedMaxLines;
+    painter.dispose();
+    return overflows;
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final t = context.worldTheme;
     final imageUrl = notification.resolvedImageUrl;
     final hasImage = imageUrl != null && imageUrl.isNotEmpty;
     final linkHint = notification.linkHintFor(s);
+    final hasLink = linkHint != null;
     final unread = !notification.read;
     final radius = BorderRadius.circular(AppCorners.lg);
+    final bodyStyle = AppText.bodySmall.copyWith(
+      color: unread ? t.ink : t.inkSoft,
+    );
 
     return Semantics(
       button: true,
@@ -241,10 +394,7 @@ class _NotificationCard extends ConsumerWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              _open(context, ref);
-            },
+            onTap: () => _onTap(hasLink),
             borderRadius: radius,
             child: ClipRRect(
               borderRadius: radius,
@@ -254,18 +404,13 @@ class _NotificationCard extends ConsumerWidget {
                   if (hasImage)
                     Stack(
                       children: [
-                        CachedNetworkImage(
-                          imageUrl: imageUrl,
+                        // يُفكّ بعرض البطاقة فقط (لا بحجم الصورة الأصلي).
+                        AppNetworkImage(
+                          url: imageUrl,
                           height: 152,
-                          width: double.infinity,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) =>
-                              Container(height: 152, color: t.accentLight),
-                          errorWidget: (_, __, ___) => Container(
-                            height: 152,
-                            color: t.accentLight,
-                            child: Icon(_icon, color: t.accentDark, size: 40),
-                          ),
+                          placeholderColor: t.accentLight,
+                          fallbackColor: t.accentLight,
                         ),
                         PositionedDirectional(
                           top: 10,
@@ -308,13 +453,52 @@ class _NotificationCard extends ConsumerWidget {
                                   ),
                                   if (notification.body.isNotEmpty) ...[
                                     const SizedBox(height: 4),
-                                    Text(
-                                      notification.body,
-                                      maxLines: 4,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppText.bodySmall.copyWith(
-                                        color: unread ? t.ink : t.inkSoft,
-                                      ),
+                                    LayoutBuilder(
+                                      builder: (context, c) {
+                                        final canExpand =
+                                            !hasLink &&
+                                            _bodyOverflows(c, bodyStyle);
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            AnimatedSize(
+                                              duration:
+                                                  MediaQuery.disableAnimationsOf(
+                                                    context,
+                                                  )
+                                                  ? Duration.zero
+                                                  : const Duration(
+                                                      milliseconds: 220,
+                                                    ),
+                                              curve: Curves.easeOutCubic,
+                                              alignment:
+                                                  AlignmentDirectional.topStart,
+                                              child: Text(
+                                                notification.body,
+                                                maxLines: _expanded
+                                                    ? null
+                                                    : _collapsedLines,
+                                                overflow: _expanded
+                                                    ? TextOverflow.visible
+                                                    : TextOverflow.ellipsis,
+                                                style: bodyStyle,
+                                              ),
+                                            ),
+                                            if (canExpand) ...[
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                _expanded
+                                                    ? s.acctShowLess
+                                                    : s.acctShowMore,
+                                                style: AppText.label.copyWith(
+                                                  color: t.accentDark,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        );
+                                      },
                                     ),
                                   ],
                                 ],
@@ -387,12 +571,15 @@ class _NotificationCard extends ConsumerWidget {
                                 color: t.inkMuted,
                               ),
                             ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 20,
-                              color: t.inkMuted,
-                            ),
+                            // السهم فقط حين تفتح اللمسة شيئاً فعلاً.
+                            if (hasLink) ...[
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 20,
+                                color: t.inkMuted,
+                              ),
+                            ],
                           ],
                         ),
                       ],

@@ -2,22 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/brand/brand_logo.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../advisor_strings.dart';
 import 'advisor_orb.dart';
 import 'advisor_style.dart';
 
 /// زر «ديما» العائم: كرة حية، وعند أول ظهور تعرّف بنفسها ثم تنكمش.
-class AdvisorLauncher extends StatefulWidget {
+/// «ديما» تتكلم العربية فقط — الزر لا يظهر في الواجهة الإنجليزية.
+class AdvisorLauncher extends ConsumerStatefulWidget {
   final bool visible;
   const AdvisorLauncher({super.key, this.visible = true});
 
   @override
-  State<AdvisorLauncher> createState() => _AdvisorLauncherState();
+  ConsumerState<AdvisorLauncher> createState() => _AdvisorLauncherState();
 }
 
-class _AdvisorLauncherState extends State<AdvisorLauncher> {
+class _AdvisorLauncherState extends ConsumerState<AdvisorLauncher> {
   bool _expanded = false;
   Timer? _timer;
 
@@ -48,22 +52,28 @@ class _AdvisorLauncherState extends State<AdvisorLauncher> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
+    if (!s.isAr) return const SizedBox.shrink();
+    // «تقليل الحركة»: تظهر وتختفي وتتمدد بلا انزلاق.
+    final still = MediaQuery.disableAnimationsOf(context);
+    Duration d(int ms) => still ? Duration.zero : Duration(milliseconds: ms);
     return IgnorePointer(
       ignoring: !widget.visible,
       child: AnimatedSlide(
-        duration: const Duration(milliseconds: 320),
+        duration: d(320),
         curve: Curves.easeOutCubic,
         offset: widget.visible ? Offset.zero : const Offset(0, 0.6),
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 220),
+          duration: d(220),
           opacity: widget.visible ? 1 : 0,
           child: Semantics(
             button: true,
-            label: 'افتحي ديما، مستشارتكِ للجمال',
+            label: s.advisorLauncherSemantics,
+            excludeSemantics: true,
             child: GestureDetector(
               onTap: _open,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 420),
+                duration: d(420),
                 curve: Curves.easeOutCubic,
                 padding: EdgeInsetsDirectional.fromSTEB(_expanded ? 16 : 3, 3, 3, 3),
                 decoration: BoxDecoration(
@@ -79,7 +89,7 @@ class _AdvisorLauncherState extends State<AdvisorLauncher> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedSize(
-                      duration: const Duration(milliseconds: 420),
+                      duration: d(420),
                       curve: Curves.easeOutCubic,
                       child: _expanded
                           ? Padding(
@@ -88,8 +98,8 @@ class _AdvisorLauncherState extends State<AdvisorLauncher> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  AdvisorGradientText('اسألي ديما', style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.2)),
-                                  Text('مستشارتكِ للجمال',
+                                  AdvisorGradientText(s.advisorLauncherTitle, style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.2)),
+                                  Text(s.advisorLauncherSubtitle,
                                       style: AdvisorStyle.text(size: 10.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.3)),
                                 ],
                               ),

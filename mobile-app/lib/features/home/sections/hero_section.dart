@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-import '../../beauty/beauty_home_sections.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
@@ -13,14 +12,11 @@ import '../../../data/models/store_world.dart';
 import '../../catalog/catalog_providers.dart';
 import '../home_category_filter.dart';
 import '../home_link.dart';
-import '../../worlds/worlds_home_band.dart';
 import '../../worlds/worlds_provider.dart';
 import '../../worlds/world_theme.dart';
 import '../widgets/home_hero_header.dart';
 import '../widgets/world_banner_carousel.dart';
 import '../widgets/world_showcase.dart';
-import '../widgets/home_extras.dart';
-import '../widgets/home_features.dart';
 import '../widgets/home_banner_stage.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
@@ -158,16 +154,8 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                             accent: world?.accent,
                             worldSections: true,
                           ),
-                        const HomeCartReminder(),
-                        const HomeCouponsShelf(),
-                        const HomeMyRoutineCard(),
-                        const HomePromiseStrip(),
-                        const HomeBuyAgainShelf(),
-                        const HomeContinueShopping(),
-                        const HomeWishlistShelf(),
-                        const WorldHomeBrands(),
-                        const HomeBudgetShelf(),
-                        const GiftWorldHomeCard(),
+                        // الرفوف الشخصية (السلة، الكوبونات، المفضلة…) فتحات مستقلة
+                        // في قائمة الرئيسية — لا تُنسخ هنا مرتين أثناء تبديل العالم.
                         const SizedBox(height: 18),
                       ],
                     ),
@@ -307,21 +295,6 @@ List<Category> _normalizeCategories(List<Category> raw) {
     if (seen.add(c.id)) out.add(c);
   }
   return out;
-}
-
-double categoryGridHeight(int count) => 0;
-
-class QuickCategoryGrid extends ConsumerWidget {
-  final List<Category> categories;
-  const QuickCategoryGrid({super.key, required this.categories});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return HomeCategoryGrid(
-      categories: categories,
-      title: ref.s.categoriesTitle,
-    );
-  }
 }
 
 class CategoryGridSection extends ConsumerWidget {

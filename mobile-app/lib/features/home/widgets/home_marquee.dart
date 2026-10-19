@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
-/// شريط نص متحرك — نشرة إخبارية (RTL).
+/// شريط نص متحرك — نشرة إخبارية تتبع اتجاه اللغة:
+/// بالعربي يتحرك نحو اليمين (يدخل من اليسار)، وبالإنجليزي نحو اليسار.
 class HomeMarquee extends StatefulWidget {
   final String text;
   final TextStyle style;
@@ -21,30 +24,44 @@ class HomeMarquee extends StatefulWidget {
   State<HomeMarquee> createState() => _HomeMarqueeState();
 }
 
-class _HomeMarqueeState extends State<HomeMarquee>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  double _loopWidth = 320;
+class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  double _loopWidth = 0;
   double _textHeight = 20;
 
-  TextPainter _buildPainter(String text) => TextPainter(
-    text: TextSpan(text: text, style: widget.style),
-    textDirection: TextDirection.rtl,
-    maxLines: 1,
-  )..layout();
+  TextScaler? _scaler;
+  TextDirection? _direction;
+  TextStyle? _baseStyle;
+  bool _reduceMotion = false;
 
-  double _contentHeight(TextPainter painter) {
-    final fontSize = widget.style.fontSize ?? 14;
-    // Emojis and Arabic glyphs can exceed fontSize * height — keep a small buffer.
-    final buffer = (fontSize * 0.45).clamp(3.0, 10.0);
-    return painter.height + buffer;
-  }
+  String get _segment => '${widget.text}${widget.gap}';
+
+  /// النمط الفعلي كما سيرسمه Text (مع DefaultTextStyle) — القياس يطابق الرسم.
+  TextStyle get _effectiveStyle => (_baseStyle ?? const TextStyle()).merge(widget.style);
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    final base = DefaultTextStyle.of(context).style;
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    if (scaler != _scaler ||
+        direction != _direction ||
+        base != _baseStyle ||
+        reduce != _reduceMotion) {
+      _scaler = scaler;
+      _direction = direction;
+      _baseStyle = base;
+      _reduceMotion = reduce;
+      _measureAndStart();
+    }
   }
 
   @override
@@ -54,27 +71,41 @@ class _HomeMarqueeState extends State<HomeMarquee>
         old.speed != widget.speed ||
         old.style != widget.style ||
         old.gap != widget.gap) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
+      _measureAndStart();
     }
   }
 
+  /// يقيس المقطع بنفس مقياس الخط واتجاه النص المعروضين — الحلقة تلتحم بلا قفزة.
+  /// يُستدعى من didChangeDependencies/didUpdateWidget، ويتبعهما build تلقائياً.
   void _measureAndStart() {
-    if (!mounted || widget.text.trim().isEmpty) return;
+    if (widget.text.trim().isEmpty) {
+      _ctrl.stop();
+      return;
+    }
 
-    final segment = '${widget.text}${widget.gap}';
-    final painter = _buildPainter(segment);
+    final painter = TextPainter(
+      text: TextSpan(text: _segment, style: _effectiveStyle),
+      textDirection: _direction ?? TextDirection.rtl,
+      textScaler: _scaler ?? TextScaler.noScaling,
+      maxLines: 1,
+    )..layout();
+    final w = painter.width;
+    final fontSize = (_scaler ?? TextScaler.noScaling).scale(_effectiveStyle.fontSize ?? 14);
+    // الإيموجي والحروف العربية قد تتجاوز ارتفاع السطر — هامش صغير.
+    final h = painter.height + (fontSize * 0.45).clamp(3.0, 10.0);
+    painter.dispose();
 
-    final w = painter.width.clamp(120.0, 4000.0);
-    final h = _contentHeight(painter);
+    _loopWidth = w;
+    _textHeight = h;
+
+    _ctrl.stop();
+    if (_reduceMotion || w <= 0) {
+      _ctrl.value = 0;
+      return;
+    }
     final pxPerSec = 18 + widget.speed.clamp(1, 10) * 8;
     final ms = ((w / pxPerSec) * 1000).round().clamp(4000, 90000);
-
-    setState(() {
-      _loopWidth = w;
-      _textHeight = h;
-    });
     _ctrl
-      ..stop()
       ..duration = Duration(milliseconds: ms)
       ..repeat();
   }
@@ -89,40 +120,60 @@ class _HomeMarqueeState extends State<HomeMarquee>
   Widget build(BuildContext context) {
     if (widget.text.trim().isEmpty) return const SizedBox.shrink();
 
-    final segment = '${widget.text}${widget.gap}';
-
-    // OverflowBox: النص المتحرك أعرض من الشريط عمداً — لا قيود عرض ولا تحذير تجاوز.
-    // الحركة نحو اليمين: النص العربي يدخل من اليسار ويتقدّم باتجاه بداية القراءة.
-    return ClipRect(
-      child: SizedBox(
+    // «تقليل الحركة»: نص ثابت بسطر واحد مع «…».
+    if (_reduceMotion) {
+      return SizedBox(
         height: _textHeight,
-        child: OverflowBox(
-          alignment: Alignment.centerRight,
-          maxWidth: double.infinity,
-          child: AnimatedBuilder(
-            animation: _ctrl,
-            builder: (_, child) => Transform.translate(
-              offset: Offset(_ctrl.value * _loopWidth, 0),
-              child: child,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              textDirection: TextDirection.rtl,
-              children: [
-                Text(
-                  segment,
-                  style: widget.style,
-                  maxLines: 1,
-                  softWrap: false,
-                ),
-                Text(
-                  segment,
-                  style: widget.style,
-                  maxLines: 1,
-                  softWrap: false,
-                ),
-              ],
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            widget.text,
+            style: widget.style,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
+        ),
+      );
+    }
+
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final segment = _segment;
+
+    return Semantics(
+      label: widget.text,
+      child: ExcludeSemantics(
+        child: ClipRect(
+          child: SizedBox(
+            height: _textHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxW = constraints.maxWidth.isFinite
+                    ? constraints.maxWidth
+                    : MediaQuery.sizeOf(context).width;
+                // نُسخ كافية لتغطية الشريط كله طوال الحلقة — لا فراغ للنصوص القصيرة.
+                final copies = _loopWidth > 0 ? math.max(2, (maxW / _loopWidth).ceil() + 1) : 2;
+                // OverflowBox: النص المتحرك أعرض من الشريط عمداً — لا قيود عرض ولا تحذير تجاوز.
+                return OverflowBox(
+                  alignment: rtl ? Alignment.centerRight : Alignment.centerLeft,
+                  maxWidth: double.infinity,
+                  child: AnimatedBuilder(
+                    animation: _ctrl,
+                    builder: (_, child) => Transform.translate(
+                      offset: Offset((rtl ? 1 : -1) * _ctrl.value * _loopWidth, 0),
+                      child: child,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < copies; i++)
+                          Text(segment, style: widget.style, maxLines: 1, softWrap: false),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),

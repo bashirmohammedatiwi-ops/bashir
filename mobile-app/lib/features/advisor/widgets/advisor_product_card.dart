@@ -3,23 +3,36 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/brand/brand_logo.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/friendly_error.dart';
 import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/app_snackbar.dart';
+import '../../../core/widgets/ds_strings.dart';
+import '../../alerts/restock_watch_provider.dart';
+import '../../auth/auth_provider.dart';
+import '../../cart/cart_provider.dart';
 import '../advisor_cart.dart';
 import '../advisor_controller.dart';
 import '../advisor_models.dart';
+import '../advisor_strings.dart';
 import 'advisor_product_sheet.dart';
 import 'advisor_style.dart';
 import 'stagger_in.dart';
 
 const _cardWidth = 172.0;
-const _cardHeight = 312.0;
+
+/// ارتفاع البطاقة: الصورة والهوامش ثابتة (228)، والجزء النصي (84 عند الخط العادي) يكبر
+/// مع خط النظام — حتى لا يُقصّ السعر وزر الإضافة بخط 1.25.
+double advisorCardHeight(BuildContext context) => 228 + 84 * (MediaQuery.textScalerOf(context).scale(100) / 100);
 
 /// شريط ترشيحات أفقي بعنوان صغير — البطاقات تظهر بتتابع.
-class AdvisorProductRail extends StatelessWidget {
+class AdvisorProductRail extends ConsumerWidget {
   final String? title;
   final List<AdvisorProduct> products;
   final bool animate;
@@ -34,7 +47,9 @@ class AdvisorProductRail extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final h = advisorCardHeight(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -46,20 +61,20 @@ class AdvisorProductRail extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  title ?? 'ترشيحاتي لكِ',
+                  title ?? s.advisorPicksForYou,
                   style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.3),
                 ),
               ),
               if (products.length > 2)
                 Text(
-                  '${products.length} منتجات',
+                  s.productsN(products.length),
                   style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.3),
                 ),
             ],
           ),
         ),
         SizedBox(
-          height: _cardHeight + 18,
+          height: h + 18,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -76,6 +91,7 @@ class AdvisorProductRail extends StatelessWidget {
                 product: products[i],
                 best: highlightFirst && i == 0,
                 animate: animate,
+                height: h,
               ),
             ),
           ),
@@ -89,22 +105,32 @@ class AdvisorProductCard extends ConsumerWidget {
   final AdvisorProduct product;
   final bool best;
   final bool animate;
-  const AdvisorProductCard({super.key, required this.product, this.best = false, this.animate = true});
+  /// يمرّره الشريط؛ وبدونه يُحسب بنفس المعادلة ([advisorCardHeight]).
+  final double? height;
+  const AdvisorProductCard({super.key, required this.product, this.best = false, this.animate = true, this.height});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = product;
+    final s = ref.s;
+    final k = MediaQuery.textScalerOf(context).scale(100) / 100;
+    final h = height ?? advisorCardHeight(context);
+    // بخط كبير يبقى سطر واحد للأسباب حتى يتسع السعر وزر الإضافة.
+    final lines = k > 1.1 ? 1 : 2;
+    final showRating = p.reviewCount > 0 && (lines > 1 || p.reasons.isEmpty);
+    final reasons = p.reasons.take(showRating ? lines - 1 : lines);
     final selected = ref.watch(advisorProvider.select((s) => s.comparing.any((x) => x.id == p.id)));
+    final still = MediaQuery.disableAnimationsOf(context);
     return SizedBox(
       width: _cardWidth,
-      height: _cardHeight,
+      height: h,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: still ? Duration.zero : const Duration(milliseconds: 220),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: selected ? BrandColors.rose : (best ? const Color(0xFFEBD3EE) : AdvisorStyle.glassBorder),
+            color: selected ? BrandColors.rose : (best ? AdvisorStyle.accentBorder : AdvisorStyle.glassBorder),
             width: selected ? 2 : (best ? 1.4 : 1),
           ),
           boxShadow: AdvisorStyle.shadow(best || selected ? 1.2 : 0.8),
@@ -118,11 +144,11 @@ class AdvisorProductCard extends ConsumerWidget {
               ref.read(advisorProvider.notifier).track('click', productId: p.id);
               openAdvisorProduct(context, p);
             },
-            onLongPress: () => showAdvisorProductSheet(context, p),
+            onLongPress: () => showAdvisorProductSheet(context, p, ref: ref),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ImageArea(product: p, best: best, animate: animate, selected: selected),
+                _ImageArea(product: p, best: best, animate: animate, selected: selected, s: s),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -145,9 +171,10 @@ class AdvisorProductCard extends ConsumerWidget {
                           style: AdvisorStyle.text(size: 12.8, weight: FontWeight.w600, height: 1.38),
                         ),
                         const SizedBox(height: 7),
-                        for (final r in p.reasons.take(2)) _Reason(text: r),
+                        for (final r in reasons) _Reason(text: r),
+                        if (showRating) _Rating(rating: p.rating, count: p.reviewCount, s: s),
                         const Spacer(),
-                        _PriceRow(product: p),
+                        _PriceRow(product: p, s: s),
                       ],
                     ),
                   ),
@@ -166,7 +193,8 @@ class _ImageArea extends StatelessWidget {
   final bool best;
   final bool animate;
   final bool selected;
-  const _ImageArea({required this.product, required this.best, required this.animate, required this.selected});
+  final AppStrings s;
+  const _ImageArea({required this.product, required this.best, required this.animate, required this.selected, required this.s});
 
   @override
   Widget build(BuildContext context) {
@@ -178,12 +206,17 @@ class _ImageArea extends StatelessWidget {
         children: [
           Positioned.fill(
             child: ColoredBox(
-              color: const Color(0xFFFAF6FC),
+              color: AdvisorStyle.surface,
               child: Opacity(
                 opacity: p.inStock ? 1 : 0.45,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: AppNetworkImage(url: p.image, fit: BoxFit.contain, backgroundColor: const Color(0xFFFAF6FC)),
+                  child: AppNetworkImage(
+                    url: p.image,
+                    width: _cardWidth - 24,
+                    fit: BoxFit.contain,
+                    backgroundColor: AdvisorStyle.surface,
+                  ),
                 ),
               ),
             ),
@@ -198,15 +231,16 @@ class _ImageArea extends StatelessWidget {
                   if (p.similarity != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text('شبه', style: AdvisorStyle.text(size: 9.5, weight: FontWeight.w800, color: AdvisorStyle.inkMuted, height: 1)),
+                      child: Text(s.isAr ? 'شبه' : 'Similar',
+                          style: AdvisorStyle.text(size: 9.5, weight: FontWeight.w800, color: AdvisorStyle.inkMuted, height: 1)),
                     ),
                 ],
               ),
             ),
           PositionedDirectional(
-            top: 6,
-            end: 6,
-            child: _MoreButton(product: p, selected: selected),
+            top: 1,
+            end: 1,
+            child: _MoreButton(product: p, selected: selected, s: s),
           ),
           if (p.saving >= 1000)
             PositionedDirectional(
@@ -214,9 +248,10 @@ class _ImageArea extends StatelessWidget {
               end: 8,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(color: const Color(0xFFE9F7EF), borderRadius: BorderRadius.circular(10)),
-                child: Text('أوفر ${_k(p.saving)}',
-                    style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: const Color(0xFF137A48), height: 1.2)),
+                decoration: BoxDecoration(color: AdvisorStyle.successBg, borderRadius: BorderRadius.circular(10)),
+                // بالآلاف مقرّباً للأسفل: 2,500 ← «أوفر ألفين» لا «3 ألف».
+                child: Text(s.advisorSaving(p.saving ~/ 1000),
+                    style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: AdvisorStyle.successFg, height: 1.2)),
               ),
             ),
           if (best)
@@ -235,7 +270,7 @@ class _ImageArea extends StatelessWidget {
                   children: [
                     const Icon(Icons.workspace_premium_rounded, size: 12, color: Colors.white),
                     const SizedBox(width: 3),
-                    Text('الأنسب لكِ', style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+                    Text(s.advisorBestForYou, style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
                   ],
                 ),
               ),
@@ -256,7 +291,7 @@ class _ImageArea extends StatelessWidget {
                   children: [
                     const Icon(Icons.palette_outlined, size: 11, color: AdvisorStyle.inkSoft),
                     const SizedBox(width: 3),
-                    Text('${p.shadeCount} درجة',
+                    Text(s.advisorShadeCount(p.shadeCount),
                         style: AdvisorStyle.text(size: 10, weight: FontWeight.w700, color: AdvisorStyle.inkSoft, height: 1.2)),
                   ],
                 ),
@@ -268,7 +303,8 @@ class _ImageArea extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(color: AppColors.ink.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(20)),
-                  child: Text('نفد حالياً', style: AdvisorStyle.text(size: 11, weight: FontWeight.w700, color: Colors.white, height: 1.2)),
+                  child: Text(s.advisorSoldOutShort,
+                      style: AdvisorStyle.text(size: 11, weight: FontWeight.w700, color: Colors.white, height: 1.2)),
                 ),
               ),
             ),
@@ -291,7 +327,7 @@ class _Reason extends StatelessWidget {
           Container(
             width: 14,
             height: 14,
-            decoration: const BoxDecoration(color: Color(0xFFFCE8F1), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: BrandColors.rose.withValues(alpha: 0.10), shape: BoxShape.circle),
             alignment: Alignment.center,
             child: const Icon(Icons.check_rounded, size: 10, color: BrandColors.rose),
           ),
@@ -310,9 +346,50 @@ class _Reason extends StatelessWidget {
   }
 }
 
+/// «★ 4.6 (128)» — مكان السبب الثاني، بنفس ارتفاع سطره.
+class _Rating extends StatelessWidget {
+  final double rating;
+  final int count;
+  final AppStrings s;
+  const _Rating({required this.rating, required this.count, required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    final value = rating.toStringAsFixed(1);
+    return Semantics(
+      label: s.isAr ? 'التقييم $value من 5، $count مراجعة' : 'Rated $value of 5, $count reviews',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 3),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 14,
+              child: Icon(Icons.star_rounded, size: 14, color: AppColors.star),
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Text(
+                  '$value ($count)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AdvisorStyle.text(size: 10.5, weight: FontWeight.w700, color: AdvisorStyle.inkMuted, height: 1.4),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PriceRow extends StatelessWidget {
   final AdvisorProduct product;
-  const _PriceRow({required this.product});
+  final AppStrings s;
+  const _PriceRow({required this.product, required this.s});
 
   @override
   Widget build(BuildContext context) {
@@ -330,7 +407,7 @@ class _PriceRow extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        formatPrice(p.originalPrice),
+                        formatPrice(p.originalPrice, lang: s.lang),
                         maxLines: 1,
                         overflow: TextOverflow.fade,
                         softWrap: false,
@@ -349,7 +426,7 @@ class _PriceRow extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
-                  formatPrice(p.price),
+                  formatPrice(p.price, lang: s.lang),
                   style: AdvisorStyle.text(
                     size: 14,
                     weight: FontWeight.w800,
@@ -361,13 +438,14 @@ class _PriceRow extends StatelessWidget {
             ],
           ),
         ),
-        if (p.inStock) AdvisorAddButton(product: p),
+        if (p.inStock) AdvisorAddButton(product: p) else AdvisorRestockButton(productId: p.id),
       ],
     );
   }
 }
 
-/// زر الإضافة: حالة انتظار ثم علامة صح تتحول رجوعاً للزر.
+/// زر الإضافة: انتظار ثم علامة صح، ثم حقيبة ممتلئة بعدد ما في السلة من المنتج.
+/// لمسة أخرى تزيد قطعة (أو تفتح ورقة الدرجات لذات الدرجات).
 class AdvisorAddButton extends ConsumerStatefulWidget {
   final AdvisorProduct product;
   final double size;
@@ -388,9 +466,11 @@ class _AdvisorAddButtonState extends ConsumerState<AdvisorAddButton> {
     setState(() => _s = _AddState.busy);
     final r = await advisorAddToCart(context, ref, widget.product);
     if (!mounted) return;
-    if (r == AdvisorAddResult.added) ref.read(advisorProvider.notifier).track('cart', productId: widget.product.id);
-    setState(() => _s = r == AdvisorAddResult.added ? _AddState.done : _AddState.idle);
-    if (r == AdvisorAddResult.added) {
+    // حد المخزون أو إلغاء ورقة الدرجات ليس إضافة — لا علامة صح ولا إشارة تعلّم.
+    final added = r == AdvisorAddResult.added;
+    if (added) ref.read(advisorProvider.notifier).track('cart', productId: widget.product.id);
+    setState(() => _s = added ? _AddState.done : _AddState.idle);
+    if (added) {
       await Future<void>.delayed(const Duration(milliseconds: 1600));
       if (mounted) setState(() => _s = _AddState.idle);
     }
@@ -398,85 +478,217 @@ class _AdvisorAddButtonState extends ConsumerState<AdvisorAddButton> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
+    final id = widget.product.id;
+    final inCart = ref.watch(cartProvider.select((c) => c.items.where((e) => e.productId == id).fold<int>(0, (a, e) => a + e.quantity)));
     final multiShade = widget.product.shadeCount > 1;
     final done = _s == _AddState.done;
-    return GestureDetector(
-      onTap: _add,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: done ? null : AdvisorStyle.gradient,
-          color: done ? AppColors.success : null,
-          boxShadow: [
-            BoxShadow(
-              color: (done ? AppColors.success : BrandColors.rose).withValues(alpha: 0.30),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
-          child: switch (_s) {
-            _AddState.busy => const SizedBox(
-                key: ValueKey('busy'),
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+    final filled = inCart > 0 && _s == _AddState.idle;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final size = widget.size;
+    final label = inCart > 0
+        ? (s.isAr ? '${s.advisorAddProduct(widget.product.name)} — في السلة $inCart' : '${s.advisorAddProduct(widget.product.name)} — $inCart in bag')
+        : s.advisorAddProduct(widget.product.name);
+    return Semantics(
+      button: true,
+      enabled: _s == _AddState.idle,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _add,
+        child: SizedBox.square(
+          dimension: size,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedContainer(
+                duration: still ? Duration.zero : const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: done ? null : AdvisorStyle.gradient,
+                  color: done ? AdvisorStyle.successFg : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (done ? AdvisorStyle.successFg : BrandColors.rose).withValues(alpha: 0.30),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: AnimatedSwitcher(
+                  duration: still ? Duration.zero : const Duration(milliseconds: 220),
+                  transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+                  child: switch (_s) {
+                    _AddState.busy => const SizedBox(
+                        key: ValueKey('busy'),
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      ),
+                    _AddState.done => const Icon(Icons.check_rounded, key: ValueKey('done'), size: 20, color: Colors.white),
+                    _AddState.idle => Icon(
+                        filled
+                            ? Icons.shopping_bag_rounded
+                            : (multiShade ? Icons.palette_outlined : Icons.add_shopping_cart_rounded),
+                        key: ValueKey(filled ? 'bag' : 'idle'),
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                  },
+                ),
               ),
-            _AddState.done => const Icon(Icons.check_rounded, key: ValueKey('done'), size: 20, color: Colors.white),
-            _AddState.idle => Icon(
-                multiShade ? Icons.palette_outlined : Icons.add_shopping_cart_rounded,
-                key: const ValueKey('idle'),
-                size: 18,
-                color: Colors.white,
-              ),
-          },
+              if (filled)
+                PositionedDirectional(
+                  top: -3,
+                  end: -3,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 17),
+                    height: 17,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: BrandColors.rose, width: 1.2),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      inCart > 99 ? '99+' : '$inCart',
+                      textScaler: TextScaler.noScaling,
+                      style: AdvisorStyle.text(size: 9.5, weight: FontWeight.w800, color: BrandColors.rose, height: 1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-String _k(int v) => v >= 1000 ? '${(v / 1000).round()} ألف' : formatPrice(v);
+/// جرس «نبّهيني عند توفره» للمنتج النافد — بدل زر الإضافة.
+/// الضيفة تُرسل لتسجيل الدخول أولاً، ثم يُفعّل التنبيه إن لم يكن مفعّلاً من جهاز آخر.
+class AdvisorRestockButton extends ConsumerWidget {
+  final String productId;
+  final double size;
+  const AdvisorRestockButton({super.key, required this.productId, this.size = 36});
 
-/// «⋯»: يفتح خيارات المنتج (ليش رشحته، يناسبني؟، بديل أرخص، قارني…).
-class _MoreButton extends StatelessWidget {
-  final AdvisorProduct product;
-  final bool selected;
-  const _MoreButton({required this.product, required this.selected});
+  Future<void> _toggle(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.lightImpact();
+    final s = ref.read(stringsProvider);
+    final willNotify = s.isAr ? 'راح أنبهكِ أول ما يتوفر 🔔' : 'I’ll let you know as soon as it’s back 🔔';
+    // الحاوية لا العنصر: البطاقة قد يُعاد بناؤها أثناء صفحة الدخول.
+    final container = ProviderScope.containerOf(context, listen: false);
+    try {
+      if (!container.read(authProvider).isAuthenticated) {
+        await context.push('/login');
+        if (!container.read(authProvider).isAuthenticated) return;
+        await container.read(restockWatchProvider.notifier).load();
+        if (container.read(restockWatchProvider).contains(productId)) {
+          if (context.mounted) AppSnackbar.success(context, willNotify);
+          return;
+        }
+      }
+      final watching = await container.read(restockWatchProvider.notifier).toggle(productId);
+      if (!context.mounted) return;
+      if (watching) {
+        AppSnackbar.success(context, willNotify);
+      } else {
+        AppSnackbar.show(context, s.dsRestockCancelled);
+      }
+    } catch (e) {
+      if (context.mounted) AppSnackbar.error(context, friendlyError(e, lang: s.lang));
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => showAdvisorProductSheet(context, product),
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: selected ? null : Colors.white.withValues(alpha: 0.94),
-            gradient: selected ? AdvisorStyle.gradient : null,
-            border: Border.all(color: selected ? Colors.transparent : AdvisorStyle.glassBorder),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final watching = ref.watch(restockWatchProvider.select((w) => w.contains(productId)));
+    final still = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      button: true,
+      toggled: watching,
+      label: s.advisorNotifyRestock,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: s.advisorNotifyRestock,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _toggle(context, ref),
+          child: AnimatedContainer(
+            duration: still ? Duration.zero : const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: watching ? AdvisorStyle.gradient : null,
+              color: watching ? null : Colors.white,
+              border: watching ? null : Border.all(color: AdvisorStyle.accentBorder),
+              boxShadow: AdvisorStyle.shadow(watching ? 0.9 : 0.5),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              watching ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+              size: size * 0.5,
+              color: watching ? Colors.white : AdvisorStyle.accentText,
+            ),
           ),
-          child: Icon(selected ? Icons.balance_rounded : Icons.more_horiz_rounded, size: 17, color: selected ? Colors.white : AdvisorStyle.inkSoft),
         ),
       ),
     );
   }
 }
 
-/// حلقة نسبة الملاءمة — تمتلئ وتعدّ عند الظهور.
+/// «⋯»: يفتح خيارات المنتج (ليش رشحته، يناسبني؟، بديل أرخص، قارني…).
+/// الدائرة 30 للعين، ومساحة اللمس 44.
+class _MoreButton extends ConsumerWidget {
+  final AdvisorProduct product;
+  final bool selected;
+  final AppStrings s;
+  const _MoreButton({required this.product, required this.selected, required this.s});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final still = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: selected ? '${s.advisorProductOptions} — ${s.advisorInCompare}' : s.advisorProductOptions,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => showAdvisorProductSheet(context, product, ref: ref),
+        child: SizedBox.square(
+          dimension: kMinTapTarget,
+          child: Center(
+            child: AnimatedContainer(
+              duration: still ? Duration.zero : const Duration(milliseconds: 200),
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? null : Colors.white.withValues(alpha: 0.94),
+                gradient: selected ? AdvisorStyle.gradient : null,
+                border: Border.all(color: selected ? Colors.transparent : AdvisorStyle.glassBorder),
+              ),
+              child: Icon(selected ? Icons.balance_rounded : Icons.more_horiz_rounded,
+                  size: 17, color: selected ? Colors.white : AdvisorStyle.inkSoft),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// حلقة نسبة الملاءمة — تمتلئ وتعدّ عند الظهور (ثابتة مع «تقليل الحركة»).
 class MatchRing extends StatelessWidget {
   final int match;
   final bool animate;
@@ -486,8 +698,9 @@ class MatchRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final target = match.clamp(0, 100) / 100;
+    final run = animate && !MediaQuery.disableAnimationsOf(context);
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: animate ? 0 : target, end: target),
+      tween: Tween(begin: run ? 0 : target, end: target),
       duration: const Duration(milliseconds: 1100),
       curve: Curves.easeOutCubic,
       builder: (_, v, __) => Container(
@@ -505,7 +718,7 @@ class MatchRing extends StatelessWidget {
               textDirection: TextDirection.ltr,
               child: Text(
                 '${(v * 100).round()}%',
-                style: AdvisorStyle.text(size: size * 0.25, weight: FontWeight.w800, color: const Color(0xFF7A3FB8), height: 1),
+                style: AdvisorStyle.text(size: size * 0.25, weight: FontWeight.w800, color: AdvisorStyle.accentText, height: 1),
               ),
             ),
           ),
@@ -531,7 +744,7 @@ class _RingPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
-        ..color = const Color(0xFFF1E6F7),
+        ..color = AdvisorStyle.tint,
     );
     if (v <= 0) return;
     canvas.drawArc(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/brand/brand_logo.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
@@ -10,10 +12,11 @@ import 'advisor_product_card.dart';
 import 'advisor_style.dart';
 
 /// اقتراح من مشترياتها: «قارب يخلص؟» أو «أكملي روتينكِ» — عنوان، سطر توضيح، وشريط منتجات.
-class AdvisorPersonalCard extends StatelessWidget {
+class AdvisorPersonalCard extends ConsumerWidget {
   final AdvisorPersonal personal;
   final bool animate;
   final EdgeInsetsGeometry margin;
+
   /// مختصرة (للترحيب): صفّان صغيران بدل شريط البطاقات — أعلى الشاشة يبقى هادئاً.
   final bool compact;
 
@@ -26,7 +29,8 @@ class AdvisorPersonalCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final refill = personal.isRefill;
     final tint = refill ? const [Color(0xFFFFF3E8), Color(0xFFFDEEF4)] : const [Color(0xFFEDF3FD), Color(0xFFF3EAFD)];
     final accent = refill ? const Color(0xFFE08A3C) : const Color(0xFF6C7BD9);
@@ -62,10 +66,7 @@ class AdvisorPersonalCard extends StatelessWidget {
                       Row(
                         children: [
                           Flexible(
-                            child: Text(
-                              personal.title,
-                              style: AdvisorStyle.text(size: 14.5, weight: FontWeight.w800, height: 1.3),
-                            ),
+                            child: Text(personal.title, style: AdvisorStyle.text(size: 14.5, weight: FontWeight.w800, height: 1.3)),
                           ),
                           const SizedBox(width: 6),
                           Container(
@@ -75,7 +76,7 @@ class AdvisorPersonalCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              'لكِ',
+                              s.isAr ? 'لكِ' : 'For you',
                               style: AdvisorStyle.text(size: 10.5, weight: FontWeight.w800, color: BrandColors.rose, height: 1.3),
                             ),
                           ),
@@ -99,13 +100,16 @@ class AdvisorPersonalCard extends StatelessWidget {
               child: Column(
                 children: [
                   for (final p in personal.products.take(2))
-                    Padding(padding: const EdgeInsets.only(bottom: 6), child: _MiniRow(product: p)),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: _MiniRow(product: p),
+                    ),
                 ],
               ),
             )
           else
             AdvisorProductRail(
-              title: refill ? 'جدديه بلمسة' : 'الأنسب لروتينكِ',
+              title: refill ? (s.isAr ? 'جدديه بلمسة' : 'Restock in one tap') : (s.isAr ? 'الأنسب لروتينكِ' : 'Best for your routine'),
               products: personal.products,
               animate: animate,
               highlightFirst: !refill,
@@ -117,13 +121,14 @@ class AdvisorPersonalCard extends StatelessWidget {
 }
 
 /// صف منتج صغير: صورة، اسم، سعر، وزر إضافة.
-class _MiniRow extends StatelessWidget {
+class _MiniRow extends ConsumerWidget {
   final AdvisorProduct product;
   const _MiniRow({required this.product});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final p = product;
+    final s = ref.s;
     return Material(
       color: Colors.white.withValues(alpha: 0.92),
       borderRadius: BorderRadius.circular(16),
@@ -139,34 +144,40 @@ class _MiniRow extends StatelessWidget {
                 height: 46,
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                child: AppNetworkImage(url: p.image, fit: BoxFit.contain, radius: BorderRadius.circular(9)),
+                child: AppNetworkImage(url: p.image, width: 46, fit: BoxFit.contain, radius: BorderRadius.circular(9)),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(p.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, height: 1.35)),
+                    Text(
+                      p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, height: 1.35),
+                    ),
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Text(formatPrice(p.price),
-                            style: AdvisorStyle.text(
-                              size: 12.5,
-                              weight: FontWeight.w800,
-                              color: p.hasDiscount ? AppColors.sale : BrandColors.orchid,
-                              height: 1.3,
-                            )),
+                        Text(
+                          formatPrice(p.price, lang: s.lang),
+                          style: AdvisorStyle.text(
+                            size: 12.5,
+                            weight: FontWeight.w800,
+                            color: p.hasDiscount ? AppColors.sale : BrandColors.orchid,
+                            height: 1.3,
+                          ),
+                        ),
                         if (p.reasons.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Flexible(
-                            child: Text(p.reasons.first,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AdvisorStyle.text(size: 11, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.3)),
+                            child: Text(
+                              p.reasons.first,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AdvisorStyle.text(size: 11, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.3),
+                            ),
                           ),
                         ],
                       ],
@@ -175,7 +186,7 @@ class _MiniRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              AdvisorAddButton(product: p, size: 34),
+              if (p.inStock) AdvisorAddButton(product: p, size: 34) else AdvisorRestockButton(productId: p.id, size: 34),
             ],
           ),
         ),

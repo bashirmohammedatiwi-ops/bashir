@@ -68,10 +68,7 @@ class ListingPageHeader extends ConsumerWidget {
     final f = filters;
 
     final count = f.total == null ? null : s.lfResults(_fmt(f.total!));
-    final meta = [
-      if (subtitle != null && subtitle!.isNotEmpty) subtitle!,
-      if (count != null) count,
-    ].join('  •  ');
+    final meta = [if (subtitle != null && subtitle!.isNotEmpty) subtitle!, if (count != null) count].join('  •  ');
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
@@ -85,11 +82,7 @@ class ListingPageHeader extends ConsumerWidget {
           ),
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
           boxShadow: [
-            BoxShadow(
-              color: t.accentDark.withValues(alpha: 0.07),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
+            BoxShadow(color: t.accentDark.withValues(alpha: 0.07), blurRadius: 18, offset: const Offset(0, 6)),
           ],
         ),
         child: SafeArea(
@@ -133,15 +126,24 @@ class ListingPageHeader extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    _RoundAction(icon: Icons.search_rounded, tooltip: s.searchHint, onTap: () => context.push('/search')),
+                    _RoundAction(
+                      icon: Icons.search_rounded,
+                      tooltip: s.searchHint,
+                      onTap: () => context.push('/search'),
+                    ),
                     const SizedBox(width: 8),
-                    _RoundAction(icon: Icons.qr_code_scanner_rounded, tooltip: s.scan, onTap: () => context.push('/scan')),
+                    _RoundAction(
+                      icon: Icons.qr_code_scanner_rounded,
+                      tooltip: s.scan,
+                      onTap: () => context.push('/scan'),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
+              // الشرائح 36 للعين و44 للمس — الصف بارتفاع منطقة اللمس.
               SizedBox(
-                height: 36,
+                height: kMinTapTarget,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -206,7 +208,7 @@ class ListingPageHeader extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -243,8 +245,8 @@ class _RoundAction extends StatelessWidget {
           onTap();
         },
         child: Container(
-          width: 42,
-          height: 42,
+          width: kMinTapTarget,
+          height: kMinTapTarget,
           decoration: BoxDecoration(
             color: t.surface,
             shape: BoxShape.circle,
@@ -271,41 +273,56 @@ class _FilterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final active = count > 0;
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 14, 0),
-        decoration: BoxDecoration(
-          gradient: active ? t.signatureGradient : null,
-          color: active ? null : t.ink,
-          borderRadius: BorderRadius.circular(AppCorners.pill),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.tune_rounded, size: 17, color: Colors.white),
+    return Semantics(
+      button: true,
+      label: active ? '$label ($count)' : label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        // منطقة اللمس بارتفاع الصف كاملاً، والزر المرسوم 36.
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Center(widthFactor: 1, child: _face(context, t, active)),
+      ),
+    );
+  }
+
+  Widget _face(BuildContext context, WorldThemePalette t, bool active) {
+    return AnimatedContainer(
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 220),
+      height: 36,
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 14, 0),
+      decoration: BoxDecoration(
+        gradient: active ? t.signatureGradient : null,
+        color: active ? null : t.ink,
+        borderRadius: BorderRadius.circular(AppCorners.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.tune_rounded, size: 17, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppText.label.copyWith(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+          if (active) ...[
             const SizedBox(width: 6),
-            Text(label, style: AppText.label.copyWith(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
-            if (active) ...[
-              const SizedBox(width: 6),
-              Container(
-                constraints: const BoxConstraints(minWidth: 18),
-                height: 18,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9)),
-                child: Text(
-                  '$count',
-                  style: AppText.micro.copyWith(color: t.accentDark, fontWeight: FontWeight.w800),
-                ),
+            Container(
+              constraints: const BoxConstraints(minWidth: 18),
+              height: 18,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9)),
+              child: Text(
+                '$count',
+                style: AppText.micro.copyWith(color: t.accentDark, fontWeight: FontWeight.w800),
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

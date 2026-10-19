@@ -4,17 +4,24 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_text.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../core/widgets/shimmer_box.dart';
 import '../../worlds/world_theme.dart';
 import '../../../data/models/product.dart';
 import 'home_product_card.dart';
 import 'home_scroll_perf.dart';
 import 'home_theme.dart';
 
+/// صف المنتجات الأفقي الموحّد للرئيسية — رفوف لوحة التحكم والرفوف الشخصية
+/// («اطلبيها مرة ثانية»، «أكملي من حيث توقفتِ»، المفضلة…) بنفس المقاس المتجاوب.
 class HomeProductRow extends StatelessWidget {
   final List<Product> products;
   final bool showPromoBadge;
   final double itemWidth;
   final EdgeInsetsGeometry? padding;
+
+  /// ارتفاع البطاقة — افتراضياً المتجاوب ([Responsive.productCardHeight]).
+  /// الصفوف المضغوطة (اقتراحات «أكملي الفرق») تمرّر أقل.
+  final double? itemHeight;
 
   /// بطاقة "عرض الكل" في نهاية الصف — من وصلت للآخر تكمل بلمسة.
   final VoidCallback? onViewAll;
@@ -26,6 +33,7 @@ class HomeProductRow extends StatelessWidget {
     this.showPromoBadge = false,
     this.itemWidth = HomeTheme.productCardWidth,
     this.padding,
+    this.itemHeight,
     this.onViewAll,
     this.viewAllLabel,
   });
@@ -35,7 +43,7 @@ class HomeProductRow extends StatelessWidget {
     final width = itemWidth == HomeTheme.productCardWidth
         ? Responsive.productCardWidth(context)
         : itemWidth;
-    final height = Responsive.productCardHeight(context);
+    final height = itemHeight ?? Responsive.productCardHeight(context);
     return HomeHorizontalList(
       height: height + 4,
       padding:
@@ -64,6 +72,44 @@ class HomeProductRow extends StatelessWidget {
   }
 }
 
+/// هيكل تحميل بنفس أبعاد [HomeProductRow] تماماً — يحجز ارتفاع الرف أثناء
+/// التحميل فلا تقفز الصفحة حين تصل المنتجات.
+class HomeProductRowSkeleton extends StatelessWidget {
+  final int count;
+  final double? itemHeight;
+  final EdgeInsetsGeometry? padding;
+
+  const HomeProductRowSkeleton({
+    super.key,
+    this.count = 3,
+    this.itemHeight,
+    this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = Responsive.productCardWidth(context);
+    final height = itemHeight ?? Responsive.productCardHeight(context);
+    return ExcludeSemantics(
+      child: HomeHorizontalList(
+        height: height + 4,
+        physics: const NeverScrollableScrollPhysics(),
+        padding:
+            padding ??
+            EdgeInsets.symmetric(
+              horizontal: Responsive.horizontalPadding(context),
+            ),
+        itemCount: count,
+        itemBuilder: (_, __) => SizedBox(
+          width: width,
+          height: height,
+          child: const ProductCardSkeleton(),
+        ),
+      ),
+    );
+  }
+}
+
 class _ViewAllTile extends StatelessWidget {
   final double width;
   final double height;
@@ -84,7 +130,10 @@ class _ViewAllTile extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      excludeSemantics: true,
+      onTap: onTap,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
@@ -101,6 +150,7 @@ class _ViewAllTile extends StatelessWidget {
             ),
             border: Border.all(color: t.accentSoft.withValues(alpha: 0.8)),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -131,6 +181,8 @@ class _ViewAllTile extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: AppText.label.copyWith(color: t.ink),
               ),

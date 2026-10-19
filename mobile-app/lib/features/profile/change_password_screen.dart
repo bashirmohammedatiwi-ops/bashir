@@ -1,10 +1,11 @@
-import '../../core/widgets/app_snackbar.dart';
-import '../../core/utils/friendly_error.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/network/api_client.dart';
+import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
 import '../auth/widgets/auth_shell.dart';
@@ -48,14 +49,20 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       _currentError = null;
     });
     try {
-      await ref
+      final result = await ref
           .read(apiServiceProvider)
           .changePassword(
             currentPassword: _current.text,
             newPassword: _next.text,
           );
+      // السيرفر ألغى كل الجلسات وأصدر لهذه الجلسة رموزاً جديدة: نحفظها (dioProvider
+      // يحفظها أيضاً من الرد — الحفظ مرتين آمن). سيرفر أقدم بلا رموز يبقى كما كان.
+      final access = result['accessToken'];
+      final refresh = result['refreshToken'];
+      if (access is String && access.isNotEmpty && refresh is String && refresh.isNotEmpty) {
+        await ref.read(tokenStoreProvider).save(access: access, refresh: refresh);
+      }
       if (!mounted) return;
-      // الرموز الجديدة لهذه الجلسة يحفظها dioProvider من الرد نفسه.
       AppSnackbar.success(context, ref.s.passwordChangedSuccess);
       context.canPop() ? context.pop() : context.go('/');
     } catch (e) {

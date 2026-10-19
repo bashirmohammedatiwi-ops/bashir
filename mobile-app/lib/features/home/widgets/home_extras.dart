@@ -9,45 +9,22 @@ import '../../../core/navigation/app_navigation.dart';
 import '../../../core/theme/app_fonts.dart';
 import '../../../core/utils/support_links.dart';
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/product_card.dart';
-import '../../../core/widgets/shimmer_box.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/category.dart';
-import '../../../data/models/product.dart';
 import '../../catalog/recently_viewed_provider.dart';
 import '../../categories/category_browse.dart';
 import '../../worlds/world_theme.dart';
 import '../../worlds/worlds_provider.dart';
 import '../home_strings.dart';
+import 'home_product_row.dart';
 import '../../../core/brand/brand_logo.dart';
 
-const _cardW = 150.0;
-const _rowH = 262.0;
-
-/// صف منتجات أفقي موحّد لأقسام الرئيسية الجديدة.
-class _ProductRow extends StatelessWidget {
-  final List<Product> products;
-  const _ProductRow({required this.products});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: _rowH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: products.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) => ProductCard(
-          key: ValueKey(products[i].id),
-          product: products[i],
-          width: _cardW,
-          lite: true,
-          showPromoBadge: true,
-        ),
-      ),
-    );
-  }
+/// نصوص رفوف الرئيسية الشخصية في هذا الملف.
+extension _HomeExtrasStrings on AppStrings {
+  String get homeNeedsEmpty =>
+      isAr ? 'لا منتجات هنا بعد — تصفّحي القسم كاملاً' : 'No products here yet — browse the full section';
+  String get homeNeedsBrowse => isAr ? 'تصفّحي القسم' : 'Browse section';
 }
 
 // ─── شريط الثقة ──────────────────────────────────────────────────────────────
@@ -161,7 +138,9 @@ class HomeContinueShopping extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppSectionTitle(title: s.homeContinue, subtitle: s.homeContinueSub),
-        _ProductRow(products: items.take(12).toList()),
+        // نفس البطاقة الموحّدة: زر السلة فيها يفتح لوحة الألوان للمنتجات متعددة
+        // الألوان، واللقطات تُحدَّث من الخادم — فلا إضافة بلا لون ولا بسعر قديم.
+        HomeProductRow(products: items.take(12).toList(), showPromoBadge: true),
       ],
     );
   }
@@ -193,6 +172,7 @@ class _HomeNeedsShelfState extends ConsumerState<HomeNeedsShelf> {
     final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
     final t = context.worldTheme;
+    final still = MediaQuery.disableAnimationsOf(context);
     final worlds = ref.watch(worldsProvider).valueOrNull;
     final slug = resolveWorldSlug(
       selected: ref.watch(selectedWorldSlugProvider),
@@ -212,6 +192,8 @@ class _HomeNeedsShelfState extends ConsumerState<HomeNeedsShelf> {
     );
     final target = _target(selected, lang);
     final products = ref.watch(categoryTopProductsProvider(target));
+    // نفس ارتفاع صف المنتجات — الخطأ والفراغ لا يغيّران طول الصفحة.
+    final rowH = Responsive.productRowHeight(context);
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -234,66 +216,77 @@ class _HomeNeedsShelfState extends ConsumerState<HomeNeedsShelf> {
               itemBuilder: (_, i) {
                 final c = cats[i];
                 final on = c.id == selected.id;
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    if (on) return;
-                    HapticFeedback.selectionClick();
-                    setState(() => _selectedId = c.id);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 14, 4),
-                    // المختار بتدرّج لون العالم — نفس لغة شريط التنقل والعوالم.
-                    decoration: BoxDecoration(
-                      color: on ? null : t.surface,
-                      gradient: on
-                          ? LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Color.lerp(t.accent, Colors.white, 0.08)!,
-                                Color.lerp(t.accent, Colors.black, 0.1)!,
-                              ],
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(AppCorners.pill),
-                      border: Border.all(
-                        color: on ? Colors.transparent : t.hairline,
+                return Semantics(
+                  button: true,
+                  selected: on,
+                  label: c.localizedName(lang),
+                  excludeSemantics: true,
+                  onTap: on ? null : () => setState(() => _selectedId = c.id),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      if (on) return;
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedId = c.id);
+                    },
+                    child: AnimatedContainer(
+                      duration: still ? Duration.zero : const Duration(milliseconds: 220),
+                      padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 14, 4),
+                      // المختار بتدرّج لون العالم — نفس لغة شريط التنقل والعوالم.
+                      decoration: BoxDecoration(
+                        color: on ? null : t.surface,
+                        gradient: on
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color.lerp(t.accent, Colors.white, 0.08)!,
+                                  Color.lerp(t.accent, Colors.black, 0.1)!,
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(AppCorners.pill),
+                        border: Border.all(
+                          color: on ? Colors.transparent : t.hairline,
+                        ),
+                        boxShadow: on
+                            ? [
+                                BoxShadow(
+                                  color: t.accent.withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ]
+                            : null,
                       ),
-                      boxShadow: on
-                          ? [
-                              BoxShadow(
-                                color: t.accent.withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 5),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ClipOval(
+                            child: SizedBox(
+                              width: 34,
+                              height: 34,
+                              // مقاس صريح: الصورة تُفكّ بحجم الدائرة لا بعرض الشاشة.
+                              child: AppNetworkImage(
+                                url: c.imageUrl,
+                                width: 34,
+                                height: 34,
+                                fit: BoxFit.cover,
+                                backgroundColor: Colors.white,
                               ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ClipOval(
-                          child: SizedBox(
-                            width: 34,
-                            height: 34,
-                            child: AppNetworkImage(
-                              url: c.imageUrl,
-                              fit: BoxFit.cover,
-                              backgroundColor: Colors.white,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          c.localizedName(lang),
-                          style: AppText.label.copyWith(
-                            color: on ? Colors.white : t.ink,
-                            fontWeight: on ? FontWeight.w800 : FontWeight.w600,
+                          const SizedBox(width: 8),
+                          Text(
+                            c.localizedName(lang),
+                            maxLines: 1,
+                            style: AppText.label.copyWith(
+                              color: on ? Colors.white : t.ink,
+                              fontWeight: on ? FontWeight.w700 : FontWeight.w600,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -302,34 +295,95 @@ class _HomeNeedsShelfState extends ConsumerState<HomeNeedsShelf> {
           ),
           const SizedBox(height: 14),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
+            duration: still ? Duration.zero : const Duration(milliseconds: 280),
             child: products.when(
-              loading: () => SizedBox(
-                key: const ValueKey('loading'),
-                height: _rowH,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: 3,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (_, __) => const ShimmerBox(
-                    width: _cardW,
-                    height: _rowH,
-                    radius: 18,
-                  ),
-                ),
+              // «إعادة المحاولة» تُظهر الهيكل من جديد — علامة أن الطلب انطلق فعلاً.
+              skipLoadingOnRefresh: false,
+              loading: () => const HomeProductRowSkeleton(key: ValueKey('loading')),
+              error: (_, __) => _NeedsState(
+                key: const ValueKey('error'),
+                height: rowH,
+                icon: Icons.wifi_off_rounded,
+                message: s.loadFailed,
+                actionLabel: s.retry,
+                onAction: () => ref.invalidate(categoryTopProductsProvider(target)),
               ),
-              error: (_, __) => const SizedBox.shrink(key: ValueKey('error')),
               data: (list) => list.isEmpty
-                  ? const SizedBox.shrink(key: ValueKey('empty'))
+                  ? _NeedsState(
+                      key: const ValueKey('empty'),
+                      height: rowH,
+                      icon: Icons.inventory_2_outlined,
+                      message: s.homeNeedsEmpty,
+                      actionLabel: s.homeNeedsBrowse,
+                      onAction: () => target.open(context),
+                    )
                   : KeyedSubtree(
                       key: ValueKey(target.key),
-                      child: _ProductRow(products: list),
+                      child: HomeProductRow(
+                        products: list,
+                        showPromoBadge: true,
+                        onViewAll: () => target.open(context),
+                        viewAllLabel: s.viewAll,
+                      ),
                     ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// حالة الرف حين لا تصل المنتجات (خطأ أو قسم فارغ): رسالة قصيرة وزر واضح
+/// بنفس ارتفاع صف المنتجات — بدل مساحة فارغة توحي بأن شيئاً تعطّل.
+class _NeedsState extends StatelessWidget {
+  final double height;
+  final IconData icon;
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _NeedsState({
+    super.key,
+    required this.height,
+    required this.icon,
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return SizedBox(
+      height: height,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 30, color: t.inkMuted),
+              const SizedBox(height: 10),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.bodySmall.copyWith(color: t.inkSoft),
+              ),
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  onAction();
+                },
+                style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
+                child: Text(actionLabel),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -67,7 +67,12 @@ class AboutAppScreen extends ConsumerWidget {
                 icon: Icons.public_rounded,
                 title: AppConfig.appDomain,
                 subtitle: s.visitWebsite,
-                onTap: () => openExternalUrl(AppConfig.appOrigin),
+                // لا متصفح يفتح: ننسخ العنوان بدل ضغطة صامتة.
+                onTap: () => launchSupportLink(
+                  context,
+                  () => openExternalUrl(AppConfig.appOrigin),
+                  AppConfig.appOrigin,
+                ),
               ),
             ],
           ),

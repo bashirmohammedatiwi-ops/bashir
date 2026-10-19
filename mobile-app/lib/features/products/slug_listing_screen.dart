@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/locale_provider.dart';
 import '../../core/widgets/shimmer_box.dart';
@@ -38,20 +37,26 @@ class CategorySlugListingScreen extends ConsumerWidget {
       return const _LoadingScaffold();
     }
 
-    final async = ref.watch(categoryBySlugProvider(slug));
+    // ليس في الشجرة المحفوظة (أُضيف بعد فتح التطبيق مثلاً): شجرة جديدة ثم الخادم.
+    final async = ref.watch(categorySlugScopeProvider(slug));
     return async.when(
       loading: () => const _LoadingScaffold(),
       error: (e, _) => _ErrorScaffold(
         error: e,
         onRetry: () {
           ref.invalidate(categoriesProvider);
-          ref.invalidate(categoryBySlugProvider(slug));
+          ref.invalidate(categorySlugScopeProvider(slug));
         },
       ),
-      data: (category) => ProductListingScreen(
-        title: category.localizedName(lang),
-        categoryId: category.id,
-      ),
+      data: (scope) {
+        final c = scope.category;
+        return ProductListingScreen(
+          title: c.localizedName(lang),
+          categoryId: scope.depth == 0 ? c.id : null,
+          subcategoryId: scope.depth == 1 ? c.id : null,
+          tertiaryCategoryId: scope.depth >= 2 ? c.id : null,
+        );
+      },
     );
   }
 }
@@ -86,13 +91,12 @@ class _ErrorScaffold extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 8, 0),
+            // بلا صفحة قبلها يصير زر «الرئيسية» تلقائياً (بتلميح s.goHome).
+            const Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(8, 6, 8, 0),
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: context.canPop()
-                    ? const AppBackButton()
-                    : AppIconButton(icon: Icons.home_outlined, tooltip: '', onTap: () => context.go('/')),
+                child: AppBackButton(),
               ),
             ),
             Expanded(child: ErrorView.from(error, onRetry: onRetry)),
@@ -121,10 +125,37 @@ class BrandSlugListingScreen extends ConsumerWidget {
   }
 }
 
-final categoryBySlugProvider =
-    FutureProvider.autoDispose.family<Category, String>((ref, slug) {
-  return ref.read(apiServiceProvider).getCategoryBySlug(slug);
+/// القسم ومستواه (0 رئيسي، 1 فرعي، 2 ثالث) لـ slug غير موجود في الشجرة المحفوظة.
+///
+/// فلتر الخادم `categoryId` يطابق القسم الرئيسي وما تحته فقط — تمرير قسم فرعي به يعيد
+/// قائمة فارغة، لذا المستوى يُحدَّد من شجرة حديثة قبل أي شيء.
+final categorySlugScopeProvider =
+    FutureProvider.autoDispose.family<({Category category, int depth}), String>((ref, slug) async {
+  final api = ref.read(apiServiceProvider);
+  List<Category>? fresh;
+  try {
+    fresh = await api.getCategories(forceRefresh: true);
+    final hit = findCategoryBySlug(fresh, slug);
+    if (hit != null) {
+      // الشاشة تراقب الشجرة: تُبنى بها مباشرة في المرة القادمة.
+      ref.invalidate(categoriesProvider);
+      return hit;
+    }
+  } catch (_) {
+    // بلا شجرة حديثة: نكمل بطلب القسم نفسه.
+  }
+  final category = await api.getCategoryBySlug(slug);
+  return (category: category, depth: _depthFromParent(category, fresh));
 });
+
+int _depthFromParent(Category category, List<Category>? roots) {
+  final parentId = category.parentId;
+  if (parentId == null || parentId.isEmpty) return 0;
+  final parent = roots == null ? null : findCategoryById(roots, parentId);
+  // أب مجهول: «فرعي» — فلتر الخادم للفرعي يطابق أبناءه من المستوى الثالث أيضاً.
+  if (parent == null) return 1;
+  return parent.parentId == null || parent.parentId!.isEmpty ? 1 : 2;
+}
 
 final brandBySlugProvider = FutureProvider.autoDispose.family<Brand, String>((ref, slug) {
   return ref.read(apiServiceProvider).getBrandBySlug(slug);

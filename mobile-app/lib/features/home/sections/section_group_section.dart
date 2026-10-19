@@ -23,7 +23,16 @@ class SectionGroupSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (section.children.isEmpty) return const SizedBox.shrink();
+    // نفس قاعدة الرئيسية لأبناء المجموعة؛ إن خُفي كلهم لا يبقى إطار ملوّن فارغ.
+    final children = section.children
+        .where(
+          (c) => shouldShowHomeSection(
+            c,
+            heroCategoryIds: HomeFeedScope.maybeOf(context)?.heroCategoryIds,
+          ),
+        )
+        .toList();
+    if (children.isEmpty) return const SizedBox.shrink();
 
     final lang = ref.watch(languageCodeProvider);
     final title = section.titleForLang(lang);
@@ -48,6 +57,7 @@ class SectionGroupSection extends ConsumerWidget {
         border: border != null
             ? Border.symmetric(horizontal: BorderSide(color: border))
             : null,
+        boxShadow: section.frameShadow ? t.cardShadow : null,
       ),
       child: Stack(
         children: [
@@ -86,7 +96,7 @@ class SectionGroupSection extends ConsumerWidget {
                         12,
                       ),
                     ),
-                  ...section.children.asMap().entries.map((e) {
+                  ...children.asMap().entries.map((e) {
                     final child = e.value;
                     return Padding(
                       padding: EdgeInsets.only(top: e.key == 0 ? 0 : 10),

@@ -1,38 +1,27 @@
-import 'dart:math' as math;
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/cache/image_cache.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/shimmer_box.dart';
 import '../../../data/models/category.dart';
-import 'categories_theme.dart';
+import '../../worlds/world_theme.dart';
 
-/// صورة أو أيقونة القسم — مع shimmer وظهور تدريجي.
+/// صورة القسم، وإلا أيقونته بألوان العالم الحالي — مع shimmer أثناء التحميل.
+///
+/// [expand]: يملأ المساحة المتاحة كلها (بلاطات وغلاف وشريط الأقسام): الصورة
+/// بالقص، أو أيقونة داكنة على أرضية فاتحة بلون العالم — بدل شعار المتجر المكرّر.
 class CategoryLineArt extends StatelessWidget {
   final Category category;
   final double size;
-  final bool alignCorner;
   final bool expand;
 
   const CategoryLineArt({
     super.key,
     required this.category,
     this.size = 72,
-    this.alignCorner = false,
     this.expand = false,
   });
-
-  static const _palette = <Color>[
-    Color(0xFFE53935),
-    Color(0xFF43A047),
-    Color(0xFF1E88E5),
-    Color(0xFF8E24AA),
-    Color(0xFFFB8C00),
-    Color(0xFF00897B),
-    Color(0xFF6D4C41),
-    Color(0xFF546E7A),
-  ];
 
   static const _icons = <IconData>[
     Icons.spa_outlined,
@@ -49,175 +38,144 @@ class CategoryLineArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (expand) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final maxW = constraints.maxWidth;
-          final maxH = constraints.maxHeight;
-          if (maxW <= 0 || maxH <= 0) return const SizedBox.shrink();
-
-          final artSize = alignCorner
-              ? math.min(
-                  maxW * CategoriesTheme.iconScale,
-                  maxH * CategoriesTheme.iconHeightScale,
-                )
-              : math.min(maxW, maxH) * CategoriesTheme.iconScale;
-          final alignment = alignCorner
-              ? AlignmentDirectional.bottomEnd
-              : Alignment.center;
-
-          return ClipRect(
-            child: SizedBox(
-              width: maxW,
-              height: maxH,
-              child: Align(
-                alignment: alignment,
-                child: Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    end: alignCorner ? 2 : 0,
-                    bottom: alignCorner ? 2 : 0,
-                  ),
-                  child: SizedBox(
-                    width: artSize,
-                    height: artSize,
-                    child: _ArtBody(
-                      category: category,
-                      size: artSize,
-                      alignCorner: false,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+    if (!expand) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: _ArtBody(category: category, width: size, height: size, filled: false),
       );
     }
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: _ArtBody(category: category, size: size, alignCorner: alignCorner),
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.hasBoundedWidth ? c.maxWidth : size;
+        final h = c.hasBoundedHeight ? c.maxHeight : w;
+        if (w <= 0 || h <= 0) return const SizedBox.shrink();
+        return SizedBox(
+          width: w,
+          height: h,
+          child: _ArtBody(category: category, width: w, height: h, filled: true),
+        );
+      },
     );
   }
 }
 
 class _ArtBody extends StatelessWidget {
   final Category category;
-  final double size;
-  final bool alignCorner;
+  final double width;
+  final double height;
+
+  /// أرضية فاتحة خلف الأيقونة تملأ الصندوق.
+  final bool filled;
 
   const _ArtBody({
     required this.category,
-    required this.size,
-    required this.alignCorner,
+    required this.width,
+    required this.height,
+    required this.filled,
+  });
+
+  double get _side => width < height ? width : height;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    if (category.imageUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: category.imageUrl,
+        cacheManager: AppImageCacheManager.instance,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        // يُفكّ بحجم ظهوره الفعلي لا بنصف عرض الشاشة.
+        memCacheWidth: cachePixelWidth(context, width),
+        filterQuality: FilterQuality.medium,
+        placeholder: (_, __) => ShimmerBox(width: width, height: height, radius: 4),
+        errorWidget: (_, __, ___) => _glyph(t, faded: true),
+      );
+    }
+    return _glyph(t);
+  }
+
+  Widget _glyph(WorldThemePalette t, {bool faded = false}) {
+    final emoji = category.icon?.trim();
+    final Widget mark;
+    if (emoji != null && emoji.isNotEmpty && emoji.runes.length <= 2) {
+      mark = Text(
+        emoji,
+        textScaler: TextScaler.noScaling,
+        style: TextStyle(fontSize: _side * (filled ? 0.42 : 0.58), height: 1),
+      );
+    } else {
+      mark = Icon(
+        _iconFor(category),
+        size: _side * (filled ? 0.46 : 0.82),
+        color: faded ? t.accentDark.withValues(alpha: 0.55) : t.accentDark,
+      );
+    }
+    if (!filled) return Center(child: mark);
+    return ColoredBox(color: t.accentLight, child: Center(child: mark));
+  }
+
+  static IconData _iconFor(Category category) {
+    final key =
+        '${category.slug} ${category.name} ${category.nameEn ?? ''} ${category.nameAr ?? ''}'
+            .toLowerCase();
+    if (_has(key, ['makeup', 'مكياج', 'ميك'])) return Icons.brush_outlined;
+    if (_has(key, ['skin', 'بشرة', 'عناية'])) return Icons.spa_outlined;
+    if (_has(key, ['hair', 'شعر'])) return Icons.content_cut_outlined;
+    if (_has(key, ['fragrance', 'عطر', 'perfume', 'روائح'])) return Icons.air_outlined;
+    if (_has(key, ['bath', 'حمام', 'body', 'جسم'])) return Icons.water_drop_outlined;
+    if (_has(key, ['tool', 'أداة', 'فرش'])) return Icons.face_retouching_natural_outlined;
+    if (_has(key, ['offer', 'عرض', 'sale', 'تخفيض'])) return Icons.local_offer_outlined;
+    if (_has(key, ['new', 'جديد'])) return Icons.auto_awesome_outlined;
+    if (_has(key, ['gift', 'هدية', 'مجموعة'])) return Icons.card_giftcard_outlined;
+    final h = category.id.hashCode.abs();
+    return CategoryLineArt._icons[h % CategoryLineArt._icons.length];
+  }
+
+  static bool _has(String key, List<String> words) => words.any(key.contains);
+}
+
+/// صورة القسم بحجم معلوم (يُفكّ بحجم ظهوره)، وإلا رسمه بألوان العالم —
+/// لا شعار المتجر المكرّر الذي كان يبدو صورة معطوبة.
+class CategoryThumb extends StatelessWidget {
+  final Category category;
+
+  /// ضلع الصورة إن كان معروفاً؛ وإلا يُقاس الصندوق الفعلي.
+  final double? size;
+  final Color? background;
+
+  const CategoryThumb({
+    super.key,
+    required this.category,
+    this.size,
+    this.background,
   });
 
   @override
   Widget build(BuildContext context) {
-    final corner = alignCorner
-        ? AlignmentDirectional.bottomEnd
-        : Alignment.center;
-
-    if (category.imageUrl.isNotEmpty) {
-      final pixelW = cachePixelWidth(context, size);
-      return Align(
-        alignment: corner,
-        child: CachedNetworkImage(
-          imageUrl: category.imageUrl,
-          cacheManager: AppImageCacheManager.instance,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          fadeInDuration: Duration.zero,
-          fadeOutDuration: Duration.zero,
-          memCacheWidth: pixelW,
-          filterQuality: FilterQuality.medium,
-          placeholder: (_, __) =>
-              ShimmerBox(width: size, height: size, radius: 4),
-          errorWidget: (_, __, ___) => _fallbackIcon(context),
-        ),
+    final url = category.imageUrl;
+    if (url.isEmpty) return CategoryLineArt(category: category, expand: true);
+    if (size != null) {
+      return AppNetworkImage(
+        url: url,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        backgroundColor: background,
       );
     }
-
-    final emoji = category.icon?.trim();
-    if (emoji != null && emoji.isNotEmpty && emoji.runes.length <= 2) {
-      return Align(
-        alignment: corner,
-        child: Text(emoji, style: TextStyle(fontSize: size * 0.58, height: 1)),
-      );
-    }
-
-    final spec = _resolve(category);
-    return Align(
-      alignment: corner,
-      child: Icon(spec.icon, size: size * 0.82, color: spec.color),
+    return LayoutBuilder(
+      builder: (_, c) => AppNetworkImage(
+        url: url,
+        width: c.hasBoundedWidth ? c.maxWidth : null,
+        height: c.hasBoundedHeight ? c.maxHeight : null,
+        fit: BoxFit.cover,
+        backgroundColor: background,
+      ),
     );
   }
-
-  Widget _fallbackIcon(BuildContext context) {
-    final spec = _resolve(category);
-    return Icon(
-      spec.icon,
-      size: size * 0.72,
-      color: spec.color.withValues(alpha: 0.55),
-    );
-  }
-
-  _ArtSpec _resolve(Category category) {
-    final key =
-        '${category.slug} ${category.name} ${category.nameEn ?? ''} ${category.nameAr ?? ''}'
-            .toLowerCase();
-
-    IconData icon;
-    Color? color;
-
-    if (_has(key, 'makeup', 'مكياج', 'ميك')) {
-      icon = Icons.brush_outlined;
-      color = const Color(0xFFE53935);
-    } else if (_has(key, 'skin', 'بشرة', 'عناية', 'skincare')) {
-      icon = Icons.spa_outlined;
-      color = const Color(0xFF43A047);
-    } else if (_has(key, 'hair', 'شعر')) {
-      icon = Icons.content_cut_outlined;
-      color = const Color(0xFF1E88E5);
-    } else if (_has(key, 'fragrance', 'عطر', 'perfume', 'روائح')) {
-      icon = Icons.air_outlined;
-      color = const Color(0xFF1E88E5);
-    } else if (_has(key, 'bath', 'حمام', 'body', 'جسم')) {
-      icon = Icons.water_drop_outlined;
-      color = const Color(0xFF00897B);
-    } else if (_has(key, 'tool', 'أداة', 'tools', 'فرش')) {
-      icon = Icons.face_retouching_natural_outlined;
-      color = const Color(0xFF8E24AA);
-    } else if (_has(key, 'offer', 'عرض', 'sale', 'تخفيض')) {
-      icon = Icons.local_offer_outlined;
-      color = const Color(0xFFE53935);
-    } else if (_has(key, 'new', 'جديد')) {
-      icon = Icons.auto_awesome_outlined;
-      color = const Color(0xFFE53935);
-    } else if (_has(key, 'gift', 'هدية', 'مجموعة')) {
-      icon = Icons.card_giftcard_outlined;
-      color = const Color(0xFFFB8C00);
-    } else {
-      final h = category.id.hashCode.abs();
-      icon = CategoryLineArt._icons[h % CategoryLineArt._icons.length];
-      color = CategoryLineArt._palette[h % CategoryLineArt._palette.length];
-    }
-
-    return _ArtSpec(icon: icon, color: color);
-  }
-
-  bool _has(String key, String a, String b, [String? c, String? d]) {
-    if (key.contains(a) || key.contains(b)) return true;
-    if (c != null && key.contains(c)) return true;
-    if (d != null && key.contains(d)) return true;
-    return false;
-  }
-}
-
-class _ArtSpec {
-  final IconData icon;
-  final Color color;
-  const _ArtSpec({required this.icon, required this.color});
 }

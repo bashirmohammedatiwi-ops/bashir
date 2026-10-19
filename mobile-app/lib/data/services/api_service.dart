@@ -24,7 +24,6 @@ import '../models/payment.dart';
 import '../models/product.dart';
 import '../models/review.dart';
 import '../models/search_instant.dart';
-import '../models/search_suggestions.dart';
 import '../models/store_world.dart';
 import '../models/user.dart';
 
@@ -1354,29 +1353,6 @@ class ApiService {
       if (term.isNotEmpty && !out.contains(term)) out.add(term);
     }
     return out;
-  }
-
-  // ---- SEARCH SUGGEST ----
-  /// اقتراحات البحث الحية أثناء الكتابة — منتجات + براندات + أقسام + تصحيح إملائي.
-  /// يُمرَّر [cancelToken] لإلغاء الطلب القديم عند متابعة الكتابة.
-  Future<SearchSuggestions> suggestProducts(
-    String q, {
-    required String lang,
-    CancelToken? cancelToken,
-  }) async {
-    try {
-      final query = q.trim();
-      if (query.length < 2) return SearchSuggestions.empty;
-      final r = await _dio.get(
-        '/products/search/suggest',
-        queryParameters: {'q': query, 'lang': lang == 'en' ? 'en' : 'ar'},
-        cancelToken: cancelToken,
-        options: Options(extra: {'auth': false}),
-      );
-      return SearchSuggestions.fromJson(_data(r));
-    } catch (e) {
-      _throw(e);
-    }
   }
 }
 

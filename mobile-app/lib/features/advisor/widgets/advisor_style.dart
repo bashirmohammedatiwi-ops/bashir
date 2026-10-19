@@ -13,6 +13,19 @@ abstract final class AdvisorStyle {
   static const glassBorder = Color(0xFFF1E8F6);
   static const tint = Color(0xFFF7F0FC);
 
+  /// بنفسجي النصوص المميزة (أسماء بين «»، نسب الملاءمة، الاختيار المحدد).
+  static const accentText = Color(0xFF7A3FB8);
+  /// حدّ وردي-بنفسجي للبطاقات البارزة والأزرار الثانوية.
+  static const accentBorder = Color(0xFFEBD3EE);
+  /// خلفية مناطق الصور والبطاقات الثانوية.
+  static const surface = Color(0xFFFAF6FC);
+  /// لون صفحة «ديما» تحت الشفق، وخلفية الأوراق السفلية.
+  static const bg = Color(0xFFFFFAFB);
+  static const successBg = Color(0xFFE9F7EF);
+  static const successFg = Color(0xFF137A48);
+  static const warnBg = Color(0xFFFFF5E3);
+  static const warnFg = Color(0xFFA8650A);
+
   static const gradient = LinearGradient(
     begin: AlignmentDirectional.topStart,
     end: AlignmentDirectional.bottomEnd,

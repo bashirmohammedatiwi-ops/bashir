@@ -6,18 +6,24 @@ import 'package:flutter/foundation.dart';
 import '../../data/models/product.dart';
 import '../../data/models/search_instant.dart';
 import '../../data/services/api_service.dart';
+import 'smart_query.dart';
+
+/// طلب أُلغي عمداً (حرف جديد، إعادة ضبط) — ليس فشلاً يُعرض للزبونة.
+bool _isCancel(Object e) =>
+    (e is DioException && CancelToken.isCancel(e)) || (e is ApiException && e.transportType == DioExceptionType.cancel);
 
 /// اقتراحات فورية: تأخير قصير جداً، إلغاء الطلب السابق، كاش صغير، والإبقاء على
-/// آخر نتيجة ظاهرة أثناء التحميل (لا وميض ولا شاشة فارغة بين الحروف).
+/// آخر نتيجة ظاهرة أثناء التحميل ما دامت الكلمة الجديدة تكمل السابقة.
 class InstantSearchController extends ChangeNotifier {
   final ApiService api;
 
   /// لغة الواجهة — أسماء المنتجات والأقسام والإكمالات تأتي بها (جزء من مفتاح الكاش).
   final String Function() lang;
 
-  InstantSearchController(this.api, {required this.lang});
+  InstantSearchController(this.api, {required this.lang, Duration debounce = const Duration(milliseconds: 110)})
+      : _debounce = debounce;
 
-  static const _debounce = Duration(milliseconds: 110);
+  final Duration _debounce;
   final _cache = <String, SearchInstant>{};
   Timer? _timer;
   CancelToken? _token;
@@ -27,10 +33,14 @@ class InstantSearchController extends ChangeNotifier {
   String _query = '';
   SearchInstant? _data;
   bool _loading = false;
+  bool _failed = false;
 
   String get query => _query;
   SearchInstant? get data => _data;
   bool get loading => _loading;
+
+  /// آخر طلب فشل (انقطاع/خطأ سيرفر) — اللوحة تعرض «إعادة» بدل فراغ.
+  bool get failed => _failed;
 
   void update(String raw) {
     // المسافة الأخيرة لها معنى (الكلمة اكتملت) — لا نقصّها.
@@ -38,8 +48,10 @@ class InstantSearchController extends ChangeNotifier {
     if (q == _query) return;
     _query = q;
     _timer?.cancel();
+    _failed = false;
     if (q.trim().length < 2) {
       _cancel();
+      _data = null;
       _loading = false;
       _notify();
       return;
@@ -52,11 +64,19 @@ class InstantSearchController extends ChangeNotifier {
       _notify();
       return;
     }
-    if (!_loading) {
-      _loading = true;
-      _notify();
-    }
+    // كلمة لا تكمل السابقة: نتائجها القديمة لا تخصّها — هيكل تحميل بدل نتائج قابلة للضغط.
+    final prev = _data;
+    if (prev != null && !normalizeQuery(q).startsWith(normalizeQuery(prev.query))) _data = null;
+    _loading = true;
+    _notify();
     _timer = Timer(_debounce, () => _run(q));
+  }
+
+  /// إعادة الطلب الأخير بعد فشل.
+  void retry() {
+    if (_query.trim().length < 2) return;
+    _timer?.cancel();
+    unawaited(_run(_query));
   }
 
   Future<void> _run(String q) async {
@@ -64,17 +84,24 @@ class InstantSearchController extends ChangeNotifier {
     final seq = ++_seq;
     final token = CancelToken();
     _token = token;
+    _failed = false;
+    if (!_loading) {
+      _loading = true;
+      _notify();
+    }
+    final l = lang();
     try {
-      final l = lang();
       final r = await api.searchInstant(q, cancelToken: token, lang: l);
       _cache['$l|$q'] = r;
       if (_cache.length > 80) _cache.remove(_cache.keys.first);
       if (_disposed || seq != _seq) return;
       _data = r;
-      _loading = false;
+      // ردّ لحرف سابق وصل أثناء مهلة الحرف الجديد: نعرضه، لكن التحميل مستمر.
+      _loading = _query != q || (_timer?.isActive ?? false);
       _notify();
-    } catch (_) {
-      if (_disposed || seq != _seq) return;
+    } catch (e) {
+      if (_disposed || seq != _seq || _isCancel(e)) return;
+      _failed = true;
       _loading = false;
       _notify();
     }
@@ -121,6 +148,7 @@ class SearchResultsV2Controller extends ChangeNotifier {
   bool _loading = false;
   bool _loadingMore = false;
   Object? _error;
+  Object? _moreError;
   SearchPage? _meta;
   int _seq = 0;
   CancelToken? _token;
@@ -134,15 +162,20 @@ class SearchResultsV2Controller extends ChangeNotifier {
   bool get loading => _loading;
   bool get loadingMore => _loadingMore;
   Object? get error => _error;
+
+  /// فشل تحميل الصفحة التالية — يبقى حتى تضغط «إعادة» (لا إعادة مع كل تمرير).
+  Object? get moreError => _moreError;
   bool get active => _query.isNotEmpty;
 
-  /// عدّادات الفلاتر وما فهمه البحث (من أول صفحة).
+  /// عدّادات الفلاتر وما فهمه البحث.
   SearchPage? get meta => _meta;
 
-  Future<void> search(String raw, {SearchFilters? filters}) async {
+  /// [exact]: بالكلمة كما كُتبت بلا تصحيح إملائي.
+  Future<void> search(String raw, {SearchFilters? filters, bool exact = false}) async {
     final q = raw.trim();
     _query = q;
-    _filters = filters ?? const SearchFilters();
+    final f = filters ?? const SearchFilters();
+    _filters = exact ? f.copyWith(exact: true) : f;
     await _reload();
   }
 
@@ -151,6 +184,9 @@ class SearchResultsV2Controller extends ChangeNotifier {
     _filters = f;
     await _reload(keepMeta: true);
   }
+
+  /// يمسح الفلاتر ويُبقي وضع «بالكلمة كما كُتبت» إن كان مختاراً.
+  Future<void> clearFilters() => setFilters(SearchFilters(exact: _filters.exact));
 
   Future<void> _reload({bool keepMeta = false}) async {
     final seq = ++_seq;
@@ -162,6 +198,7 @@ class SearchResultsV2Controller extends ChangeNotifier {
     _page = 0;
     _hasNext = false;
     _error = null;
+    _moreError = null;
     _loadingMore = false;
     if (!keepMeta) _meta = null;
     _loading = true;
@@ -169,41 +206,63 @@ class SearchResultsV2Controller extends ChangeNotifier {
     try {
       final r = await api.searchPage(_query, _filters, page: 1, cancelToken: token, lang: lang());
       if (_disposed || seq != _seq) return;
-      // العدّادات من البحث بلا فلاتر البراند/النوع حتى تبقى الخيارات كاملة.
-      _meta = keepMeta && _meta != null
-          ? SearchPage(
-              page: r.page,
-              brands: _meta!.brands,
-              kinds: _meta!.kinds,
-              categories: _meta!.categories,
-              priceMin: _meta!.priceMin,
-              priceMax: _meta!.priceMax,
-              corrected: r.corrected,
-              understood: r.understood,
-            )
-          : r;
+      final prev = _meta;
+      _meta = keepMeta && prev != null ? _mergeMeta(prev, r) : r;
       _append(r);
     } catch (e) {
-      if (_disposed || seq != _seq) return;
-      if (e is DioException && CancelToken.isCancel(e)) return;
+      if (_disposed || seq != _seq || _isCancel(e)) return;
       _error = e;
     }
     _loading = false;
     _notify();
   }
 
-  Future<void> loadMore() async {
+  /// عدّادات السيرفر محسوبة بلا فلاتر البراند/النوع/القسم، فنأخذها طازجة دائماً.
+  /// الاستثناء: مدى السعر يضيق مع فلتر السعر — نُبقي المدى الكامل ليبقى الاختيار ممكناً.
+  /// والمختار الذي اختفى من العدّادات الجديدة يبقى (بعدد 0) ليمكن إلغاؤه.
+  SearchPage _mergeMeta(SearchPage prev, SearchPage r) {
+    final f = _filters;
+    final priced = f.minPrice != null || f.maxPrice != null;
+    return SearchPage(
+      page: r.page,
+      brands: _keepSelected(r.brands, prev.brands, f.brandIds),
+      kinds: _keepSelected(r.kinds, prev.kinds, {if (f.kind != null) f.kind!}),
+      categories: _keepSelected(r.categories, prev.categories, {if (f.categoryId != null) f.categoryId!}),
+      priceMin: priced ? prev.priceMin : r.priceMin,
+      priceMax: priced ? prev.priceMax : r.priceMax,
+      priceBuckets: r.priceBuckets.isNotEmpty ? r.priceBuckets : prev.priceBuckets,
+      budget: r.budget,
+      corrected: r.corrected,
+      understood: r.understood,
+    );
+  }
+
+  static List<SearchFacet> _keepSelected(List<SearchFacet> fresh, List<SearchFacet> old, Set<String> selected) {
+    if (selected.isEmpty) return fresh;
+    final ids = {for (final x in fresh) x.id};
+    final missing = [
+      for (final id in selected)
+        if (!ids.contains(id))
+          for (final o in old.where((o) => o.id == id).take(1)) SearchFacet(id: o.id, name: o.name, slug: o.slug),
+    ];
+    return missing.isEmpty ? fresh : [...fresh, ...missing];
+  }
+
+  /// [retry]: بعد فشل سابق — من زر «إعادة» فقط، لا من التمرير.
+  Future<void> loadMore({bool retry = false}) async {
     if (_loading || _loadingMore || !_hasNext || _query.isEmpty) return;
+    if (_moreError != null && !retry) return;
     final seq = _seq;
+    _moreError = null;
     _loadingMore = true;
     _notify();
     try {
       final r = await api.searchPage(_query, _filters, page: _page + 1, lang: lang());
       if (_disposed || seq != _seq) return;
       _append(r);
-    } catch (_) {
+    } catch (e) {
       if (_disposed || seq != _seq) return;
-      _hasNext = false;
+      _moreError = e;
     }
     _loadingMore = false;
     _notify();
@@ -212,14 +271,19 @@ class SearchResultsV2Controller extends ChangeNotifier {
   void reset() {
     _seq++;
     _token?.cancel('reset');
+    _token = null;
     _query = '';
     _filters = const SearchFilters();
     _items.clear();
     _ids.clear();
+    _total = 0;
+    _page = 0;
+    _hasNext = false;
     _meta = null;
     _loading = false;
     _loadingMore = false;
     _error = null;
+    _moreError = null;
     _notify();
   }
 

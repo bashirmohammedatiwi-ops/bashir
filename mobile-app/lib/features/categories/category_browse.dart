@@ -8,8 +8,8 @@ import '../../data/models/paginated.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../search/smart_query.dart';
+import '../catalog/catalog_providers.dart' show categoriesProvider, keepAliveFor;
 import 'recent_categories.dart';
-import '../catalog/catalog_providers.dart' show keepAliveFor;
 
 /// مستوى القسم في الشجرة (رئيسي › فرعي › ثانوي).
 enum CategoryLevel { root, sub, tertiary }
@@ -28,6 +28,14 @@ class CategoryTarget {
     this.subcategoryId,
     this.tertiaryCategoryId,
   });
+
+  /// القسم الأدق في الوجهة ومستواه — ما يُحفظ في «زرتِها مؤخراً».
+  String? get leafId => tertiaryCategoryId ?? subcategoryId ?? categoryId;
+  CategoryLevel get level => tertiaryCategoryId != null
+      ? CategoryLevel.tertiary
+      : subcategoryId != null
+      ? CategoryLevel.sub
+      : CategoryLevel.root;
 
   String get key => tertiaryCategoryId != null
       ? 't:$tertiaryCategoryId'
@@ -51,10 +59,13 @@ class CategoryTarget {
 
   void open(BuildContext context) {
     HapticFeedback.lightImpact();
-    // نتذكّر القسم في "زرتِها مؤخراً".
-    ProviderScope.containerOf(context, listen: false)
-        .read(recentCategoriesProvider.notifier)
-        .add(RecentCategory(title: title, location: location));
+    // نتذكّر القسم في "زرتِها مؤخراً" (بمعرّفه — العنوان يُقرأ بلغة الواجهة عند العرض).
+    final recent = RecentCategory.fromTarget(this);
+    if (recent != null) {
+      ProviderScope.containerOf(context, listen: false)
+          .read(recentCategoriesProvider.notifier)
+          .add(recent);
+    }
     context.push(location);
   }
 
@@ -168,11 +179,21 @@ class CategoryIndex {
   }
 }
 
+/// فهرس الشجرة الحالية — يُبنى مرة لكل تحديث للأقسام (null قبل وصولها).
+final categoryIndexProvider = Provider<CategoryIndex?>((ref) {
+  final cats = ref.watch(categoriesProvider).valueOrNull;
+  if (cats == null) return null;
+  return CategoryIndex.build([
+    for (final c in cats)
+      if (c.parentId == null || c.parentId!.isEmpty) c,
+  ]);
+});
+
 /// الأكثر طلباً داخل قسم — معاينة سريعة في لوحة الأقسام.
 final categoryTopProductsProvider = FutureProvider.autoDispose
     .family<List<Product>, CategoryTarget>((ref, target) {
-      // نُبقي النتيجة دقيقتين للتنقل السريع بين الأقسام بدون إعادة تحميل — والخطأ لا يُبقى.
-      return keepAliveFor(ref, const Duration(minutes: 2), () async {
+      // نُبقي النتيجة 5 دقائق للتنقل السريع بين الأقسام بدون إعادة تحميل — والخطأ لا يُبقى.
+      return keepAliveFor(ref, const Duration(minutes: 5), () async {
         final Paginated<Product> page = await ref
             .read(apiServiceProvider)
             .getProducts(

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/theme/app_text.dart';
 import 'offers_theme.dart';
 
-class OffersErrorBanner extends StatelessWidget {
+/// شريط خطأ صغير بزر «إعادة المحاولة» — لفشل صفحة لاحقة دون إخفاء ما ظهر.
+class OffersErrorBanner extends ConsumerWidget {
   final String message;
   final VoidCallback onRetry;
   final bool loading;
@@ -15,12 +19,12 @@ class OffersErrorBanner extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final brand = OffersTheme.brand(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(OffersTheme.hPad, 0, OffersTheme.hPad, 10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 6, 6),
         decoration: OffersTheme.surfaceCard(context),
         child: Row(
           children: [
@@ -34,14 +38,17 @@ class OffersErrorBanner extends StatelessWidget {
             ),
             TextButton(
               onPressed: loading ? null : onRetry,
-              style: TextButton.styleFrom(foregroundColor: brand),
+              style: TextButton.styleFrom(
+                foregroundColor: brand,
+                minimumSize: const Size(kMinTapTarget, kMinTapTarget),
+              ),
               child: loading
                   ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2, color: brand),
                     )
-                  : const Text('إعادة'),
+                  : Text(ref.s.retryAction),
             ),
           ],
         ),

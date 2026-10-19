@@ -1,16 +1,17 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/ui/ui.dart';
-import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/brand.dart';
 import '../../../data/models/category.dart';
+import '../../../data/models/product.dart';
 import '../../../data/models/store_world.dart';
 import '../../home/widgets/world_showcase.dart';
-import '../../../data/models/product.dart';
 import '../../worlds/world_theme.dart';
 import '../search_strings.dart';
 
@@ -26,7 +27,9 @@ class SearchTrend {
 class SearchIdleView extends StatelessWidget {
   final AppStrings s;
   final String lang;
-  final bool typingTooShort;
+
+  /// نص الحقل — تلميح «حرفين على الأقل» يتبعه مباشرة (لا ينتظر إعادة بناء الصفحة).
+  final ValueListenable<TextEditingValue>? query;
   final List<String> recentQueries;
   final List<Category> categories;
   final List<Product> recentProducts;
@@ -62,27 +65,18 @@ class SearchIdleView extends StatelessWidget {
     required this.onLocation,
     required this.onBrandTap,
     this.onAllBrands,
-    this.typingTooShort = false,
+    this.query,
   });
 
   @override
   Widget build(BuildContext context) {
-    final t = context.worldTheme;
-    final ar = s.isAr;
     final firstVisit = recentQueries.isEmpty && recentProducts.isEmpty;
     final worldList = worlds.where((w) => !w.isGift).toList();
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.only(bottom: 40),
       children: [
-        if (typingTooShort)
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-            child: Text(
-              s.searchTypeMore,
-              style: AppText.caption.copyWith(color: t.inkMuted),
-            ),
-          ),
+        if (query != null) _TypeMoreHint(query: query!, text: s.searchTypeMore),
         if (firstVisit)
           _IntroCard(title: s.searchIdleTitle, body: s.searchIdleBody),
         if (recentQueries.isNotEmpty) ...[
@@ -113,10 +107,8 @@ class SearchIdleView extends StatelessWidget {
         ],
         if (worldList.length > 1) ...[
           AppSectionTitle(
-            title: ar ? 'ابحثي في عالم' : 'Explore a world',
-            subtitle: ar
-                ? 'كل عالم بأقسامه ومختاراته'
-                : 'Each world with its own picks',
+            title: s.searchWorldsTitle,
+            subtitle: s.searchWorldsSubtitle,
             padding: const EdgeInsetsDirectional.fromSTEB(16, 24, 16, 12),
           ),
           WorldSegments(
@@ -127,17 +119,15 @@ class SearchIdleView extends StatelessWidget {
         ],
         if (trends.isNotEmpty) ...[
           AppSectionTitle(
-            title: ar ? 'الأكثر طلباً' : 'Trending now',
-            subtitle: ar
-                ? 'أقسام يكثر البحث فيها'
-                : 'What everyone is browsing',
+            title: s.searchTrendingTitle,
+            subtitle: s.searchTrendingSubtitle,
             padding: const EdgeInsetsDirectional.fromSTEB(16, 26, 16, 10),
           ),
           _TrendingGrid(trends: trends, onTap: (tr) => onLocation(tr.location)),
         ],
         if (categories.isNotEmpty) ...[
           AppSectionTitle(
-            title: ar ? 'تسوّقي حسب القسم' : 'Shop by category',
+            title: s.searchShopByCategory,
             padding: const EdgeInsetsDirectional.fromSTEB(16, 26, 16, 14),
           ),
           _CategoryBubbles(
@@ -148,11 +138,9 @@ class SearchIdleView extends StatelessWidget {
         ],
         if (brands.isNotEmpty) ...[
           AppSectionTitle(
-            title: ar ? 'أبرز البراندات' : 'Top brands',
+            title: s.searchTopBrands,
             padding: const EdgeInsetsDirectional.fromSTEB(16, 24, 16, 12),
-            actionLabel: onAllBrands == null
-                ? null
-                : (ar ? 'عرض الكل' : 'View all'),
+            actionLabel: onAllBrands == null ? null : s.searchViewAll,
             onAction: onAllBrands,
           ),
           _BrandsStrip(brands: brands, lang: lang, onTap: onBrandTap),
@@ -196,34 +184,38 @@ class _TrendingGrid extends StatelessWidget {
         ],
       ),
     );
+    // التموّج يُرسم على أقرب Material — Ink داخل Material شفاف يُبقيه فوق خلفية البطاقة.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        decoration: BoxDecoration(
-          color: t.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: t.accentSoft.withValues(alpha: 0.7)),
-          boxShadow: [
-            BoxShadow(
-              color: t.accentDark.withValues(alpha: 0.06),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-              spreadRadius: -6,
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            column(0, half),
-            Container(
-              width: 1,
-              height: half * 50.0,
-              color: t.hairline.withValues(alpha: 0.6),
-            ),
-            column(half, trends.length),
-          ],
+      child: Material(
+        type: MaterialType.transparency,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          decoration: BoxDecoration(
+            color: t.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: t.accentSoft.withValues(alpha: 0.7)),
+            boxShadow: [
+              BoxShadow(
+                color: t.accentDark.withValues(alpha: 0.06),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+                spreadRadius: -6,
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              column(0, half),
+              Container(
+                width: 1,
+                height: half * 50.0,
+                color: t.hairline.withValues(alpha: 0.6),
+              ),
+              column(half, trends.length),
+            ],
+          ),
         ),
       ),
     );
@@ -332,12 +324,9 @@ class _CategoryBubbles extends StatelessWidget {
               for (final cat in categories)
                 SizedBox(
                   width: w,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      onTap(cat);
-                    },
+                  child: AppTap(
+                    radius: BorderRadius.circular(AppCorners.md),
+                    onTap: () => onTap(cat),
                     child: Column(
                       children: [
                         Container(
@@ -364,6 +353,7 @@ class _CategoryBubbles extends StatelessWidget {
                             child: ClipOval(
                               child: AppNetworkImage(
                                 url: cat.imageUrl,
+                                width: w - 11,
                                 fit: BoxFit.cover,
                                 backgroundColor: t.accentLight,
                               ),
@@ -427,11 +417,9 @@ class _BrandsStrip extends StatelessWidget {
         itemBuilder: (context, i) {
           final b = brands[i];
           final name = b.localizedName(lang);
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onTap(b);
-            },
+          return AppTap(
+            radius: BorderRadius.circular(AppCorners.md),
+            onTap: () => onTap(b),
             child: SizedBox(
               width: 70,
               child: Column(
@@ -467,6 +455,7 @@ class _BrandsStrip extends StatelessWidget {
                           )
                         : AppNetworkImage(
                             url: b.logoUrl,
+                            width: 44,
                             fit: BoxFit.contain,
                             backgroundColor: Colors.white,
                           ),
@@ -586,71 +575,115 @@ class _RecentChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        color: t.surface,
-        borderRadius: BorderRadius.circular(AppCorners.pill),
-        border: Border.all(color: t.hairline),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            button: true,
-            child: InkWell(
-              borderRadius: const BorderRadiusDirectional.horizontal(
-                start: Radius.circular(AppCorners.pill),
-              ).resolve(Directionality.of(context)),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onTap();
-              },
-              child: Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 4, 0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.history_rounded, size: 16, color: t.inkMuted),
-                    const SizedBox(width: 6),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 180),
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.label.copyWith(
-                          color: t.ink,
-                          fontWeight: FontWeight.w600,
+    final dir = Directionality.of(context);
+    // Ink داخل Material شفاف: التموّج فوق خلفية الشريحة لا تحتها.
+    return Material(
+      type: MaterialType.transparency,
+      child: Ink(
+        height: kMinTapTarget,
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: BorderRadius.circular(AppCorners.pill),
+          border: Border.all(color: t.hairline),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              button: true,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  start: Radius.circular(AppCorners.pill),
+                ).resolve(dir),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onTap();
+                },
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 2, 0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.history_rounded, size: 16, color: t.inkMuted),
+                      const SizedBox(width: 6),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 180),
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.label.copyWith(
+                            color: t.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Semantics(
-            button: true,
-            label: removeLabel,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onRemove();
-              },
-              child: Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 10, 0),
+            // هدف الحذف 44×44 — كان صغيراً يصعب إصابته.
+            Semantics(
+              button: true,
+              label: removeLabel,
+              excludeSemantics: true,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  end: Radius.circular(AppCorners.pill),
+                ).resolve(dir),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onRemove();
+                },
                 child: SizedBox(
-                  height: 40,
-                  width: 22,
-                  child: Icon(Icons.close_rounded, size: 15, color: t.inkMuted),
+                  width: kMinTapTarget,
+                  height: kMinTapTarget,
+                  child: Icon(Icons.close_rounded, size: 16, color: t.inkMuted),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// «اكتبي حرفين على الأقل…» — يظهر مع الحرف الأول فقط ويختفي مع الثاني أو عند المسح.
+class _TypeMoreHint extends StatelessWidget {
+  final ValueListenable<TextEditingValue> query;
+  final String text;
+  const _TypeMoreHint({required this.query, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: query,
+      builder: (context, v, _) {
+        final show = v.text.trim().length == 1;
+        return AnimatedSize(
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          alignment: AlignmentDirectional.topStart,
+          child: show
+              ? Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      text,
+                      style: AppText.caption.copyWith(color: t.inkMuted),
+                    ),
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        );
+      },
     );
   }
 }

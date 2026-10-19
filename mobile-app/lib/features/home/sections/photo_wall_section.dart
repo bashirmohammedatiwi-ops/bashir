@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -20,38 +21,33 @@ class PhotoWallSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = section.items
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
+    final items = section.items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
     if (items.isEmpty) return const SizedBox.shrink();
 
     final style = _style;
-    final display = _resolveDisplay(
-      section.display ?? section.layout ?? section.sectionLayout,
-    );
+    final display = _resolveDisplay(section.display ?? section.layout ?? section.sectionLayout);
     final gap = section.marqueeGap ?? HomeTheme.itemGap;
     final padH = section.fullBleed ? 0.0 : HomeTheme.paddingH;
     final columns = _columns(section);
 
     void onTap(Map<String, dynamic> raw) => openSectionItemLink(context, raw);
 
-    return HomeSectionShell(
-      section: section,
-      wrapCard: false,
-      child: Padding(
+    // الصفوف الأفقية (تمرير/شريط متحرك) تمتد حتى حافة الشاشة والحشوة داخلها، مثل صفوف
+    // المنتجات؛ الشبكة والمكدّس والفسيفساء والصفحات تبقى داخل الحشوة.
+    final Widget child = switch (display) {
+      'marquee' => _marquee(items, gap, style, padH),
+      'scroll' => GalleryHorizontalLayout(
+        section: section,
+        items: items,
+        gap: gap,
+        style: style,
+        onTap: onTap,
+        padding: EdgeInsets.symmetric(horizontal: padH),
+      ),
+      _ => Padding(
         padding: EdgeInsets.symmetric(horizontal: padH),
         child: switch (display) {
-          'marquee' => _marquee(items, gap, style),
           'mosaic' => _mosaic(items, gap, style, onTap),
-          'grid' || 'bento' || 'stagger' => GalleryGridLayout(
-            section: section,
-            items: items,
-            gap: gap,
-            style: style,
-            columns: columns,
-            onTap: onTap,
-          ),
           'stack' => GalleryStackLayout(
             section: section,
             items: items,
@@ -59,34 +55,24 @@ class PhotoWallSection extends StatelessWidget {
             style: style,
             onTap: onTap,
           ),
-          'pager' => _PhotoPager(
-            section: section,
-            items: items,
-            style: style,
-            onTap: onTap,
-          ),
-          'scroll' || 'carousel' => GalleryHorizontalLayout(
+          'pager' => _PhotoPager(section: section, items: items, style: style, onTap: onTap),
+          _ => GalleryGridLayout(
             section: section,
             items: items,
             gap: gap,
             style: style,
-            onTap: onTap,
-          ),
-          _ => GalleryHorizontalLayout(
-            section: section,
-            items: items,
-            gap: gap,
-            style: style,
+            columns: columns,
             onTap: onTap,
           ),
         },
       ),
-    );
+    };
+
+    return HomeSectionShell(section: section, wrapCard: false, child: child);
   }
 
   int _columns(HomeSection section) {
-    final layout = (section.sectionLayout ?? section.layout ?? '')
-        .toLowerCase();
+    final layout = (section.sectionLayout ?? section.layout ?? '').toLowerCase();
     if (layout == 'grid3' || layout == '3') return 3;
     final fromDisplay = int.tryParse(layout.replaceAll('grid', ''));
     if (fromDisplay != null && fromDisplay > 0) return fromDisplay.clamp(2, 3);
@@ -102,7 +88,7 @@ class PhotoWallSection extends StatelessWidget {
       'stack' => 'stack',
       'pager' || 'flip' => 'pager',
       'scroll' || 'carousel' => 'scroll',
-      'bento' || 'mosaic' || 'stagger' => 'grid',
+      'bento' || 'stagger' => 'grid',
       _ => switch (section.type) {
         'IMAGE_MARQUEE' => 'marquee',
         'PHOTO_WALL' || 'IMAGE_COLLAGE' => 'grid',
@@ -123,13 +109,7 @@ class PhotoWallSection extends StatelessWidget {
     final rest = items.skip(1).toList();
     return Column(
       children: [
-        GalleryStackLayout(
-          section: section,
-          items: [first],
-          gap: gap,
-          style: style,
-          onTap: onTap,
-        ),
+        GalleryStackLayout(section: section, items: [first], gap: gap, style: style, onTap: onTap),
         if (rest.isNotEmpty) ...[
           SizedBox(height: gap),
           GalleryGridLayout(
@@ -149,20 +129,20 @@ class PhotoWallSection extends StatelessWidget {
     List<Map<String, dynamic>> items,
     double gap,
     GalleryRenderStyle style,
+    double padH,
   ) {
     final shape = style.defaultShape;
+    // الأشكال ذات الزوايا المحسوبة (حبة/قوس/دائرة) تتجاهلها البلاطة نفسها.
     final radius = style.tileCornerRadius ?? HomeTheme.galleryRadius;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final sizer = GalleryTileSizer.forSection(
-          viewportWidth: constraints.maxWidth,
+          // الشريط بعرض الشاشة، ومقاس البلاطات كما كان داخل الحشوة.
+          viewportWidth: math.max(0.0, constraints.maxWidth - padH * 2),
           gap: gap,
           section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(
-            section,
-            defaultAspect: style.defaultAspect,
-          ),
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
         );
         final tileH = sizer.tileHeight;
         final tileW = sizer.tileWidth;
@@ -221,22 +201,60 @@ class _PhotoPagerState extends State<_PhotoPager> {
   late final PageController _page;
   Timer? _timer;
   int _index = 0;
+  bool _tickerEnabled = true;
+  bool _reduceMotion = false;
+  bool _initialized = false;
+  ModalRoute<dynamic>? _route;
+
+  List<Map<String, dynamic>> get _visible => [
+    for (final raw in widget.items)
+      if (widget.style.tileData(raw).imageUrl.isNotEmpty) raw,
+  ];
 
   @override
   void initState() {
     super.initState();
     _page = PageController(viewportFraction: 0.9);
-    _arm();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // تُقرأ هنا لا داخل المؤقت (لا اعتماديات من خارج build).
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
+    _route = ModalRoute.of(context);
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    if (reduce != _reduceMotion || !_initialized) {
+      _initialized = true;
+      _reduceMotion = reduce;
+      _arm();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_PhotoPager old) {
+    super.didUpdateWidget(old);
+    if (old.items.length != widget.items.length ||
+        old.section.marqueeSpeed != widget.section.marqueeSpeed) {
+      final count = _visible.length;
+      if (_index >= count) _index = count == 0 ? 0 : count - 1;
+      _arm();
+    }
+  }
+
+  /// يبدأ العدّ من جديد — بعد كل سحب يدوي تُحسب المهلة كاملة.
   void _arm() {
     _timer?.cancel();
-    final count = widget.items.length;
-    if (count < 2) return;
-    final seconds = (11 - (widget.section.marqueeSpeed ?? 4).clamp(1, 10))
-        .clamp(3, 10);
+    _timer = null;
+    final count = _visible.length;
+    // «تقليل الحركة»: لا تقليب تلقائي — التنقل بالسحب فقط.
+    if (count < 2 || _reduceMotion) return;
+    final seconds = (11 - (widget.section.marqueeSpeed ?? 4).clamp(1, 10)).clamp(3, 10);
     _timer = Timer.periodic(Duration(seconds: seconds.toInt()), (_) {
-      if (!_page.hasClients) return;
+      // لا تقليب والتبويب مخفي، أو فوقه شاشة أخرى، أو القسم خارج الشاشة.
+      if (!mounted || !_page.hasClients || !_tickerEnabled) return;
+      if (_route != null && !_route!.isCurrent) return;
+      if (!_onScreen()) return;
       final next = (_index + 1) % count;
       _page.animateToPage(
         next,
@@ -244,6 +262,25 @@ class _PhotoPagerState extends State<_PhotoPager> {
         curve: Curves.easeOutCubic,
       );
     });
+  }
+
+  bool _onScreen() {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return false;
+    final top = box.localToGlobal(Offset.zero).dy;
+    return top < MediaQuery.sizeOf(context).height && top + box.size.height > 0;
+  }
+
+  bool _onScroll(ScrollNotification n) {
+    if (n.depth != 0) return false;
+    if (n is ScrollStartNotification && n.dragDetails != null) {
+      // العميلة تسحب: لا نقلب الصفحة من تحت إصبعها.
+      _timer?.cancel();
+      _timer = null;
+    } else if (n is ScrollEndNotification) {
+      _arm();
+    }
+    return false;
   }
 
   @override
@@ -256,6 +293,8 @@ class _PhotoPagerState extends State<_PhotoPager> {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
+    final items = _visible;
+    if (items.isEmpty) return const SizedBox.shrink();
     final aspect = GalleryTileSizer.resolveAspect(
       widget.section,
       defaultAspect: widget.style.defaultAspect,
@@ -264,44 +303,49 @@ class _PhotoPagerState extends State<_PhotoPager> {
       children: [
         AspectRatio(
           aspectRatio: aspect <= 0 ? 16 / 9 : aspect,
-          child: PageView.builder(
-            controller: _page,
-            itemCount: widget.items.length,
-            onPageChanged: (i) => setState(() => _index = i),
-            itemBuilder: (_, i) {
-              final raw = widget.items[i];
-              final data = widget.style.tileData(raw);
-              return LayoutBuilder(
-                builder: (context, constraints) => GalleryPhotoCard(
-                  data: data,
-                  width: constraints.maxWidth,
-                  height: constraints.maxHeight,
-                  onTap: () => widget.onTap(raw),
-                  showShadow: widget.section.showShadow,
-                ),
-              );
-            },
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _onScroll,
+            child: PageView.builder(
+              controller: _page,
+              itemCount: items.length,
+              onPageChanged: (i) => setState(() => _index = i),
+              itemBuilder: (_, i) {
+                final raw = items[i];
+                final data = widget.style.tileData(raw);
+                return LayoutBuilder(
+                  builder: (context, constraints) => GalleryPhotoCard(
+                    data: data,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    fit: widget.style.fit,
+                    cornerRadiusOverride: widget.style.cornerRadiusFor(data.shape),
+                    onTap: () => widget.onTap(raw),
+                    showShadow: widget.section.showShadow,
+                  ),
+                );
+              },
+            ),
           ),
         ),
-        if (widget.items.length > 1) ...[
+        if (items.length > 1) ...[
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < widget.items.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == _index ? 16 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: i == _index
-                        ? t.accent
-                        : t.hairline.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(99),
+          ExcludeSemantics(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < items.length; i++)
+                  AnimatedContainer(
+                    duration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == _index ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: i == _index ? t.accent : t.hairline.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ],
       ],

@@ -3,13 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/brand/brand_logo.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../advisor_cart.dart';
 import '../advisor_controller.dart';
 import '../advisor_models.dart';
+import '../advisor_strings.dart';
 import 'advisor_style.dart';
 import 'stagger_in.dart';
 
@@ -17,7 +20,14 @@ import 'stagger_in.dart';
 class AdvisorRoutineCard extends ConsumerStatefulWidget {
   final AdvisorRoutine routine;
   final bool animate;
-  const AdvisorRoutineCard({super.key, required this.routine, this.animate = true});
+
+  /// معرّف الرد في المحادثة — تُحفظ به حالة «أُضيف» فلا تعود بعد التمرير أو الاستعادة.
+  /// بلا معرّف (مثل «روتيناتي») تبقى الحالة محلية.
+  final int? entryId;
+
+  /// أزرار «أوفر / الأرقى / منتجات مفردة» تخص آخر رد فقط — على روتين قديم تبني نسخة من طلب آخر.
+  final bool showActions;
+  const AdvisorRoutineCard({super.key, required this.routine, this.animate = true, this.entryId, this.showActions = true});
 
   @override
   ConsumerState<AdvisorRoutineCard> createState() => _AdvisorRoutineCardState();
@@ -25,13 +35,28 @@ class AdvisorRoutineCard extends ConsumerStatefulWidget {
 
 class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
   bool _busy = false;
-  bool _done = false;
+  bool _doneLocal = false;
 
-  String get _schedule {
+  String _schedule(bool isAr) {
     final whens = widget.routine.steps.map((s) => s.when).toSet();
-    if (whens.contains('both') || (whens.contains('am') && whens.contains('pm'))) return 'صباحاً ومساءً';
-    if (whens.contains('pm')) return 'مساءً';
-    return 'صباحاً';
+    if (whens.contains('both') || (whens.contains('am') && whens.contains('pm'))) return isAr ? 'صباحاً ومساءً' : 'Morning & night';
+    if (whens.contains('pm')) return isAr ? 'مساءً' : 'Night';
+    return isAr ? 'صباحاً' : 'Morning';
+  }
+
+  void _toggleSaved(bool saved) {
+    HapticFeedback.selectionClick();
+    final n = ref.read(savedRoutinesProvider.notifier);
+    if (saved) {
+      n.remove(widget.routine);
+    } else {
+      n.save(widget.routine);
+      final s = ref.read(stringsProvider);
+      AppSnackbar.success(
+        context,
+        s.isAr ? 'حُفظ في «${s.advisorMyRoutines}» — تجدينه في ملفكِ الجمالي' : 'Saved to “${s.advisorMyRoutines}” in your beauty profile',
+      );
+    }
   }
 
   Future<void> _addAll() async {
@@ -42,19 +67,26 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
     final added = await advisorAddRoutine(context, ref, toBuy.map((s) => s.product).toList());
     if (!mounted) return;
     if (added > 0) {
+      final ctl = ref.read(advisorProvider.notifier);
       for (final st in toBuy) {
-        ref.read(advisorProvider.notifier).track('cart', productId: st.product.id);
+        ctl.track('cart', productId: st.product.id);
       }
+      if (widget.entryId != null) ctl.markAdded(widget.entryId!);
     }
     setState(() {
       _busy = false;
-      _done = added > 0;
+      _doneLocal = added > 0;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final r = widget.routine;
+    final s = ref.s;
+    final id = widget.entryId;
+    final done = _doneLocal || (id != null && ref.watch(advisorProvider.select((x) => x.added.contains(id))));
+    final saved = ref.watch(savedRoutinesProvider.select((l) => l.any((x) => x.key == SavedRoutine.keyOf(r))));
+    final owned = r.steps.where((x) => x.owned).length;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: DecoratedBox(
@@ -73,11 +105,14 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
                 title: r.title,
                 emoji: r.emoji,
                 subtitle: [
-                  r.isLook ? '${r.steps.length} قطع متناسقة' : '${r.steps.length} خطوات • $_schedule',
-                  if (r.steps.any((s) => s.owned)) '${r.steps.where((s) => s.owned).length} عندكِ ✓',
-                  if (r.brand != null) 'من ${r.brand!.split(RegExp(r'\s+(?=[A-Za-z])')).last}',
+                  r.isLook ? s.advisorMatchingPieces(r.steps.length) : '${s.stepsCount(r.steps.length)} • ${_schedule(s.isAr)}',
+                  if (owned > 0) s.isAr ? '$owned عندكِ ✓' : '$owned owned ✓',
+                  if (r.brand != null) '${s.isAr ? 'من' : 'by'} ${r.brand!.split(RegExp(r'\s+(?=[A-Za-z])')).last}',
                 ].join(' • '),
                 total: r.total,
+                saved: saved,
+                saveLabel: s.advisorSaveRoutine,
+                onSave: r.raw.isEmpty ? null : () => _toggleSaved(saved),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 16, 14, 4),
@@ -96,45 +131,49 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
                 child: _AddAllButton(
+                  isAr: s.isAr,
                   isLook: r.isLook,
                   partial: r.steps.any((s) => s.owned),
                   total: r.total,
                   busy: _busy,
-                  done: _done,
-                  onTap: _done ? () => openCartTab(context, ProviderScope.containerOf(context, listen: false)) : _addAll,
+                  done: done,
+                  onTap: done ? () => openCartTab(context, ProviderScope.containerOf(context, listen: false)) : _addAll,
                 ),
               ),
-              // بدائل الروتين: أزرار واضحة داخل البطاقة بدل شرائح صغيرة في الأسفل.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _RoutineAction(
-                        icon: Icons.savings_outlined,
-                        label: r.isLook ? 'لوك أوفر' : 'أوفر',
-                        chip: const AdvisorChip(label: 'نسخة أوفر', value: 'act:cheaper', emoji: '💸'),
+              // بدائل الروتين: أزرار واضحة داخل البطاقة بدل شرائح صغيرة في الأسفل (لآخر رد فقط).
+              if (!widget.showActions)
+                const SizedBox(height: 14)
+              else
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _RoutineAction(
+                          icon: Icons.savings_outlined,
+                          label: r.isLook ? (s.isAr ? 'لوك أوفر' : 'Cheaper look') : (s.isAr ? 'أوفر' : 'Cheaper'),
+                          chip: const AdvisorChip(label: 'نسخة أوفر', value: 'act:cheaper', emoji: '💸'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _RoutineAction(
-                        icon: Icons.diamond_outlined,
-                        label: 'الأرقى',
-                        chip: const AdvisorChip(label: 'نسخة أرقى', value: 'unset:budget;set:sort=premium;act:routine', emoji: '💎'),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _RoutineAction(
+                          icon: Icons.diamond_outlined,
+                          label: s.isAr ? 'الأرقى' : 'Premium',
+                          chip: const AdvisorChip(label: 'نسخة أرقى', value: 'unset:budget;set:sort=premium;act:routine', emoji: '💎'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _RoutineAction(
-                        icon: Icons.grid_view_rounded,
-                        label: 'منتجات مفردة',
-                        chip: const AdvisorChip(label: 'منتجات مفردة', value: 'act:recommend', emoji: '🛍️'),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _RoutineAction(
+                          icon: Icons.grid_view_rounded,
+                          label: s.isAr ? 'منتجات مفردة' : 'Single picks',
+                          chip: const AdvisorChip(label: 'منتجات مفردة', value: 'act:recommend', emoji: '🛍️'),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -148,7 +187,18 @@ class _Header extends StatelessWidget {
   final String emoji;
   final String subtitle;
   final int total;
-  const _Header({required this.title, required this.emoji, required this.subtitle, required this.total});
+  final bool saved;
+  final String saveLabel;
+  final VoidCallback? onSave;
+  const _Header({
+    required this.title,
+    required this.emoji,
+    required this.subtitle,
+    required this.total,
+    required this.saved,
+    required this.saveLabel,
+    required this.onSave,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +235,10 @@ class _Header extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AdvisorStyle.text(size: 16, weight: FontWeight.w800, color: Colors.white, height: 1.3)),
+                    Text(
+                      title,
+                      style: AdvisorStyle.text(size: 16, weight: FontWeight.w800, color: Colors.white, height: 1.3),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
@@ -194,10 +247,37 @@ class _Header extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                child: Text(formatPrice(total), style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w800, color: BrandColors.orchid, height: 1.2)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                    child: Text(
+                      formatPrice(total),
+                      style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w800, color: BrandColors.orchid, height: 1.2),
+                    ),
+                  ),
+                  if (onSave != null)
+                    // «احفظي الروتين» — يبقى في «روتيناتي» بعد انتهاء المحادثة.
+                    Semantics(
+                      button: true,
+                      toggled: saved,
+                      label: saveLabel,
+                      excludeSemantics: true,
+                      child: Tooltip(
+                        message: saveLabel,
+                        child: InkResponse(
+                          onTap: onSave,
+                          radius: 22,
+                          child: SizedBox.square(
+                            dimension: 44,
+                            child: Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 22, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
@@ -213,15 +293,16 @@ class _StepTile extends StatelessWidget {
   final bool last;
   const _StepTile({required this.step, required this.number, required this.last});
 
-  String get _when => switch (step.when) {
-        'am' => '☀️ صباحاً',
-        'pm' => '🌙 مساءً',
-        _ => '☀️🌙 صباحاً ومساءً',
-      };
+  String _when(bool isAr) => switch (step.when) {
+    'am' => isAr ? '☀️ صباحاً' : '☀️ Morning',
+    'pm' => isAr ? '🌙 مساءً' : '🌙 Night',
+    _ => isAr ? '☀️🌙 صباحاً ومساءً' : '☀️🌙 Morning & night',
+  };
 
   @override
   Widget build(BuildContext context) {
     final p = step.product;
+    final isAr = Directionality.of(context) == TextDirection.rtl;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -266,29 +347,34 @@ class _StepTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  // Wrap لا Row: مع خط أكبر أو شاشة ضيقة تنزل الشارات لسطر ثانٍ بدل أن تفيض.
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text('$number. ${step.label}', style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.3)),
-                      if (step.when != 'any') ...[
-                        const SizedBox(width: 8),
+                      if (step.when != 'any')
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(color: AdvisorStyle.tint, borderRadius: BorderRadius.circular(10)),
-                          child: Text(_when, style: AdvisorStyle.text(size: 10, weight: FontWeight.w700, color: AdvisorStyle.inkSoft, height: 1.4)),
+                          child: Text(
+                            _when(isAr),
+                            style: AdvisorStyle.text(size: 10, weight: FontWeight.w700, color: AdvisorStyle.inkSoft, height: 1.4),
+                          ),
                         ),
-                      ],
-                      if (step.owned) ...[
-                        const SizedBox(width: 6),
+                      if (step.owned)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.12),
+                            color: AdvisorStyle.successFg.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text('عندكِ ✓',
-                              style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: AppColors.success, height: 1.4)),
+                          child: Text(
+                            isAr ? 'عندكِ ✓' : 'You have it ✓',
+                            style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: AdvisorStyle.successFg, height: 1.4),
+                          ),
                         ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -311,7 +397,13 @@ class _StepTile extends StatelessWidget {
                               height: 56,
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                              child: AppNetworkImage(url: p.image, fit: BoxFit.contain, radius: BorderRadius.circular(8)),
+                              child: AppNetworkImage(
+                                url: p.image,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.contain,
+                                radius: BorderRadius.circular(8),
+                              ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -319,26 +411,37 @@ class _StepTile extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (p.brand.isNotEmpty)
-                                    Text(p.brand,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: BrandColors.orchid, height: 1.2)),
-                                  Text(p.name,
-                                      maxLines: 2,
+                                    Text(
+                                      p.brand,
+                                      maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, height: 1.35)),
+                                      style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: BrandColors.orchid, height: 1.2),
+                                    ),
+                                  Text(
+                                    p.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, height: 1.35),
+                                  ),
                                   const SizedBox(height: 2),
-                                  Text(step.owned ? 'من مشترياتكِ' : formatPrice(p.price),
-                                      style: AdvisorStyle.text(
-                                        size: 12.5,
-                                        weight: FontWeight.w800,
-                                        color: step.owned ? AppColors.success : p.hasDiscount ? AppColors.sale : AdvisorStyle.ink,
-                                        height: 1.3,
-                                      )),
+                                  Text(
+                                    step.owned ? (isAr ? 'من مشترياتكِ' : 'From your orders') : formatPrice(p.price),
+                                    style: AdvisorStyle.text(
+                                      size: 12.5,
+                                      weight: FontWeight.w800,
+                                      color: step.owned
+                                          ? AdvisorStyle.successFg
+                                          : p.hasDiscount
+                                          ? AppColors.sale
+                                          : AdvisorStyle.ink,
+                                      height: 1.3,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.chevron_left_rounded, color: AdvisorStyle.inkMuted, size: 20),
+                            // يتبع اتجاه النص: «افتحي» للأمام في العربي والإنجليزي.
+                            const Icon(Icons.chevron_right_rounded, color: AdvisorStyle.inkMuted, size: 20),
                           ],
                         ),
                       ),
@@ -360,9 +463,12 @@ class _AddAllButton extends StatelessWidget {
   final bool done;
   final bool isLook;
   final VoidCallback onTap;
+
   /// بعض الخطوات عندها: «أضيفي الناقص» بدل «الروتين كاملاً».
   final bool partial;
+  final bool isAr;
   const _AddAllButton({
+    required this.isAr,
     required this.total,
     required this.busy,
     required this.done,
@@ -373,16 +479,22 @@ class _AddAllButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final idle = isLook
+        ? (isAr ? 'أضيفي اللوك كاملاً' : 'Add the full look')
+        : partial
+        ? (isAr ? 'أضيفي الناقص فقط' : 'Add only what’s missing')
+        : (isAr ? 'أضيفي الروتين كاملاً' : 'Add the full routine');
+    final added = isLook
+        ? (isAr ? 'أُضيف اللوك  •  عرض السلة' : 'Look added  •  View bag')
+        : (isAr ? 'أُضيف الروتين  •  عرض السلة' : 'Routine added  •  View bag');
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
-      height: 52,
+      constraints: const BoxConstraints(minHeight: 52),
       decoration: BoxDecoration(
         gradient: done ? null : AdvisorStyle.gradient,
-        color: done ? const Color(0xFFE9F7EF) : null,
+        color: done ? AdvisorStyle.successBg : null,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: done
-            ? null
-            : [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.32), blurRadius: 16, offset: const Offset(0, 6))],
+        boxShadow: done ? null : [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.32), blurRadius: 16, offset: const Offset(0, 6))],
       ),
       child: Material(
         color: Colors.transparent,
@@ -390,39 +502,66 @@ class _AddAllButton extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: busy ? null : onTap,
-          child: Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              child: busy
-                  ? const SizedBox(
-                      key: ValueKey('b'),
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
-                    )
-                  : done
-                      ? Row(
-                          key: const ValueKey('d'),
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
-                            const SizedBox(width: 6),
-                            Text(isLook ? 'أُضيف اللوك  •  عرض السلة' : 'أُضيف الروتين  •  عرض السلة',
-                                style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, color: AppColors.success, height: 1.2)),
-                          ],
-                        )
-                      : Row(
-                          key: const ValueKey('i'),
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 19),
-                            const SizedBox(width: 8),
-                            Text(isLook ? 'أضيفي اللوك كاملاً' : partial ? 'أضيفي الناقص فقط' : 'أضيفي الروتين كاملاً',
-                                style: AdvisorStyle.text(size: 14, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
-                            Text('  •  ${formatPrice(total)}',
-                                style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.85), height: 1.2)),
-                          ],
-                        ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: busy
+                    ? const SizedBox(
+                        key: ValueKey('b'),
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                      )
+                    : done
+                    ? Row(
+                        key: const ValueKey('d'),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: AdvisorStyle.successFg, size: 20),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              added,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, color: AdvisorStyle.successFg, height: 1.2),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        key: const ValueKey('i'),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 19),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              idle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AdvisorStyle.text(size: 14, weight: FontWeight.w800, color: Colors.white, height: 1.2),
+                            ),
+                          ),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '  •  ${formatPrice(total)}',
+                                style: AdvisorStyle.text(
+                                  size: 12.5,
+                                  weight: FontWeight.w700,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
         ),
@@ -467,7 +606,10 @@ class _RoutineAction extends ConsumerWidget {
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(label, style: AdvisorStyle.text(size: 12, weight: FontWeight.w800, color: AdvisorStyle.ink, height: 1.2)),
+                  child: Text(
+                    label,
+                    style: AdvisorStyle.text(size: 12, weight: FontWeight.w800, color: AdvisorStyle.ink, height: 1.2),
+                  ),
                 ),
               ],
             ),

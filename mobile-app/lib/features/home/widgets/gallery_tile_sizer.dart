@@ -42,8 +42,7 @@ class GalleryTileSizer {
   static bool _isLegacyPixelPair(double w, double h) => w > 48 && h > 48;
 
   static String _displayOf(HomeSection section) =>
-      (section.display ?? section.layout ?? section.sectionLayout ?? '')
-          .toLowerCase();
+      (section.display ?? section.layout ?? section.sectionLayout ?? '').toLowerCase();
 
   static double resolveTilesPerView(HomeSection section) {
     if (section.tilesPerView != null && section.tilesPerView! > 0) {
@@ -58,8 +57,9 @@ class GalleryTileSizer {
       if (cw >= 160) return 2;
     }
 
+    // المكدّس والفسيفساء: الصورة الرئيسية بعرض الشاشة كاملاً — لا تُحسب كأنها 2.5 بطاقة.
     return switch (_displayOf(section)) {
-      'stack' => 1,
+      'stack' || 'mosaic' => 1,
       'marquee' || 'carousel' => 2,
       _ => 2.5,
     };
@@ -73,9 +73,7 @@ class GalleryTileSizer {
       return section.customWidth! / section.customHeight!;
     }
 
-    return PhotoShapeGeometry.parseAspect(
-          section.aspectRatio ?? defaultAspect,
-        ) ??
+    return PhotoShapeGeometry.parseAspect(section.aspectRatio ?? defaultAspect) ??
         PhotoShapeGeometry.aspectForShape(section.shape ?? 'rounded');
   }
 

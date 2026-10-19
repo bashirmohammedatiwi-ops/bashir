@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/locale_provider.dart';
-import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/ui/ui.dart';
+import '../../../data/models/category.dart';
 import '../../worlds/world_theme.dart';
 import '../category_browse.dart';
+import 'category_line_art.dart';
 
 /// الشريط الجانبي للأقسام — صورة دائرية + اسم، والمختار يبرز ببطاقة ومؤشر لوني.
 class CategoryRail extends ConsumerStatefulWidget {
@@ -74,8 +75,8 @@ class _CategoryRailState extends ConsumerState<CategoryRail> {
       itemBuilder: (context, i) {
         final e = widget.entries[i];
         return _RailTile(
+          category: e.category,
           name: e.category.localizedName(lang),
-          imageUrl: e.category.imageUrl,
           selected: e.category.id == widget.selectedId,
           onTap: () => widget.onSelect(e.category.id),
         );
@@ -85,14 +86,14 @@ class _CategoryRailState extends ConsumerState<CategoryRail> {
 }
 
 class _RailTile extends StatelessWidget {
+  final Category category;
   final String name;
-  final String imageUrl;
   final bool selected;
   final VoidCallback onTap;
 
   const _RailTile({
+    required this.category,
     required this.name,
-    required this.imageUrl,
     required this.selected,
     required this.onTap,
   });
@@ -162,10 +163,10 @@ class _RailTile extends StatelessWidget {
                           : null,
                     ),
                     child: ClipOval(
-                      child: AppNetworkImage(
-                        url: imageUrl,
-                        fit: BoxFit.cover,
-                        backgroundColor: t.accentLight,
+                      child: CategoryThumb(
+                        category: category,
+                        size: 50,
+                        background: t.accentLight,
                       ),
                     ),
                   ),

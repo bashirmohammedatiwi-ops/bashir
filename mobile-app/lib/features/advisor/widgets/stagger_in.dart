@@ -32,23 +32,28 @@ class StaggerIn extends StatefulWidget {
 class _StaggerInState extends State<StaggerIn> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: widget.duration);
   late final Animation<double> _t = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
-  // يُقرأ مرة واحدة: إن تغيّر لاحقاً لا تُقطع الحركة الجارية.
-  late final bool _animate = widget.animate;
+  // يُحدَّد مرة واحدة عند أول ربط: إن تغيّر لاحقاً لا تُقطع الحركة الجارية.
+  // مع «تقليل الحركة» يظهر العنصر مباشرة.
+  bool? _animateOnce;
+  bool get _animate => _animateOnce ?? false;
 
   @override
-  void initState() {
-    super.initState();
-    if (!_animate) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_animateOnce != null) return;
+    final run = widget.animate && !MediaQuery.disableAnimationsOf(context);
+    _animateOnce = run;
+    if (!run) {
       _c.value = 1;
+      return;
+    }
+    final d = widget.delay ?? widget.step * widget.index;
+    if (d == Duration.zero) {
+      _c.forward();
     } else {
-      final d = widget.delay ?? widget.step * widget.index;
-      if (d == Duration.zero) {
-        _c.forward();
-      } else {
-        Future<void>.delayed(d, () {
-          if (mounted) _c.forward();
-        });
-      }
+      Future<void>.delayed(d, () {
+        if (mounted) _c.forward();
+      });
     }
   }
 

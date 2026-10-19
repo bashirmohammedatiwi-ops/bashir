@@ -16,7 +16,10 @@ class RecentSearchesNotifier extends StateNotifier<List<String>> {
     final raw = prefs.getString(_key);
     if (raw == null) return;
     try {
-      state = (jsonDecode(raw) as List).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList();
+      final saved = (jsonDecode(raw) as List).map((e) => e.toString()).where((e) => e.trim().isNotEmpty);
+      // ما أُضيف قبل اكتمال القراءة يبقى في المقدمة.
+      final seen = {for (final e in state) e.toLowerCase()};
+      state = [...state, ...saved.where((e) => seen.add(e.toLowerCase()))].take(_max).toList();
     } catch (_) {}
   }
 
@@ -31,6 +34,14 @@ class RecentSearchesNotifier extends StateNotifier<List<String>> {
 
   Future<void> remove(String query) async {
     final next = state.where((e) => e != query).toList();
+    state = next;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(next));
+  }
+
+  /// «تراجع» بعد «مسح الكل»: يعيد القائمة كما كانت.
+  Future<void> restore(List<String> items) async {
+    final next = items.where((e) => e.trim().isNotEmpty).take(_max).toList();
     state = next;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(next));

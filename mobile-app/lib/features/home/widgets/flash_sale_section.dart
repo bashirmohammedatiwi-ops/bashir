@@ -1,51 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/widgets/product_card.dart';
-import '../../../core/widgets/section_header.dart';
+import '../../../core/widgets/ui/app_countdown.dart';
 import '../../../data/models/home_feed.dart';
-import 'home_scroll_perf.dart';
+import '../home_link.dart';
+import '../home_strings.dart';
+import 'home_product_row.dart';
+import 'home_section_shell.dart';
 
-/// قسم «أقوى العروض» — legacy fallback (غير مستخدم في المسار الرئيسي).
-class FlashSaleSection extends ConsumerWidget {
+/// شريط «العرض السريع» التلقائي — من feed.flashSale حين لا يضيف المشرف قسم
+/// FLASH_SALE (كما في الموقع). عدّاد حتى الانتهاء، ثم يختفي الشريط كله بدل أن يبقى
+/// «عرضاً محدوداً» انتهى.
+class FlashSaleSection extends ConsumerStatefulWidget {
   final FlashSale flashSale;
   final String? title;
 
   const FlashSaleSection({super.key, required this.flashSale, this.title});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.s;
-    final sectionTitle = title ?? s.topOffers;
+  ConsumerState<FlashSaleSection> createState() => _FlashSaleSectionState();
+}
 
-    return ColoredBox(
-      color: Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SectionHeader(
-            title: sectionTitle,
-            actionLabel: s.viewAll,
-            style: SectionHeaderStyle.niceOne,
-            onAction: () => context.push(
-              '/products?isPromo=1&title=${Uri.encodeComponent(sectionTitle)}',
-            ),
+class _FlashSaleSectionState extends ConsumerState<FlashSaleSection> {
+  bool _ended = false;
+
+  bool get _live {
+    final end = widget.flashSale.endsAt;
+    return !_ended && end != null && end.isAfter(DateTime.now());
+  }
+
+  @override
+  void didUpdateWidget(covariant FlashSaleSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // موعد جديد من لوحة التحكم (تمديد العرض): يعود الشريط.
+    if (oldWidget.flashSale.endsAt != widget.flashSale.endsAt) _ended = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final products = widget.flashSale.products;
+    if (products.isEmpty || !_live) return const SizedBox.shrink();
+    final s = ref.s;
+    void viewAll() => openViewAllLink(
+      context,
+      query: '/products?isPromo=1&title=${Uri.encodeComponent(s.allOffers)}',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // «عرض الكل» في نهاية الصف — رأس القسم للعنوان والعدّاد فقط.
+        HomeSectionHeader(
+          title: widget.title ?? s.homeFlashSaleTitle,
+          overline: s.limitedOffers,
+          trailing: AppCountdown(
+            endsAt: widget.flashSale.endsAt!,
+            style: AppCountdownStyle.cells,
+            onExpired: () {
+              if (mounted) setState(() => _ended = true);
+            },
           ),
-          HomeHorizontalList(
-            height: 248,
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-            itemCount: flashSale.products.length,
-            itemBuilder: (_, i) => ProductCard(
-              product: flashSale.products[i],
-              width: 150,
-              showPromoBadge: true,
-              lite: true,
-            ),
-          ),
-        ],
-      ),
+        ),
+        HomeProductRow(
+          products: products,
+          showPromoBadge: true,
+          onViewAll: viewAll,
+          viewAllLabel: s.viewAll,
+        ),
+      ],
     );
   }
 }

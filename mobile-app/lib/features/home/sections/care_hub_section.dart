@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/navigation/app_navigation.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
+import '../home_strings.dart';
 import '../sections/product_sections.dart';
 import '../sections/routine_carousel_section.dart';
 import '../sections/skin_concerns_strip.dart';
 import '../widgets/circle_tile.dart';
 import '../widgets/home_section_shell.dart';
+import '../widgets/home_theme.dart';
 
 enum _CareHubTab { concerns, routine, categories, products }
 
@@ -54,6 +59,28 @@ class _CareHubSectionState extends ConsumerState<CareHubSection> {
     _CareHubTab.products => s.careTabProducts,
   };
 
+  /// «عرض الكل» لكل تبويب يذهب لوجهته: الروتينات، دليل البشرة، الأقسام، أو المنتجات —
+  /// لا قائمة المنتجات للجميع.
+  VoidCallback _viewAll(_CareHubTab tab) => switch (tab) {
+    _CareHubTab.routine => () => openViewAllLink(
+      context,
+      query: '/packages?tab=routines',
+    ),
+    _CareHubTab.concerns => () => openViewAllLink(
+      context,
+      query: '/skin-guide',
+    ),
+    _CareHubTab.categories => () => openCategoriesTab(
+      context,
+      ProviderScope.containerOf(context, listen: false),
+    ),
+    _CareHubTab.products => () => openViewAllLink(
+      context,
+      query: _section.viewAllQuery,
+      fallbackQuery: 'isBestSeller=1',
+    ),
+  };
+
   @override
   Widget build(BuildContext context) {
     final s = ref.s;
@@ -70,14 +97,19 @@ class _CareHubSectionState extends ConsumerState<CareHubSection> {
 
     if (layout == 'tabs') {
       final tabs = _tabs(hasConcerns, hasPackages, hasCategories, hasProducts);
+      final current = tabs[_tab.clamp(0, tabs.length - 1)];
+      final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
       return HomeSectionShell(
         section: _section,
         compactTop: widget.compactTop,
+        actionLabel: _section.showViewAll ? s.viewAll : null,
+        onAction: _section.showViewAll ? _viewAll(current) : null,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
-              height: 40,
+              height: kMinTapTarget,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(
@@ -85,22 +117,52 @@ class _CareHubSectionState extends ConsumerState<CareHubSection> {
                 ),
                 itemCount: tabs.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final selected = _tab == i;
-                  return ChoiceChip(
-                    label: Text(_tabLabel(s, tabs[i])),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _tab = i),
-                  );
-                },
+                itemBuilder: (_, i) => Center(
+                  child: Semantics(
+                    selected: tabs[i] == current,
+                    child: HomeFilterPill(
+                      label: _tabLabel(s, tabs[i]),
+                      selected: tabs[i] == current,
+                      onTap: () {
+                        if (tabs[i] == current) return;
+                        HapticFeedback.selectionClick();
+                        setState(() => _tab = i);
+                      },
+                    ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
-            _tabBody(tabs[_tab.clamp(0, tabs.length - 1)], s, lang),
+            AnimatedSwitcher(
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder: (current, previous) => Stack(
+                alignment: AlignmentDirectional.topStart,
+                children: [...previous, if (current != null) current],
+              ),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: KeyedSubtree(
+                key: ValueKey(current),
+                child: _tabBody(current, s, lang),
+              ),
+            ),
           ],
         ),
       );
     }
+
+    // مكدّس: كل صف بعنوان صغير حتى لا تبدو أربعة صفوف بلا تسمية.
+    Widget header(String title, _CareHubTab tab) => HomeEditorialHeader(
+      title: title,
+      compact: true,
+      actionLabel: _section.showViewAll ? s.viewAll : null,
+      onAction: _section.showViewAll ? _viewAll(tab) : null,
+    );
 
     return HomeSectionShell(
       section: _section,
@@ -108,82 +170,66 @@ class _CareHubSectionState extends ConsumerState<CareHubSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (hasConcerns) _ConcernsRow(concerns: _section.skinConcerns),
+          if (hasConcerns) ...[
+            header(s.careHubConcerns, _CareHubTab.concerns),
+            _ConcernsRow(concerns: _section.skinConcerns),
+          ],
           if (hasPackages) ...[
             const SizedBox(height: AppSpacing.md),
-            RoutineCarouselSection(
-              section: HomeSection(
-                id: '${_section.id}-routine',
-                type: 'ROUTINE_CAROUSEL',
-                title: s.skinRoutineTitle,
-                showTitle: true,
-                packages: _section.packages,
-                cardSize: _section.cardSize,
-                showViewAll: _section.showViewAll,
-                viewAllQuery: _section.viewAllQuery,
-              ),
-              nested: true,
-            ),
+            header(s.skinRoutineTitle, _CareHubTab.routine),
+            _routineRow('${_section.id}-routine', s),
           ],
           if (hasCategories) ...[
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.md),
+            header(s.careHubCategories, _CareHubTab.categories),
             _CategoryCircles(categories: _section.categories, lang: lang),
           ],
           if (hasProducts) ...[
-            const SizedBox(height: AppSpacing.sm),
-            ProductCarouselSection(
-              section: HomeSection(
-                id: '${_section.id}-products',
-                type: 'PRODUCT_LIST',
-                title: s.careProductsTitle,
-                showTitle: true,
-                products: _section.products,
-                productCardSize: _section.productCardSize,
-                cardSize: _section.cardSize,
-                showViewAll: _section.showViewAll,
-                viewAllQuery: _section.viewAllQuery,
-              ),
-              nested: true,
-            ),
+            const SizedBox(height: AppSpacing.md),
+            header(s.careProductsTitle, _CareHubTab.products),
+            _productsRow('${_section.id}-products', s),
           ],
         ],
       ),
     );
   }
 
+  Widget _routineRow(String id, AppStrings s) => RoutineCarouselSection(
+    section: HomeSection(
+      id: id,
+      type: 'ROUTINE_CAROUSEL',
+      title: s.skinRoutineTitle,
+      packages: _section.packages,
+      cardSize: _section.cardSize,
+      showViewAll: false,
+    ),
+    nested: true,
+  );
+
+  Widget _productsRow(String id, AppStrings s) => ProductCarouselSection(
+    section: HomeSection(
+      id: id,
+      type: 'PRODUCT_LIST',
+      title: s.careProductsTitle,
+      products: _section.products,
+      productCardSize: _section.productCardSize,
+      cardSize: _section.cardSize,
+      showViewAll: _section.showViewAll,
+      viewAllQuery: _section.viewAllQuery,
+    ),
+    nested: true,
+  );
+
   Widget _tabBody(_CareHubTab tab, AppStrings s, String lang) {
     switch (tab) {
       case _CareHubTab.concerns:
         return _ConcernsRow(concerns: _section.skinConcerns);
       case _CareHubTab.routine:
-        return RoutineCarouselSection(
-          section: HomeSection(
-            id: '${_section.id}-routine-tab',
-            type: 'ROUTINE_CAROUSEL',
-            title: s.skinRoutineTitle,
-            showTitle: true,
-            packages: _section.packages,
-            cardSize: _section.cardSize,
-            showViewAll: _section.showViewAll,
-            viewAllQuery: _section.viewAllQuery,
-          ),
-        );
+        return _routineRow('${_section.id}-routine-tab', s);
       case _CareHubTab.categories:
         return _CategoryCircles(categories: _section.categories, lang: lang);
       case _CareHubTab.products:
-        return ProductCarouselSection(
-          section: HomeSection(
-            id: '${_section.id}-products-tab',
-            type: 'PRODUCT_LIST',
-            title: s.careProductsTitle,
-            showTitle: true,
-            products: _section.products,
-            productCardSize: _section.productCardSize,
-            cardSize: _section.cardSize,
-            showViewAll: _section.showViewAll,
-            viewAllQuery: _section.viewAllQuery,
-          ),
-        );
+        return _productsRow('${_section.id}-products-tab', s);
     }
   }
 }
@@ -210,8 +256,11 @@ class _CategoryCircles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox.shrink();
+    // دائرة 68 + فراغ 8 + سطرا الاسم بمقياس خط الجهاز.
+    final height =
+        68 + 8 + MediaQuery.textScalerOf(context).scale(11) * 1.15 * 2 + 8;
     return SizedBox(
-      height: 108,
+      height: height,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
@@ -224,12 +273,9 @@ class _CategoryCircles extends StatelessWidget {
             imageUrl: c.imageUrl,
             icon: c.icon,
             cardSize: c.cardSize,
-            onTap: () => openSectionLink(
-              context,
-              linkType: c.linkType,
-              linkValue: c.linkValue,
-              legacyLink: c.link ?? '/products?categoryId=${c.id}',
-            ),
+            // رابط مخصّص من لوحة التحكم، وإلا قائمة القسم بمستواه الصحيح في الشجرة
+            // (القسم الفرعي بـ categoryId كان يفتح قائمة فارغة).
+            onTap: () => openCategoryLink(context, c),
           );
         },
       ),

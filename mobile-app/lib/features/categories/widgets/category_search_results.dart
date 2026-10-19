@@ -5,15 +5,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../search/smart_query.dart';
 import '../../worlds/world_theme.dart';
 import '../category_browse.dart';
+import 'category_line_art.dart';
 
-/// نتائج البحث داخل شجرة الأقسام — مع المسار وعدد المنتجات وإبراز الكلمة.
+/// نتائج البحث داخل شجرة الأقسام — مع المسار وإبراز الكلمة.
+/// (لا عدد منتجات: أعداد الشجرة في الخادم تشمل المخفي ونافد المخزون، فكانت
+/// تخالف عدد غلاف القسم وقائمته.)
 class CategorySearchResults extends ConsumerWidget {
   final String query;
   final List<IndexedCategory> results;
@@ -97,11 +98,6 @@ class CategorySearchResults extends ConsumerWidget {
                     entry: results[i],
                     query: query,
                     lang: lang,
-                    countLabel: results[i].category.displayCount > 0
-                        ? s.catProducts(
-                            formatNumber(results[i].category.displayCount),
-                          )
-                        : null,
                   ),
                 ],
               ],
@@ -167,13 +163,11 @@ class _ResultRow extends StatelessWidget {
   final IndexedCategory entry;
   final String query;
   final String lang;
-  final String? countLabel;
 
   const _ResultRow({
     required this.entry,
     required this.query,
     required this.lang,
-    required this.countLabel,
   });
 
   @override
@@ -192,10 +186,10 @@ class _ResultRow extends StatelessWidget {
               child: SizedBox(
                 width: 52,
                 height: 52,
-                child: AppNetworkImage(
-                  url: entry.category.imageUrl,
-                  fit: BoxFit.cover,
-                  backgroundColor: t.accentLight,
+                child: CategoryThumb(
+                  category: entry.category,
+                  size: 52,
+                  background: t.accentLight,
                 ),
               ),
             ),
@@ -222,16 +216,6 @@ class _ResultRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (countLabel != null) ...[
-              const SizedBox(width: 8),
-              Text(
-                countLabel!,
-                style: AppText.micro.copyWith(
-                  color: t.inkSoft,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
             Icon(Icons.chevron_right_rounded, color: t.inkMuted, size: 20),
           ],
         ),
@@ -257,13 +241,14 @@ class _Highlighted extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final q = normalizeQuery(query);
-    if (q.isEmpty)
+    if (q.isEmpty) {
       return Text(
         text,
         style: style,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
+    }
     // نطابق حرفاً بحرف على النسخة المطبّعة مع الحفاظ على مواضع النص الأصلي.
     final normChars = <String>[];
     final map = <int>[];

@@ -6,28 +6,28 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_snackbar.dart';
-import '../../core/widgets/free_shipping_progress.dart';
 import '../../core/widgets/ui/ui.dart';
-import '../../data/models/coupon.dart';
+import '../../data/models/product.dart';
 import '../catalog/catalog_providers.dart';
 import '../shell/main_shell.dart';
 import '../shell/nav_tabs.dart';
-import 'cart_provider.dart';
+import '../worlds/world_theme.dart';
+import '../worlds/worlds_provider.dart';
 import 'cart_packages_provider.dart';
-import 'widgets/cart_packages_card.dart';
+import 'cart_provider.dart';
+import 'cart_strings.dart';
 import 'coupon_provider.dart';
 import 'widgets/cart_checkout_bar.dart';
 import 'widgets/cart_coupon.dart';
 import 'widgets/cart_empty.dart';
 import 'widgets/cart_header.dart';
 import 'widgets/cart_item_card.dart';
+import 'widgets/cart_packages_card.dart';
 import 'widgets/cart_recommendations.dart';
-import '../../data/models/product.dart';
+import 'widgets/cart_shipping_banner.dart';
 import 'widgets/cart_theme.dart';
-import '../worlds/world_theme.dart';
-import 'cart_strings.dart';
-import '../worlds/worlds_provider.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -43,7 +43,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   bool _couponLoading = false;
 
   /// صف «أكملي للتوصيل المجاني» — يقفز إليه زر «أضيفي المزيد» في شريط التقدّم.
-  final _fillersKey = GlobalKey();
+  /// سياق لا مفتاح عام: [AnimatedSwitcher] قد يُبقي نسختين من الجسم أثناء الانتقال.
+  BuildContext? _fillersContext;
+
+  /// جسم السلة الممتلئة: إشعارات الشاشة تُعرض من داخله فتطفو فوق شريط الدفع.
+  BuildContext? _bodyContext;
+
+  /// آخر ما غيّره التحقق مع السيرفر (أسعار، كميات، باقات انتهت) — حتى تخفيه الزبونة.
+  CartRevalidation? _notice;
+
+  BuildContext get _snackContext {
+    final body = _bodyContext;
+    return body != null && body.mounted ? body : context;
+  }
 
   @override
   void initState() {
@@ -57,20 +69,25 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     });
   }
 
-  /// يتحقق من السلة مع السيرفر (مرة في الدقيقة على الأكثر) ويخبرها بما تغيّر.
+  /// يتحقق من السلة مع السيرفر (مرة في الدقيقة على الأكثر) ويعرض ما تغيّر أعلى الصفحة.
+  /// غير المتوفر يُقرأ حياً من السلة؛ هنا فقط ما تغيّر مرة واحدة (سعر، كمية، باقة).
   Future<void> _revalidate() async {
     if (ref.read(cartProvider).isEmpty) return;
     final report = await ref.read(cartProvider.notifier).revalidate();
-    if (!mounted || !report.hasChanges) return;
-    final s = ref.s;
-    final parts = <String>[
-      if (report.unavailableKeys.isNotEmpty) s.cartUnavailableCount(report.unavailableKeys.length),
-      if (report.changedPriceKeys.isNotEmpty) s.cartPricesUpdated(report.changedPriceKeys.length),
-      if (report.clampedKeys.isNotEmpty) s.cartQuantitiesClamped,
-      if (report.droppedPackageNames.isNotEmpty) s.cartPackagesEnded(report.droppedPackageNames.join('، ')),
-    ];
-    if (parts.isEmpty) return;
-    AppSnackbar.show(context, parts.join(' · '), duration: const Duration(seconds: 4));
+    if (!mounted) return;
+    final news =
+        report.changedPriceKeys.isNotEmpty || report.clampedKeys.isNotEmpty || report.droppedPackageNames.isNotEmpty;
+    if (news) setState(() => _notice = report);
+  }
+
+  /// «أزيلي غير المتوفر»: بلمسة واحدة يصبح الطلب قابلاً للإتمام.
+  void _removeUnavailable() {
+    final notifier = ref.read(cartProvider.notifier);
+    final cart = ref.read(cartProvider);
+    HapticFeedback.mediumImpact();
+    for (final item in cart.items.where((e) => cart.isUnavailable(e.key)).toList()) {
+      notifier.remove(item.key);
+    }
   }
 
   void _browse() {
@@ -80,8 +97,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   /// «أضيفي المزيد»: إلى صف المنتجات المقترحة إن ظهر، وإلا للتسوّق.
   void _fillGap() {
-    final ctx = _fillersKey.currentContext;
-    if (ctx == null) {
+    final ctx = _fillersContext;
+    // الصف يختفي إن لم نجد منتجين مناسبين: حينها نفتح التسوّق.
+    final box = ctx != null && ctx.mounted ? ctx.findRenderObject() : null;
+    if (ctx == null || box is! RenderBox || !box.hasSize || box.size.height < 1) {
       _browse();
       return;
     }
@@ -118,7 +137,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       _couponError = err;
     });
     final applied = ref.read(appliedCouponProvider);
-    if (err == null && applied != null) AppSnackbar.success(context, ref.s.couponApplied(applied.code));
+    if (err == null && applied != null) AppSnackbar.success(_snackContext, ref.s.couponApplied(applied.code));
   }
 
   void _removeCoupon() {
@@ -143,6 +162,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               ref.read(cartProvider.notifier).clear();
               ref.read(cartPackagesProvider.notifier).clear();
               _removeCoupon();
+              setState(() => _notice = null);
               Navigator.pop(ctx);
             },
             child: Text(ref.s.clearCart, style: AppText.label.copyWith(color: AppColors.sale)),
@@ -152,12 +172,15 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     );
   }
 
-  void _validateCouponOnCartChange(Coupon? coupon) {
-    // لا نلغي الكود حين ينزل المجموع عن حدّه: الخصم يتوقف ويظهر «أضيفي X» حتى يبلغه مجدداً.
+  /// لا نلغي الكود حين ينزل المجموع عن حدّه: الخصم يتوقف ويظهر «أضيفي X» حتى يبلغه مجدداً.
+  /// حين يبلغه يختفي خطأ الحقل القديم (الأساس بعد توفير الباقات، كقاعدة السيرفر).
+  void _validateCouponOnCartChange() {
+    final coupon = ref.read(appliedCouponProvider);
     if (coupon == null || _couponError == null) return;
-    if (coupon.eligibleFor(ref.read(cartProvider).subtotal) && mounted) setState(() => _couponError = null);
+    final int packageSaving = ref.read(cartPackageSavingProvider);
+    final base = ref.read(cartProvider).subtotal - packageSaving;
+    if (coupon.eligibleFor(base) && mounted) setState(() => _couponError = null);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -167,9 +190,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final threshold = ref.watch(storeSettingsProvider)?.freeShippingThreshold ?? 0;
 
     ref.listen<CartState>(cartProvider, (prev, next) {
-      if (prev?.subtotal != next.subtotal) {
-        _validateCouponOnCartChange(ref.read(appliedCouponProvider));
-      }
+      if (prev?.subtotal != next.subtotal) _validateCouponOnCartChange();
     });
     // كل فتح لتبويب السلة: الأسعار والمخزون كما هي الآن على السيرفر.
     ref.listen<int>(navIndexProvider, (prev, next) {
@@ -180,10 +201,20 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final packageSaving = ref.watch(cartPackageSavingProvider);
     final couponBase = cart.subtotal - packageSaving;
     final discount = coupon?.discountFor(couponBase) ?? 0;
-    final freeShipping = coupon?.freeShipping ?? false;
+    // كوبون التوصيل المجاني لا يُحسب قبل بلوغ حدّه الأدنى — كما في الدفع والسيرفر.
+    final freeShipping = coupon != null && coupon.freeShipping && coupon.eligibleFor(couponBase);
+    final shipping = CartShippingTarget.of(
+      subtotal: cart.subtotal,
+      threshold: threshold,
+      coupon: coupon,
+      couponBase: couponBase,
+    );
     final total = (couponBase - discount).clamp(0, 1 << 31);
+    // توفير العروض: الفرق بين السعر الأصلي وسعر العرض لكل سطر.
+    final saleSaving = cart.items.fold<int>(0, (sum, e) => sum + e.lineSaving);
     final topPad = MediaQuery.paddingOf(context).top;
     final t = context.worldTheme;
+    final unavailableCount = cart.unavailableKeys.length;
 
     return Scaffold(
       backgroundColor: t.canvas,
@@ -191,92 +222,111 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         duration: const Duration(milliseconds: 280),
         child: cart.isEmpty
             ? CartEmptyView(key: const ValueKey('empty'), topPad: topPad)
-            : Column(
+            : ShellDockInsets(
                 key: const ValueKey('filled'),
-                children: [
-                  Expanded(
-                    child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: CartHeader(count: cart.count, topPad: topPad, onClear: _clearCart),
-                        ),
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 14, CartTheme.hPad, 0),
-                            child: FreeShippingProgress(
-                              subtotal: cart.subtotal,
-                              threshold: threshold,
-                              viaCoupon: freeShipping,
-                              onFillGap: _fillGap,
-                            ),
-                          ),
-                        ),
-                        if (!freeShipping && threshold > cart.subtotal)
-                          SliverToBoxAdapter(
-                            child: KeyedSubtree(
-                              key: _fillersKey,
-                              child: _FreeShippingFillers(remaining: threshold - cart.subtotal),
-                            ),
-                          ),
-                        const SliverToBoxAdapter(child: CartPackagesCard()),
-                        SliverToBoxAdapter(
-                          child: CartSectionLabel(title: ref.s.yourProducts, subtitle: ref.s.swipeToRemoveHint),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: CartTheme.hPad),
-                          sliver: SliverList.separated(
-                            itemCount: cart.items.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: CartTheme.itemGap),
-                            itemBuilder: (_, i) => CartItemCard(key: ValueKey(cart.items[i].key), item: cart.items[i]),
-                          ),
-                        ),
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 16, CartTheme.hPad, 0),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 260),
-                              padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 10, 10),
-                              decoration: CartTheme.cardDecoration(
-                                context,
-                                color: coupon != null
-                                    ? Color.alphaBlend(AppColors.success.withValues(alpha: 0.06), t.surface)
-                                    : t.surface,
+                // الإشعارات تطفو فوق شريط الدفع لا فوقه مباشرة.
+                height: Responsive.shellNavDockHeight(context) + CartCheckoutBar.height,
+                child: Builder(
+                  builder: (bodyContext) {
+                    _bodyContext = bodyContext;
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: CustomScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                            slivers: [
+                              SliverToBoxAdapter(
+                                child: CartHeader(count: cart.count, topPad: topPad, onClear: _clearCart),
                               ),
-                              child: CartCouponSection(
-                                controller: _couponCtrl,
-                                focusNode: _couponFocus,
-                                error: _couponError,
-                                loading: _couponLoading,
-                                applied: coupon,
-                                discount: discount,
-                                onApply: _applyCoupon,
-                                onRemove: _removeCoupon,
-                                subtotal: couponBase,
+                              if (unavailableCount > 0 || _notice != null)
+                                SliverToBoxAdapter(
+                                  child: _CartUpdateNotice(
+                                    unavailableCount: unavailableCount,
+                                    report: _notice,
+                                    onRemoveUnavailable: _removeUnavailable,
+                                    onDismiss: _notice == null ? null : () => setState(() => _notice = null),
+                                  ),
+                                ),
+                              SliverToBoxAdapter(
+                                child: CartShippingBanner(target: shipping, onFillGap: _fillGap),
                               ),
-                            ),
+                              if (shipping.remaining > 0)
+                                SliverToBoxAdapter(
+                                  child: Builder(
+                                    builder: (fillersContext) {
+                                      _fillersContext = fillersContext;
+                                      return _FreeShippingFillers(remaining: shipping.remaining);
+                                    },
+                                  ),
+                                ),
+                              const SliverToBoxAdapter(child: CartPackagesCard()),
+                              SliverToBoxAdapter(
+                                child: CartSectionLabel(title: ref.s.yourProducts, subtitle: ref.s.swipeToRemoveHint),
+                              ),
+                              SliverPadding(
+                                padding: const EdgeInsets.symmetric(horizontal: CartTheme.hPad),
+                                sliver: SliverList.separated(
+                                  itemCount: cart.items.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: CartTheme.itemGap),
+                                  itemBuilder: (_, i) =>
+                                      CartItemCard(key: ValueKey(cart.items[i].key), item: cart.items[i]),
+                                ),
+                              ),
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 16, CartTheme.hPad, 0),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 260),
+                                    padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 10, 10),
+                                    decoration: CartTheme.cardDecoration(
+                                      context,
+                                      color: coupon != null
+                                          ? Color.alphaBlend(AppColors.success.withValues(alpha: 0.06), t.surface)
+                                          : t.surface,
+                                    ),
+                                    child: CartCouponSection(
+                                      controller: _couponCtrl,
+                                      focusNode: _couponFocus,
+                                      error: _couponError,
+                                      loading: _couponLoading,
+                                      applied: coupon,
+                                      discount: discount,
+                                      onApply: _applyCoupon,
+                                      onRemove: _removeCoupon,
+                                      subtotal: couponBase,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SliverToBoxAdapter(
+                                child: CartSummaryCard(
+                                  subtotal: cart.subtotal,
+                                  discount: discount,
+                                  packageSaving: packageSaving,
+                                  saleSaving: saleSaving,
+                                  total: total,
+                                  itemCount: cart.count,
+                                  freeShippingThreshold: threshold,
+                                  freeShipping: freeShipping,
+                                ),
+                              ),
+                              // «يكمّل سلتكِ»: ما يُشترى عادةً مع أغلى ما في السلة (بلا تكرار لما فيها).
+                              SliverToBoxAdapter(child: _CartPairs(cart: cart)),
+                              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                            ],
                           ),
                         ),
-                        SliverToBoxAdapter(
-                          child: CartSummaryCard(
-                            subtotal: cart.subtotal,
-                            discount: discount,
-                            packageSaving: packageSaving,
-                            total: total,
-                            itemCount: cart.count,
-                            freeShippingThreshold: threshold,
-                            freeShipping: freeShipping,
-                          ),
+                        CartCheckoutBar(
+                          total: total,
+                          itemCount: cart.count,
+                          compareAt: cart.subtotal + saleSaving,
+                          blocked: unavailableCount > 0,
                         ),
-                        // «يكمّل سلتكِ»: ما يُشترى عادةً مع أغلى ما في السلة (بلا تكرار لما فيها).
-                        SliverToBoxAdapter(child: _CartPairs(cart: cart)),
-                        const SliverToBoxAdapter(child: SizedBox(height: 20)),
                       ],
-                    ),
-                  ),
-                  CartCheckoutBar(total: total, itemCount: cart.count),
-                ],
+                    );
+                  },
+                ),
               ),
       ),
     );
@@ -290,11 +340,9 @@ class _CartPairs extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final inCart = cart.items.map((e) => e.productId).toSet();
-    final anchors = ([...cart.items]..sort((a, b) => b.lineTotal.compareTo(a.lineTotal)))
-        .map((e) => e.productId)
-        .toSet()
-        .take(2)
-        .toList();
+    final anchors = ([
+      ...cart.items,
+    ]..sort((a, b) => b.lineTotal.compareTo(a.lineTotal))).map((e) => e.productId).toSet().take(2).toList();
     final pairs = <Product>[];
     for (final id in anchors) {
       final r = ref.watch(boughtTogetherProvider(id)).valueOrNull;
@@ -303,13 +351,13 @@ class _CartPairs extends ConsumerWidget {
       }
     }
     if (pairs.length < 2) return const SizedBox.shrink();
-    final ar = ref.s.isAr;
+    final s = ref.s;
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: CartRecommendations(
         products: pairs.take(10).toList(),
-        title: ar ? 'يكمّل سلتكِ' : 'Complete your bag',
-        subtitle: ar ? 'اختيارات تناسب ما أضفتِه' : 'Picked to go with your items',
+        title: s.cartPairsTitle,
+        subtitle: s.cartPairsSubtitle,
       ),
     );
   }
@@ -331,6 +379,104 @@ class _FreeShippingFillers extends ConsumerWidget {
         products: products.take(10).toList(),
         title: s.cartCompleteFreeShipping,
         subtitle: s.cartCompleteFreeShippingHint(formatPrice(remaining, lang: s.lang)),
+      ),
+    );
+  }
+}
+
+/// تنبيه أعلى السلة بعد التحقق مع السيرفر: ما لم يعد متوفراً (مع إزالته بلمسة)،
+/// وما تغيّر سعره أو كميته، والباقات التي انتهى عرضها.
+class _CartUpdateNotice extends ConsumerWidget {
+  final int unavailableCount;
+  final CartRevalidation? report;
+  final VoidCallback onRemoveUnavailable;
+  final VoidCallback? onDismiss;
+
+  const _CartUpdateNotice({
+    required this.unavailableCount,
+    required this.report,
+    required this.onRemoveUnavailable,
+    this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final r = report;
+    final urgent = unavailableCount > 0;
+    final tone = urgent ? AppColors.sale : AppColors.warning;
+    final lines = <String>[
+      if (urgent) s.cartUnavailableCount(unavailableCount),
+      if (r != null && r.changedPriceKeys.isNotEmpty) s.cartPricesUpdated(r.changedPriceKeys.length),
+      if (r != null && r.clampedKeys.isNotEmpty) s.cartQuantitiesClamped,
+      if (r != null && r.droppedPackageNames.isNotEmpty)
+        s.cartPackagesEnded(r.droppedPackageNames.join(s.isAr ? '، ' : ', ')),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 14, CartTheme.hPad, 0),
+      child: Semantics(
+        liveRegion: true,
+        container: true,
+        child: Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 4, 12),
+          decoration: BoxDecoration(
+            color: Color.alphaBlend(tone.withValues(alpha: 0.08), t.surface),
+            borderRadius: BorderRadius.circular(CartTheme.radiusLg),
+            border: Border.all(color: tone.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(urgent ? Icons.error_outline_rounded : Icons.info_outline_rounded, color: tone, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.cartUpdatedTitle, style: AppText.label.copyWith(color: t.ink)),
+                    const SizedBox(height: 4),
+                    for (final line in lines)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(line, style: AppText.caption.copyWith(color: t.inkSoft, height: 1.45)),
+                      ),
+                    if (urgent)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: TextButton.icon(
+                          onPressed: onRemoveUnavailable,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.sale,
+                            minimumSize: const Size(0, kMinTapTarget),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            alignment: AlignmentDirectional.centerStart,
+                          ),
+                          icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                          label: Text(s.cartRemoveAllUnavailable, style: AppText.label.copyWith(color: AppColors.sale)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (onDismiss != null)
+                AppIconButton(
+                  icon: Icons.close_rounded,
+                  size: kMinTapTarget,
+                  iconSize: 17,
+                  outlined: false,
+                  background: Colors.transparent,
+                  color: t.inkMuted,
+                  tooltip: s.cartDismissNotice,
+                  onTap: onDismiss,
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

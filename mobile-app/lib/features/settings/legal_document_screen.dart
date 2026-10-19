@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
-import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/responsive_app.dart';
 import '../../core/utils/support_links.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../profile/widgets/account_strings.dart';
 import '../profile/widgets/profile_ui.dart';
+import '../profile/widgets/support_contact_section.dart';
 import '../../features/worlds/world_theme.dart';
 
 enum LegalDocumentType { privacy, terms }
@@ -32,50 +33,53 @@ class LegalDocumentScreen extends ConsumerWidget {
 
     return ProfileScaffold(
       title: title,
-      body: SelectionArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            ProfileUi.hPad,
-            20,
-            ProfileUi.hPad,
-            32,
-          ),
-          children: [
-            Text(title, style: AppText.title1.copyWith(color: t.ink)),
-            const SizedBox(height: 6),
-            Text(
-              s.acctLastUpdated,
-              style: AppText.caption.copyWith(color: t.inkMuted),
+      // نص طويل للقراءة: يتبع تكبير الخط في النظام حتى 1.6 (السقف العام أقل).
+      body: LargeTextScope(
+        child: SelectionArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              ProfileUi.hPad,
+              20,
+              ProfileUi.hPad,
+              32,
             ),
-            const SizedBox(height: 16),
-            ProfileInfoBanner(
-              icon: Icons.info_outline_rounded,
-              text: s.legalInAppNotice,
-            ),
-            const SizedBox(height: 16),
-            ProfileSurfaceCard(
-              padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final block in _blocks(body)) _LegalBlock(lines: block),
-                ],
+            children: [
+              Text(title, style: AppText.title1.copyWith(color: t.ink)),
+              const SizedBox(height: 6),
+              Text(
+                s.acctLastUpdated,
+                style: AppText.caption.copyWith(color: t.inkMuted),
               ),
-            ),
-            const SizedBox(height: 20),
-            ProfileOutlineButton(
-              label: s.viewOnWebsite,
-              icon: Icons.open_in_new_rounded,
-              onPressed: () async {
-                final url = type == LegalDocumentType.privacy
-                    ? AppConfig.privacyPolicyUrlFor(s.lang)
-                    : AppConfig.termsOfServiceUrlFor(s.lang);
-                final ok = await openExternalUrl(url);
-                if (!context.mounted) return;
-                if (!ok) AppSnackbar.error(context, s.linkOpenFailed);
-              },
-            ),
-          ],
+              const SizedBox(height: 16),
+              ProfileInfoBanner(
+                icon: Icons.info_outline_rounded,
+                text: s.legalInAppNotice,
+              ),
+              const SizedBox(height: 16),
+              ProfileSurfaceCard(
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final block in _blocks(body))
+                      _LegalBlock(lines: block),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              ProfileOutlineButton(
+                label: s.viewOnWebsite,
+                icon: Icons.open_in_new_rounded,
+                onPressed: () {
+                  final url = type == LegalDocumentType.privacy
+                      ? AppConfig.privacyPolicyUrlFor(s.lang)
+                      : AppConfig.termsOfServiceUrlFor(s.lang);
+                  // لا متصفح يفتح: ننسخ الرابط بدل رسالة فشل فقط.
+                  launchSupportLink(context, () => openExternalUrl(url), url);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

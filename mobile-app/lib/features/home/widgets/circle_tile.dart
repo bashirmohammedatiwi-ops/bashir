@@ -25,6 +25,17 @@ class CircleTile extends StatefulWidget {
     this.width = 76,
   });
 
+  /// أكبر قطر للدائرة (حسب cardSize).
+  static const maxDiameter = 68.0;
+
+  /// ارتفاع البلاطة الكامل بحجم خط المستخدم: الدائرة + سطرا العنوان (+ سطر العنوان الفرعي).
+  static double heightFor(BuildContext context, {bool withSubtitle = false}) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final title = scaler.scale(11) * 1.15 * 2;
+    final sub = withSubtitle ? 2 + scaler.scale(10) * 1.3 : 0.0;
+    return maxDiameter + 8 + title + sub + 6;
+  }
+
   @override
   State<CircleTile> createState() => _CircleTileState();
 }
@@ -36,50 +47,74 @@ class _CircleTileState extends State<CircleTile> {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final spec = cardSizeSpec(widget.cardSize);
-    final diameter = (spec.width > 0 ? spec.width : 64.0).clamp(56.0, 68.0);
+    final diameter = (spec.width > 0 ? spec.width : 64.0).clamp(56.0, CircleTile.maxDiameter);
+    final subtitle = widget.subtitle?.trim() ?? '';
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return SizedBox(
-      width: widget.width,
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedScale(
-          scale: _pressed ? 0.97 : 1,
-          duration: const Duration(milliseconds: 100),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: diameter,
-                height: diameter,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: t.accentLight,
-                  border: Border.all(color: t.hairline),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: ClipOval(
-                    child: _CircleContent(
-                      imageUrl: widget.imageUrl,
-                      icon: widget.icon,
+    return Semantics(
+      button: true,
+      label: subtitle.isEmpty ? widget.title : '${widget.title}, $subtitle',
+      excludeSemantics: true,
+      child: SizedBox(
+        width: widget.width,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedScale(
+            scale: _pressed && !reduceMotion ? 0.97 : 1,
+            duration: const Duration(milliseconds: 100),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: diameter,
+                  height: diameter,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: t.accentLight,
+                    border: Border.all(color: t.hairline),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: ClipOval(
+                      child: _CircleContent(
+                        imageUrl: widget.imageUrl,
+                        icon: widget.icon,
+                        // مقاس فك الترميز = مقاس الدائرة الفعلي (لا ~560px للصورة الصغيرة).
+                        size: diameter - 4,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.title,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: HomeTheme.circleLabel.copyWith(color: t.inkSoft),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  widget.title,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: HomeTheme.circleLabel.copyWith(color: t.inkSoft),
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: HomeTheme.circleLabel.copyWith(
+                      fontSize: 10,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                      color: t.inkMuted,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -90,20 +125,19 @@ class _CircleTileState extends State<CircleTile> {
 class _CircleContent extends StatelessWidget {
   final String? imageUrl;
   final String? icon;
+  final double size;
 
-  const _CircleContent({this.imageUrl, this.icon});
+  const _CircleContent({this.imageUrl, this.icon, required this.size});
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return AppNetworkImage(url: imageUrl!, fit: BoxFit.cover);
+      return AppNetworkImage(url: imageUrl!, fit: BoxFit.cover, width: size, height: size);
     }
     final emoji = icon?.trim();
     if (emoji != null && emoji.isNotEmpty) {
-      return Center(
-        child: Text(emoji, style: const TextStyle(fontSize: 22, height: 1)),
-      );
+      return Center(child: Text(emoji, style: const TextStyle(fontSize: 22, height: 1)));
     }
     return Icon(Icons.spa_outlined, color: t.accent, size: 24);
   }

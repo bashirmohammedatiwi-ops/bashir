@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_fonts.dart';
+import '../../../core/theme/app_text.dart';
 import '../../worlds/world_theme.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/ui/section_title.dart';
@@ -27,6 +29,11 @@ abstract final class HomeTheme {
   static const bannerAspect = 1.92;
   static const bannerInset = 16.0;
   static const bannerRadius = 16.0;
+
+  /// زوايا موحّدة لكل أقسام الرئيسية — مربوطة بـ AppCorners حتى لا يتغيّر الإيقاع من قسم لآخر.
+  static const radiusCard = AppCorners.md;
+  static const radiusBanner = AppCorners.lg;
+  static const radiusSheet = AppCorners.xl;
 
   static const canvas = Color(0xFFF8F6FB);
   static const canvasWarm = Color(0xFFFAF8FD);
@@ -66,11 +73,8 @@ abstract final class HomeTheme {
     Color(0xFFF9F7FB),
   ];
 
-  static TextStyle brandTitle({
-    double size = 22,
-    required String lang,
-    Color? color,
-  }) => brandTitleStyle(size: size, lang: lang, color: color ?? ink);
+  static TextStyle brandTitle({double size = 22, required String lang, Color? color}) =>
+      brandTitleStyle(size: size, lang: lang, color: color ?? ink);
 
   static TextStyle displayTitle({double size = 22, Color? color}) => appFont(
     fontSize: size,
@@ -80,23 +84,11 @@ abstract final class HomeTheme {
     color: color ?? ink,
   );
 
-  static TextStyle sectionTitle({double size = 17, Color? color}) => appFont(
-    fontSize: size,
-    fontWeight: FontWeight.w800,
-    height: 1.25,
-    color: color ?? ink,
-  );
+  static TextStyle sectionTitle({double size = 17, Color? color}) =>
+      appFont(fontSize: size, fontWeight: FontWeight.w800, height: 1.25, color: color ?? ink);
 
-  static TextStyle body({
-    double size = 14,
-    Color? color,
-    FontWeight weight = FontWeight.w500,
-  }) => appFont(
-    fontSize: size,
-    fontWeight: weight,
-    height: 1.4,
-    color: color ?? inkSoft,
-  );
+  static TextStyle body({double size = 14, Color? color, FontWeight weight = FontWeight.w500}) =>
+      appFont(fontSize: size, fontWeight: weight, height: 1.4, color: color ?? inkSoft);
 
   static TextStyle get overline => appFont(
     fontSize: 10,
@@ -106,12 +98,8 @@ abstract final class HomeTheme {
     height: 1.2,
   );
 
-  static TextStyle get viewAll => appFont(
-    fontSize: 12,
-    fontWeight: FontWeight.w700,
-    color: accent,
-    height: 1.2,
-  );
+  static TextStyle get viewAll =>
+      appFont(fontSize: 12, fontWeight: FontWeight.w700, color: accent, height: 1.2);
 
   static IconData viewAllChevron(BuildContext context) {
     return Icons.chevron_right_rounded;
@@ -123,26 +111,14 @@ abstract final class HomeTheme {
     border: Border.all(color: divider),
   );
 
-  static TextStyle get chipLabel => appFont(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    color: ink,
-    height: 1.2,
-  );
+  static TextStyle get chipLabel =>
+      appFont(fontSize: 12, fontWeight: FontWeight.w600, color: ink, height: 1.2);
 
-  static TextStyle get circleLabel => appFont(
-    fontSize: 11,
-    fontWeight: FontWeight.w600,
-    color: inkSoft,
-    height: 1.15,
-  );
+  static TextStyle get circleLabel =>
+      appFont(fontSize: 11, fontWeight: FontWeight.w600, color: inkSoft, height: 1.15);
 
-  static TextStyle get price => appFont(
-    fontSize: 14,
-    fontWeight: FontWeight.w800,
-    color: ink,
-    height: 1.2,
-  );
+  static TextStyle get price =>
+      appFont(fontSize: 14, fontWeight: FontWeight.w800, color: ink, height: 1.2);
 
   static TextStyle get brandLabel => appFont(
     fontSize: 10,
@@ -168,11 +144,7 @@ abstract final class HomeTheme {
       offset: const Offset(0, 5),
       spreadRadius: -2,
     ),
-    BoxShadow(
-      color: ink.withValues(alpha: 0.04),
-      blurRadius: 6,
-      offset: const Offset(0, 2),
-    ),
+    BoxShadow(color: ink.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
   ];
 
   static List<BoxShadow> get softShadow => galleryShadow;
@@ -190,8 +162,7 @@ abstract final class HomeTheme {
     ),
   );
 
-  static BoxDecoration heroHeaderDecoration() =>
-      const BoxDecoration(color: canvas);
+  static BoxDecoration heroHeaderDecoration() => const BoxDecoration(color: canvas);
 
   static BoxDecoration heroActionClusterDecoration() => BoxDecoration(
     color: surface,
@@ -248,28 +219,6 @@ abstract final class HomeTheme {
   static const blushMid = divider;
 }
 
-class HomeCanvasBackground extends ConsumerWidget {
-  final Widget child;
-
-  const HomeCanvasBackground({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(activeWorldThemeProvider);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [t.canvasWarm, t.canvas, t.canvas],
-          stops: const [0, 0.25, 1],
-        ),
-      ),
-      child: child,
-    );
-  }
-}
-
 class HomeSectionDivider extends ConsumerWidget {
   const HomeSectionDivider({super.key});
 
@@ -277,10 +226,7 @@ class HomeSectionDivider extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(activeWorldThemeProvider);
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: HomeTheme.paddingH,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH, vertical: 4),
       child: Divider(height: 1, thickness: 1, color: theme.divider),
     );
   }
@@ -312,12 +258,7 @@ class HomeEditorialHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(activeWorldThemeProvider);
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        HomeTheme.paddingH,
-        compact ? 0 : 4,
-        HomeTheme.paddingH,
-        12,
-      ),
+      padding: EdgeInsets.fromLTRB(HomeTheme.paddingH, compact ? 0 : 4, HomeTheme.paddingH, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -338,25 +279,16 @@ class HomeEditorialHeader extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (overline != null && overline!.isNotEmpty) ...[
-                  Text(
-                    overline!,
-                    style: HomeTheme.overline.copyWith(color: theme.accent),
-                  ),
+                  Text(overline!, style: HomeTheme.overline.copyWith(color: theme.accent)),
                   const SizedBox(height: 2),
                 ],
                 Text(
                   title,
-                  style: HomeTheme.sectionTitle(
-                    size: compact ? 16 : 17,
-                    color: theme.ink,
-                  ),
+                  style: HomeTheme.sectionTitle(size: compact ? 16 : 17, color: theme.ink),
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    style: HomeTheme.body(size: 12, color: theme.inkSoft),
-                  ),
+                  Text(subtitle!, style: HomeTheme.body(size: 12, color: theme.inkSoft)),
                 ],
               ],
             ),
@@ -379,8 +311,7 @@ class HomeViewAllLink extends StatelessWidget {
   const HomeViewAllLink({super.key, required this.label, required this.onTap});
 
   @override
-  Widget build(BuildContext context) =>
-      ViewAllButton(label: label, onTap: onTap);
+  Widget build(BuildContext context) => ViewAllButton(label: label, onTap: onTap);
 }
 
 class HomeFilterPill extends ConsumerWidget {
@@ -421,9 +352,7 @@ class HomeFilterPill extends ConsumerWidget {
               ],
               Text(
                 label,
-                style: HomeTheme.chipLabel.copyWith(
-                  color: selected ? Colors.white : theme.ink,
-                ),
+                style: HomeTheme.chipLabel.copyWith(color: selected ? Colors.white : theme.ink),
               ),
             ],
           ),
@@ -447,9 +376,13 @@ class HomeCountdownBoxes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [_box(hours), _sep(), _box(minutes), _sep(), _box(seconds)],
+    // الساعة تُقرأ دائماً hh:mm:ss من اليسار — حتى في الواجهة العربية (كما في الموقع).
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [_box(hours), _sep(), _box(minutes), _sep(), _box(seconds)],
+      ),
     );
   }
 
@@ -457,11 +390,7 @@ class HomeCountdownBoxes extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 3),
     child: Text(
       ':',
-      style: HomeTheme.body(
-        size: 13,
-        color: HomeTheme.ink,
-        weight: FontWeight.w800,
-      ),
+      style: HomeTheme.body(size: 13, color: HomeTheme.ink, weight: FontWeight.w800),
     ),
   );
 
@@ -469,10 +398,7 @@ class HomeCountdownBoxes extends StatelessWidget {
     width: 28,
     padding: const EdgeInsets.symmetric(vertical: 5),
     alignment: Alignment.center,
-    decoration: BoxDecoration(
-      color: HomeTheme.ink,
-      borderRadius: BorderRadius.circular(6),
-    ),
+    decoration: BoxDecoration(color: HomeTheme.ink, borderRadius: BorderRadius.circular(6)),
     child: Text(
       v,
       style: appFont(
@@ -483,4 +409,16 @@ class HomeCountdownBoxes extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// نصوص صغيرة لأقسام الصور والبانرات (قارئ الشاشة خاصة).
+extension HomeMediaStringsX on AppStrings {
+  /// تسمية بانر بلا عنوان.
+  String get homeMediaPromotion => isAr ? 'إعلان' : 'Promotion';
+
+  /// تسمية صورة معرض بلا عنوان.
+  String get homeMediaPhoto => isAr ? 'صورة' : 'Photo';
+
+  /// تسمية علامة تجارية بلا اسم.
+  String get homeMediaBrand => isAr ? 'براند' : 'Brand';
 }

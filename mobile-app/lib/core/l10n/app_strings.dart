@@ -920,12 +920,6 @@ class AppStrings {
   String get share => isAr ? 'مشاركة' : 'Share';
   String get openSettings => isAr ? 'فتح الإعدادات' : 'Open settings';
   String get pressBackAgainToExit => isAr ? 'اضغطي رجوع مرة أخرى للخروج' : 'Press back again to exit';
-  String get forgotPassword => isAr ? 'نسيتِ كلمة المرور؟' : 'Forgot password?';
-  /// رسالة واتساب جاهزة لاسترجاع الحساب.
-  String forgotPasswordMessage(String phone) => isAr
-      ? 'مرحباً، نسيت كلمة المرور لحسابي${phone.isEmpty ? '' : ' برقم $phone'}'
-      : 'Hello, I forgot the password for my account${phone.isEmpty ? '' : ' ($phone)'}';
-  String get contactSupportWhatsApp => isAr ? 'تواصلي مع الدعم عبر واتساب' : 'Contact support on WhatsApp';
   String get tryRemovingFilters => isAr ? 'جرّبي إزالة بعض الفلاتر' : 'Try removing some filters';
   String get browseCategories => isAr ? 'تصفّحي الأقسام' : 'Browse categories';
   /// وصف صورة المعرض لقارئ الشاشة: «الصورة 2 من 5».
@@ -1020,7 +1014,6 @@ class AppStrings {
 
   // ─── Account extras ───────────────────────────────────────────────────────
   String get helpAndFaq => isAr ? 'المساعدة والأسئلة الشائعة' : 'Help & FAQ';
-  String get yourBirthday => isAr ? 'عيد ميلادكِ' : 'Your birthday';
   String get branchPickup => isAr ? 'استلام من الفرع' : 'Branch pickup';
   String get branchPickupFree => isAr ? 'استلام من الفرع — مجاناً' : 'Pick up at the branch — free';
 }

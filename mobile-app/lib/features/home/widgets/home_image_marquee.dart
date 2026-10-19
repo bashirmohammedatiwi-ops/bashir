@@ -1,11 +1,14 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../home_link.dart';
 import 'gallery_photo_card.dart';
+import 'home_theme.dart';
 import 'photo_shape_kit.dart';
 
 /// صور متحركة أفقياً — حلقة سينمائية مع سحب يدوي ونقر موثوق لكل الصور.
@@ -14,8 +17,14 @@ class HomeImageMarquee extends StatefulWidget {
   final double height;
   final double speed;
   final double gap;
+
+  /// زاوية البلاطات — تُتجاهل للأشكال ذات الزوايا المحسوبة (حبة، قوس، دائرة).
   final double radius;
+
+  /// في الواجهة العربية تبدأ الحلقة والصورة الأولى عند الحافة اليمنى (بداية القراءة).
   final bool startFromEndInRtl;
+
+  /// الحركة نحو اليمين بدل اليسار.
   final bool reverse;
 
   const HomeImageMarquee({
@@ -77,8 +86,7 @@ class HomeMarqueeImage {
     );
   }
 
-  String get linkSignature =>
-      '${navPath ?? ''}_${link ?? ''}_${linkType ?? ''}_${linkValue ?? ''}';
+  String get linkSignature => '${navPath ?? ''}_${link ?? ''}_${linkType ?? ''}_${linkValue ?? ''}';
 
   void openLink(BuildContext context) {
     HapticFeedback.selectionClick();
@@ -90,14 +98,15 @@ class HomeMarqueeImage {
   }
 }
 
-class _HomeImageMarqueeState extends State<HomeImageMarquee>
-    with SingleTickerProviderStateMixin {
+class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerProviderStateMixin {
   final GlobalKey _periodKey = GlobalKey();
   late final AnimationController _ctrl;
-  Timer? _resumeTimer;
 
   double _periodWidth = 0;
+  double _viewportWidth = 0;
   bool _measurePending = false;
+  bool _started = false;
+  bool _reduceMotion = false;
   bool _userDragging = false;
   Offset? _pointerDown;
   ScrollHoldController? _scrollHold;
@@ -107,25 +116,23 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
   double _estimatePeriodWidth() {
     if (widget.images.isEmpty) return 1;
-    return widget.images.fold<double>(
-      0,
-      (sum, img) => sum + img.width + widget.gap,
-    );
+    return widget.images.fold<double>(0, (sum, img) => sum + img.width + widget.gap);
   }
 
-  double get _activePeriod =>
-      _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
+  double get _activePeriod => _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
 
-  /// تكرارات كافية لتغطية العرض أثناء الحلقة.
+  /// تكرارات كافية لتغطية العرض أثناء الحلقة (في الاتجاهين).
   int _copyCount(double viewportWidth, double period) {
     if (period <= 0) return 4;
     return math.max(3, (viewportWidth / period).ceil() + 2);
   }
 
-  static bool _imagesChanged(
-    List<HomeMarqueeImage> a,
-    List<HomeMarqueeImage> b,
-  ) {
+  /// إزاحة الشريط الحالية بالبكسل — للأمام: من 0 إلى −period، وبالعكس: من −period إلى 0
+  /// (فلا تنفتح فجوة فارغة على اليسار في الوضع المعكوس).
+  double _shift(double period) =>
+      widget.reverse ? (_ctrl.value - 1) * period : -_ctrl.value * period;
+
+  static bool _imagesChanged(List<HomeMarqueeImage> a, List<HomeMarqueeImage> b) {
     if (a.length != b.length) return true;
     for (var i = 0; i < a.length; i++) {
       final x = a[i];
@@ -157,17 +164,31 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     });
   }
 
-  void _applyLoopDuration({
-    required double period,
-    bool preserveProgress = true,
-  }) {
+  /// قيمة البداية: في RTL تقف الصورة الأولى عند الحافة اليمنى للشريط.
+  double _initialValue(double period) {
+    if (!widget.startFromEndInRtl ||
+        Directionality.of(context) != TextDirection.rtl ||
+        period <= 0 ||
+        _viewportWidth <= 0) {
+      return 0;
+    }
+    final firstW = widget.images.first.width;
+    // نريد: shift + firstW ≡ viewport (mod period).
+    final px = widget.reverse
+        ? _wrapPixels(_viewportWidth - firstW, period)
+        : _wrapPixels(firstW - _viewportWidth, period);
+    return px / period;
+  }
+
+  void _applyLoopDuration({required double period, double? startValue}) {
     final ms = (period / _pxPerSec * 1000).round().clamp(6000, 120000);
-    final progress = preserveProgress ? _ctrl.value : 0.0;
+    final progress = startValue ?? _ctrl.value;
     _ctrl
       ..stop()
       ..duration = Duration(milliseconds: ms)
-      ..value = progress
-      ..repeat();
+      ..value = progress;
+    // «تقليل الحركة»: شريط ثابت يُسحب باليد فقط.
+    if (!_reduceMotion) _ctrl.repeat();
   }
 
   void _measureAndStart() {
@@ -182,27 +203,26 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     final measured = box.size.width;
     if (measured <= 0) return;
 
-    final periodChanged =
-        _periodWidth <= 0 || (measured - _periodWidth).abs() > 0.5;
+    final periodChanged = _periodWidth <= 0 || (measured - _periodWidth).abs() > 0.5;
     if (periodChanged) {
       setState(() => _periodWidth = measured);
     }
 
-    if (!_ctrl.isAnimating && !_userDragging) {
-      _applyLoopDuration(period: measured, preserveProgress: false);
-    } else if (periodChanged && !_userDragging) {
+    if (_userDragging) return;
+    if (!_started) {
+      _started = true;
+      _applyLoopDuration(period: measured, startValue: _initialValue(measured));
+    } else if (periodChanged || (!_ctrl.isAnimating && !_reduceMotion)) {
       _applyLoopDuration(period: measured);
     }
   }
 
   void _pauseMotion() {
-    _resumeTimer?.cancel();
     if (_ctrl.isAnimating) _ctrl.stop();
   }
 
   void _resumeMotion() {
-    _resumeTimer?.cancel();
-    if (!mounted || _periodWidth <= 0 || _userDragging) return;
+    if (!mounted || _periodWidth <= 0 || _userDragging || _reduceMotion) return;
     if (!_ctrl.isAnimating) _ctrl.repeat();
   }
 
@@ -216,7 +236,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     final period = _activePeriod;
     if (period <= 0 || widget.images.isEmpty) return null;
 
-    final wrapped = _wrapPixels(localX + _ctrl.value * period, period);
+    final wrapped = _wrapPixels(localX - _shift(period), period);
     var x = 0.0;
     for (final image in widget.images) {
       if (wrapped >= x && wrapped < x + image.width) return image;
@@ -236,8 +256,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
     final deltaFromDown = event.position - _pointerDown!;
     if (!_userDragging) {
-      if (deltaFromDown.dx.abs() < _dragSlop &&
-          deltaFromDown.dy.abs() < _dragSlop) {
+      if (deltaFromDown.dx.abs() < _dragSlop && deltaFromDown.dy.abs() < _dragSlop) {
         return;
       }
       if (deltaFromDown.dx.abs() <= deltaFromDown.dy.abs()) return;
@@ -249,7 +268,9 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
     final period = _activePeriod;
     if (period <= 0) return;
-    final px = _wrapPixels(_ctrl.value * period - event.delta.dx, period);
+    // الشريط يتبع الإصبع في الاتجاهين — القيمة تزيد عكس الإزاحة للأمام ومعها في المعكوس.
+    final dir = widget.reverse ? -1.0 : 1.0;
+    final px = _wrapPixels(_ctrl.value * period - dir * event.delta.dx, period);
     _ctrl.value = px / period;
   }
 
@@ -284,13 +305,28 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    if (reduce == _reduceMotion) return;
+    _reduceMotion = reduce;
+    if (reduce) {
+      _ctrl.stop();
+    } else {
+      _resumeMotion();
+    }
+  }
+
+  @override
   void didUpdateWidget(HomeImageMarquee old) {
     super.didUpdateWidget(old);
     if (_imagesChanged(old.images, widget.images) ||
         old.gap != widget.gap ||
         old.height != widget.height ||
-        old.speed != widget.speed) {
+        old.speed != widget.speed ||
+        old.reverse != widget.reverse) {
       _periodWidth = 0;
+      _started = false;
       _userDragging = false;
       _pointerDown = null;
       _releaseScrollHold();
@@ -301,7 +337,6 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
   @override
   void dispose() {
-    _resumeTimer?.cancel();
     _releaseScrollHold();
     _ctrl.dispose();
     super.dispose();
@@ -314,6 +349,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
           key: ValueKey('mq-$periodIndex-$i-${widget.images[i].url}'),
           image: widget.images[i],
           defaultHeight: widget.height,
+          radius: widget.radius,
         ),
         SizedBox(width: widget.gap),
       ],
@@ -340,9 +376,23 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
         final viewportW = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
+        _viewportWidth = viewportW;
         final period = _activePeriod;
         final copies = _copyCount(viewportW, period);
 
+        // الشريط يُبنى مرة واحدة لكل تخطيط؛ كل إطار يحرّكه فقط (Transform) دون إعادة بناء البلاطات.
+        final strip = RepaintBoundary(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.ltr,
+            children: [
+              for (var i = 0; i < copies; i++)
+                _period(key: i == 0 ? _periodKey : ValueKey('period-$i'), periodIndex: i),
+            ],
+          ),
+        );
+
+        // حدّ رسم خارجي: حركة الشريط لا تعيد رسم بقية الصفحة.
         return RepaintBoundary(
           child: ClipRect(
             clipBehavior: Clip.hardEdge,
@@ -352,37 +402,24 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  IgnorePointer(
-                    child: AnimatedBuilder(
-                      animation: _ctrl,
-                      builder: (_, __) {
-                        final loop = _activePeriod;
-                        return OverflowBox(
-                          alignment: Alignment.centerLeft,
-                          maxWidth: double.infinity,
-                          child: Transform.translate(
-                            offset: Offset(
-                              (widget.reverse ? 1 : -1) * _ctrl.value * loop,
-                              0,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              textDirection: TextDirection.ltr,
-                              children: [
-                                for (var i = 0; i < copies; i++)
-                                  _period(
-                                    key: i == 0
-                                        ? _periodKey
-                                        : ValueKey('period-$i'),
-                                    periodIndex: i,
-                                  ),
-                              ],
-                            ),
+                  // الصور للعين فقط — قارئ الشاشة يقرأ الطبقة التالية.
+                  ExcludeSemantics(
+                    child: IgnorePointer(
+                      child: OverflowBox(
+                        alignment: Alignment.centerLeft,
+                        maxWidth: double.infinity,
+                        child: AnimatedBuilder(
+                          animation: _ctrl,
+                          child: strip,
+                          builder: (_, child) => Transform.translate(
+                            offset: Offset(_shift(_activePeriod), 0),
+                            child: child,
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
                   ),
+                  _MarqueeSemanticsLayer(images: widget.images),
                   Listener(
                     behavior: HitTestBehavior.translucent,
                     onPointerDown: _onPointerDown,
@@ -401,15 +438,53 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   }
 }
 
+/// زر لكل صورة لقارئ الشاشة (TalkBack/VoiceOver) — شرائح ثابتة شفافة بعرض الشريط،
+/// لا ترسم شيئاً ولا تلتقط اللمس؛ النقر الفعلي يمرّ عبر Listener فوقها.
+class _MarqueeSemanticsLayer extends ConsumerWidget {
+  final List<HomeMarqueeImage> images;
+
+  const _MarqueeSemanticsLayer({required this.images});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.watch(stringsProvider);
+    return IgnorePointer(
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        child: Row(
+          children: [
+            for (final img in images)
+              Expanded(
+                child: Semantics(
+                  button: true,
+                  image: true,
+                  label: PhotoTileData.fromMap(img.item).titleForLang(lang) ?? s.homeMediaPhoto,
+                  onTap: () => img.openLink(context),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MarqueeTile extends StatelessWidget {
   final HomeMarqueeImage image;
   final double defaultHeight;
+  final double radius;
 
   const _MarqueeTile({
     super.key,
     required this.image,
     required this.defaultHeight,
+    required this.radius,
   });
+
+  static const _shapeOwnsRadius = {'pill', 'arch', 'circle'};
 
   @override
   Widget build(BuildContext context) {
@@ -425,6 +500,9 @@ class _MarqueeTile extends StatelessWidget {
       width: image.width,
       height: h,
       showCaption: false,
+      // الظل يُقصّ مسطّحاً عند حافة الشريط — بلا ظل هنا.
+      showShadow: false,
+      cornerRadiusOverride: _shapeOwnsRadius.contains(image.shape) ? null : radius,
     );
   }
 }

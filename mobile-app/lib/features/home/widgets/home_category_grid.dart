@@ -84,15 +84,16 @@ class _WorldCategoryLayout extends StatelessWidget {
 
   static const _gap = 10.0;
   static const _runGap = 12.0;
-  static const _label = 24.0;
 
   @override
   Widget build(BuildContext context) {
     final n = categories.length;
+    // مساحة سطرين للاسم («العناية بالبشرة» لا تُقصّ) تكبر مع حجم خط النظام.
+    final label = MediaQuery.textScalerOf(context).scale(30) + 5;
     return LayoutBuilder(
       builder: (context, c) {
         final tileW = (c.maxWidth - 16 - _gap * 4) / 4.3;
-        final tileH = tileW + _label;
+        final tileH = tileW + label;
         // حتى 6 أقسام صف واحد متحرك، وأكثر صفّان — لا فراغات في أي عالم.
         final rows = n <= 6 ? 1 : 2;
         return SizedBox(
@@ -113,6 +114,8 @@ class _WorldCategoryLayout extends StatelessWidget {
               index: i,
               wash: wash,
               worldSections: true,
+              // الصورة داخل حشوة 8 من كل جانب.
+              imageSize: tileW - 16,
             ),
           ),
         );
@@ -177,11 +180,15 @@ class _CategorySquareTile extends ConsumerWidget {
   final Color? wash;
   final bool worldSections;
 
+  /// مقاس صورة البلاطة في شبكة العالم — تُفكّ بحجمها الفعلي لا بعرض الشاشة.
+  final double? imageSize;
+
   const _CategorySquareTile({
     required this.category,
     required this.index,
     this.wash,
     this.worldSections = false,
+    this.imageSize,
   });
 
   static const _size = 72.0;
@@ -199,6 +206,9 @@ class _CategorySquareTile extends ConsumerWidget {
     final t = context.worldTheme;
     final accent = wash ?? _tilePalette(t)[index % 4];
     final displayName = category.localizedName(lang);
+    // بديل الصورة: أيقونة القسم أو أول حرف من اسمه (والاسم قد يصل فارغاً).
+    final glyph = category.icon ??
+        (displayName.isEmpty ? '' : displayName.characters.first);
 
     return HomeTapScale(
       onTap: () {
@@ -244,16 +254,17 @@ class _CategorySquareTile extends ConsumerWidget {
                                 padding: const EdgeInsets.all(8),
                                 child: AppNetworkImage(
                                   url: category.imageUrl,
+                                  width: imageSize,
+                                  height: imageSize,
                                   fit: BoxFit.contain,
                                   backgroundColor: Colors.transparent,
                                 ),
                               )
                             : Center(
                                 child: Text(
-                                  category.icon ?? displayName.characters.first,
-                                  style: TextStyle(
+                                  glyph,
+                                  style: AppText.title3.copyWith(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w700,
                                     color: t.inkSoft,
                                   ),
                                 ),
@@ -265,11 +276,12 @@ class _CategorySquareTile extends ConsumerWidget {
                 const SizedBox(height: 5),
                 Text(
                   displayName,
-                  maxLines: 1,
+                  maxLines: 2,
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   style: HomeTheme.circleLabel.copyWith(
                     fontWeight: FontWeight.w700,
+                    height: 1.1,
                     color: t.ink,
                   ),
                 ),
@@ -307,11 +319,9 @@ class _CategorySquareTile extends ConsumerWidget {
                                   )
                                 : Center(
                                     child: Text(
-                                      category.icon ??
-                                          displayName.characters.first,
-                                      style: TextStyle(
+                                      glyph,
+                                      style: AppText.title3.copyWith(
                                         fontSize: 18,
-                                        fontWeight: FontWeight.w700,
                                         color: t.inkSoft.withValues(
                                           alpha: 0.85,
                                         ),

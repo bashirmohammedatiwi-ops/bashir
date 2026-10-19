@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_snackbar.dart';
+import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/product.dart';
 import '../../worlds/world_theme.dart';
 import 'product_detail_theme.dart';
@@ -54,17 +57,20 @@ class _ProductShadePickerState extends State<ProductShadePicker>
 
   bool _canScrollForward = false;
   bool _canScrollBack = false;
-  double _scrollProgress = 0;
+
+  /// تقدّم التمرير — يقرؤه شريط التقدّم وحده، فلا يُعاد بناء كل البطاقات مع كل حركة.
+  final _scrollProgress = ValueNotifier<double>(0);
   bool _showScrollHint = true;
   int? _selectedIndex;
 
   @override
   void initState() {
     super.initState();
+    // النبض يعمل فقط حين يُعرض سهم التلميح (انظري [_syncHintPulse]) — لا مؤقّت دائم.
     _hintPulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+    );
     _scroll.addListener(_syncScrollMetrics);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncScrollMetrics();
@@ -86,6 +92,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
   @override
   void dispose() {
     _hintPulse.dispose();
+    _scrollProgress.dispose();
     _scroll.removeListener(_syncScrollMetrics);
     _scroll.dispose();
     super.dispose();
@@ -97,18 +104,36 @@ class _ProductShadePickerState extends State<ProductShadePicker>
     final offset = _scroll.offset;
     final canForward = max > 12 && offset < max - 8;
     final canBack = offset > 8;
-    final progress = max <= 0 ? 1.0 : (offset / max).clamp(0.0, 1.0);
-    if (canForward != _canScrollForward ||
-        canBack != _canScrollBack ||
-        (progress - _scrollProgress).abs() > 0.01 ||
-        (offset > 24 && _showScrollHint)) {
+    _scrollProgress.value = max <= 0 ? 1.0 : (offset / max).clamp(0.0, 1.0);
+    final hideHint = offset > 24 && _showScrollHint;
+    // إعادة البناء فقط حين تتغيّر الحالة الظاهرة (الحواف، التلميح) — لا مع كل بكسل.
+    if (canForward != _canScrollForward || canBack != _canScrollBack || hideHint) {
       setState(() {
         _canScrollForward = canForward;
         _canScrollBack = canBack;
-        _scrollProgress = progress;
-        if (offset > 24) _showScrollHint = false;
+        if (hideHint) _showScrollHint = false;
       });
     }
+    _syncHintPulse();
+  }
+
+  /// يشغّل نبض سهم التلميح فقط وهو ظاهر — وإلا تبقى الصفحة تطلب إطاراً كل لحظة.
+  void _syncHintPulse() {
+    final want = _canScrollForward &&
+        _showScrollHint &&
+        widget.shades.length > 3 &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (want && !_hintPulse.isAnimating) {
+      _hintPulse.repeat(reverse: true);
+    } else if (!want && _hintPulse.isAnimating) {
+      _hintPulse.stop();
+    }
+  }
+
+  /// درجة نافدة: لا تُختار، لكن الضغط عليها يقول السبب بدل أن يبدو التطبيق متجمّداً.
+  void _onSoldOutTap(ProductShade shade) {
+    HapticFeedback.lightImpact();
+    AppSnackbar.show(context, widget.strings.shadeSoldOut(shade.name));
   }
 
   void _scrollToSelected({bool animate = true}) {
@@ -148,68 +173,70 @@ class _ProductShadePickerState extends State<ProductShadePicker>
   /// كل الدرجات بشبكة — اختيار سريع حين تكون كثيرة.
   Future<void> _openAll() async {
     HapticFeedback.selectionClick();
-    final picked = await showModalBottomSheet<ProductShade>(
+    final strings = widget.strings;
+    final shades = widget.shades;
+    // اسم الدرجة النافدة التي ضُغطت — يظهر داخل الورقة (الإشعار السفلي يختفي خلفها).
+    // لا نتخلّص منه عند الإغلاق: الورقة تبقى تُبنى أثناء حركة خروجها وتستمع إليه.
+    final soldOutNote = ValueNotifier<String?>(null);
+    final picked = await showAppSheet<ProductShade>(
       context: context,
-      showDragHandle: false,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      title: strings.isAr ? 'اختاري درجتكِ' : 'Choose your shade',
       builder: (ctx) {
         final t = ctx.worldTheme;
-        final shades = widget.shades;
-        return ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.8),
-          child: Container(
-            decoration: BoxDecoration(color: t.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(26))),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 10),
-                Center(
-                  child: Container(width: 38, height: 4, decoration: BoxDecoration(color: t.hairline, borderRadius: BorderRadius.circular(99))),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 10),
+              child: ValueListenableBuilder<String?>(
+                valueListenable: soldOutNote,
+                builder: (_, note, __) => AnimatedSwitcher(
+                  duration: MediaQuery.disableAnimationsOf(ctx) ? Duration.zero : const Duration(milliseconds: 180),
                   child: Text(
-                    widget.strings.isAr ? 'اختاري درجتكِ' : 'Choose your shade',
-                    style: ProductDetailTheme.sectionTitleStyle(ctx).copyWith(fontSize: 17),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-                  child: Text(
-                    widget.strings.isAr
-                        ? '${shades.where((x) => x.inStock).length} متوفرة من ${shades.length}'
-                        : '${shades.where((x) => x.inStock).length} of ${shades.length} in stock',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: t.inkMuted),
-                  ),
-                ),
-                Flexible(
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 0.66,
+                    note != null
+                        ? strings.shadeSoldOut(note)
+                        : (strings.isAr
+                            ? '${shades.where((x) => x.inStock).length} متوفرة من ${shades.length}'
+                            : '${shades.where((x) => x.inStock).length} of ${shades.length} in stock'),
+                    key: ValueKey(note),
+                    style: AppText.caption.copyWith(
+                      color: note != null ? AppColors.sale : t.inkMuted,
+                      fontWeight: FontWeight.w600,
                     ),
-                    itemCount: shades.length,
-                    itemBuilder: (_, i) {
-                      final shade = shades[i];
-                      return _ShadeGradientTile(
-                        shade: shade,
-                        active: widget.selected?.id == shade.id,
-                        width: double.infinity,
-                        onTap: shade.inStock ? () => Navigator.of(ctx).pop(shade) : null,
-                      );
-                    },
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+            Flexible(
+              child: GridView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.62,
+                ),
+                itemCount: shades.length,
+                itemBuilder: (_, i) {
+                  final shade = shades[i];
+                  return _ShadeGradientTile(
+                    shade: shade,
+                    active: widget.selected?.id == shade.id,
+                    width: double.infinity,
+                    strings: strings,
+                    onTap: shade.inStock
+                        ? () => Navigator.of(ctx).pop(shade)
+                        : () {
+                            HapticFeedback.lightImpact();
+                            soldOutNote.value = shade.name;
+                          },
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
@@ -307,33 +334,28 @@ class _ProductShadePickerState extends State<ProductShadePicker>
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              NotificationListener<ScrollNotification>(
-                onNotification: (_) {
-                  _syncScrollMetrics();
-                  return false;
+              ListView.separated(
+                controller: _scroll,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                itemCount: shades.length,
+                separatorBuilder: (_, __) => const SizedBox(width: _tileGap),
+                itemBuilder: (_, i) {
+                  final shade = shades[i];
+                  final active = selected?.id == shade.id;
+                  return _ShadeGradientTile(
+                    shade: shade,
+                    active: active,
+                    strings: widget.strings,
+                    onTap: shade.inStock
+                        ? () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedIndex = i);
+                            widget.onSelect(shade);
+                          }
+                        : () => _onSoldOutTap(shade),
+                  );
                 },
-                child: ListView.separated(
-                  controller: _scroll,
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  itemCount: shades.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: _tileGap),
-                  itemBuilder: (_, i) {
-                    final shade = shades[i];
-                    final active = selected?.id == shade.id;
-                    return _ShadeGradientTile(
-                      shade: shade,
-                      active: active,
-                      onTap: shade.inStock
-                          ? () {
-                              HapticFeedback.selectionClick();
-                              setState(() => _selectedIndex = i);
-                              widget.onSelect(shade);
-                            }
-                          : null,
-                    );
-                  },
-                ),
               ),
               if (_canScrollBack) _ScrollFadeEdge(isStart: true, color: t.surface),
               if (_canScrollForward) _ScrollFadeEdge(isStart: false, color: t.surface),
@@ -395,7 +417,10 @@ class _ProductShadePickerState extends State<ProductShadePicker>
             ],
           ),
           const SizedBox(height: 8),
-          _ShadeScrollTrack(progress: _scrollProgress, accent: t.accent, track: t.accentSoft),
+          ValueListenableBuilder<double>(
+            valueListenable: _scrollProgress,
+            builder: (_, progress, __) => _ShadeScrollTrack(progress: progress, accent: t.accent, track: t.accentSoft),
+          ),
         ],
       ],
     );
@@ -491,6 +516,7 @@ class _ScrollFadeEdge extends StatelessWidget {
 class _ShadeGradientTile extends StatelessWidget {
   final ProductShade shade;
   final bool active;
+  final AppStrings strings;
   final VoidCallback? onTap;
   /// عرض البطاقة (الشبكة تمرر عرض الخلية كاملاً).
   final double width;
@@ -498,6 +524,7 @@ class _ShadeGradientTile extends StatelessWidget {
   const _ShadeGradientTile({
     required this.shade,
     required this.active,
+    required this.strings,
     this.onTap,
     this.width = 78,
   });
@@ -506,8 +533,15 @@ class _ShadeGradientTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final colors = shadeGradientColors(shade);
+    final soldOut = !shade.inStock;
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: active,
+      enabled: !soldOut,
+      label: soldOut ? '${shade.name}${strings.isAr ? '، ' : ', '}${strings.soldOut}' : shade.name,
+      excludeSemantics: true,
+      child: GestureDetector(
       onTap: onTap,
       child: AnimatedScale(
         scale: active ? 1.03 : 1,
@@ -593,19 +627,26 @@ class _ShadeGradientTile extends StatelessWidget {
               const SizedBox(height: 7),
               Text(
                 shade.name,
-                maxLines: 2,
+                maxLines: soldOut ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   height: 1.2,
-                  color: active ? t.accentDark : t.inkSoft,
+                  color: soldOut ? t.inkMuted : (active ? t.accentDark : t.inkSoft),
                 ),
               ),
+              if (soldOut)
+                Text(
+                  strings.soldOutShort,
+                  maxLines: 1,
+                  style: AppText.micro.copyWith(fontSize: 10, color: AppColors.sale),
+                ),
             ],
           ),
         ),
+      ),
       ),
     );
   }

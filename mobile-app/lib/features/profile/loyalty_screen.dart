@@ -7,7 +7,9 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/loyalty_summary.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../auth/auth_provider.dart';
+import '../cart/cart_provider.dart';
 import '../catalog/catalog_providers.dart';
 import '../../core/widgets/ui/ui.dart';
 import 'widgets/account_strings.dart';
@@ -50,7 +52,14 @@ class _LoyaltyBody extends ConsumerWidget {
         ),
         data: (summary) => RefreshIndicator(
           color: context.worldTheme.accent,
-          onRefresh: () async => ref.invalidate(loyaltyProvider),
+          // ينتظر البيانات فعلاً (لا يختفي المؤشر قبل وصولها)، ويحدّث نقاط بطاقة
+          // الحساب معها حتى لا يختلف الرقمان.
+          onRefresh: () async {
+            await Future.wait<void>([
+              ref.refresh(loyaltyProvider.future),
+              ref.read(authProvider.notifier).refreshUser(),
+            ].map((f) => f.then<void>((_) {}, onError: (_) {})));
+          },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(
@@ -63,6 +72,14 @@ class _LoyaltyBody extends ConsumerWidget {
               _PointsCard(summary: summary, userName: user?.name ?? '', s: s),
               const SizedBox(height: 12),
               _NextRewardCard(summary: summary),
+              if (summary.redeemablePoints > 0) ...[
+                const SizedBox(height: 12),
+                ProfilePrimaryButton(
+                  label: s.acctUsePoints,
+                  icon: Icons.shopping_bag_outlined,
+                  onPressed: () => _usePoints(context, ref),
+                ),
+              ],
               const SizedBox(height: AccountTheme.sectionGap),
               ProfileSectionTitle(s.acctHowPointsWork),
               ProfileMenuCard(
@@ -74,16 +91,14 @@ class _LoyaltyBody extends ConsumerWidget {
                   _InfoRow(
                     icon: Icons.redeem_outlined,
                     text: s.loyaltyRedeemAtCheckout(
-                      formatPrice(summary.rules.pointValue),
+                      formatPrice(summary.rules.pointValue, lang: s.lang),
                       summary.rules.redeemStep,
                     ),
                   ),
                   if (summary.rules.firstOrderBonus > 0)
                     _InfoRow(
                       icon: Icons.celebration_outlined,
-                      text: s.isAr
-                          ? 'مكافأة أول طلب: ${arPoints(summary.rules.firstOrderBonus)} هدية'
-                          : 'First order bonus: ${summary.rules.firstOrderBonus} points',
+                      text: s.acctFirstOrderBonus(summary.rules.firstOrderBonus),
                     ),
                 ],
               ),
@@ -132,6 +147,17 @@ class _LoyaltyBody extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// النقاط تُستخدم عند الدفع: إلى السلة إن كان فيها شيء، وإلا للتسوق من الرئيسية.
+  void _usePoints(BuildContext context, WidgetRef ref) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final cart = ref.read(cartProvider);
+    if (cart.isEmpty) {
+      openHomeTab(context, container);
+    } else {
+      openCartTab(context, container);
+    }
   }
 }
 
@@ -218,7 +244,7 @@ class _PointsCard extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
             child: Text(
-              '${summary.points}',
+              formatNumber(summary.points),
               style: AppText.display.copyWith(
                 color: Colors.white,
                 fontSize: 44,
@@ -235,9 +261,10 @@ class _PointsCard extends StatelessWidget {
           if (discount <= 0) ...[
             const SizedBox(height: 14),
             Text(
-              s.isAr
-                  ? 'كل نقطة = ${formatPrice(summary.rules.pointValue)} ✨ وتكسبين ${arPoints(summary.rules.pointsFor(1000))} عن كل 1,000 د.ع'
-                  : 'Each point = ${formatPrice(summary.rules.pointValue)} ✨ earn ${summary.rules.pointsFor(1000)} per 1,000 IQD',
+              s.acctPointWorth(
+                formatPrice(summary.rules.pointValue, lang: s.lang),
+                summary.rules.pointsFor(1000),
+              ),
               style: AppText.caption.copyWith(color: soft, fontWeight: FontWeight.w600),
             ),
           ],
@@ -261,7 +288,7 @@ class _PointsCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                      s.acctRedeemUpTo(formatPrice(discount)),
+                      s.acctRedeemUpTo(formatPrice(discount, lang: s.lang)),
                       style: AppText.label.copyWith(color: Colors.white),
                     ),
                   ),
@@ -275,13 +302,14 @@ class _PointsCard extends StatelessWidget {
   }
 }
 
-class _HistoryTile extends StatelessWidget {
+class _HistoryTile extends ConsumerWidget {
   final LoyaltyHistoryItem item;
   const _HistoryTile({required this.item});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
+    final date = formatDate(item.date, lang: ref.s.lang);
     final positive = item.isEarned;
     final color = positive ? AppColors.success : t.inkSoft;
     return ConstrainedBox(
@@ -297,18 +325,28 @@ class _HistoryTile extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                item.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: ProfileUi.bodyStyle(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: ProfileUi.bodyStyle(context),
+                  ),
+                  if (date.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(date, style: ProfileUi.captionStyle(context)),
+                  ],
+                ],
               ),
             ),
             const SizedBox(width: 8),
             Directionality(
               textDirection: TextDirection.ltr,
               child: Text(
-                '${positive ? '+' : ''}${item.points}',
+                '${positive ? '+' : ''}${formatNumber(item.points)}',
                 style: AppText.price.copyWith(color: color),
               ),
             ),
@@ -327,15 +365,18 @@ class _NextRewardCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
-    final ar = ref.s.isAr;
+    final s = ref.s;
     final r = summary.rules;
     final block = r.redeemStep;
     final into = summary.points % block;
     final remaining = block - into;
     final progress = into / block;
-    final reward = formatPrice(r.valueOf(block));
+    final reward = formatPrice(r.valueOf(block), lang: s.lang);
     // كم تحتاج من مشتريات لتكسب النقاط الباقية (بنسبة الكسب).
-    final spend = formatPrice(r.earnPercent <= 0 ? 0 : (remaining * 100 / r.earnPercent).ceil());
+    final spend = formatPrice(
+      r.earnPercent <= 0 ? 0 : (remaining * 100 / r.earnPercent).ceil(),
+      lang: s.lang,
+    );
 
     return ProfileSurfaceCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -356,12 +397,13 @@ class _NextRewardCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      ar ? 'باقي ${arPoints(remaining)} لخصم $reward إضافي' : '$remaining points to another $reward off',
+                      // «إضافي» فقط لمن لديها خصم كامل الآن — بلا نقاط تكون أول مكافأة.
+                      s.acctPointsToReward(remaining, reward, another: summary.points >= block),
                       style: AppText.label.copyWith(color: t.ink, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      ar ? 'أي ما يعادل مشتريات بقيمة $spend تقريباً' : 'About $spend of shopping',
+                      s.acctSpendToReward(spend),
                       style: AppText.caption.copyWith(color: t.inkMuted),
                     ),
                   ],
@@ -371,7 +413,7 @@ class _NextRewardCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(99),
+            borderRadius: BorderRadius.circular(AppCorners.pill),
             child: SizedBox(
               height: 8,
               child: Stack(
@@ -389,14 +431,16 @@ class _NextRewardCard extends ConsumerWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              Text('$into / $block', style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700)),
-              const Spacer(),
+              Text('${formatNumber(into)} / ${formatNumber(block)}', style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700)),
+              const SizedBox(width: 8),
               if (summary.redeemablePoints > 0)
-                Text(
-                  ar
-                      ? 'متاح لك الآن خصم ${formatPrice(summary.maxDiscountFromPoints)}'
-                      : '${formatPrice(summary.maxDiscountFromPoints)} available now',
-                  style: AppText.micro.copyWith(color: AppColors.success, fontWeight: FontWeight.w800),
+                Expanded(
+                  child: Text(
+                    s.acctAvailableNow(formatPrice(summary.maxDiscountFromPoints, lang: s.lang)),
+                    textAlign: TextAlign.end,
+                    maxLines: 2,
+                    style: AppText.micro.copyWith(color: AppColors.success, fontWeight: FontWeight.w800),
+                  ),
                 ),
             ],
           ),

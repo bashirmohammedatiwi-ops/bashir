@@ -1,9 +1,3 @@
-import '../../data/models/beauty.dart';
-import '../beauty/beauty_providers.dart';
-import '../../core/widgets/app_snackbar.dart';
-import '../../core/utils/friendly_error.dart';
-import '../catalog/catalog_providers.dart';
-import '../../core/widgets/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,14 +7,23 @@ import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/providers/app_info_provider.dart';
+import '../../core/utils/friendly_error.dart';
 import '../../core/utils/phone_util.dart';
 import '../../core/utils/responsive.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/product_card.dart';
 import '../../core/widgets/ui/ui.dart';
+import '../../data/models/beauty.dart';
 import '../../data/models/order.dart';
+import '../alerts/restock_watch_provider.dart';
 import '../auth/auth_provider.dart';
+import '../beauty/beauty_providers.dart';
+import '../catalog/catalog_providers.dart';
 import '../orders/widgets/order_status.dart';
 import '../payments/pay_now_card.dart';
 import '../settings/legal_document_screen.dart';
+import '../shell/main_shell.dart';
+import '../shell/nav_tabs.dart';
 import '../wishlist/wishlist_provider.dart';
 import '../worlds/world_theme.dart';
 import 'profile_providers.dart';
@@ -30,11 +33,50 @@ import 'widgets/notification_permission_tile.dart';
 import 'widgets/profile_ui.dart';
 import 'widgets/support_contact_section.dart';
 
-class AccountScreen extends ConsumerWidget {
+class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends ConsumerState<AccountScreen> {
+  /// أقل فاصل بين تحديثين صامتين عند فتح التبويب — لا طلبات مع كل لمسة.
+  static const _silentRefreshGap = Duration(seconds: 60);
+
+  DateTime? _lastRefresh;
+  bool _deleting = false;
+
+  /// سحب للتحديث: الطلبات والإشعارات و«اطلبيها مرة ثانية» وبيانات الحساب معاً؛
+  /// فشل أيّها لا يوقف البقية.
+  Future<void> _refresh() async {
+    if (!ref.read(authProvider).isAuthenticated) return;
+    _lastRefresh = DateTime.now();
+    await Future.wait<void>(
+      [
+        ref.refresh(ordersProvider.future),
+        ref.refresh(notificationsProvider.future),
+        ref.refresh(buyAgainProvider.future),
+        ref.read(authProvider.notifier).refreshUser(),
+        ref.read(restockWatchProvider.notifier).load(),
+      ].map((f) => f.then<void>((_) {}, onError: (_) {})),
+    );
+  }
+
+  /// التبويب يبقى حياً في الـ shell فلا يُعاد بناؤه: نجدّد حالة الطلب والنقاط
+  /// بصمت عند العودة إليه، مرة كل دقيقة على الأكثر.
+  void _silentRefresh() {
+    final last = _lastRefresh;
+    final recent = last != null && DateTime.now().difference(last) < _silentRefreshGap;
+    if (!recent) _refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<int>(navIndexProvider, (prev, next) {
+      if (next == NavTabs.account && prev != NavTabs.account) _silentRefresh();
+    });
+
     final auth = ref.watch(authProvider);
     final s = ref.watch(stringsProvider);
     final version = ref.watch(appVersionLabelProvider);
@@ -43,7 +85,7 @@ class AccountScreen extends ConsumerWidget {
     final unread = ref.watch(unreadNotificationsCountProvider);
 
     final children = auth.isAuthenticated
-        ? _memberSections(context, ref, s)
+        ? _memberSections(context, s)
         : _guestSections(context, s);
 
     return Scaffold(
@@ -51,66 +93,51 @@ class AccountScreen extends ConsumerWidget {
       body: RefreshIndicator(
         color: context.worldTheme.accent,
         edgeOffset: top,
-        onRefresh: () => _refresh(ref),
+        notificationPredicate: (n) => auth.isAuthenticated && n.depth == 0,
+        onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-              ProfileUi.hPad,
-              top + 8,
-              ProfileUi.hPad,
-              bottomPad,
-            ),
-            children: [
-              _AccountTopBar(
-                title: s.myAccount,
-                showBell: auth.isAuthenticated,
-                unread: unread,
-                bellTooltip: s.notifications,
-                onBell: () => context.push('/notifications'),
-              ),
-              const SizedBox(height: 14),
-              ...children,
-              const SizedBox(height: 20),
-              Center(
-                child: Text(
-                  '${AppConfig.displayStoreName(s.lang)} • ${s.version} $version',
-                  textAlign: TextAlign.center,
-                  style: ProfileUi.captionStyle(context),
-                ),
-              ),
-            ],
+          padding: EdgeInsets.fromLTRB(
+            ProfileUi.hPad,
+            top + 8,
+            ProfileUi.hPad,
+            bottomPad,
           ),
+          children: [
+            _AccountTopBar(
+              title: s.myAccount,
+              showBell: auth.isAuthenticated,
+              unread: unread,
+              bellTooltip: s.notifications,
+              onBell: () => context.push('/notifications'),
+            ),
+            const SizedBox(height: 14),
+            ...children,
+            const SizedBox(height: 20),
+            Center(
+              child: Text(
+                '${AppConfig.displayStoreName(s.lang)} • ${s.version} $version',
+                textAlign: TextAlign.center,
+                style: ProfileUi.captionStyle(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// سحب للتحديث: الطلبات والإشعارات و«اطلبيها مرة ثانية» وبيانات الحساب معاً؛
-  /// فشل أيّها لا يوقف البقية.
-  Future<void> _refresh(WidgetRef ref) async {
-    if (!ref.read(authProvider).isAuthenticated) return;
-    await Future.wait<void>([
-      ref.refresh(ordersProvider.future),
-      ref.refresh(notificationsProvider.future),
-      ref.refresh(buyAgainProvider.future),
-      ref.read(authProvider.notifier).refreshUser(),
-    ].map((f) => f.then<void>((_) {}, onError: (_) {})));
-  }
-
-  List<Widget> _memberSections(
-    BuildContext context,
-    WidgetRef ref,
-    AppStrings s,
-  ) {
+  List<Widget> _memberSections(BuildContext context, AppStrings s) {
     final user = ref.watch(authProvider).user;
-    final wishlistCount = ref.watch(
-      wishlistProvider.select((w) => w.ids.length),
+    // المفضلة المحمّلة هي المرجع (حتى لو صارت فارغة)؛ رقم الحساب قبل تحميلها فقط.
+    final wishlist = ref.watch(
+      wishlistProvider.select((w) => (w.loaded, w.ids.length)),
     );
     final unread = ref.watch(unreadNotificationsCountProvider);
+    final watches = ref.watch(restockWatchProvider.select((w) => w.length));
     final orders = user?.orderCount ?? 0;
     final points = user?.points ?? 0;
-    final saved = wishlistCount > 0
-        ? wishlistCount
-        : (user?.wishlistCount ?? 0);
+    final saved = wishlist.$1 ? wishlist.$2 : (user?.wishlistCount ?? 0);
 
     return [
       _ProfileHero(s: s),
@@ -170,6 +197,13 @@ class AccountScreen extends ConsumerWidget {
             badge: unread,
             onTap: () => context.push('/notifications'),
           ),
+          ProfileMenuTile(
+            icon: Icons.notifications_active_outlined,
+            title: s.restockAlerts,
+            subtitle: s.acctRestockAlertsHint,
+            badge: watches,
+            onTap: () => context.push('/alerts'),
+          ),
         ],
       ),
       const SizedBox(height: AccountTheme.sectionGap),
@@ -182,14 +216,14 @@ class AccountScreen extends ConsumerWidget {
             title: s.logout,
             danger: true,
             showChevron: false,
-            onTap: () => _logout(context, ref, s),
+            onTap: () => _logout(s),
           ),
         ],
       ),
       const SizedBox(height: 6),
       ProfileDangerTextButton(
         label: s.deleteAccount,
-        onPressed: () => _deleteAccount(context, ref, s),
+        onPressed: _deleting ? null : () => _deleteAccount(s),
       ),
     ];
   }
@@ -225,12 +259,17 @@ class AccountScreen extends ConsumerWidget {
             icon: Icons.storefront_outlined,
             title: s.brands,
             subtitle: s.acctBrandsHint,
-            onTap: () => openTabPath(context, '/brands'),
+            // تبويب البراندات نفسه — لا نسخة ثانية من الـ shell فوق الأولى.
+            onTap: () => openMainTab(
+              context,
+              ProviderScope.containerOf(context, listen: false),
+              NavTabs.brands,
+            ),
           ),
           ProfileMenuTile(
             icon: Icons.spa_outlined,
-            title: s.isAr ? 'دليل البشرة' : 'Skin guide',
-            subtitle: s.isAr ? 'اختبار البشرة، المشاكل وحلولها' : 'Skin quiz, concerns and fixes',
+            title: s.acctSkinGuide,
+            subtitle: s.acctSkinGuideHint,
             onTap: () => context.push('/skin-guide'),
           ),
           // نتيجة اختبار البشرة المحفوظة — أو دعوة لإجرائه.
@@ -239,18 +278,24 @@ class AccountScreen extends ConsumerWidget {
               final p = ref.watch(skinProfileProvider);
               return ProfileMenuTile(
                 icon: Icons.face_retouching_natural_outlined,
-                title: s.isAr ? 'ملف بشرتي' : 'My skin profile',
+                title: s.acctSkinProfile,
                 subtitle: p == null
-                    ? (s.isAr ? 'اختبار سريع يحدد نوع بشرتكِ وروتينها' : 'A quick quiz for your skin type')
-                    : (s.isAr ? 'بشرة ${p.skinType.labelAr} ${p.skinType.emoji} — روتينكِ جاهز' : '${p.skinType.labelEn} skin — your routine is ready'),
-                onTap: () => context.push(p == null ? '/skin-quiz' : '/skin-quiz?result=1'),
+                    ? s.acctSkinProfileEmpty
+                    : s.acctSkinProfileReady(
+                        p.skinType.labelAr,
+                        p.skinType.emoji,
+                        p.skinType.labelEn,
+                      ),
+                onTap: () => context.push(
+                  p == null ? '/skin-quiz' : '/skin-quiz?result=1',
+                ),
               );
             },
           ),
           ProfileMenuTile(
             icon: Icons.card_giftcard_rounded,
-            title: s.isAr ? 'الباقات والروتين' : 'Bundles & routines',
-            subtitle: s.isAr ? 'منتجات مختارة بسعر أوفر' : 'Curated sets, better price',
+            title: s.acctBundles,
+            subtitle: s.acctBundlesHint,
             onTap: () => context.push('/packages'),
           ),
         ],
@@ -281,11 +326,7 @@ class AccountScreen extends ConsumerWidget {
     ];
   }
 
-  Future<void> _logout(
-    BuildContext context,
-    WidgetRef ref,
-    AppStrings s,
-  ) async {
+  Future<void> _logout(AppStrings s) async {
     final ok = await showProfileConfirmDialog(
       context,
       title: s.logoutConfirmTitle,
@@ -293,17 +334,14 @@ class AccountScreen extends ConsumerWidget {
       confirmLabel: s.logout,
       cancelLabel: s.cancel,
     );
-    if (!ok) return;
+    if (!ok || !mounted) return;
     // الخروج فوري على الجهاز، وطلبات السيرفر تكمل في الخلفية.
     await ref.read(authProvider.notifier).logout();
-    if (context.mounted) AppSnackbar.success(context, s.loggedOut);
+    if (mounted) AppSnackbar.success(context, s.loggedOut);
   }
 
-  Future<void> _deleteAccount(
-    BuildContext context,
-    WidgetRef ref,
-    AppStrings s,
-  ) async {
+  Future<void> _deleteAccount(AppStrings s) async {
+    if (_deleting) return;
     final ok = await showProfileConfirmDialog(
       context,
       title: s.deleteAccountTitle,
@@ -311,28 +349,70 @@ class AccountScreen extends ConsumerWidget {
       confirmLabel: s.deleteAccountConfirm,
       cancelLabel: s.cancel,
     );
-    if (!ok || !context.mounted) return;
+    if (!ok || !mounted) return;
+    setState(() => _deleting = true);
     // انتظار لا يُغلق: الحذف قد يأخذ ثواني، ولا نريد ضغطة ثانية أو مغادرة في منتصفه.
     final navigator = Navigator.of(context, rootNavigator: true);
     showDialog<void>(
       context: context,
       useRootNavigator: true,
       barrierDismissible: false,
-      builder: (_) => const PopScope(
+      builder: (_) => PopScope(
         canPop: false,
-        child: Center(child: CircularProgressIndicator()),
+        child: _BlockingProgress(label: s.acctDeletingAccount),
       ),
     );
+    Object? error;
     try {
       await ref.read(authProvider.notifier).deleteAccount();
-      navigator.pop();
-      if (!context.mounted) return;
-      AppSnackbar.success(context, s.deleteAccountSuccess);
     } catch (e) {
+      error = e;
+    } finally {
       navigator.pop();
-      if (!context.mounted) return;
-      AppSnackbar.error(context, friendlyError(e, lang: s.lang));
+      if (mounted) setState(() => _deleting = false);
     }
+    if (!mounted) return;
+    if (error == null) {
+      AppSnackbar.success(context, s.deleteAccountSuccess);
+    } else {
+      AppSnackbar.error(context, ref.friendly(error));
+    }
+  }
+}
+
+/// مؤشر انتظار فوق الشاشة كلها مع سطر يشرح ما يجري.
+class _BlockingProgress extends StatelessWidget {
+  final String label;
+  const _BlockingProgress({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return Center(
+      child: Semantics(
+        liveRegion: true,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: AccountTheme.pageCard(context),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: t.accent),
+                const SizedBox(height: 14),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: AppText.label.copyWith(color: t.ink),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -394,9 +474,9 @@ class _ProfileHero extends ConsumerWidget {
     return ProfileHeroCard(
       greeting: s.acctHello,
       // بلا اسم (سجّلت برقم الهاتف فقط): دعوة لطيفة لإكماله بدل «؟».
-      name: user.name.trim().isNotEmpty ? user.name : (s.isAr ? 'أضيفي اسمكِ ✨' : 'Add your name ✨'),
+      name: user.name.trim().isNotEmpty ? user.name : s.acctAddYourName,
       subtitle: contact,
-      badge: s.isAr ? '${arPoints(user.points)} ولاء' : '${user.points} ${s.loyaltyPointsCount}',
+      badge: s.acctLoyaltyBadge(user.points),
       onBadgeTap: () => context.push('/loyalty'),
       initial: user.name.trim().isNotEmpty ? user.name.trim()[0] : '🌸',
       editLabel: s.editProfile,
@@ -458,7 +538,7 @@ class _QuickActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final radius = BorderRadius.circular(AppCorners.lg);
-    return DecoratedBox(
+    final tile = DecoratedBox(
       decoration: AccountTheme.pageCard(context),
       child: Material(
         color: Colors.transparent,
@@ -496,6 +576,7 @@ class _QuickActionTile extends StatelessWidget {
         ),
       ),
     );
+    return Semantics(button: true, child: tile);
   }
 }
 
@@ -668,71 +749,102 @@ class _ActiveOrderCard extends ConsumerWidget {
     if (active == null) return const SizedBox.shrink();
     final order = active;
     final t = context.worldTheme;
-    final ar = ref.s.isAr;
+    final s = ref.s;
+    final radius = BorderRadius.circular(AppCorners.xl);
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          context.push('/orders/${order.id}');
-        },
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      child: Semantics(
+        button: true,
+        label: s.acctOpenOrder('#${order.orderNumber}'),
+        child: DecoratedBox(
           decoration: BoxDecoration(
             color: t.surface,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: radius,
             border: Border.all(color: t.accentSoft),
             boxShadow: t.cardShadow,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(gradient: t.signatureGradient, shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    ar ? 'طلبك الحالي' : 'Current order',
-                    style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700),
-                  ),
-                  const Spacer(),
-                  OrderStatusChip(status: order.status),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  // رقم الطلب لاتيني: نثبّته في بداية السطر (يمين) ونترك فراغاً قبل السعر.
-                  Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        '#${order.orderNumber}',
-                        textDirection: TextDirection.ltr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.title3.copyWith(color: t.ink, letterSpacing: 0.4),
-                      ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: radius,
+            child: InkWell(
+              borderRadius: radius,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.push('/orders/${order.id}');
+              },
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            gradient: t.signatureGradient,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          s.acctCurrentOrder,
+                          style: AppText.caption.copyWith(
+                            color: t.inkMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        OrderStatusChip(status: order.status),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(order.totalLabel, style: AppText.price.copyWith(color: t.accentDark)),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right_rounded, color: t.inkMuted, size: 20),
-                ],
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        // رقم الطلب لاتيني: نثبّته في بداية السطر (يمين) ونترك فراغاً قبل السعر.
+                        Expanded(
+                          child: Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              '#${order.orderNumber}',
+                              textDirection: TextDirection.ltr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.title3.copyWith(
+                                color: t.ink,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          order.totalLabel,
+                          style: AppText.price.copyWith(color: t.accentDark),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: t.inkMuted,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                    if (order.paymentMethod == 'CARD') ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: CardPaymentPill(order: order),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    OrderProgressBar(status: order.status),
+                  ],
+                ),
               ),
-              if (order.paymentMethod == 'CARD') ...[
-                const SizedBox(height: 8),
-                Align(alignment: AlignmentDirectional.centerStart, child: CardPaymentPill(order: order)),
-              ],
-              const SizedBox(height: 12),
-              OrderProgressBar(status: order.status),
-            ],
+            ),
           ),
         ),
       ),
@@ -748,13 +860,12 @@ class _BuyAgainRail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final products = ref.watch(buyAgainProvider).valueOrNull ?? const [];
     if (products.isEmpty) return const SizedBox.shrink();
-    final ar = ref.s.isAr;
     return Padding(
       padding: const EdgeInsets.only(top: AccountTheme.sectionGap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ProfileSectionTitle(ar ? 'اطلبيها مرة ثانية' : 'Buy it again'),
+          ProfileSectionTitle(ref.s.acctBuyAgain),
           SizedBox(
             height: 262,
             child: ListView.separated(

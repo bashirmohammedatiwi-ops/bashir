@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/ui/ui.dart';
 import '../../data/models/beauty.dart';
 import '../beauty/beauty_home_sections.dart';
 import '../beauty/beauty_providers.dart';
+import '../beauty/beauty_strings.dart';
 import '../beauty/beauty_widgets.dart';
 import '../beauty/skin_guide_screen.dart';
 import '../worlds/world_theme.dart';
@@ -44,6 +45,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final t = context.worldTheme;
     final async = ref.watch(beautyPackagesProvider(''));
     final profile = ref.watch(skinProfileProvider);
@@ -55,12 +57,8 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
-            const SliverToBoxAdapter(
-              child: BeautyHeader(
-                title: 'الباقات والروتين',
-                subtitle: 'منتجات مختارة تكمّل بعضها — بسعر أوفر من شرائها منفردة',
-                emoji: '🎁',
-              ),
+            SliverToBoxAdapter(
+              child: BeautyHeader(title: s.beautyPackagesTitle, subtitle: s.beautyPackagesSubtitle, emoji: '🎁'),
             ),
             ...async.when(
               loading: () => [
@@ -94,29 +92,30 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                 final shown = list.where((p) => _match(p, tab)).toList();
                 if (all.isEmpty) {
                   return [
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
-                      child: EmptyState(icon: Icons.card_giftcard_rounded, title: 'لا توجد باقات حالياً', subtitle: 'تابعينا — باقات جديدة قريباً'),
+                      child: EmptyState(
+                        icon: Icons.card_giftcard_rounded,
+                        title: s.beautyNoPackagesTitle,
+                        subtitle: s.beautyNoPackagesSubtitle,
+                      ),
                     ),
                   ];
                 }
                 return [
                   SliverToBoxAdapter(
                     child: SizedBox(
-                      height: 62,
+                      height: 66,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                         itemCount: tabs.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 8),
                         itemBuilder: (_, i) => _TabChip(
-                          label: _label(tabs[i]),
+                          label: _label(s, tabs[i]),
                           count: tabs[i] == _Tab.all ? list.length : list.where((p) => _match(p, tabs[i])).length,
                           on: tabs[i] == tab,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _tab = tabs[i]);
-                          },
+                          onTap: () => setState(() => _tab = tabs[i]),
                         ),
                       ),
                     ),
@@ -126,7 +125,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
                         child: Text(
-                          '${profile.skinType.emoji} مرتبة حسب بشرتكِ ${profile.skinType.labelAr}',
+                          s.beautySortedForSkin(profile.skinType),
                           style: AppText.caption.copyWith(color: t.accentDark, fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -190,12 +189,12 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     );
   }
 
-  String _label(_Tab t) => switch (t) {
-        _Tab.all => 'الكل',
-        _Tab.morning => '☀️ روتين الصباح',
-        _Tab.evening => '🌙 روتين المساء',
-        _Tab.bundles => '🎁 باقات',
-        _Tab.bridal => '💍 العروس',
+  String _label(AppStrings s, _Tab t) => switch (t) {
+        _Tab.all => s.beautyTabAll,
+        _Tab.morning => s.beautyTabMorning,
+        _Tab.evening => s.beautyTabEvening,
+        _Tab.bundles => s.beautyTabBundles,
+        _Tab.bridal => s.beautyTabBridal,
       };
 }
 
@@ -209,18 +208,22 @@ class _TabChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return GestureDetector(
+    final radius = BorderRadius.circular(AppCorners.pill);
+    return AppTap(
       onTap: onTap,
+      selected: on,
+      radius: radius,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 220),
+        constraints: const BoxConstraints(minHeight: kMinTapTarget),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: on ? t.accentDark : t.surface,
-          borderRadius: BorderRadius.circular(AppCorners.pill),
+          borderRadius: radius,
           border: Border.all(color: on ? Colors.transparent : t.hairline),
         ),
-        child: Text('$label  $count', style: AppText.label.copyWith(color: on ? Colors.white : t.ink)),
+        child: Text('$label  $count', maxLines: 1, style: AppText.label.copyWith(color: on ? Colors.white : t.ink)),
       ),
     );
   }

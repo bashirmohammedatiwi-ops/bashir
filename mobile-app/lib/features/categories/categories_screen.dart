@@ -40,6 +40,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   String? _lens;
   String? _selectedId;
 
+  /// اللوحة الظاهرة — لمسة ثانية على التبويب تصعد لأعلاها.
+  final _pane = CategoryPaneController();
+
   @override
   void initState() {
     super.initState();
@@ -89,13 +92,26 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     _searchFocus.unfocus();
   }
 
-  /// لمسة ثانية على تبويب الأقسام: تمسح البحث، وإلا تعود لأول قسم.
+  /// لمسة ثانية على تبويب الأقسام: تمسح البحث، وإلا تصعد لأعلى اللوحة،
+  /// وإن كانت في الأعلى أصلاً تعود لأول قسم.
   void _onReselect() {
     if (_query.trim().isNotEmpty) {
       _clearSearch();
-    } else if (_selectedId != null) {
+    } else if (!_pane.scrollToTop() && _selectedId != null) {
       setState(() => _selectedId = null);
     }
+  }
+
+  /// العدسة تتبع العالم المختار في التطبيق (من الرئيسية مثلاً) حتى لا تُلوَّن الصفحة
+  /// بعالم وتعرض أقسام عالم آخر. «كل الأقسام» اختيار صريح فيبقى كما هو.
+  void _followWorld(String? next) {
+    if (_lens == null || next == null || next == _lens) return;
+    final worlds = ref.read(worldsProvider).valueOrNull ?? const <StoreWorld>[];
+    if (!worlds.any((w) => w.slug == next && !w.isGift)) return;
+    setState(() {
+      _lens = next;
+      _selectedId = null;
+    });
   }
 
   @override
@@ -105,17 +121,25 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     ref.listen<({int tab, int tick})>(tabReselectProvider, (_, r) {
       if (r.tab == NavTabs.categories) _onReselect();
     });
+    ref.listen<String?>(selectedWorldSlugProvider, (_, next) => _followWorld(next));
     final cats = ref.watch(categoriesProvider);
-    final worlds =
-        ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
-    final lensWorld = _lens == null
-        ? null
-        : ref.watch(worldDetailProvider(_lens!)).valueOrNull;
+    final worldsAsync = ref.watch(worldsProvider);
+    final worlds = worldsAsync.valueOrNull ?? const <StoreWorld>[];
+    // عالم العدسة لم يعد موجوداً (أُعيدت تسميته أو أُخفي): نعود لكل الأقسام.
+    if (_lens != null && worldsAsync.hasValue && !worlds.any((w) => w.slug == _lens)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final now = ref.read(worldsProvider).valueOrNull;
+        if (!mounted || _lens == null || now == null || now.any((w) => w.slug == _lens)) return;
+        setState(() {
+          _lens = null;
+          _selectedId = null;
+        });
+      });
+    }
+    final lensAsync = _lens == null ? null : ref.watch(worldDetailProvider(_lens!));
+    final lensWorld = lensAsync?.valueOrNull;
     // حجم الكتالوج للعنوان الفرعي: أقسام رئيسية وفرعية.
-    final rootsList = cats.valueOrNull
-        ?.where((c) => c.parentId == null || c.parentId!.isEmpty)
-        .toList();
-    final statIndex = rootsList == null ? null : CategoryIndex.build(rootsList);
+    final statIndex = ref.watch(categoryIndexProvider);
     String? stats;
     if (statIndex != null) {
       final roots = statIndex.all
@@ -144,6 +168,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 onClear: _clearSearch,
                 title: s.catBrowseTitle,
                 hint: s.catSearchHint,
+                scanTooltip: s.scanBarcode,
               ),
               if (_query.trim().isEmpty && worlds.isNotEmpty)
                 WorldLensBar(
@@ -182,8 +207,17 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     }
                     final entries = _railEntries(index, lensWorld);
                     if (entries.isEmpty) {
-                      if (_lens != null && lensWorld == null) {
-                        return const _BrowseSkeleton();
+                      if (lensAsync != null && lensWorld == null) {
+                        // تعذّر جلب العالم: رسالة وإعادة بدل هيكل تحميل بلا نهاية.
+                        if (lensAsync.hasError) {
+                          final slug = _lens!;
+                          return ErrorView.from(
+                            lensAsync.error,
+                            onRetry: () => ref.invalidate(worldDetailProvider(slug)),
+                            loading: lensAsync.isLoading,
+                          );
+                        }
+                        if (lensAsync.isLoading) return const _BrowseSkeleton();
                       }
                       return EmptyState(
                         icon: Icons.category_outlined,
@@ -199,6 +233,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       selected: selected,
                       onSelect: _select,
                       onRefresh: _refresh,
+                      pane: _pane,
                     );
                   },
                 ),
@@ -257,6 +292,7 @@ class _Header extends StatelessWidget {
   final VoidCallback onClear;
   final String title;
   final String hint;
+  final String scanTooltip;
 
   const _Header({
     required this.controller,
@@ -265,6 +301,7 @@ class _Header extends StatelessWidget {
     required this.onClear,
     required this.title,
     required this.hint,
+    required this.scanTooltip,
   });
 
   @override
@@ -286,26 +323,14 @@ class _Header extends StatelessWidget {
                   style: AppText.title1.copyWith(color: t.ink),
                 ),
               ),
-              Semantics(
-                button: true,
-                label: 'Scan',
-                child: GestureDetector(
-                  onTap: () => context.push('/scan'),
-                  child: Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: t.accentLight,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: t.accentSoft),
-                    ),
-                    child: Icon(
-                      Icons.qr_code_scanner_rounded,
-                      color: t.accentDark,
-                      size: 22,
-                    ),
-                  ),
-                ),
+              AppIconButton(
+                icon: Icons.qr_code_scanner_rounded,
+                tooltip: scanTooltip,
+                size: 46,
+                iconSize: 22,
+                color: t.accentDark,
+                background: t.accentLight,
+                onTap: () => context.push('/scan'),
               ),
             ],
           ),
@@ -374,6 +399,7 @@ class _Header extends StatelessWidget {
                       ? const SizedBox(width: 12)
                       : IconButton(
                           key: const ValueKey('clear'),
+                          tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
                           onPressed: onClear,
                           icon: Icon(
                             Icons.cancel_rounded,
@@ -396,12 +422,14 @@ class _BrowseBody extends StatelessWidget {
   final IndexedCategory selected;
   final ValueChanged<String> onSelect;
   final Future<void> Function() onRefresh;
+  final CategoryPaneController pane;
 
   const _BrowseBody({
     required this.entries,
     required this.selected,
     required this.onSelect,
     required this.onRefresh,
+    required this.pane,
   });
 
   @override
@@ -439,7 +467,9 @@ class _BrowseBody extends StatelessWidget {
                 topStart: Radius.circular(AppCorners.xl),
               ).resolve(Directionality.of(context)),
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 260),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 260),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 transitionBuilder: (child, anim) => FadeTransition(
@@ -456,6 +486,7 @@ class _BrowseBody extends StatelessWidget {
                   key: ValueKey(selected.category.id),
                   entry: selected,
                   onRefresh: onRefresh,
+                  controller: pane,
                 ),
               ),
             ),
