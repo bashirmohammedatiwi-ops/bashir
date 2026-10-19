@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import 'app.dart';
 import 'core/bootstrap/app_storage.dart';
+import 'core/perf/device_perf.dart';
 import 'core/theme/theme_mode_provider.dart';
 
 Future<void> main() async {
@@ -16,6 +17,7 @@ Future<void> main() async {
   await initializeDateFormatting('ar', null);
   await initializeDateFormatting('en', null);
   await initAppStorage();
+  await DevicePerf.init();
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
@@ -25,6 +27,7 @@ Future<void> main() async {
     systemOverlayStyleFor(initialAppBrightness()),
   );
   runApp(buildAppRoot(AlhayaaApp(appVersion: await appVersion)));
+  DevicePerf.watchFrames();
 }
 
 /// «1.0.0+11» — أو نص فارغ إن تعذّرت القراءة (يُعامل كأن الإصدار لم يتغيّر).

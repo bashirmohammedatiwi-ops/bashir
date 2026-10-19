@@ -21,6 +21,15 @@ import UserNotifications
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "QiPaymentBridge") {
       qiPayment = QiPaymentBridge(messenger: registrar.messenger())
+      // قدرة الجهاز (الذاكرة) — يقرّر التطبيق منها مستوى المؤثرات والذاكرة المؤقتة.
+      FlutterMethodChannel(name: "deema/device", binaryMessenger: registrar.messenger()).setMethodCallHandler { call, result in
+        guard call.method == "info" else { return result(FlutterMethodNotImplemented) }
+        result([
+          "totalMem": ProcessInfo.processInfo.physicalMemory,
+          "lowRam": ProcessInfo.processInfo.physicalMemory < 3_000_000_000,
+          "cores": ProcessInfo.processInfo.activeProcessorCount,
+        ])
+      }
     }
   }
 }
