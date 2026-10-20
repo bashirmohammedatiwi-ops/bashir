@@ -19,6 +19,15 @@ import 'world_showcase.dart';
 
 const _interval = Duration(seconds: 5);
 
+/// عرض البطاقة من الشاشة — لمحة رفيعة من التالية تدعو للسحب.
+const _fraction = 0.94;
+
+/// إطار أعرض وأقل ارتفاعاً من 16:9 — يأخذ مساحة أقل من الرئيسية.
+const _aspect = 2.15;
+
+/// القصّ ينحاز للأسفل قليلاً: المنتجات في صور البنرات تجلس عادةً في نصفها السفلي.
+const _cropAlign = Alignment(0, 0.4);
+
 /// بنرات العالم: بطاقات بزوايا كبيرة مع لمحة من التالية، عنوان + وصف + سهم دائري،
 /// ونقاط أسفلها (النشطة ممتدّة بلون العالم).
 ///
@@ -35,7 +44,7 @@ class WorldBannerCarousel extends ConsumerStatefulWidget {
 
 class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel>
     with SingleTickerProviderStateMixin, MotionGateMixin {
-  final _page = PageController(viewportFraction: 0.9);
+  final _page = PageController(viewportFraction: _fraction);
 
   /// زمن بقاء البنر الحالي: يملأ النقطة النشطة، وعند اكتماله يُقلب البنر.
   /// متحكّم واحد يتوقف خارج الشاشة/أثناء التمرير/في التبويب المخفي — فلا
@@ -165,12 +174,10 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel>
     }
     if (banners.isEmpty) return const SizedBox.shrink();
 
-    // إطار 16:9 مثل الموقع — البنر رسالة مصمّمة (نص وسعر وشعار) فلا نقصّ أطرافه.
-    // البطاقة = 90% من العرض ناقص الحشوة الأفقية (5+5)، و8 للحشوة العمودية (4+4).
-    const aspect = 16 / 9;
+    // البطاقة = 94% من العرض ناقص الحشوة الأفقية (4+4)، و8 للحشوة العمودية (4+4).
     final width = MediaQuery.sizeOf(context).width;
-    final cardW = width * 0.9 - 10;
-    final height = cardW / aspect + 8;
+    final cardW = width * _fraction - 8;
+    final height = cardW / _aspect + 8;
     final lang = ref.watch(languageCodeProvider);
     final s = ref.watch(stringsProvider);
     final color = worldBandColor(world);
@@ -193,7 +200,54 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel>
     // النقطة النشطة تمتلئ تدريجياً فقط حين يعمل العدّ بالمتحكّم.
     final animatedDot = !low && _autoPlay;
 
-    return Column(
+    // النقاط داخل البنر على حبّة شفافة صغيرة — لا سطر إضافي تحته.
+    final dots = banners.length < 2
+        ? null
+        : IgnorePointer(
+            child: RepaintBoundary(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.24),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < banners.length; i++)
+                        // النقطة النشطة تمتلئ بالأبيض حتى البنر التالي — مؤشر وقت هادئ.
+                        // البسيطة و«تقليل الحركة»: النشطة ممتلئة مباشرة.
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                          width: i == _index ? 20 : 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: i == _index
+                                ? Colors.white.withValues(alpha: animatedDot ? 0.4 : 1)
+                                : Colors.white.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: i == _index && animatedDot
+                              ? CustomPaint(
+                                  painter: _DotFillPainter(
+                                    progress: _dwell,
+                                    color: Colors.white,
+                                    rtl: rtl,
+                                  ),
+                                )
+                              : null,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+    return Stack(
       children: [
         SizedBox(
           height: height,
@@ -224,6 +278,7 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel>
                 final image = AppNetworkImage(
                   url: b.imageUrl,
                   fit: BoxFit.cover,
+                  alignment: _cropAlign,
                   backgroundColor: Color.lerp(color, Colors.white, 0.82),
                 );
                 // صورة نقية بلا أي كتابة: البنر نفسه هو الرسالة.
@@ -281,7 +336,7 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel>
                   image: true,
                   label: b.titleForLang(lang) ?? s.homeMediaPromotion,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: low
                         ? card
                         : AnimatedBuilder(
@@ -298,41 +353,13 @@ class _WorldBannerCarouselState extends ConsumerState<WorldBannerCarousel>
             ),
           ),
         ),
-        if (banners.length > 1) ...[
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < banners.length; i++)
-                // النقطة النشطة تمتلئ بلون العالم حتى البنر التالي — مؤشر وقت هادئ.
-                // البسيطة و«تقليل الحركة»: النشطة ممتلئة مباشرة.
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == _index ? 26 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: i == _index
-                        ? (animatedDot ? color.withValues(alpha: 0.25) : color)
-                        : t.hairline,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: i == _index && animatedDot
-                      ? RepaintBoundary(
-                          child: CustomPaint(
-                            painter: _DotFillPainter(
-                              progress: _dwell,
-                              color: color,
-                              rtl: rtl,
-                            ),
-                          ),
-                        )
-                      : null,
-                ),
-            ],
+        if (dots != null)
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            bottom: 14,
+            child: Center(child: dots),
           ),
-        ],
       ],
     );
   }

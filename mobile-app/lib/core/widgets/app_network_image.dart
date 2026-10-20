@@ -73,6 +73,9 @@ class AppNetworkImage extends StatelessWidget {
 
   final FilterQuality filterQuality;
 
+  /// موضع القصّ مع BoxFit.cover (افتراضياً المنتصف).
+  final Alignment alignment;
+
   const AppNetworkImage({
     super.key,
     required this.url,
@@ -88,6 +91,7 @@ class AppNetworkImage extends StatelessWidget {
     this.placeholder,
     this.errorWidget,
     this.filterQuality = FilterQuality.medium,
+    this.alignment = Alignment.center,
   });
 
   @override
@@ -128,6 +132,7 @@ class AppNetworkImage extends StatelessWidget {
       width: backgroundColor == null ? width : null,
       height: backgroundColor == null ? height : null,
       fit: fit,
+      alignment: alignment,
       filterQuality: filterQuality,
       fadeInDuration: Duration.zero,
       // مع خلفية مخصّصة تظهر الخلفية نفسها أثناء التحميل — لا أشرطة رمادية.
@@ -308,6 +313,7 @@ class _RetryingNetworkImage extends StatefulWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
+  final Alignment alignment;
   final FilterQuality filterQuality;
   final Duration fadeInDuration;
   final WidgetBuilder placeholder;
@@ -320,6 +326,7 @@ class _RetryingNetworkImage extends StatefulWidget {
     this.width,
     this.height,
     required this.fit,
+    this.alignment = Alignment.center,
     required this.filterQuality,
     required this.fadeInDuration,
     required this.placeholder,
@@ -365,6 +372,7 @@ class _RetryingNetworkImageState extends State<_RetryingNetworkImage> {
         width: widget.width,
         height: widget.height,
         fit: widget.fit,
+        alignment: widget.alignment,
         filterQuality: widget.filterQuality,
         fadeInDuration: widget.fadeInDuration,
         fadeOutDuration: Duration.zero,
