@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/motion/app_motion.dart';
 import '../../../core/motion/offscreen_pause.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/perf/device_perf.dart';
@@ -16,6 +18,7 @@ import '../../../core/utils/support_links.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/store_world.dart';
 import '../../auth/auth_provider.dart';
+import '../../cart/cart_provider.dart';
 import '../../profile/profile_providers.dart';
 import '../../shell/nav_tabs.dart';
 import '../../worlds/world_icon.dart';
@@ -32,6 +35,11 @@ extension _WorldShowcaseStrings on AppStrings {
   /// وصف زر الإشعارات مع عدد غير المقروء: «الإشعارات، 3 جديدة».
   String unreadBadge(String label, int n) =>
       isAr ? '$label، $n جديدة' : '$label, $n new';
+
+  /// وصف زر السلة مع عدد الأصناف: «سلة التسوّق، 3 أصناف».
+  String cartItemsBadge(String label, int n) => isAr
+      ? '$label، ${n == 1 ? 'صنف واحد' : n == 2 ? 'صنفان' : n <= 10 ? '$n أصناف' : '$n صنفاً'}'
+      : '$label, $n ${n == 1 ? 'item' : 'items'}';
 }
 
 /// لون الكتلة العلوية — أعمق قليلاً من لون العالم.
@@ -53,6 +61,8 @@ class WorldHeroBand extends ConsumerWidget {
     final signedIn = ref.watch(authProvider.select((a) => a.isAuthenticated));
     final userName = ref.watch(authProvider.select((a) => a.user?.name));
     final unread = signedIn ? ref.watch(unreadNotificationsCountProvider) : 0;
+    // عدد الأصناف (المنتجات/الألوان المختلفة) لا مجموع القطع.
+    final cartLines = ref.watch(cartProvider.select((c) => c.items.length));
     final whatsapp = ref.watch(storeSettingsProvider)?.whatsapp;
     final firstName = (userName ?? '').trim().split(' ').first;
     final base = worldBandColor(world);
@@ -154,6 +164,24 @@ class WorldHeroBand extends ConsumerWidget {
                         size: 20,
                       ),
                       onTap: () => context.push('/notifications'),
+                    ),
+                    const SizedBox(width: 8),
+                    // وصول سريع للسلة من الرئيسية مع عدد الأصناف.
+                    _GlassCircle(
+                      label: s.cartTitle,
+                      badge: cartLines,
+                      badgeLabel: s.cartItemsBadge(s.cartTitle, cartLines),
+                      bump: true,
+                      child: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedShoppingBag02,
+                        color: Colors.white,
+                        size: 20,
+                        strokeWidth: 1.7,
+                      ),
+                      onTap: () => openCartTab(
+                        context,
+                        ProviderScope.containerOf(context, listen: false),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const BrandMark(
@@ -414,18 +442,26 @@ class _GlassCircle extends ConsumerWidget {
   final VoidCallback onTap;
   final String label;
   final int badge;
+
+  /// وصف بديل للشارة لقارئ الشاشة (افتراضياً «n جديدة»).
+  final String? badgeLabel;
+
+  /// نبضة الشارة حين يزيد العدد (السلة).
+  final bool bump;
   const _GlassCircle({
     required this.child,
     required this.onTap,
     required this.label,
     this.badge = 0,
+    this.badgeLabel,
+    this.bump = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Semantics(
       button: true,
-      label: badge > 0 ? ref.s.unreadBadge(label, badge) : label,
+      label: badge > 0 ? (badgeLabel ?? ref.s.unreadBadge(label, badge)) : label,
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
@@ -451,7 +487,9 @@ class _GlassCircle extends ConsumerWidget {
               PositionedDirectional(
                 top: -2,
                 end: -2,
-                child: CountBadge(count: badge),
+                child: bump
+                    ? BadgeBump(value: badge, child: CountBadge(count: badge))
+                    : CountBadge(count: badge),
               ),
           ],
         ),
