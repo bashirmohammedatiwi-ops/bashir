@@ -75,149 +75,51 @@ class HomeHeroCategoryStrip extends ConsumerWidget {
   }
 }
 
-/// شبكة أقسام العالم: أربعة أعمدة كاملة بلا تمرير جانبي ولا بلاطات مقصوصة على
-/// الحافة — حتى صفّين (8 بلاطات). ما زاد عنها تجمعه بلاطة «الكل +N» الأخيرة.
+/// شبكة أقسام العالم — حجم البلاطة ثابت في كل العوالم مهما اختلف العدد:
+/// أربع بلاطات ظاهرة ولمحة من التالية، صف واحد حتى 6 أقسام وصفّان لما فوقها.
 class _WorldCategoryLayout extends StatelessWidget {
   final List<Category> categories;
   final Color? wash;
   const _WorldCategoryLayout({required this.categories, this.wash});
 
-  static const _cols = 4;
-  static const _maxTiles = 8;
   static const _gap = 10.0;
-  static const _runGap = 14.0;
+  static const _runGap = 12.0;
 
   @override
   Widget build(BuildContext context) {
     final n = categories.length;
-    final overflow = n > _maxTiles;
-    // البلاطة الأخيرة تصير «الكل» حين يزيد العدد عن صفّين.
-    final shown = overflow ? _maxTiles - 1 : n;
-    final total = overflow ? _maxTiles : n;
     // مساحة سطرين للاسم («العناية بالبشرة» لا تُقصّ) تكبر مع حجم خط النظام.
     final label = MediaQuery.textScalerOf(context).scale(30) + 5;
     return LayoutBuilder(
       builder: (context, c) {
-        final tileW = (c.maxWidth - 32 - _gap * (_cols - 1)) / _cols;
+        final tileW = (c.maxWidth - 16 - _gap * 4) / 4.3;
         final tileH = tileW + label;
-        final rows = (total / _cols).ceil();
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              for (var r = 0; r < rows; r++) ...[
-                if (r > 0) const SizedBox(height: _runGap),
-                SizedBox(
-                  height: tileH,
-                  child: Row(
-                    children: [
-                      for (var col = 0; col < _cols; col++) ...[
-                        if (col > 0) const SizedBox(width: _gap),
-                        Expanded(
-                          child: Builder(builder: (context) {
-                            final i = r * _cols + col;
-                            if (i >= total) return const SizedBox.shrink();
-                            if (overflow && i == shown) {
-                              return _AllCategoriesTile(more: n - shown, wash: wash);
-                            }
-                            return _CategorySquareTile(
-                              category: categories[i],
-                              index: i,
-                              wash: wash,
-                              worldSections: true,
-                              // الصورة داخل حشوة 8 من كل جانب.
-                              imageSize: tileW - 16,
-                            );
-                          }),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ],
+        // حتى 6 أقسام صف واحد متحرك، وأكثر صفّان — لا فراغات في أي عالم.
+        final rows = n <= 6 ? 1 : 2;
+        return SizedBox(
+          height: rows * tileH + (rows - 1) * _runGap,
+          child: GridView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            physics: const BouncingScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: rows,
+              mainAxisSpacing: _gap,
+              crossAxisSpacing: _runGap,
+              childAspectRatio: tileH / tileW,
+            ),
+            itemCount: n,
+            itemBuilder: (_, i) => _CategorySquareTile(
+              category: categories[i],
+              index: i,
+              wash: wash,
+              worldSections: true,
+              // الصورة داخل حشوة 8 من كل جانب.
+              imageSize: tileW - 16,
+            ),
           ),
         );
       },
-    );
-  }
-}
-
-/// بلاطة «الكل» — بنفس شكل بلاطات الأقسام، تفتح تبويب الأقسام.
-class _AllCategoriesTile extends ConsumerWidget {
-  final int more;
-  final Color? wash;
-  const _AllCategoriesTile({required this.more, this.wash});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = context.worldTheme;
-    final s = ref.s;
-    final accent = wash ?? t.accentLight;
-    return Semantics(
-      button: true,
-      label: s.viewAll,
-      excludeSemantics: true,
-      child: HomeTapScale(
-        onTap: () => openCategoriesTab(
-          context,
-          ProviderScope.containerOf(context, listen: false),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color.lerp(accent, Colors.white, 0.6)!, accent],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white, width: 1.2),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: t.accent,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Icon(Icons.grid_view_rounded, size: 17, color: t.onAccent),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '+$more',
-                        textDirection: TextDirection.ltr,
-                        style: AppText.caption.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: t.accentDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              s.all,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              style: HomeTheme.circleLabel.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.1,
-                color: t.ink,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
