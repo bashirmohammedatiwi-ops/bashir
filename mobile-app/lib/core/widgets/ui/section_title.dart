@@ -26,7 +26,7 @@ class AppSectionTitle extends StatelessWidget {
     this.onAction,
     this.trailing,
     this.padding = const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 12),
-    this.showAccent = true,
+    this.showAccent = false,
     this.titleColor,
   });
 
@@ -64,7 +64,7 @@ class AppSectionTitle extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.title2.copyWith(color: titleColor ?? t.ink),
+                  style: AppText.title2.copyWith(color: titleColor ?? t.ink, fontWeight: FontWeight.w800, fontSize: 19),
                 ),
                 if (hasSubtitle) ...[
                   const SizedBox(height: 2),
@@ -101,6 +101,8 @@ class ViewAllButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final fg = onDark ? Colors.white : t.accentDark;
+    // حبّة ناعمة بلون العالم الفاتح + سهم صغير — هادئة لا تنافس العنوان.
+    final bg = onDark ? Colors.white.withValues(alpha: 0.18) : t.accentLight;
     return Semantics(
       button: true,
       child: InkWell(
@@ -112,35 +114,25 @@ class ViewAllButton extends StatelessWidget {
         // منطقة لمس 44 والشكل نفسه في المنتصف — لا يكبر الشكل ولا تضيع الضغطة.
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: kMinTapTarget),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 2, 0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: AppText.label.copyWith(color: fg, fontSize: 12.5, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(width: 7),
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: onDark ? Colors.white.withValues(alpha: 0.2) : t.accent,
-                    boxShadow: onDark
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: t.accent.withValues(alpha: 0.28),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+          child: Center(
+            widthFactor: 1,
+            child: Container(
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 8, 6),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(AppCorners.pill),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: AppText.label.copyWith(color: fg, fontSize: 12.5, fontWeight: FontWeight.w700, height: 1.2),
                   ),
-                  child: const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
-                ),
-              ],
+                  const SizedBox(width: 3),
+                  Icon(Icons.chevron_right_rounded, size: 18, color: fg),
+                ],
+              ),
             ),
           ),
         ),

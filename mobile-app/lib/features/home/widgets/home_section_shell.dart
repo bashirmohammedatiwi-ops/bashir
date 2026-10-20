@@ -161,20 +161,6 @@ class HomeSectionHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // الخط اللوني بطول محتوى العنوان بالضبط — لا يتجاوزه ولا ينزاح.
-          Container(
-            width: 4,
-            height: (hasSub || hasOverline) ? 36 : 20,
-            margin: const EdgeInsetsDirectional.only(end: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [t.accent, t.accent.withValues(alpha: 0.35)],
-              ),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
           if (headerImageUrl != null && headerImageUrl!.isNotEmpty) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
@@ -204,14 +190,14 @@ class HomeSectionHeader extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.title2.copyWith(color: t.ink),
+                  style: AppText.title2.copyWith(color: t.ink, fontWeight: FontWeight.w800, fontSize: 19),
                 ),
                 if (hasSub)
                   Text(
                     subtitle!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppText.caption.copyWith(color: t.inkSoft),
+                    style: AppText.caption.copyWith(color: t.inkMuted),
                   ),
               ],
             ),
