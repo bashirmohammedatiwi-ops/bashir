@@ -252,7 +252,7 @@ class GalleryPhotoCard extends ConsumerWidget {
         children: [
           framedImage,
           if (showCaption && _hasCaption(lang) && (data.overlayStyle ?? 'none') == 'none') ...[
-            const SizedBox(height: 9),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -266,7 +266,7 @@ class GalleryPhotoCard extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: HomeTheme.chipLabel.copyWith(
-                            fontSize: 13.5,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w800,
                             color: t.ink,
                             height: 1.2,
@@ -284,14 +284,13 @@ class GalleryPhotoCard extends ConsumerWidget {
                 ),
                 if (onTap != null && width >= 110)
                   Container(
-                    width: 24,
-                    height: 24,
+                    width: 26,
+                    height: 26,
                     decoration: BoxDecoration(
-                      color: t.surface,
+                      color: t.accentLight,
                       shape: BoxShape.circle,
-                      border: Border.all(color: t.accentSoft),
                     ),
-                    child: Icon(Icons.arrow_forward_rounded, size: 14, color: t.accentDark),
+                    child: Icon(Icons.chevron_right_rounded, size: 18, color: t.accentDark),
                   ),
               ],
             ),
