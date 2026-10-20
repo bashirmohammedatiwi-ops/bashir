@@ -42,7 +42,7 @@ class ProductCarouselSection extends ConsumerWidget {
     if (section.products.isEmpty) return const SizedBox.shrink();
     final s = ref.s;
 
-    return HomeSectionShell(
+    final shell = HomeSectionShell(
       section: section,
       compactTop: compactTop,
       showTitle: nested ? false : null,
@@ -67,6 +67,39 @@ class ProductCarouselSection extends ConsumerWidget {
         itemWidth: Responsive.scaledCarouselWidth(
           context,
           cardSizeSpec(section.productCardSize ?? section.cardSize).productWidth,
+        ),
+      ),
+    );
+    // لون اللوحة للقسم يبقى كما هو؛ وبدونه: شريط ناعم بلون العالم يفصل رفوف
+    // المنتجات عن أقسام الصور — إيقاع للصفحة بدل خلفية واحدة متصلة.
+    if (nested || section.backgroundColor?.isNotEmpty == true) return shell;
+    return _ProductBand(child: shell);
+  }
+}
+
+class _ProductBand extends StatelessWidget {
+  final Widget child;
+  const _ProductBand({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              t.accentLight.withValues(alpha: t.isDark ? 0.35 : 0.9),
+              t.accentLight.withValues(alpha: 0.0),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 4),
+          child: child,
         ),
       ),
     );
