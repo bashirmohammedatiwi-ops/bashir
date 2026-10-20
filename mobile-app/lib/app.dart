@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/bootstrap/app_storage.dart';
 import 'core/bootstrap/app_warmup.dart';
 import 'core/config/app_config.dart';
 import 'core/connectivity/connectivity_provider.dart';
@@ -73,8 +72,6 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
   /// منذ متى انقطع الاتصال (null والاتصال قائم).
   DateTime? _offlineSince;
 
-  static const _introSeenAtKey = 'intro_seen_at';
-  static const _introVersionKey = 'intro_seen_version';
   static const _accountRefreshEvery = Duration(seconds: 60);
   static const _bootTimeout = Duration(seconds: 10);
 
@@ -173,24 +170,8 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
     if (mounted) setState(() {});
   }
 
-  /// المشهد كاملاً في أول تشغيل، وأول تشغيل بعد كل تحديث للتطبيق؛ وإلا النسخة
-  /// المختصرة (~1 ث).
-  SplashIntro _planIntro() {
-    final prefs = appSharedPreferences;
-    final version = widget.appVersion;
-    final seenBefore =
-        prefs.containsKey(_introSeenAtKey) || prefs.containsKey(_introVersionKey);
-    final newVersion =
-        version.isNotEmpty && prefs.getString(_introVersionKey) != version;
-    if (seenBefore && !newVersion) return SplashIntro.short;
-    prefs
-        .setInt(_introSeenAtKey, DateTime.now().millisecondsSinceEpoch)
-        .catchError((_) => false);
-    if (version.isNotEmpty) {
-      prefs.setString(_introVersionKey, version).catchError((_) => false);
-    }
-    return SplashIntro.full;
-  }
+  /// مشهد الافتتاح كاملاً في كل فتح للتطبيق (قرار صاحبة المتجر) — لمسة على الشاشة تتجاوزه.
+  SplashIntro _planIntro() => SplashIntro.full;
 
   /// فُتح التطبيق بلمس إشعار: نتجاوز المشهد ونأخذها لوجهة الإشعار مباشرة.
   ///
