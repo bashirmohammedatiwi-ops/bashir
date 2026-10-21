@@ -1,5 +1,4 @@
-import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
-import { ControlService } from "./control.service";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 
 export type WebImageHit = {
   url: string;
@@ -13,32 +12,18 @@ export type WebImageHit = {
   engine: "bing" | "ddg";
 };
 
-/** ما تعرّفنا عليه من صورة المنتج. */
-export type VisualGuess = {
-  brand: string;
-  name: string;
-  variant: string;
-  category: string;
-  barcode: string;
-  query: string;
-  queryAr: string;
-  confidence: number;
-};
-
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 const CACHE_MS = 10 * 60_000;
 
 /**
  * بحث صور الويب لتطبيق المدير — مثل Google Images: محركان (Bing و DuckDuckGo) بصفحات بلا حد،
  * وتصفية خفيفة فقط (المكرر والصور الصغيرة جداً)، فالمدير يرى كل النتائج ويختار.
- * والبحث بالصورة: نتعرّف على المنتج من صورته (الذكاء الاصطناعي) ثم نبحث عنه في المتجر وعلى الويب.
+ * البحث بالصورة يتم من التطبيق نفسه (اتصال عادي مثل المتصفح) — خوادم البيانات تُطلب منها كابتشا.
  */
 @Injectable()
 export class ControlWebService {
   private readonly logger = new Logger(ControlWebService.name);
   private readonly cache = new Map<string, { at: number; value: unknown }>();
-
-  constructor(private readonly control: ControlService) {}
 
   // ================================================================ web images
 
@@ -164,94 +149,6 @@ export class ControlWebService {
     const html = await res.text();
     const m = html.match(/vqd=["']([^"']+)["']/) || html.match(/vqd=([\d-]+)/) || html.match(/"vqd":"([^"]+)"/);
     return m?.[1] ?? null;
-  }
-
-  // ================================================================ visual search
-
-  /** صورة المنتج (JPEG/PNG base64) → ما هو؟ ثم هل هو في المتجر؟ وصوره على الويب. */
-  async visual(imageBase64: string, hint?: string) {
-    const b64 = imageBase64.replace(/^data:image\/\w+;base64,/, "").trim();
-    if (b64.length < 1000) throw new BadRequestException("الصورة غير صالحة");
-    if (b64.length > 8_000_000) throw new BadRequestException("الصورة كبيرة جداً");
-    const guess = await this.identify(b64, hint);
-
-    // في المتجر: بالباركود الظاهر أولاً، ثم بالاسم والبراند
-    const products: unknown[] = [];
-    const seen = new Set<string>();
-    const add = (items: Array<{ id: string }>) => {
-      for (const it of items) if (!seen.has(it.id) && products.length < 8) (seen.add(it.id), products.push(it));
-    };
-    if (guess.barcode.length >= 8) {
-      const r = await this.control.search({ q: guess.barcode, limit: 4 } as never).catch(() => null);
-      if (r) add(r.data);
-    }
-    for (const q of [`${guess.brand} ${guess.name}`, guess.name, `${guess.brand} ${guess.variant}`]) {
-      if (products.length >= 6) break;
-      const text = q.replace(/\s+/g, " ").trim();
-      if (text.length < 3) continue;
-      const r = await this.control.search({ q: text, limit: 6 } as never).catch(() => null);
-      if (r) add(r.data);
-    }
-
-    const query = guess.query || [guess.brand, guess.name, guess.variant].filter(Boolean).join(" ");
-    const web = query.length >= 3 ? await this.images(query, 0).catch(() => null) : null;
-    return { guess: { ...guess, query }, products, images: web?.items ?? [], hasMore: web?.hasMore ?? false };
-  }
-
-  private async identify(b64: string, hint?: string): Promise<VisualGuess> {
-    const key = process.env.OPENAI_API_KEY?.trim();
-    if (!key) throw new ServiceUnavailableException("البحث بالصورة غير مفعّل على السيرفر");
-    const model = process.env.OPENAI_VISION_MODEL || process.env.OPENAI_MODEL || "gpt-5.4-nano";
-    const system = `You identify beauty, cosmetics, perfume and personal-care products from a phone photo (a shelf, a box, or a bottle).
-Read the brand and the product name from the packaging. Never invent text you cannot see; leave a field empty when unsure.
-Return JSON only:
-{"brand":"","name":"","variant":"shade/size/scent if visible","category":"e.g. lipstick, perfume, shampoo","barcode":"digits if a barcode number is readable","query":"best English web search query to find this exact product's images","queryAr":"the same in Arabic","confidence":0.0}`;
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        max_completion_tokens: 2000,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: hint ? `Hint from the store manager: ${hint.slice(0, 200)}` : "What product is this?" },
-              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${b64}`, detail: "high" } },
-            ],
-          },
-        ],
-      }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!res.ok) {
-      const msg = (body.error as { message?: string } | undefined)?.message ?? `HTTP ${res.status}`;
-      this.logger.warn(`visual identify: ${msg}`);
-      throw new ServiceUnavailableException("تعذّر التعرف على الصورة الآن — حاول مجدداً");
-    }
-    const text = (body.choices as Array<{ message?: { content?: string } }> | undefined)?.[0]?.message?.content ?? "";
-    let j: Record<string, unknown> = {};
-    try {
-      j = JSON.parse(text) as Record<string, unknown>;
-    } catch {
-      this.logger.warn(`visual identify: bad JSON`);
-    }
-    const s = (v: unknown, max = 160) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
-    const guess: VisualGuess = {
-      brand: s(j.brand, 80),
-      name: s(j.name),
-      variant: s(j.variant, 80),
-      category: s(j.category, 60),
-      barcode: s(j.barcode, 20).replace(/\D/g, ""),
-      query: s(j.query, 200),
-      queryAr: s(j.queryAr, 200),
-      confidence: Math.max(0, Math.min(1, Number(j.confidence) || 0)),
-    };
-    if (!guess.brand && !guess.name && !guess.query) throw new BadRequestException("لم أتعرف على منتج في الصورة — صوّر العلبة والاسم واضحاً");
-    return guess;
   }
 
   // ================================================================ helpers

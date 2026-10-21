@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/format.dart';
 import '../../core/photos.dart';
+import '../../core/reverse_image.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
@@ -35,7 +36,7 @@ class _WebImageSearchScreenState extends ConsumerState<WebImageSearchScreen> {
   Object? _error;
 
   /// من البحث بالصورة.
-  VisualResult? _lens;
+  _Lens? _lens;
 
   String get _code => normalizeCode(widget.barcode ?? '').replaceAll(RegExp(r'[^0-9A-Za-z]'), '');
 
@@ -71,8 +72,7 @@ class _WebImageSearchScreenState extends ConsumerState<WebImageSearchScreen> {
     final n = (widget.name ?? '').trim();
     final lens = _lens;
     final out = <String>[
-      if (lens != null && lens.g('queryAr').isNotEmpty) lens.g('queryAr'),
-      if (lens != null && lens.title.isNotEmpty) [lens.g('brand'), lens.g('name'), lens.g('variant')].where((x) => x.isNotEmpty).join(' '),
+      if (lens != null) ...lens.r.tags.where((t) => !RegExp(r'[\u0400-\u04FF]').hasMatch(t)).take(4),
       if (n.isNotEmpty) n,
       if (_code.length >= 6) _code,
       if (n.isNotEmpty) '$n packshot',
@@ -148,20 +148,42 @@ class _WebImageSearchScreenState extends ConsumerState<WebImageSearchScreen> {
       _lens = null;
     });
     try {
-      final r = await ref.read(repoProvider).visualSearch(bytes);
+      // البحث بالصورة من الهاتف مباشرة (مثل «البحث بالصورة» في المتصفح)
+      final r = await ReverseImageSearch.search(bytes);
+      final products = await _storeMatches(r);
       if (!mounted || seq != _seq) return;
+      final best = r.bestQuery;
       setState(() {
-        _lens = r;
-        _q.text = r.query;
-        _items.addAll(r.images);
-        _page = 0;
-        _hasMore = r.hasMore;
+        _lens = _Lens(r, products);
+        _q.text = best ?? '';
+        _items.addAll(r.allImages);
+        // بعد صور البحث بالصورة نكمل بنتائج البحث بالكلمات عن أفضل وصف
+        _page = -1;
+        _hasMore = best != null && best.length >= 2;
       });
     } catch (e) {
       if (mounted && seq == _seq) setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _lensBusy = false);
     }
+  }
+
+  /// هل المنتج في متجرك؟ بالباركود الظاهر ثم بأوصاف الصورة.
+  Future<List<ProductSummary>> _storeMatches(ReverseImageResult r) async {
+    final repo = ref.read(repoProvider);
+    final out = <ProductSummary>[];
+    final ids = <String>{};
+    final queries = [?r.barcode, ...r.tags.where((t) => !RegExp(r'[\u0400-\u04FF]').hasMatch(t)).take(3)];
+    for (final q in queries) {
+      if (out.length >= 8) break;
+      try {
+        final res = await repo.search(q: q, limit: 6);
+        for (final p in res.items) {
+          if (ids.add(p.id)) out.add(p);
+        }
+      } catch (_) {}
+    }
+    return out;
   }
 
   void _tap(WebImage img) {
@@ -294,7 +316,7 @@ class _WebImageSearchScreenState extends ConsumerState<WebImageSearchScreen> {
                   ),
                 if (lens != null)
                   SliverToBoxAdapter(
-                    child: _LensCard(result: lens, onRetry: _lensSearch),
+                    child: _LensCard(lens: lens, onRetry: _lensSearch, onTag: _search),
                   ),
                 if (_error != null && _items.isEmpty)
                   SliverFillRemaining(hasScrollBody: false, child: ErrorView(_error!, onRetry: _q.text.isEmpty ? _lensSearch : _search))
@@ -427,16 +449,24 @@ class _Tile extends StatelessWidget {
   );
 }
 
-/// نتيجة التعرّف على صورة المنتج + ما يطابقه في المتجر.
+class _Lens {
+  _Lens(this.r, this.products);
+  final ReverseImageResult r;
+  final List<ProductSummary> products;
+}
+
+/// نتيجة البحث بالصورة: أوصاف الصورة، ما يطابقها في المتجر، وفتحها في Google Lens.
 class _LensCard extends StatelessWidget {
-  const _LensCard({required this.result, required this.onRetry});
-  final VisualResult result;
+  const _LensCard({required this.lens, required this.onRetry, required this.onTag});
+  final _Lens lens;
   final VoidCallback onRetry;
+  final void Function(String) onTag;
 
   @override
   Widget build(BuildContext context) {
-    final r = result;
-    final sure = r.confidence >= .6;
+    final r = lens.r;
+    final products = lens.products;
+    final tags = r.tags.where((t) => !RegExp(r'[\u0400-\u04FF]').hasMatch(t)).toList();
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: Panel(
@@ -453,30 +483,53 @@ class _LensCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(sure ? 'المنتج في الصورة' : 'ربما يكون', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                      Text(r.title.isEmpty ? r.query : r.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                      if (r.g('variant').isNotEmpty || r.g('category').isNotEmpty)
-                        Text(
-                          [r.g('variant'), r.g('category')].where((x) => x.isNotEmpty).join(' · '),
-                          style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
-                        ),
-                      if (r.g('barcode').isNotEmpty)
-                        Text('باركود ظاهر: ${r.g('barcode')}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                      const Text('نتائج البحث بالصورة', style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                      Text(
+                        r.bestQuery ?? 'صور مطابقة ومشابهة',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                        textDirection: RegExp(r'[\u0600-\u06FF]').hasMatch(r.bestQuery ?? '') ? null : TextDirection.ltr,
+                      ),
+                      Text(
+                        [
+                          if (r.sameImage.isNotEmpty) '${r.sameImage.length} بحجم أكبر',
+                          if (r.sites.isNotEmpty) '${r.sites.length} متجر وموقع',
+                          if (r.similar.isNotEmpty) '${r.similar.length} مشابهة',
+                        ].join(' · '),
+                        style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                      ),
+                      if (r.barcode != null)
+                        Text('باركود ظاهر: ${r.barcode}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
-                TextButton.icon(onPressed: onRetry, icon: const Icon(Icons.photo_camera_rounded, size: 18), label: const Text('صورة أخرى')),
               ],
             ),
+            if (tags.length > 1) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final t in tags.take(5))
+                    ActionChip(
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: Colors.white,
+                      side: BorderSide.none,
+                      label: Text(t, style: const TextStyle(fontSize: 12)),
+                      onPressed: () => onTag(t),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
-            if (r.products.isEmpty)
+            if (products.isEmpty)
               const Text(
-                'غير موجود في متجرك — يمكنك إضافة صوره من النتائج أدناه.',
+                'لم نجده في متجرك — يمكنك إضافة صوره من النتائج أدناه.',
                 style: TextStyle(color: AppColors.warning, fontWeight: FontWeight.w700, fontSize: 12.5),
               )
             else ...[
               Text(
-                r.products.length == 1 ? 'في متجرك:' : 'في متجرك (${r.products.length}):',
+                products.length == 1 ? 'قد يكون في متجرك:' : 'قد يكون في متجرك (${products.length}):',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
               ),
               const SizedBox(height: 6),
@@ -484,10 +537,10 @@ class _LensCard extends StatelessWidget {
                 height: 74,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: r.products.length,
+                  itemCount: products.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (_, i) {
-                    final p = r.products[i];
+                    final p = products[i];
                     return Material(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -530,6 +583,20 @@ class _LensCard extends StatelessWidget {
                 ),
               ),
             ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => launchUrl(Uri.parse(r.googleLensUrl), mode: LaunchMode.externalApplication),
+                    icon: const Icon(Icons.travel_explore_rounded, size: 18),
+                    label: const Text('افتح في Google Lens'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(onPressed: onRetry, icon: const Icon(Icons.photo_camera_rounded, size: 18), label: const Text('صورة أخرى')),
+              ],
+            ),
           ],
         ),
       ),
@@ -548,9 +615,9 @@ class _LensBusy extends StatelessWidget {
         SizedBox(height: 16),
         CircularProgressIndicator(),
         SizedBox(height: 16),
-        Text('نتعرّف على المنتج من الصورة…', style: TextStyle(fontWeight: FontWeight.w700)),
+        Text('نبحث بالصورة…', style: TextStyle(fontWeight: FontWeight.w700)),
         SizedBox(height: 4),
-        Text('ثم نبحث عنه في متجرك وعلى الويب', style: TextStyle(color: AppColors.muted)),
+        Text('صور مطابقة ومشابهة، ثم نبحث عنه في متجرك', style: TextStyle(color: AppColors.muted)),
       ],
     ),
   );

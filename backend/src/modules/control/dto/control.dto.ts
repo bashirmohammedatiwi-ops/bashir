@@ -212,12 +212,6 @@ export class CustomerActiveDto {
   @IsBoolean() isActive: boolean;
 }
 
-export class VisualSearchDto {
-  /** صورة JPEG/PNG بترميز base64 (بلا أو مع بادئة data:) */
-  @IsString() @MaxLength(8_000_000) image: string;
-  @IsOptional() @IsString() @MaxLength(200) hint?: string;
-}
-
 export class StockCountCreateDto {
   @IsOptional() @IsString() @MaxLength(80) name?: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;

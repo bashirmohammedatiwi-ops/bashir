@@ -623,22 +623,6 @@ String imageQueryFor(ProductDetail p, [String extra = '']) {
   return '$withBrand $extra'.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
-/// نتيجة البحث بصورة المنتج: ما هو، هل هو في المتجر، وصوره على الويب.
-class VisualResult {
-  VisualResult.fromJson(Map<String, dynamic> j)
-    : guess = Map<String, dynamic>.from(j['guess'] as Map? ?? const {}),
-      products = _list(j['products']).map(ProductSummary.fromJson).toList(),
-      images = _list(j['images']).map(WebImage.from).toList(),
-      hasMore = j['hasMore'] == true;
-  final Map<String, dynamic> guess;
-  final List<ProductSummary> products;
-  final List<WebImage> images;
-  final bool hasMore;
-  String g(String k) => '${guess[k] ?? ''}'.trim();
-  String get title => [g('brand'), g('name')].where((x) => x.isNotEmpty).join(' — ');
-  String get query => g('query');
-  double get confidence => (guess['confidence'] as num?)?.toDouble() ?? 0;
-}
 
 /// نتيجة التعبئة الذكية بالباركود (أسماء، براند، قسم، صور مقترحة).
 class Autofill {

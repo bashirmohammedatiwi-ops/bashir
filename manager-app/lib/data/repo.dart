@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -345,13 +343,6 @@ extension RepoMore on Repo {
     },
   );
 
-  /// صورة المنتج → نتعرّف عليه، نجده في المتجر، ونجلب صوره من الويب.
-  Future<VisualResult> visualSearch(List<int> jpeg, {String? hint}) => api.post(
-    '/control/visual-search',
-    data: {'image': base64Encode(jpeg), 'hint': ?hint},
-    options: Options(receiveTimeout: const Duration(seconds: 90), sendTimeout: const Duration(seconds: 60)),
-    map: (b) => VisualResult.fromJson(Map<String, dynamic>.from(b)),
-  );
 
   /// صور المنتج من الويب/المتاجر بالباركود أو بالاسم (بلا ذكاء اصطناعي).
   Future<List<WebImage>> webImages({String? barcode, String? name, bool byName = false}) {
