@@ -389,8 +389,8 @@ export class ControlService {
     const keys = Object.keys(dto).filter((k) => (dto as Record<string, unknown>)[k] !== undefined);
     if (!keys.length) return this.detail(id);
 
-    if (keys.length === 1 && keys[0] === "isActive") {
-      await this.prisma.product.update({ where: { id }, data: { isActive: dto.isActive } });
+    if (keys.every((k) => k === "isActive" || k === "shadeIds") && dto.isActive !== undefined) {
+      await this.setProductActive(id, dto.isActive, dto.shadeIds);
     } else {
       // باقي الحقول تمر بخدمة المنتجات (الأسماء، الباركود ومزامنة السعر، الأقسام...)
       const patch: Record<string, unknown> = { ...dto };
@@ -431,6 +431,7 @@ export class ControlService {
       }
     }
     await this.prisma.productShade.update({ where: { id: shadeId }, data });
+    if (dto.isActive !== undefined) await this.syncProductWithShades(shade.productId, dto.isActive ? [shadeId] : []);
     if (dto.isActive !== undefined) await this.recomputeFromShades(shade.productId);
     await this.touched(shade.productId);
     await this.audit(actorId, "shade.patch", "ProductShade", shadeId, { productId: shade.productId, ...dto });
@@ -444,6 +445,14 @@ export class ControlService {
       where: { productId, ...(dto.ids?.length ? { id: { in: dto.ids } } : {}) },
       data: { isActive: dto.isActive },
     });
+    if (dto.isActive) {
+      const ids = dto.ids?.length
+        ? dto.ids
+        : (await this.prisma.productShade.findMany({ where: { productId }, select: { id: true } })).map((s) => s.id);
+      await this.syncProductWithShades(productId, ids);
+    } else {
+      await this.syncProductWithShades(productId, []);
+    }
     await this.recomputeFromShades(productId);
     await this.touched(productId);
     await this.audit(actorId, "shade.bulk", "Product", productId, { isActive: dto.isActive, count: res.count });
@@ -454,6 +463,62 @@ export class ControlService {
    * مخزون المنتج = مجموع التدرجات الشغالة. السعر من التدرج القائد فقط إن كان للتدرجات أسعار من الكاشير
    * (لا نصفّر سعراً وضع يدوياً لمنتج تدرجاته بلا أسعار).
    */
+  /**
+   * تشغيل/إيقاف منتج. المنتج الموقوف تُوقف كل تدرجاته (ما يراه المدير = ما يراه الزبون).
+   * تشغيل منتج له تدرجات: تظهر [shadeIds] فقط؛ بلا تحديد → التدرجات المتوفرة (أو كلها إن نفدت كلها).
+   */
+  async setProductActive(productId: string, isActive: boolean, shadeIds?: string[]) {
+    const shades = await this.prisma.productShade.findMany({ where: { productId }, select: { id: true, stock: true, isActive: true } });
+    if (!isActive) {
+      await this.prisma.$transaction([
+        this.prisma.product.update({ where: { id: productId }, data: { isActive: false } }),
+        this.prisma.productShade.updateMany({ where: { productId }, data: { isActive: false } }),
+      ]);
+      if (shades.length) await this.recomputeFromShades(productId);
+      return;
+    }
+    if (!shades.length) {
+      await this.prisma.product.update({ where: { id: productId }, data: { isActive: true } });
+      return;
+    }
+    let on: string[];
+    if (shadeIds?.length) {
+      const known = new Set(shades.map((s) => s.id));
+      on = shadeIds.filter((sid) => known.has(sid));
+      if (!on.length) throw new BadRequestException("اختر تدرجاً واحداً على الأقل");
+    } else {
+      const live = shades.filter((s) => s.isActive);
+      const inStock = shades.filter((s) => (s.stock ?? 0) > 0);
+      on = (live.length ? live : inStock.length ? inStock : shades).map((s) => s.id);
+    }
+    await this.prisma.$transaction([
+      this.prisma.productShade.updateMany({ where: { productId, id: { in: on } }, data: { isActive: true } }),
+      this.prisma.productShade.updateMany({ where: { productId, id: { notIn: on } }, data: { isActive: false } }),
+      this.prisma.product.update({ where: { id: productId }, data: { isActive: true } }),
+    ]);
+    await this.recomputeFromShades(productId);
+  }
+
+  /**
+   * بعد تشغيل/إيقاف تدرجات: تشغيل تدرج لمنتج موقوف يشغّل المنتج مع هذا التدرج وحده؛
+   * إيقاف آخر تدرج ظاهر يوقف المنتج (وإلا لظهرت كل التدرجات للزبون).
+   */
+  private async syncProductWithShades(productId: string, turnedOn: string[]) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId }, select: { isActive: true } });
+    if (!product) return;
+    if (turnedOn.length && !product.isActive) {
+      await this.prisma.$transaction([
+        this.prisma.productShade.updateMany({ where: { productId, id: { notIn: turnedOn } }, data: { isActive: false } }),
+        this.prisma.product.update({ where: { id: productId }, data: { isActive: true } }),
+      ]);
+      return;
+    }
+    if (!turnedOn.length && product.isActive) {
+      const live = await this.prisma.productShade.count({ where: { productId, isActive: true } });
+      if (live === 0) await this.prisma.product.update({ where: { id: productId }, data: { isActive: false } });
+    }
+  }
+
   /** إعادة حساب مخزون/سعر المنتج من تدرجاته (بعد إضافة أو حذف أو تشغيل تدرج). */
   recompute(productId: string) {
     return this.recomputeFromShades(productId);

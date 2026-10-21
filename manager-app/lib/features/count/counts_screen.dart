@@ -502,7 +502,9 @@ class _CountScreenState extends ConsumerState<CountScreen> {
             Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
             if (c.scopeLabel != null)
               Text(
-                '${ltr(c.scopeLabel!)} · ${numFmt(c.s('scopeExpected'))} صنف متوقع على الرف', style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                '${ltr(c.scopeLabel!)} · ${numFmt(c.s('scopeExpected'))} صنف متوقع على الرف',
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
           ],
         ),
         bottom: _pending > 0 ? const PreferredSize(preferredSize: Size.fromHeight(2), child: LinearProgressIndicator(minHeight: 2)) : null,

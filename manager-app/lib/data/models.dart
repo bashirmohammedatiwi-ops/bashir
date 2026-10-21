@@ -191,7 +191,14 @@ class ProductDetail {
       createdAt = parseDate(j['createdAt']),
       updatedAt = parseDate(j['updatedAt']),
       images = _list(j['images']).map(MediaImage.fromJson).toList(),
-      shades = _list(j['shades']).map(Shade.fromJson).toList();
+      shades = _list(j['shades']).map(Shade.fromJson).toList() {
+    // منتج موقوف = كل تدرجاته موقوفة عند الزبون (والسيرفر يطبّق ذلك عند أي تغيير).
+    if (!isActive) {
+      for (final s in shades) {
+        s.isActive = false;
+      }
+    }
+  }
 
   final String id;
   final String? slug;
@@ -586,10 +593,51 @@ class PosItem {
 }
 
 class WebImage {
-  WebImage(this.url, this.thumb, this.title, this.source);
+  WebImage(this.url, this.thumb, this.title, this.source, {this.link, this.width, this.height});
   final String url;
-  final String? thumb, title, source;
-  static WebImage from(Map<String, dynamic> j) => WebImage('${j['url']}', _str(j['thumbUrl']), _str(j['title']), _str(j['source']));
+
+  /// [source] اسم الموقع المختصر للعرض؛ [link] صفحة المصدر الكاملة.
+  final String? thumb, title, source, link;
+  final int? width, height;
+  static WebImage from(Map<String, dynamic> j) => WebImage(
+    '${j['url']}',
+    _str(j['thumbUrl']),
+    _str(j['title']),
+    _str(j['host']) ?? _str(j['source']),
+    link: j['host'] != null ? _str(j['source']) : null,
+    width: _intN(j['width']),
+    height: _intN(j['height']),
+  );
+
+  @override
+  bool operator ==(Object other) => other is WebImage && other.url == url;
+  @override
+  int get hashCode => url.hashCode;
+}
+
+/// جملة البحث عن صور المنتج: البراند + الاسم الإنجليزي (إن لم يكن البراند في الاسم أصلاً).
+String imageQueryFor(ProductDetail p, [String extra = '']) {
+  final name = (p.nameEn ?? '').trim().isNotEmpty ? p.nameEn!.trim() : p.name;
+  final brand = p.brand?.name.trim() ?? '';
+  final withBrand = brand.isNotEmpty && !name.toLowerCase().contains(brand.toLowerCase()) ? '$brand $name' : name;
+  return '$withBrand $extra'.replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+/// نتيجة البحث بصورة المنتج: ما هو، هل هو في المتجر، وصوره على الويب.
+class VisualResult {
+  VisualResult.fromJson(Map<String, dynamic> j)
+    : guess = Map<String, dynamic>.from(j['guess'] as Map? ?? const {}),
+      products = _list(j['products']).map(ProductSummary.fromJson).toList(),
+      images = _list(j['images']).map(WebImage.from).toList(),
+      hasMore = j['hasMore'] == true;
+  final Map<String, dynamic> guess;
+  final List<ProductSummary> products;
+  final List<WebImage> images;
+  final bool hasMore;
+  String g(String k) => '${guess[k] ?? ''}'.trim();
+  String get title => [g('brand'), g('name')].where((x) => x.isNotEmpty).join(' — ');
+  String get query => g('query');
+  double get confidence => (guess['confidence'] as num?)?.toDouble() ?? 0;
 }
 
 /// نتيجة التعبئة الذكية بالباركود (أسماء، براند، قسم، صور مقترحة).

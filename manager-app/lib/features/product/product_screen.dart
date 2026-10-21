@@ -12,6 +12,7 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import 'shade_activation.dart';
 import '../image/crop_screen.dart';
 import '../image/gallery_viewer.dart';
 import '../catalog/pickers.dart';
@@ -125,41 +126,77 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   // ------------------------------------------------------------------ actions
 
   Future<void> _toggleProduct(bool v) async {
+    final p = _p!;
+    // منتج له تدرجات: التشغيل تدرجاً تدرجاً — نسأل أيها يظهر.
+    if (v && p.shades.isNotEmpty) {
+      final ids = await pickShadesToShow(context, p);
+      if (ids == null || !mounted) return;
+      final n = arCount(ids.length, one: 'تدرج واحد', two: 'تدرجين', few: 'تدرجات', many: 'تدرجاً');
+      await _run(() => _repo.patchProduct(p.id, {'isActive': true, 'shadeIds': ids}), success: 'ظهر المنتج مع $n');
+      return;
+    }
     if (!v &&
         !await confirm(
           context,
           title: 'إيقاف المنتج؟',
-          message: 'سيختفي من التطبيق والموقع فوراً، ويبقى هنا لتشغيله متى شئت.',
+          message: p.shades.isEmpty
+              ? 'سيختفي من التطبيق والموقع فوراً، ويبقى هنا لتشغيله متى شئت.'
+              : 'سيختفي المنتج وكل تدرجاته فوراً. لإظهاره لاحقاً شغّل التدرجات المتوفرة.',
           ok: 'إيقاف',
           danger: true,
         )) {
       return;
     }
-    await _run(() => _repo.patchProduct(_p!.id, {'isActive': v}), success: v ? 'المنتج ظاهر الآن في التطبيق' : 'تم إيقاف المنتج');
+    await _run(() => _repo.patchProduct(p.id, {'isActive': v}), success: v ? 'المنتج ظاهر الآن في التطبيق' : 'تم إيقاف المنتج');
   }
 
+  /// تشغيل تدرج لمنتج موقوف يُظهر المنتج مع هذا التدرج وحده؛ إيقاف آخر تدرج ظاهر يوقف المنتج.
   Future<void> _toggleShade(Shade s, bool v) async {
+    final p = _p!;
+    final wasOn = p.isActive;
+    final othersLive = p.shades.where((x) => x.id != s.id && x.isActive).length;
+    if (!v && wasOn && othersLive == 0) {
+      final ok = await confirm(
+        context,
+        title: 'آخر تدرج ظاهر',
+        message: 'إيقاف «${s.name}» يوقف المنتج كله، فلا يبقى تدرج يظهر للزبائن.',
+        ok: 'إيقاف المنتج',
+        danger: true,
+      );
+      if (!ok || !mounted) return;
+    }
     setState(() => s.isActive = v); // استجابة فورية
     final r = await _run(() => _repo.patchShade(s.id, {'isActive': v}));
-    if (r == null && mounted) setState(() => s.isActive = !v);
+    if (!mounted) return;
+    if (r == null) {
+      setState(() => s.isActive = !v);
+      return;
+    }
+    if (v && !wasOn && r.isActive) {
+      toast(context, 'ظهر المنتج مع «${s.name}» فقط — شغّل تدرجات أخرى إن شئت');
+    } else if (!v && wasOn && !r.isActive) {
+      toast(context, 'أُوقف المنتج — لا تدرج ظاهر');
+    } else {
+      toast(context, v ? 'ظهر «${s.name}»' : 'أُوقف «${s.name}»');
+    }
   }
 
   Future<void> _bulkShades(String action) async {
     final p = _p!;
     switch (action) {
       case 'on':
-        await _run(() => _repo.bulkShades(p.id, true), success: 'تم تشغيل كل التدرجات');
+        await _run(() => _repo.bulkShades(p.id, true), success: p.isActive ? 'تم تشغيل كل التدرجات' : 'ظهر المنتج مع كل تدرجاته');
       case 'off':
         if (!await confirm(
           context,
           title: 'إيقاف كل التدرجات؟',
-          message: 'لن يظهر أي لون للزبونة حتى تشغّله.',
+          message: 'يتوقف المنتج كله لأنه لا يبقى لون ظاهر للزبونة.',
           ok: 'إيقاف الكل',
           danger: true,
         )) {
           return;
         }
-        await _run(() => _repo.bulkShades(p.id, false), success: 'تم إيقاف كل التدرجات');
+        await _run(() => _repo.bulkShades(p.id, false), success: 'أُوقفت كل التدرجات والمنتج');
       case 'offEmpty':
         final ids = p.shades.where((s) => s.stock <= 0 && s.isActive).map((s) => s.id).toList();
         if (ids.isEmpty) return toast(context, 'لا توجد تدرجات نافدة شغّالة');
@@ -195,8 +232,8 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.travel_explore_rounded, color: AppColors.primary),
-                title: const Text('بحث في الويب والمتاجر'),
-                subtitle: const Text('بالباركود أو بالاسم'),
+                title: const Text('بحث في الويب'),
+                subtitle: const Text('مثل Google — بالاسم أو بصورة المنتج'),
                 onTap: () => Navigator.pop(c, 'web'),
               ),
             ],
@@ -234,7 +271,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   Future<void> _addWebImages({bool asCover = false}) async {
     final p = _p!;
     final code = p.barcode ?? (p.shades.isNotEmpty ? p.shades.first.barcode : null) ?? p.sku;
-    final picked = await pickWebImages(context, barcode: code, name: p.nameEn ?? p.name);
+    final picked = await pickWebImages(context, barcode: code, name: imageQueryFor(p));
     if (picked == null || picked.isEmpty || !mounted) return;
     setState(() {
       _busy = true;

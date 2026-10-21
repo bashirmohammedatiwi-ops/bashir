@@ -10,6 +10,8 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../product/shade_activation.dart';
+import '../catalog/web_image_search.dart';
 import '../product/product_screen.dart';
 import '../scan/lookup_flow.dart';
 
@@ -166,10 +168,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _toggle(ProductSummary p, bool v) async {
-    if (!v && !await confirm(context, title: 'إيقاف «${p.name}»؟', message: 'سيختفي من التطبيق فوراً.', ok: 'إيقاف', danger: true)) return;
+    final repo = ref.read(repoProvider);
+    // له تدرجات: نسأل أي التدرجات تظهر معه.
+    List<String>? shadeIds;
+    if (v && p.shadeCount > 0) {
+      try {
+        final detail = await repo.product(p.id);
+        if (!mounted) return;
+        shadeIds = await pickShadesToShow(context, detail);
+      } catch (e) {
+        if (mounted) toastError(context, e);
+        return;
+      }
+      if (shadeIds == null || !mounted) return;
+    }
+    if (!v &&
+        !await confirm(
+          context,
+          title: 'إيقاف «${p.name}»؟',
+          message: p.shadeCount > 0 ? 'سيختفي المنتج وكل تدرجاته من التطبيق فوراً.' : 'سيختفي من التطبيق فوراً.',
+          ok: 'إيقاف',
+          danger: true,
+        )) {
+      return;
+    }
     setState(() => p.isActive = v);
     try {
-      await ref.read(repoProvider).patchProduct(p.id, {'isActive': v});
+      await repo.patchProduct(p.id, {'isActive': v, 'shadeIds': ?shadeIds});
       ref.read(dataVersionProvider.notifier).state++;
       _seenVersion = ref.read(dataVersionProvider);
       if (mounted) toast(context, v ? 'شُغّل المنتج' : 'أُوقف المنتج');
@@ -182,12 +207,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _toggleShade(MatchedShade s, bool v) async {
+    final owner = _items.where((p) => p.matchedShades.contains(s)).firstOrNull;
+    final wasOn = owner?.isActive ?? true;
     setState(() => s.isActive = v);
     try {
-      await ref.read(repoProvider).patchShade(s.id, {'isActive': v});
+      final next = await ref.read(repoProvider).patchShade(s.id, {'isActive': v});
       ref.read(dataVersionProvider.notifier).state++;
       _seenVersion = ref.read(dataVersionProvider);
-      if (mounted) toast(context, v ? 'شُغّل «${s.name}»' : 'أُوقف «${s.name}»');
+      if (!mounted) return;
+      // تشغيل تدرج يُظهر المنتج معه، وإيقاف آخر تدرج يوقف المنتج.
+      if (owner != null) setState(() => owner.isActive = next.isActive);
+      toast(
+        context,
+        v && !wasOn && next.isActive
+            ? 'ظهر المنتج مع «${s.name}» فقط'
+            : !v && wasOn && !next.isActive
+            ? 'أُوقف المنتج — لا تدرج ظاهر'
+            : (v ? 'ظهر «${s.name}»' : 'أُوقف «${s.name}»'),
+      );
     } catch (e) {
       if (mounted) {
         setState(() => s.isActive = !v);
@@ -237,7 +274,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         leading: _sel.isEmpty ? null : IconButton(onPressed: () => setState(_sel.clear), icon: const Icon(Icons.close_rounded)),
         title: Text(_sel.isEmpty ? 'المنتجات' : '${_sel.length} محدد'),
         actions: _sel.isEmpty
-            ? null
+            ? [
+                IconButton(
+                  tooltip: 'ابحث بصورة المنتج',
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const WebImageSearchScreen(pick: false, startWithLens: true))),
+                  icon: const Icon(Icons.center_focus_strong_rounded, color: AppColors.primary),
+                ),
+              ]
             : [
                 IconButton(
                   tooltip: 'تحديد الكل',

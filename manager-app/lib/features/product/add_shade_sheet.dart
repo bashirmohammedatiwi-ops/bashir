@@ -143,12 +143,7 @@ class _AddShadeSheetState extends ConsumerState<AddShadeSheet> {
       return;
     }
     if (choice == 'web') {
-      final picked = await pickWebImages(
-        context,
-        barcode: _barcode.text,
-        name: '${widget.product.nameEn ?? widget.product.name} ${_name.text}',
-        single: true,
-      );
+      final picked = await pickWebImages(context, barcode: _barcode.text, name: imageQueryFor(widget.product, _name.text), single: true);
       if (picked != null && picked.isNotEmpty) {
         setState(() => (_imageUrl = picked.first.url, _preview = picked.first.thumb ?? picked.first.url, _mediaId = null, _bytes = null));
       }

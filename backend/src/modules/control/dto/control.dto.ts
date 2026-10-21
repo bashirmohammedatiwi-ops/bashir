@@ -30,6 +30,8 @@ export class ControlSearchDto {
 
 export class ControlProductPatchDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
+  /** تشغيل منتج له تدرجات: التدرجات التي تظهر معه (الباقي يُوقف). */
+  @IsOptional() @IsArray() @ArrayMaxSize(500) @IsString({ each: true }) shadeIds?: string[];
   @IsOptional() @IsString() @MaxLength(300) nameAr?: string;
   @IsOptional() @IsString() @MaxLength(300) nameEn?: string;
   @IsOptional() @IsString() @MaxLength(20000) descriptionAr?: string;
@@ -208,6 +210,12 @@ export class CustomerPointsDto {
 
 export class CustomerActiveDto {
   @IsBoolean() isActive: boolean;
+}
+
+export class VisualSearchDto {
+  /** صورة JPEG/PNG بترميز base64 (بلا أو مع بادئة data:) */
+  @IsString() @MaxLength(8_000_000) image: string;
+  @IsOptional() @IsString() @MaxLength(200) hint?: string;
 }
 
 export class StockCountCreateDto {

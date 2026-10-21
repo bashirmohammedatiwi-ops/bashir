@@ -6,6 +6,7 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import 'web_image_search.dart';
 
 final categoriesProvider = FutureProvider<List<CategoryNode>>((ref) => ref.watch(repoProvider).categories());
 
@@ -187,168 +188,12 @@ class _CategorySheetState extends ConsumerState<_CategorySheet> {
   }
 }
 
-/// بحث صور المنتج في الويب والمتاجر (بالباركود أو بالاسم) واختيار عدة صور.
+/// بحث صور المنتج في الويب مثل Google Images (مع البحث بالصورة) واختيار صورة أو أكثر.
 Future<List<WebImage>?> pickWebImages(BuildContext context, {String? barcode, String? name, bool single = false}) {
-  return showModalBottomSheet<List<WebImage>>(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => _WebImagesSheet(barcode: barcode, name: name, single: single),
+  return Navigator.of(context).push<List<WebImage>>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => WebImageSearchScreen(barcode: barcode, name: name, single: single),
+    ),
   );
-}
-
-class _WebImagesSheet extends ConsumerStatefulWidget {
-  const _WebImagesSheet({this.barcode, this.name, this.single = false});
-  final String? barcode, name;
-  final bool single;
-  @override
-  ConsumerState<_WebImagesSheet> createState() => _WebImagesSheetState();
-}
-
-class _WebImagesSheetState extends ConsumerState<_WebImagesSheet> {
-  late bool _byName = (widget.barcode ?? '').replaceAll(RegExp(r'\D'), '').length < 6;
-  late final _q = TextEditingController(text: widget.name ?? '');
-  List<WebImage>? _items;
-  Object? _error;
-  bool _loading = false;
-  final _sel = <WebImage>[];
-
-  @override
-  void initState() {
-    super.initState();
-    _search();
-  }
-
-  Future<void> _search() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final r = await ref.read(repoProvider).webImages(barcode: widget.barcode, name: _q.text, byName: _byName);
-      if (mounted) setState(() => _items = r);
-    } catch (e) {
-      if (mounted) setState(() => _error = e);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.sizeOf(context).height * .9,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text('صور من الويب والمتاجر', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-                    ),
-                    if (_sel.isNotEmpty)
-                      FilledButton(onPressed: () => Navigator.pop(context, [..._sel]), child: Text('إضافة ${_sel.length}')),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: false, label: Text('بالباركود'), icon: Icon(Icons.qr_code_rounded)),
-                    ButtonSegment(value: true, label: Text('بالاسم'), icon: Icon(Icons.text_fields_rounded)),
-                  ],
-                  selected: {_byName},
-                  onSelectionChanged: (v) {
-                    setState(() => _byName = v.first);
-                    _search();
-                  },
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _q,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _search(),
-                  decoration: InputDecoration(
-                    hintText: _byName ? 'اسم المنتج (إنجليزي أفضل)' : 'اسم مساعد للبحث (اختياري)',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    isDense: true,
-                    suffixIcon: IconButton(onPressed: _search, icon: const Icon(Icons.arrow_back_rounded)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _loading
-                ? const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [CircularProgressIndicator(), SizedBox(height: 12), Text('نبحث في المتاجر والويب…')],
-                    ),
-                  )
-                : _error != null
-                ? ErrorView(_error!, onRetry: _search)
-                : (_items ?? []).isEmpty
-                ? const EmptyState(icon: Icons.image_search_rounded, title: 'لم نجد صوراً', message: 'جرّب البحث بالاسم بالإنجليزي')
-                : GridView.builder(
-                    padding: const EdgeInsets.all(12),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                    ),
-                    itemCount: _items!.length,
-                    itemBuilder: (_, i) {
-                      final img = _items![i];
-                      final on = _sel.contains(img);
-                      return GestureDetector(
-                        onTap: () {
-                          if (widget.single) {
-                            Navigator.pop(context, [img]);
-                            return;
-                          }
-                          setState(() => on ? _sel.remove(img) : _sel.add(img));
-                        },
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: on ? AppColors.primary : AppColors.line, width: on ? 3 : 1),
-                              ),
-                              child: NetImg(img.thumb ?? img.url, radius: 10, fit: BoxFit.contain),
-                            ),
-                            if (on)
-                              const PositionedDirectional(
-                                top: 6,
-                                end: 6,
-                                child: CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: AppColors.primary,
-                                  child: Icon(Icons.check_rounded, size: 16, color: Colors.white),
-                                ),
-                              ),
-                            if (img.source != null)
-                              PositionedDirectional(
-                                bottom: 4,
-                                start: 4,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                                  decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(6)),
-                                  child: Text(img.source!, style: const TextStyle(color: Colors.white, fontSize: 9)),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
 }

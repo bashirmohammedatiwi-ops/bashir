@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -330,6 +332,27 @@ extension RepoMore on Repo {
       api.post('/control/products/bulk', data: {'ids': ids, 'isActive': active}, map: (b) => ((b as Map)['updated'] as num).toInt());
 
   // ---------------- web images & AI
+  /// صور الويب مثل Google Images — [page] يبدأ من 0 ويستمر بلا حد.
+  Future<({List<WebImage> items, bool hasMore})> webImageSearch(String q, {int page = 0}) => api.get(
+    '/control/web-images',
+    query: {'q': q, 'page': page},
+    map: (b) {
+      final j = b as Map;
+      return (
+        items: (j['items'] as List? ?? const []).map((e) => WebImage.from(Map<String, dynamic>.from(e))).toList(),
+        hasMore: j['hasMore'] == true,
+      );
+    },
+  );
+
+  /// صورة المنتج → نتعرّف عليه، نجده في المتجر، ونجلب صوره من الويب.
+  Future<VisualResult> visualSearch(List<int> jpeg, {String? hint}) => api.post(
+    '/control/visual-search',
+    data: {'image': base64Encode(jpeg), 'hint': ?hint},
+    options: Options(receiveTimeout: const Duration(seconds: 90), sendTimeout: const Duration(seconds: 60)),
+    map: (b) => VisualResult.fromJson(Map<String, dynamic>.from(b)),
+  );
+
   /// صور المنتج من الويب/المتاجر بالباركود أو بالاسم (بلا ذكاء اصطناعي).
   Future<List<WebImage>> webImages({String? barcode, String? name, bool byName = false}) {
     final code = (barcode ?? '').replaceAll(RegExp(r'[^0-9A-Za-z\-]'), '');

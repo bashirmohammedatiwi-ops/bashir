@@ -155,7 +155,8 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.travel_explore_rounded),
-              title: const Text('بحث في الويب والمتاجر'),
+              title: const Text('بحث في الويب'),
+              subtitle: const Text('مثل Google — بالاسم أو بصورة المنتج'),
               onTap: () => Navigator.pop(c, 'web'),
             ),
           ],
@@ -164,7 +165,15 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
     );
     if (choice == null || !mounted) return;
     if (choice == 'web') {
-      final picked = await pickWebImages(context, barcode: _barcode.text, name: _nameEn.text.isNotEmpty ? _nameEn.text : _nameAr.text);
+      final picked = await pickWebImages(
+        context,
+        barcode: _barcode.text,
+        name: [
+          if (_brand != null && !(_nameEn.text.isNotEmpty ? _nameEn.text : _nameAr.text).toLowerCase().contains(_brand!.name.toLowerCase()))
+            _brand!.name,
+          _nameEn.text.isNotEmpty ? _nameEn.text : _nameAr.text,
+        ].join(' ').trim(),
+      );
       if (picked != null) {
         setState(() {
           _pics.addAll(picked.map((w) => _Pic.url(w.url, w.thumb ?? w.url)));

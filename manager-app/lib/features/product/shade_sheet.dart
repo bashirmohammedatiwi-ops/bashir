@@ -57,10 +57,23 @@ class _ShadeSheetState extends ConsumerState<ShadeSheet> {
   Repo get _repo => ref.read(repoProvider);
 
   Future<void> _patch(Map<String, dynamic> patch, {String? ok}) async {
+    final wasOn = _p.isActive;
+    if (patch['isActive'] == false && wasOn && !_p.shades.any((x) => x.id != _s.id && x.isActive)) {
+      final go = await confirm(
+        context,
+        title: 'آخر تدرج ظاهر',
+        message: 'إيقافه يوقف المنتج كله، فلا يبقى تدرج يظهر للزبائن.',
+        ok: 'إيقاف المنتج',
+        danger: true,
+      );
+      if (!go || !mounted) return;
+    }
     setState(() => _busy = true);
     try {
       final p = await _repo.patchShade(_s.id, patch);
       if (!mounted) return;
+      if (patch['isActive'] == true && !wasOn && p.isActive) ok = 'ظهر المنتج مع هذا التدرج فقط';
+      if (patch['isActive'] == false && wasOn && !p.isActive) ok = 'أُوقف المنتج — لا تدرج ظاهر';
       setState(() {
         _p = p;
         _s = p.shades.firstWhere((x) => x.id == _s.id, orElse: () => _s);
@@ -136,7 +149,7 @@ class _ShadeSheetState extends ConsumerState<ShadeSheet> {
   }
 
   Future<void> _fromWeb() async {
-    final picked = await pickWebImages(context, barcode: _s.barcode, name: '${_p.nameEn ?? _p.name} ${_s.name}', single: true);
+    final picked = await pickWebImages(context, barcode: _s.barcode, name: imageQueryFor(_p, _s.name), single: true);
     if (picked == null || picked.isEmpty || !mounted) return;
     setState(() => _busy = true);
     try {

@@ -92,3 +92,14 @@ Future<String> uploadPhoto(Repo repo, XFile file, {String purpose = 'PRODUCT', v
   if (kIsWeb) return repo.uploadBytes(await file.readAsBytes(), file.name, purpose: purpose);
   return repo.upload(file.path, purpose: purpose, onProgress: onProgress);
 }
+
+/// صورة للبحث بالصورة: أصغر (1280px) لتُرسل بسرعة — التعرف لا يحتاج دقة أعلى.
+Future<List<int>?> pickLensPhoto(PhotoSource source) async {
+  final x = await _picker.pickImage(
+    source: source == PhotoSource.camera ? ImageSource.camera : ImageSource.gallery,
+    maxWidth: 1280,
+    maxHeight: 1280,
+    imageQuality: 82,
+  );
+  return x?.readAsBytes();
+}

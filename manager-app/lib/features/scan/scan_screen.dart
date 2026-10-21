@@ -10,6 +10,7 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../product/shade_activation.dart';
 import '../drafts/group_picker.dart';
 import '../drafts/save_draft_screen.dart';
 import '../product/product_screen.dart';
@@ -500,9 +501,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
               onChanged: (v) async {
                 final repo = ref.read(repoProvider);
                 try {
+                  // منتج له تدرجات ولم نقرأ تدرجاً بعينه: نسأل أي التدرجات تظهر.
+                  List<String>? ids;
+                  if (v && shade == null && p.shades.isNotEmpty) {
+                    ids = await pickShadesToShow(context, p);
+                    if (ids == null) return false;
+                  }
                   final next = shade != null
                       ? await repo.patchShade(shade.id, {'isActive': v})
-                      : await repo.patchProduct(p.id, {'isActive': v});
+                      : await repo.patchProduct(p.id, {'isActive': v, 'shadeIds': ?ids});
                   if (!mounted) return true;
                   setState(() => h.result = r.withProduct(next));
                   ref.read(dataVersionProvider.notifier).state++;

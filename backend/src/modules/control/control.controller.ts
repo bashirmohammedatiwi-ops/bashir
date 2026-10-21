@@ -38,7 +38,9 @@ import {
   DraftsQueryDto,
   ImageEditDto,
   ImagesBatchFrameDto,
+  VisualSearchDto,
 } from "./dto/control.dto";
+import { ControlWebService } from "./control-web.service";
 
 type Actor = { id?: string; sub?: string } | undefined;
 const actorId = (u: Actor) => u?.id ?? u?.sub;
@@ -58,7 +60,22 @@ export class ControlController {
     private readonly ordersSvc: ControlOrdersService,
     private readonly customers: ControlCustomersService,
     private readonly insights: ControlInsightsService,
+    private readonly web: ControlWebService,
   ) {}
+
+  // ---------------- web images & visual search
+
+  /** صور من الويب مثل Google Images — صفحات متتالية بلا حد. */
+  @Get("web-images")
+  webImages(@Query("q") q?: string, @Query("page") page?: string) {
+    return this.web.images(q ?? "", Number(page) || 0);
+  }
+
+  /** صوّر المنتج: نتعرف عليه، نبحث عنه في المتجر، ونجلب صوره من الويب. */
+  @Post("visual-search")
+  visualSearch(@Body() dto: VisualSearchDto) {
+    return this.web.visual(dto.image, dto.hint);
+  }
 
   // ---------------- stock counts (جرد)
 

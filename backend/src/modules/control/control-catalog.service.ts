@@ -271,9 +271,11 @@ export class ControlCatalogService {
   }
 
   async bulkProducts(ids: string[], isActive: boolean, actorId?: string) {
-    const res = await this.prisma.product.updateMany({ where: { id: { in: ids } }, data: { isActive } });
+    // نفس قواعد المنتج الواحد: الإيقاف يوقف التدرجات، والتشغيل يُظهر المتوفر منها.
+    const existing = await this.prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true } });
+    for (const p of existing) await this.control.setProductActive(p.id, isActive);
     await this.control.touched();
-    await this.control.audit(actorId, "product.bulk", "Product", ids[0] ?? "", { isActive, count: res.count });
-    return { updated: res.count };
+    await this.control.audit(actorId, "product.bulk", "Product", ids[0] ?? "", { isActive, count: existing.length });
+    return { updated: existing.length };
   }
 }

@@ -7,6 +7,7 @@ import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../catalog/web_image_search.dart';
 import '../../data/admin_repo.dart';
 import '../admin/store_admin_screens.dart';
 import '../catalog/create_product_screen.dart';
@@ -143,10 +144,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     decoration: InputDecoration(
                       hintText: 'اكتب باركود أو اسم منتج',
                       prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: IconButton(
-                        tooltip: 'مسح بالكاميرا',
-                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScanScreen())),
-                        icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'ابحث بصورة المنتج',
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).push(MaterialPageRoute(builder: (_) => const WebImageSearchScreen(pick: false, startWithLens: true))),
+                            icon: const Icon(Icons.center_focus_strong_rounded, color: AppColors.primary),
+                          ),
+                          IconButton(
+                            tooltip: 'مسح بالكاميرا',
+                            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScanScreen())),
+                            icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary),
+                          ),
+                        ],
                       ),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
