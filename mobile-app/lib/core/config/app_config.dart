@@ -22,6 +22,10 @@ class AppConfig {
   /// «ديما» ظاهرة بهذه اللغة؟ (مفعّلة، وبالعربية فقط).
   static bool advisorFor(String lang) => advisorEnabled && lang == 'ar';
 
+  /// الدفع بالبطاقة (كي كارد) داخل التطبيق: مؤجّل حتى تصل بيانات الدفع الفعلية من كي كارد.
+  /// false = خيار البطاقة «قريباً» مهما أرسل السيرفر (البوابة تعمل على السيرفر والويب فقط).
+  static const bool cardPaymentEnabled = false;
+
   static const String appScheme = 'https';
 
   /// أصل الموقع: `https://deemaalhayat.com`

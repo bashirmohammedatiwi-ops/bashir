@@ -1,3 +1,4 @@
+import '../../core/config/app_config.dart';
 import '../../core/utils/json.dart';
 
 /// إعدادات واجهة الدفع الأصلية (كي كارد) كما يرسلها السيرفر — بلا أي سر.
@@ -38,7 +39,7 @@ class PaymentMethodsConfig {
     final sdk = card['sdk'] is Map ? QiSdkConfig.fromJson(asMap(card['sdk'])) : null;
     return PaymentMethodsConfig(
       cod: json['cod'] != false,
-      cardEnabled: card['enabled'] == true && (sdk?.isValid ?? false),
+      cardEnabled: AppConfig.cardPaymentEnabled && card['enabled'] == true && (sdk?.isValid ?? false),
       sandbox: card['sandbox'] == true,
       sdk: sdk,
     );
