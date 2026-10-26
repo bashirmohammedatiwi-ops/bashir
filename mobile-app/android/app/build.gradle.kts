@@ -96,7 +96,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.github.chuckerteam.chucker:library-no-op:3.5.2")
-    implementation("com.scottyab:rootbeer-lib:0.1.0")
+    implementation("com.scottyab:rootbeer-lib:0.1.1")
     implementation("org.bouncycastle:bcprov-jdk15on:1.68")
     implementation("com.nimbusds:nimbus-jose-jwt:8.22")
     implementation("net.minidev:json-smart:2.4.7")
