@@ -24,6 +24,8 @@ export const DEFAULT_STORE_SETTINGS = {
   stockAlertPushEnabled: true,
   stockAlertCooldownHours: 24,
   pickupEnabled: true,
+  // تغليف الهدية: رسوم تُضاف لطلب «هذا الطلب هدية» (د.ع، 0 = مجاناً).
+  giftWrapFee: 3000,
   pickupAddress: "فرع الكرادة — شارع أبو نؤاس، بغداد",
   pickupHours: "10:00 – 22:00 يومياً",
   // تحديث التطبيق: أحدث إصدار في المتجر وأقل إصدار مسموح (أقدم منه = تحديث إجباري).
@@ -43,6 +45,12 @@ export const DEFAULT_STORE_SETTINGS = {
   hideOutOfStock: false,
   hideProductsWithoutImages: false,
 };
+
+/** رسوم تغليف الهدية من الإعدادات — رقم صحيح غير سالب (افتراضياً 3000 د.ع). */
+export function giftWrapFeeOf(settings: Record<string, unknown>): number {
+  const v = Number(settings.giftWrapFee ?? DEFAULT_STORE_SETTINGS.giftWrapFee);
+  return Number.isFinite(v) && v > 0 ? Math.round(v) : 0;
+}
 
 const SETTINGS_KEY = "store";
 const SETTINGS_CACHE_MS = 60_000;

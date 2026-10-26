@@ -283,6 +283,8 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
                 value: order.shippingTotal == 0 ? s.free : formatPrice(order.shippingTotal),
                 valueColor: order.shippingTotal == 0 ? AppColors.success : null,
               ),
+              if (order.giftWrapFee > 0)
+                _SumRow(label: s.giftWrapLine, value: formatPrice(order.giftWrapFee)),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Divider(height: 1, color: t.divider),

@@ -13,6 +13,7 @@ interface Settings {
   taxPercent: number;
   shippingFee: number;
   freeShippingThreshold: number;
+  giftWrapFee?: number;
   cashOnDelivery: boolean;
   cardPaymentEnabled?: boolean;
   emailOrders: string;
@@ -102,6 +103,13 @@ export default function SettingsPage() {
                           <InputNumber style={{ width: "100%" }} min={0} />
                         </Form.Item>
                       </Space.Compact>
+                      <Form.Item
+                        name="giftWrapFee"
+                        label="رسوم تغليف الهدية"
+                        extra="تُضاف للطلب عند اختيار «هذا الطلب هدية» — 0 = مجاناً"
+                      >
+                        <InputNumber style={{ width: "100%" }} min={0} step={500} addonAfter="د.ع" />
+                      </Form.Item>
                       <Form.Item name="taxPercent" label="نسبة الضريبة %">
                         <InputNumber style={{ width: "100%" }} min={0} max={100} />
                       </Form.Item>

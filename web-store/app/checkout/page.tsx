@@ -117,7 +117,9 @@ export default function CheckoutPage() {
   });
   const shipping = pickup || m.freeShippingCoupon ? 0 : quote.data?.fee ?? 0;
   const discounts = m.packSaving + m.couponDiscount;
-  const beforeLoyalty = Math.max(0, m.subtotal - discounts + shipping);
+  // تغليف الهدية: رسوم ثابتة من إعدادات المتجر يضيفها السيرفر بنفس القيمة.
+  const giftWrapFee = isGift ? Math.max(0, settings.giftWrapFee ?? 3000) : 0;
+  const beforeLoyalty = Math.max(0, m.subtotal - discounts + shipping + giftWrapFee);
   const balance = user?.points ?? 0;
   const loyaltyPoints = useLoyalty ? redeemable(balance, beforeLoyalty, rules) : 0;
   const loyaltyValue = Math.floor(loyaltyPoints * rules.pointValue);
@@ -224,6 +226,7 @@ export default function CheckoutPage() {
       : form.governorate
       ? { label: "التوصيل", value: shipping, free: !quote.isLoading && shipping === 0, hint: quote.isLoading ? "…" : undefined }
       : { label: "التوصيل", value: 0, tone: "muted" as const, hint: "اختاري المحافظة" },
+    ...(giftWrapFee ? [{ label: "تغليف الهدية", value: giftWrapFee }] : []),
     ...(loyaltyValue ? [{ label: `نقاط الولاء (${formatNumber(loyaltyPoints)})`, value: loyaltyValue, tone: "saving" as const }] : []),
   ];
 
@@ -403,7 +406,7 @@ export default function CheckoutPage() {
                 </div>
               )}
               <div className="rounded-2xl bg-canvas p-4">
-                <Toggle on={isGift} onChange={setGift} label="🎁 هذا الطلب هدية" sub="نغلّفه بأناقة ونرفق بطاقة برسالتكِ" />
+                <Toggle on={isGift} onChange={setGift} label="🎁 هذا الطلب هدية" sub={`نغلّفه بأناقة ونرفق بطاقة برسالتكِ${(settings.giftWrapFee ?? 3000) > 0 ? ` • + ${formatPrice(settings.giftWrapFee ?? 3000)}` : ""}`} />
                 {isGift && (
                   <div className="mt-4 space-y-3 animate-fade-up">
                     <textarea

@@ -7,7 +7,7 @@ import {
 import { DeliveryOption, DiscountType, OrderStatus, PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../../common/prisma.service";
-import { SettingsService } from "../settings/settings.service";
+import { SettingsService, giftWrapFeeOf } from "../settings/settings.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { LoyaltyService } from "../loyalty/loyalty.service";
 import { LOYALTY_REDEEM_TITLE, loyaltyRules, pointsForAmount, redeemablePoints } from "../loyalty/loyalty.rules";
@@ -393,12 +393,14 @@ export class OrdersService {
     if (loyaltyPointsRequested > maxLoyalty) {
       throw new BadRequestException("رصيد نقاط الولاء غير كافٍ");
     }
-    const orderBeforeLoyalty = Math.max(0, subtotal - discountTotal + shippingTotal);
+    // تغليف الهدية: رسوم ثابتة من الإعدادات تُضاف للطلب (لا يشملها خصم الكوبون).
+    const giftWrapFee = dto.isGift === true ? giftWrapFeeOf((await this.settings.getAll()) as Record<string, unknown>) : 0;
+    const orderBeforeLoyalty = Math.max(0, subtotal - discountTotal + shippingTotal + giftWrapFee);
     // كل نقطة = 1 د.ع، بمضاعفات 250 (الإصدارات القديمة ترسل مضاعفات 100: تُقرّب للأسفل بدل الرفض).
     const rules = loyaltyRules((await this.settings.getAll()) as Record<string, unknown>);
     const loyaltyPointsUsed = redeemablePoints(loyaltyPointsRequested, maxLoyalty, orderBeforeLoyalty, rules);
     const loyaltyDiscount = Math.floor(loyaltyPointsUsed * rules.pointValue);
-    const total = Math.max(0, subtotal - discountTotal + shippingTotal - loyaltyDiscount);
+    const total = Math.max(0, subtotal - discountTotal + shippingTotal + giftWrapFee - loyaltyDiscount);
     const loyaltyEarned = pointsForAmount(total, rules);
 
     // طلب مغطّى بالكامل (نقاط أو كوبون): لا مبلغ يُدفع — لا جلسة بطاقة، ولا يلغيه انتهاء مهلة الدفع.
@@ -434,6 +436,7 @@ export class OrdersService {
             isGift: dto.isGift === true,
             giftMessage: dto.isGift ? dto.giftMessage?.trim().slice(0, 300) || null : null,
             giftHidePrices: dto.isGift === true && dto.giftHidePrices === true,
+            giftWrapFee,
             couponId,
             clientRef,
             shipFullName: address?.fullName ?? null,

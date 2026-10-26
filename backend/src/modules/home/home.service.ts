@@ -13,6 +13,7 @@ import { HomeSectionResolver } from "./home-section.resolver";
 import { isPackageLive, packageInclude, publicPackage, worldScope } from "../cms/packages.service";
 import { publicConcern } from "../cms/skin-concerns.service";
 import { loyaltyRules } from "../loyalty/loyalty.rules";
+import { giftWrapFeeOf } from "../settings/settings.service";
 
 const productInclude = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -271,6 +272,7 @@ export class HomeService {
         pickupAddress: (settings as any).pickupAddress ?? "",
         pickupHours: (settings as any).pickupHours ?? "",
         freeShippingThreshold: (settings as any).freeShippingThreshold ?? 50000,
+        giftWrapFee: giftWrapFeeOf(settings as Record<string, unknown>),
       },
     };
   }
@@ -353,6 +355,7 @@ export class HomeService {
         pickupAddress: (settings as any).pickupAddress ?? "",
         pickupHours: (settings as any).pickupHours ?? "",
         freeShippingThreshold: (settings as any).freeShippingThreshold ?? 50000,
+        giftWrapFee: giftWrapFeeOf(settings as Record<string, unknown>),
       },
     };
   }

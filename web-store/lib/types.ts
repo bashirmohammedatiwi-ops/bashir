@@ -238,6 +238,8 @@ export type HomeFeed = {
     pickupEnabled?: boolean;
     pickupAddress?: string;
     pickupHours?: string;
+    /** رسوم تغليف الهدية (د.ع) لطلب «هذا الطلب هدية». */
+    giftWrapFee?: number;
     loyalty?: LoyaltyRules;
   };
 };
@@ -278,6 +280,8 @@ export type Order = {
   discountTotal: number;
   packageDiscount?: number;
   shippingTotal: number;
+  /** رسوم تغليف الهدية وقت الطلب. */
+  giftWrapFee?: number;
   total: number;
   loyaltyEarned: number;
   loyaltySpent: number;

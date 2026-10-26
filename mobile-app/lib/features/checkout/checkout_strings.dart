@@ -72,6 +72,8 @@ extension CheckoutStringsX on AppStrings {
   String get giftOrderTitle => isAr ? 'هذا الطلب هدية' : 'This order is a gift';
   String get giftOrderSubtitle =>
       isAr ? 'نغلّفه بعناية ونضيف بطاقة برسالتكِ' : 'We wrap it with care and add a card with your note';
+  String get giftWrapLine => isAr ? 'تغليف الهدية' : 'Gift wrapping';
+  String giftWrapFeeBadge(String amount) => isAr ? '+ $amount' : '+ $amount';
   String get giftMessageLabel => isAr ? 'رسالة بطاقة الهدية (اختياري)' : 'Gift card message (optional)';
   String get giftMessageHint => isAr ? 'كل عام وأنتِ بخير يا أحلى صديقة 💕' : 'Happy birthday to my favourite person 💕';
   String get giftHidePricesTitle => isAr ? 'إخفاء الأسعار' : 'Hide prices';

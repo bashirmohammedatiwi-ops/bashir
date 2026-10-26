@@ -444,6 +444,9 @@ class CheckoutNotesCard extends StatelessWidget {
 class CheckoutGiftCard extends StatelessWidget {
   final AppStrings s;
   final bool isGift;
+
+  /// رسوم التغليف (د.ع) — تظهر بجانب العنوان؛ 0 = بلا رسوم.
+  final int fee;
   final ValueChanged<bool> onGiftChanged;
   final TextEditingController messageCtrl;
   final bool hidePrices;
@@ -453,6 +456,7 @@ class CheckoutGiftCard extends StatelessWidget {
     super.key,
     required this.s,
     required this.isGift,
+    this.fee = 0,
     required this.onGiftChanged,
     required this.messageCtrl,
     required this.hidePrices,
@@ -490,7 +494,25 @@ class CheckoutGiftCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(s.giftOrderTitle, style: AppText.title3.copyWith(color: t.ink)),
+                      Row(
+                        children: [
+                          Flexible(child: Text(s.giftOrderTitle, style: AppText.title3.copyWith(color: t.ink))),
+                          if (fee > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: t.accentLight,
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: Text(
+                                s.giftWrapFeeBadge(formatPrice(fee, lang: s.lang)),
+                                style: AppText.caption.copyWith(color: t.accentDark, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                       Text(s.giftOrderSubtitle, style: AppText.caption.copyWith(color: t.inkMuted)),
                     ],
                   ),
@@ -579,6 +601,9 @@ class CheckoutSummaryCard extends StatefulWidget {
 
   /// رسوم التوصيل حين تكون معروفة ([CheckoutShippingStatus.ready]).
   final int? shipping;
+
+  /// رسوم تغليف الهدية — سطر في الملخص حين تكون أكبر من صفر.
+  final int giftWrap;
   final CheckoutShippingStatus shippingStatus;
   final VoidCallback? onRetryShipping;
 
@@ -594,6 +619,7 @@ class CheckoutSummaryCard extends StatefulWidget {
     this.packageSaving = 0,
     required this.loyaltyDiscount,
     required this.shipping,
+    this.giftWrap = 0,
     required this.shippingStatus,
     this.onRetryShipping,
     required this.total,
@@ -669,6 +695,7 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
               valueColor: AppColors.success,
             ),
           _shippingRow(s, t),
+          if (widget.giftWrap > 0) _Row(label: s.giftWrapLine, value: price(widget.giftWrap)),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: t.divider),

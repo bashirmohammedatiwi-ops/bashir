@@ -96,6 +96,8 @@ class AppOrder {
   final bool isGift;
   final String? giftMessage;
   final bool giftHidePrices;
+  /// رسوم تغليف الهدية وقت الطلب (جزء من total).
+  final int giftWrapFee;
   final DateTime? createdAt;
   final List<OrderItem> items;
   final Address? address;
@@ -121,6 +123,7 @@ class AppOrder {
     this.deliveryOption = 'STANDARD',
     this.notes,
     this.isGift = false,
+    this.giftWrapFee = 0,
     this.giftMessage,
     this.giftHidePrices = false,
     this.createdAt,
@@ -150,6 +153,7 @@ class AppOrder {
       deliveryOption: asString(json['deliveryOption'], 'STANDARD'),
       notes: json['notes']?.toString(),
       isGift: asBool(json['isGift'], false),
+      giftWrapFee: asInt(json['giftWrapFee']),
       giftMessage: (json['giftMessage']?.toString().trim().isNotEmpty ?? false) ? json['giftMessage'].toString() : null,
       giftHidePrices: asBool(json['giftHidePrices'], false),
       createdAt: parseDate(json['createdAt']),

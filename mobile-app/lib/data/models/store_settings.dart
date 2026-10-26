@@ -19,6 +19,9 @@ class StoreSettings {
   /// أوقات الاستلام («يومياً 10 صباحاً – 10 مساءً») — فارغ إن لم تُحدَّد.
   final String pickupHours;
 
+  /// رسوم تغليف الهدية (د.ع) لطلب «هذا الطلب هدية» — 0 = مجاناً.
+  final int giftWrapFee;
+
   const StoreSettings({
     this.storeName = AppConfig.storeNameAr,
     this.freeShippingThreshold = 50000,
@@ -28,6 +31,7 @@ class StoreSettings {
     this.pickupEnabled = false,
     this.pickupAddress = '',
     this.pickupHours = '',
+    this.giftWrapFee = 3000,
   });
 
   factory StoreSettings.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,7 @@ class StoreSettings {
       pickupEnabled: asBool(json['pickupEnabled'], true) && pickupAddress.isNotEmpty,
       pickupAddress: pickupAddress,
       pickupHours: asString(json['pickupHours']).trim(),
+      giftWrapFee: asInt(json['giftWrapFee'], 3000).clamp(0, 1000000),
     );
   }
 }

@@ -65,6 +65,7 @@ export default function OrderPage() {
     ...(o.packageDiscount ? [{ label: "توفير الباقات", value: o.packageDiscount, tone: "saving" as const }] : []),
     ...(coupon ? [{ label: o.coupon?.code ? `كود ${o.coupon.code}` : "الخصم", value: coupon, tone: "saving" as const }] : []),
     { label: o.deliveryOption === "PICKUP" ? "استلام من الفرع" : "التوصيل", value: o.shippingTotal, free: o.shippingTotal === 0 },
+    ...(o.giftWrapFee ? [{ label: "تغليف الهدية", value: o.giftWrapFee }] : []),
     ...(o.loyaltyDiscount ? [{ label: `نقاط الولاء (${o.loyaltySpent})`, value: o.loyaltyDiscount, tone: "saving" as const }] : []),
   ];
 

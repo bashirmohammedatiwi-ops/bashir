@@ -136,6 +136,12 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
           <span>الشحن</span>
           <span>{order.shippingTotal === 0 ? "مجاني" : formatIqd(order.shippingTotal)}</span>
         </div>
+        {(order.giftWrapFee ?? 0) > 0 && (
+          <div className="ord-summary-row">
+            <span>تغليف الهدية</span>
+            <span>{formatIqd(order.giftWrapFee ?? 0)}</span>
+          </div>
+        )}
         {(order.loyaltySpent > 0 || order.loyaltyEarned > 0) && (
           <>
             {order.loyaltySpent > 0 && (

@@ -68,6 +68,9 @@ class _Amounts {
   /// كود يلغي التوصيل وقد بلغت السلة حدّه الأدنى.
   final bool couponFreeShipping;
 
+  /// رسوم تغليف الهدية (0 إن لم يكن الطلب هدية) — يضيفها السيرفر بنفس القيمة.
+  final int giftWrap;
+
   /// أقصى نقاط يمكن استخدامها لهذا الطلب الآن.
   final int maxPoints;
   final int loyaltyPoints;
@@ -83,6 +86,7 @@ class _Amounts {
     required this.discount,
     required this.shipping,
     required this.couponFreeShipping,
+    required this.giftWrap,
     required this.maxPoints,
     required this.loyaltyPoints,
     required this.loyaltyDiscount,
@@ -351,9 +355,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final couponFreeShipping = (coupon?.freeShipping ?? false) && coupon!.eligibleFor(couponBase);
     final int? shipping = _isPickupNow || couponFreeShipping ? 0 : _shippingFee;
     final afterDiscount = math.max(0, couponBase - discount);
-    final beforeLoyalty = shipping == null ? null : afterDiscount + shipping;
+    final giftWrap = _isGift ? (ref.read(storeSettingsProvider)?.giftWrapFee ?? 3000) : 0;
+    final beforeLoyalty = shipping == null ? null : afterDiscount + shipping + giftWrap;
     // التوصيل لم يُعرف بعد: الحد الأدنى المضمون، ويُعاد الحساب فور وصوله.
-    final maxPoints = rules.redeemable(points, beforeLoyalty ?? afterDiscount);
+    final maxPoints = rules.redeemable(points, beforeLoyalty ?? afterDiscount + giftWrap);
     final loyaltyPoints = _useLoyalty ? maxPoints : 0;
     final loyaltyDiscount = rules.valueOf(loyaltyPoints);
     return _Amounts(
@@ -363,6 +368,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       discount: discount,
       shipping: shipping,
       couponFreeShipping: couponFreeShipping,
+      giftWrap: giftWrap,
       maxPoints: maxPoints,
       loyaltyPoints: loyaltyPoints,
       loyaltyDiscount: loyaltyDiscount,
@@ -933,6 +939,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       CheckoutGiftCard(
                         s: s,
                         isGift: _isGift,
+                        fee: ref.watch(storeSettingsProvider)?.giftWrapFee ?? 3000,
                         onGiftChanged: (v) => setState(() => _isGift = v),
                         messageCtrl: _giftMsgCtrl,
                         hidePrices: _giftHidePrices,
@@ -963,6 +970,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         packageSaving: amounts.packageSaving,
                         loyaltyDiscount: amounts.loyaltyDiscount,
                         shipping: amounts.shipping,
+                        giftWrap: amounts.giftWrap,
                         shippingStatus: shippingStatus,
                         onRetryShipping: () => unawaited(_refreshShipping()),
                         total: amounts.total,

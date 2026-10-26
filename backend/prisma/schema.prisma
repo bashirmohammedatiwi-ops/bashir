@@ -527,6 +527,8 @@ model Order {
   isGift           Boolean       @default(false)
   giftMessage      String?
   giftHidePrices   Boolean       @default(false)
+  /// رسوم تغليف الهدية وقت الطلب (من إعدادات المتجر giftWrapFee) — جزء من total.
+  giftWrapFee      Int           @default(0)
   /// مفتاح محاولة الإتمام من التطبيق: إعادة الإرسال بعد انقطاع تعيد الطلب نفسه بدل تكراره.
   clientRef        String?
   /// لقطة عنوان التوصيل وقت الطلب — تعديل دفتر العناوين أو حذفه لاحقاً لا يغيّر الطلبات السابقة.
