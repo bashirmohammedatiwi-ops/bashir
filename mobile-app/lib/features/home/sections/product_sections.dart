@@ -149,6 +149,13 @@ class _ProductFilmStripState extends State<ProductFilmStrip>
   bool _userScrolling = false;
   bool _reduceMotion = false;
 
+  /// 0→1: تسارع ناعم عند البدء وبعد ترك الشريط، بدل انطلاق مفاجئ بالسرعة الكاملة.
+  double _ramp = 0;
+
+  /// الشريط يتحرك والصفحة تُمرَّر — يتوقف فقط حين تسحبه العميلة نفسها.
+  @override
+  bool get pauseWhileParentScrolls => false;
+
   // من آخر build — تُستخدم في حساب نقطة الالتفاف.
   double _cardWidth = 150;
   double _padStart = 0;
@@ -206,7 +213,9 @@ class _ProductFilmStripState extends State<ProductFilmStrip>
     final period = _period;
     final position = _scroll.position;
     if (period <= 0 || position.maxScrollExtent < _padStart + period) return;
-    final pace = (widget.speed.clamp(1, 10)) * 22 * dt;
+    _ramp = math.min(1, _ramp + dt / 1.4);
+    final ease = Curves.easeInOut.transform(_ramp);
+    final pace = (widget.speed.clamp(1, 10)) * 22 * dt * ease;
     var next = _scroll.offset + pace;
     // الالتفاف بطول دورة كاملة بعد الحشوة الأولى: المشهد قبله وبعده متطابق بالبكسل — لا قفزة.
     if (next >= _padStart + period) next -= period;
@@ -219,6 +228,7 @@ class _ProductFilmStripState extends State<ProductFilmStrip>
       // سحب من العميلة: نتوقف ونترك القذف (fling) يكمل دون أن نقطعه.
       _resumeTimer?.cancel();
       _userScrolling = true;
+      _ramp = 0;
       _syncTicker();
     } else if (n is ScrollEndNotification && _userScrolling) {
       _resumeTimer?.cancel();

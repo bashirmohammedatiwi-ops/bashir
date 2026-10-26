@@ -40,6 +40,10 @@ class _HomeMarqueeState extends State<HomeMarquee>
 
   String get _segment => '${widget.text}${widget.gap}';
 
+  /// شريط نص خفيف: يبقى يتحرك والصفحة تُمرَّر.
+  @override
+  bool get pauseWhileParentScrolls => false;
+
   /// «تقليل الحركة» أو جهاز بسيط: نص ثابت بدل شريط يُعاد رسمه كل إطار.
   bool get _static => _reduceMotion || DevicePerf.isLow;
 

@@ -11,6 +11,7 @@ import '../../../data/models/search_instant.dart';
 import '../../advisor/widgets/advisor_search_prompt.dart';
 import '../../worlds/world_theme.dart';
 import '../search_strings.dart';
+import '../../../core/config/app_config.dart';
 
 /// ما يظهر أثناء الكتابة: إكمالات النص، براندات وأقسام، وأقرب المنتجات — بطلب واحد سريع.
 class SearchInstantPanel extends StatelessWidget {
@@ -67,7 +68,7 @@ class SearchInstantPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(s.searchNoResultsBody, textAlign: TextAlign.center, style: AppText.bodySmall.copyWith(color: t.inkSoft)),
           // «ديما» بالعربي فقط.
-          if (s.isAr) ...[
+          if (AppConfig.advisorFor(s.isAr ? 'ar' : 'en')) ...[
             const SizedBox(height: 20),
             AdvisorSearchPrompt(query: q),
           ],

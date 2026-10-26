@@ -99,7 +99,7 @@ extension BeautyStringsX on AppStrings {
         ];
 
   // ─── صفحة المشكلة ───
-  String get beautyTipsTitle => isAr ? '💡 نصائح ديما لكِ' : '💡 Tips for you';
+  String get beautyTipsTitle => isAr ? '💡 نصائح لكِ' : '💡 Tips for you';
   String get beautyCausesTitle => isAr ? '🔍 ليش تصير؟' : '🔍 Why does it happen?';
   String get beautyIngredientsTitle => isAr ? '✅ مكونات تبحثين عنها' : '✅ Ingredients to look for';
   String get beautyIngredientsHint =>

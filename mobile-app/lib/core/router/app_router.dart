@@ -87,7 +87,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // «ديما» بالعربية فقط — أي رابط إليها بلغة أخرى يعود للرئيسية.
-      if (!localeSettings.isArabic && (path == '/advisor' || path.startsWith('/advisor/'))) {
+      if (!AppConfig.advisorFor(localeSettings.isArabic ? 'ar' : 'en') && (path == '/advisor' || path.startsWith('/advisor/'))) {
         return '/';
       }
 

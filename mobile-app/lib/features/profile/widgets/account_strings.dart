@@ -247,7 +247,7 @@ extension AccountStringsX on AppStrings {
       ? 'كيف أعرف اللون أو المنتج المناسب لبشرتي؟'
       : 'How do I find the right shade or product for my skin?';
   String get helpAShade => isAr
-      ? 'اسألي ديما مستشارتنا الجمالية، أو جرّبي اختبار البشرة.'
+      ? 'جرّبي اختبار البشرة السريع — يحدّد نوع بشرتكِ ويقترح لكِ روتيناً يناسبها.'
       : 'Try our quick skin quiz — it finds your skin type and a routine that suits it.';
   String get helpQRestock => isAr
       ? 'منتج أحبه نفد، شلون أعرف إذا رجع؟'

@@ -194,6 +194,17 @@ class ListingBrandSplitGrid extends StatelessWidget {
   }
 }
 
+/// عنوان تكملة القائمة بعد فاصل نهاية القسم («اكتشفي المزيد من …»).
+class ListingContinuationHeading extends StatelessWidget {
+  final String label;
+  final IconData icon;
+
+  const ListingContinuationHeading({super.key, required this.label, this.icon = Icons.auto_awesome_rounded});
+
+  @override
+  Widget build(BuildContext context) => _SectionHeading(label: label, icon: icon, emphasized: true);
+}
+
 class _SectionHeading extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -360,6 +371,17 @@ extension BrandSplitListingLabels on AppStrings {
 
   String brandSplitDivider(String brandName) =>
       isAr ? 'منتجات $brandName في أقسام أخرى' : '$brandName in other categories';
+
+  /// فاصل نهاية القسم: بعده منتجات القسم الأعلى (أو مقترحات المتجر).
+  String sectionEndDivider(String sectionName) =>
+      isAr ? 'انتهت منتجات $sectionName' : 'That\'s all in $sectionName';
+
+  String moreFromSection(String parentName) =>
+      isAr ? 'اكتشفي المزيد من $parentName' : 'More from $parentName';
+
+  String get otherProductsGroup => isAr ? 'منتجات أخرى' : 'Other products';
+
+  String get mayAlsoLike => isAr ? 'قد يعجبكِ أيضاً' : 'You may also like';
 
   String brandGroupCount(int count) =>
       isAr ? '$count ${count == 1 ? 'منتج' : 'منتجات'}' : '$count ${count == 1 ? 'product' : 'products'}';

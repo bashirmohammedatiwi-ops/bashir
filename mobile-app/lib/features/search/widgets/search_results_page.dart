@@ -16,6 +16,7 @@ import '../../worlds/world_theme.dart';
 import '../search_strings.dart';
 import '../search_v2_controllers.dart';
 import '../smart_query.dart';
+import '../../../core/config/app_config.dart';
 
 /// صفحة النتائج: عنوان وعدد، شريط فلاتر ثابت (ترتيب، عروض، متوفر، براند، قسم، نوع، سعر)، وشبكة منتجات.
 class SearchResultsPage extends StatelessWidget {
@@ -142,7 +143,7 @@ class SearchResultsPage extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(s.searchNoResultsBody, textAlign: TextAlign.center, style: AppText.bodySmall.copyWith(color: t.inkMuted)),
                       // «ديما» بالعربي فقط.
-                      if (s.isAr) ...[
+                      if (AppConfig.advisorFor(s.isAr ? 'ar' : 'en')) ...[
                         const SizedBox(height: 16),
                         AdvisorSearchPrompt(query: r.query),
                       ],

@@ -12,6 +12,7 @@ import '../../data/models/home_section.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/category_tree.dart';
 import '../shell/nav_tabs.dart';
+import '../../core/config/app_config.dart';
 
 final _uuidRe = RegExp(
   r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
@@ -256,7 +257,7 @@ void _pushAppPath(BuildContext context, String rawPath) {
   final container = ProviderScope.containerOf(context, listen: false);
   // «ديما» بالعربية فقط — رابط إليها من لوحة التحكم لا يفعل شيئاً بلغة أخرى.
   if ((uri.path == '/advisor' || uri.path.startsWith('/advisor/')) &&
-      container.read(languageCodeProvider) != 'ar') {
+      !AppConfig.advisorFor(container.read(languageCodeProvider))) {
     return;
   }
   if (uri.path == '/products') {

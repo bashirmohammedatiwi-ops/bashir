@@ -19,6 +19,7 @@ import '../profile/widgets/profile_ui.dart';
 import '../profile/widgets/support_contact_section.dart';
 import '../worlds/world_theme.dart';
 import '../worlds/worlds_provider.dart';
+import '../../core/config/app_config.dart';
 
 /// مركز المساعدة: أجوبة سريعة (نفس صفحة المساعدة في الموقع) مجمّعة حسب الموضوع،
 /// جدول التوصيل لكل محافظة، ثم قنوات التواصل — حتى لا يتحوّل كل سؤال لمحادثة.
@@ -81,7 +82,7 @@ class HelpScreen extends ConsumerWidget {
                   onTap: () => context.push('/skin-quiz'),
                 ),
                 // «ديما» بالعربي فقط.
-                if (s.isAr)
+                if (AppConfig.advisorFor(s.isAr ? 'ar' : 'en'))
                   ProfileMenuTile(
                     icon: Icons.auto_awesome_outlined,
                     title: s.helpAskDeema,

@@ -35,6 +35,7 @@ import 'smart_query.dart';
 import 'widgets/search_idle_view.dart';
 import 'widgets/search_instant_panel.dart';
 import 'widgets/search_results_page.dart';
+import '../../core/config/app_config.dart';
 
 /// الأكثر بحثاً فعلاً بلغة الواجهة (من سجل الخادم المجهول، مع ذاكرة مؤقتة في [ApiService]).
 /// فارغة إن لم يتجمّع سجل كافٍ أو تعذّر الاتصال — الشاشة تعرض «أفكار للبحث» بدلها.
@@ -215,7 +216,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (code == null || !mounted) return;
     final link = resolveScannedLink(code);
     // رابط المتجر داخل الرمز يُفتح مباشرة («ديما» بالعربي فقط).
-    if (link != null && !(link.startsWith('/advisor') && _lang != 'ar')) {
+    if (link != null && !(link.startsWith('/advisor') && !AppConfig.advisorFor(_lang))) {
       if (openTabPath(context, link)) return;
       context.push(link);
       return;

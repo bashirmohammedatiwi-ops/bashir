@@ -24,6 +24,7 @@ import '../update/app_update.dart';
 import '../worlds/world_theme.dart';
 import 'nav_tabs.dart';
 import 'shell_nav_bar.dart';
+import '../../core/config/app_config.dart';
 
 export 'shell_nav_bar.dart' show ShellNavBar;
 
@@ -82,7 +83,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     final cartCount = ref.watch(cartProvider.select((c) => c.count));
     final theme = ref.watch(activeWorldThemeProvider);
     final softUpdate = ref.watch(softUpdateVisibleProvider);
-    final launcherOn = index == NavTabs.home && !softUpdate;
+    final launcherOn = AppConfig.advisorEnabled && index == NavTabs.home && !softUpdate;
     final navHeight = Responsive.shellNavDockHeight(context);
     // شريط المقارنة: ليس فوق أزرار السلة وحسابي، ولا مع بطاقة التحديث في المكان نفسه.
     final trayAllowed = index != NavTabs.cart && index != NavTabs.account && !softUpdate;

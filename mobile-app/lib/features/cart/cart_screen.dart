@@ -316,8 +316,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                   freeShipping: freeShipping,
                                 ),
                               ),
-                              // «يكمّل سلتكِ»: ما يُشترى عادةً مع أغلى ما في السلة (بلا تكرار لما فيها).
-                              SliverToBoxAdapter(child: _CartPairs(cart: cart)),
                               const SliverToBoxAdapter(child: SizedBox(height: 20)),
                             ],
                           ),
@@ -333,36 +331,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   },
                 ),
               ),
-      ),
-    );
-  }
-}
-
-class _CartPairs extends ConsumerWidget {
-  final CartState cart;
-  const _CartPairs({required this.cart});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final inCart = cart.items.map((e) => e.productId).toSet();
-    final anchors = ([
-      ...cart.items,
-    ]..sort((a, b) => b.lineTotal.compareTo(a.lineTotal))).map((e) => e.productId).toSet().take(2).toList();
-    final pairs = <Product>[];
-    for (final id in anchors) {
-      final r = ref.watch(boughtTogetherProvider(id)).valueOrNull;
-      for (final p in r?.items ?? const <Product>[]) {
-        if (!inCart.contains(p.id) && p.stock > 0 && !pairs.any((x) => x.id == p.id)) pairs.add(p);
-      }
-    }
-    if (pairs.length < 2) return const SizedBox.shrink();
-    final s = ref.s;
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: CartRecommendations(
-        products: pairs.take(10).toList(),
-        title: s.cartPairsTitle,
-        subtitle: s.cartPairsSubtitle,
       ),
     );
   }

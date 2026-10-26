@@ -28,7 +28,6 @@ import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/fullscreen_image_viewer.dart';
 import '../../core/widgets/horizontal_product_list.dart';
-import '../../core/widgets/quick_shade_sheet.dart';
 import '../../core/widgets/product_detail_skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/paginated.dart';
@@ -75,18 +74,6 @@ extension _PdpStringsX on AppStrings {
 
   String get copyLinkHint => isAr ? 'نسخ الرابط' : 'Copy link';
   String get recentlyViewedTitle => isAr ? 'شاهدتِها مؤخراً' : 'Recently viewed';
-
-  // ─── «اشتريها معاً» ───
-  String get buyTogetherTitle => isAr ? 'اشتريها معاً' : 'Buy them together';
-  String get thisItem => isAr ? 'هذا المنتج' : 'This item';
-  String get chooseShadeShort => isAr ? 'اختاري اللون' : 'Choose shade';
-  String bundleSave(String amount) => isAr ? 'توفّرين $amount' : 'You save $amount';
-  String addSelected(int n) => isAr ? 'أضيفي المحدد (\u2066$n\u2069)' : 'Add selected ($n)';
-  String bundleAdded(int n) => isAr
-      ? (n == 1 ? 'أُضيف منتج واحد للسلة' : n == 2 ? 'أُضيف منتجان للسلة' : 'أُضيفت ${arProducts(n)} للسلة')
-      : 'Added ${enCount(n, 'item', 'items')} to your bag';
-  String bundleIncluded(String name) => isAr ? '$name، مشمول' : '$name, included';
-  String bundleExcluded(String name) => isAr ? '$name، غير مشمول' : '$name, not included';
 }
 
 /// أول صفحة تقييمات (الأحدث) مع تقييم الزبونة نفسها — تتجدد حين تسجّل الدخول أو تخرج.
@@ -440,7 +427,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ),
                       const _TrustStrip(),
                       // لحظة التردد: «هل يناسبني؟ بديل أرخص؟» — «ديما» بالعربية فقط (البطاقة تخفي نفسها).
-                      if (ref.watch(languageCodeProvider) == 'ar')
+                      if (AppConfig.advisorFor(ref.watch(languageCodeProvider)))
                         Padding(
                           padding: const EdgeInsets.fromLTRB(
                             ProductDetailTheme.padH,
@@ -468,14 +455,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         // كلٌّ في طبقة رسم مستقلة (addRepaintBoundaries)، ثم تبقى حيّة.
         SliverList(
           delegate: SliverChildListDelegate([
-            ProductDetailLazySection(
-              key: const ValueKey('bought-together'),
-              child: _BoughtTogether(
-                product: product,
-                shade: shade,
-                canAddCurrent: complete || _seedCanAdd,
-              ),
-            ),
             ProductDetailLazySection(
               key: const ValueKey('reviews'),
               child: _SectionCard(
@@ -2597,8 +2576,7 @@ class _ReviewTile extends ConsumerWidget {
   }
 }
 
-/// «قد يعجبكِ أيضاً»: الأكثر مبيعاً المتوفر من أعمق قسم للمنتج (يُكمَل من القسم الأب)،
-/// بلا ما يظهر أصلاً في «يُشترى معه غالباً».
+/// «قد يعجبكِ أيضاً»: الأكثر مبيعاً المتوفر من أعمق قسم للمنتج (يُكمَل من القسم الأب).
 class _SimilarProducts extends ConsumerWidget {
   final Product product;
 
@@ -2614,14 +2592,11 @@ class _SimilarProducts extends ConsumerWidget {
         excludeId: product.id,
       )),
     );
-    final paired = {
-      for (final p in ref.watch(boughtTogetherProvider(product.id)).valueOrNull?.items ?? const <Product>[]) p.id,
-    };
 
     final s = ref.s;
     return async.maybeWhen(
       data: (all) {
-        final products = all.where((p) => !paired.contains(p.id)).take(10).toList();
+        final products = all.take(10).toList();
         if (products.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2676,469 +2651,6 @@ class _RecentlyViewed extends ConsumerWidget {
           padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
         ),
       ],
-    );
-  }
-}
-
-/// «يُشترى معه غالباً» — اختيارات الزبونات مع هذا المنتج: صندوق «اشتريها معاً» لإضافة
-/// المنتج وأول قطعتين متوفرتين بلمسة، ثم بقية الاقتراحات في شريط.
-class _BoughtTogether extends ConsumerWidget {
-  final Product product;
-
-  /// الدرجة المختارة في الصفحة — تُضاف بها القطعة الحالية ويُحسب سعرها.
-  final ProductShade? shade;
-
-  /// التفاصيل الكاملة وصلت (أو بذرة تعرف درجاتها) — وإلا لا تُضاف القطعة الحالية بعد.
-  final bool canAddCurrent;
-
-  const _BoughtTogether({required this.product, required this.shade, required this.canAddCurrent});
-
-  /// أقصى عدد قطع مع المنتج في الصندوق (مثل الموقع).
-  static const _bundlePairs = 2;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(boughtTogetherProvider(product.id));
-    final t = context.worldTheme;
-    final ar = ref.s.isAr;
-    final brand = product.brandNameFor(ref.watch(languageCodeProvider));
-    return async.maybeWhen(
-      data: (r) {
-        final items = r.items.where((p) => p.id != product.id).toList();
-        if (items.isEmpty) return const SizedBox.shrink();
-        final pairs = items.where((p) => p.inStock).take(_bundlePairs).toList();
-        final paired = {for (final p in pairs) p.id};
-        // ما في الصندوق لا يتكرر في الشريط تحته.
-        final rest = items.where((p) => !paired.contains(p.id)).toList();
-        final subtitle = r.fromOrders
-            ? (ar ? 'اختيارات زبوناتنا مع هذا المنتج' : 'What customers pair with this')
-            : (ar
-                ? (brand.isNotEmpty ? 'يكمّل روتينك من $brand' : 'يكمّل روتينك')
-                : (brand.isNotEmpty ? 'Complete your routine with $brand' : 'Complete your routine'));
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, 22, ProductDetailTheme.padH, 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(gradient: t.signatureGradient, shape: BoxShape.circle),
-                    child: Icon(
-                      r.fromOrders ? Icons.auto_awesome_rounded : Icons.spa_rounded,
-                      color: Colors.white,
-                      size: 17,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          r.fromOrders
-                              ? (ar ? 'يُشترى معه غالباً' : 'Frequently bought together')
-                              : (ar ? 'نكمّله لكِ' : 'Pairs well with'),
-                          style: ProductDetailTheme.sectionTitleStyle(context),
-                        ),
-                        Text(subtitle, style: AppText.caption.copyWith(color: t.inkMuted)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (pairs.isNotEmpty)
-              _BuyTogetherBox(
-                product: product,
-                shade: shade,
-                pairs: pairs,
-                canAddCurrent: canAddCurrent,
-              ),
-            if (rest.isNotEmpty) ...[
-              if (pairs.isNotEmpty) const SizedBox(height: 14),
-              HorizontalProductList(
-                products: rest,
-                heroScope: 'pdp-${product.id}-pairs',
-                padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
-              ),
-            ],
-          ],
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
-    );
-  }
-}
-
-/// قطعة في صندوق «اشتريها معاً»: المنتج بالدرجة التي تُضاف بها وسعرها.
-typedef _BundleLine = ({Product product, ProductShade? shade, bool current, bool needsShade, bool available});
-
-/// «اشتريها معاً»: هذا المنتج + قطعتان متوفرتان كصور متجاورة بينها «+»، لكل قطعة علامة
-/// اختيار (مفعّلة افتراضياً)، المجموع والتوفير، و«أضيفي المحدد» بلمسة واحدة.
-///
-/// قطعة بعدة درجات لا تُضاف بلا درجة: تعرض «اختاري اللون» وتفتح ورقة الدرجات السريعة.
-class _BuyTogetherBox extends ConsumerStatefulWidget {
-  final Product product;
-  final ProductShade? shade;
-  final List<Product> pairs;
-  final bool canAddCurrent;
-
-  const _BuyTogetherBox({
-    required this.product,
-    required this.shade,
-    required this.pairs,
-    required this.canAddCurrent,
-  });
-
-  @override
-  ConsumerState<_BuyTogetherBox> createState() => _BuyTogetherBoxState();
-}
-
-class _BuyTogetherBoxState extends ConsumerState<_BuyTogetherBox> {
-  /// ما ألغت الزبونة اختياره — البقية مختارة (الافتراضي: الكل).
-  final _off = <String>{};
-
-  static bool _needsShade(Product p) =>
-      p.hasMultipleDisplayableShades || (p.displayableShades.isEmpty && p.shadeCount > 1);
-
-  List<_BundleLine> _lines() {
-    final current = widget.product;
-    final shade = current.shadeForCart(selected: widget.shade);
-    final currentStock = shade?.stock ?? current.stock;
-    return [
-      (
-        product: current,
-        shade: shade,
-        current: true,
-        needsShade: false,
-        // بلا درجة معروفة بعد (بذرة) أو نافدة: لا تُضاف — شريط الشراء يتولّاها.
-        available: widget.canAddCurrent && currentStock > 0 && !(current.hasMultipleDisplayableShades && shade == null),
-      ),
-      for (final p in widget.pairs)
-        (
-          product: p,
-          shade: _needsShade(p) ? null : p.shadeForCart(),
-          current: false,
-          needsShade: _needsShade(p),
-          available: p.inStock && !_needsShade(p),
-        ),
-    ];
-  }
-
-  bool _selected(_BundleLine l) => l.available && !_off.contains(l.product.id);
-
-  static int _unit(_BundleLine l) => l.product.unitFor(l.shade);
-
-  /// السعر قبل الخصم (أو السعر نفسه بلا خصم) — للتوفير الإجمالي.
-  static int _orig(_BundleLine l) {
-    final orig = l.product.origFor(l.shade);
-    final unit = _unit(l);
-    return orig > unit ? orig : unit;
-  }
-
-  void _toggle(_BundleLine l) {
-    if (!l.available) return;
-    HapticFeedback.selectionClick();
-    setState(() {
-      if (!_off.remove(l.product.id)) _off.add(l.product.id);
-    });
-  }
-
-  Future<void> _chooseShade(Product p) async {
-    HapticFeedback.selectionClick();
-    await showQuickShadeSheet(context, ref, p);
-  }
-
-  void _addSelected(List<_BundleLine> picked) {
-    final s = ref.read(stringsProvider);
-    final cart = ref.read(cartProvider.notifier);
-    HapticFeedback.mediumImpact();
-    var added = 0;
-    for (final l in picked) {
-      if (cart.addCounted(l.product, shade: l.shade) > 0) added++;
-    }
-    if (added == 0) {
-      AppSnackbar.error(context, s.maxStockReached);
-      return;
-    }
-    final container = ProviderScope.containerOf(context, listen: false);
-    AppSnackbar.cartAdded(
-      context,
-      title: s.bundleAdded(added),
-      viewCartLabel: s.viewCart,
-      onViewCart: () => openCartTab(context, container),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = ref.s;
-    final t = context.worldTheme;
-    final lang = ref.watch(languageCodeProvider);
-    final lines = _lines();
-    final picked = lines.where(_selected).toList();
-    final total = picked.fold<int>(0, (n, l) => n + _unit(l));
-    final original = picked.fold<int>(0, (n, l) => n + _orig(l));
-    final saving = original - total;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: ProductDetailTheme.padH),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-      decoration: ProductDetailTheme.heroCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(s.buyTogetherTitle, style: ProductDetailTheme.sectionTitleStyle(context)),
-          const SizedBox(height: 12),
-          // الصور متجاورة بينها «+» — تتقلّص على الشاشات الضيقة بدل أن تفيض.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < lines.length; i++) ...[
-                  if (i > 0)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.add_rounded, size: 18, color: t.inkMuted),
-                    ),
-                  _BundleTile(
-                    line: lines[i],
-                    selected: _selected(lines[i]),
-                    onTap: lines[i].current
-                        ? () => _toggle(lines[i])
-                        : () => openProduct(context, lines[i].product),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          for (final l in lines)
-            _BundleRow(
-              name: l.current ? '${s.thisItem}: ${l.product.localizedName(lang)}' : l.product.localizedName(lang),
-              shadeName: l.current && l.product.hasMultipleDisplayableShades ? l.shade?.name : null,
-              price: _unit(l),
-              selected: _selected(l),
-              enabled: l.available,
-              chooseShadeLabel: l.needsShade ? s.chooseShadeShort : null,
-              onTap: l.needsShade ? () => _chooseShade(l.product) : () => _toggle(l),
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Divider(height: 1, thickness: 0.6, color: t.divider),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.total, style: AppText.caption.copyWith(color: t.inkMuted)),
-                    Wrap(
-                      spacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.end,
-                      children: [
-                        Text(formatPrice(total), style: AppText.price.copyWith(color: t.ink)),
-                        if (saving > 0)
-                          Text(
-                            formatPrice(original),
-                            style: AppText.caption.copyWith(
-                              color: t.inkMuted,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (saving > 0)
-                      Text(
-                        s.bundleSave(formatPrice(saving)),
-                        style: AppText.micro.copyWith(color: AppColors.sale),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: FilledButton.icon(
-                  onPressed: picked.isEmpty ? null : () => _addSelected(picked),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: t.accent,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, kMinTapTarget),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    shape: const StadiumBorder(),
-                  ),
-                  icon: const Icon(Icons.shopping_bag_rounded, size: 18),
-                  label: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(s.addSelected(picked.length), style: AppText.label),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// صورة 72 لقطعة في الصندوق مع علامة الاختيار (أو لوحة الألوان لقطعة تحتاج درجة).
-class _BundleTile extends StatelessWidget {
-  final _BundleLine line;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _BundleTile({required this.line, required this.selected, required this.onTap});
-
-  static const _side = 72.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.worldTheme;
-    final image = line.shade?.image?.thumb ?? '';
-    final motion = MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180);
-    // الصفوف تحتها تحمل الوصف والاختيار لقارئ الشاشة — الصورة لمسة إضافية فقط.
-    return ExcludeSemantics(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: SizedBox.square(
-          dimension: _side + 6,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              PositionedDirectional(
-                top: 6,
-                start: 0,
-                child: AnimatedOpacity(
-                  duration: motion,
-                  opacity: selected || line.needsShade ? 1 : 0.45,
-                  child: Container(
-                    width: _side,
-                    height: _side,
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppCorners.sm),
-                      border: Border.all(
-                        color: selected ? t.accent.withValues(alpha: 0.6) : t.hairline,
-                        width: selected ? 1.4 : 1,
-                      ),
-                    ),
-                    child: ProductCoverImage(
-                      url: image.isNotEmpty ? image : line.product.coverUrl,
-                      width: _side - 12,
-                      height: _side - 12,
-                    ),
-                  ),
-                ),
-              ),
-              PositionedDirectional(
-                top: 0,
-                end: 0,
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: line.needsShade ? t.accentLight : (selected ? t.accent : t.surface),
-                    border: Border.all(color: selected ? t.surface : t.hairline, width: 1.5),
-                  ),
-                  child: Icon(
-                    line.needsShade ? Icons.palette_outlined : Icons.check_rounded,
-                    size: 13,
-                    color: line.needsShade ? t.accentDark : (selected ? Colors.white : t.inkMuted),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// سطر قطعة في الصندوق: علامة اختيار + الاسم + السعر — أو «اختاري اللون» لقطعة بعدة درجات.
-class _BundleRow extends ConsumerWidget {
-  final String name;
-  final String? shadeName;
-  final int price;
-  final bool selected;
-  final bool enabled;
-
-  /// غير null: القطعة تحتاج درجة — الزر يفتح ورقة الدرجات بدل الاختيار.
-  final String? chooseShadeLabel;
-  final VoidCallback onTap;
-
-  const _BundleRow({
-    required this.name,
-    required this.shadeName,
-    required this.price,
-    required this.selected,
-    required this.enabled,
-    required this.chooseShadeLabel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = context.worldTheme;
-    final s = ref.s;
-    final needsShade = chooseShadeLabel != null;
-    final label = shadeName == null ? name : '$name · $shadeName';
-    return Semantics(
-      button: needsShade,
-      checked: needsShade ? null : selected,
-      enabled: needsShade || enabled,
-      label: needsShade
-          ? '$label${s.isAr ? '، ' : ', '}$chooseShadeLabel'
-          : (selected ? s.bundleIncluded(label) : s.bundleExcluded(label)),
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: needsShade || enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(AppCorners.sm),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: kMinTapTarget),
-          child: Row(
-            children: [
-              if (!needsShade)
-                Icon(
-                  selected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                  size: 22,
-                  color: enabled ? (selected ? t.accent : t.inkMuted) : t.hairline,
-                )
-              else
-                Icon(Icons.palette_outlined, size: 22, color: t.accentDark),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.bodySmall.copyWith(
-                    color: enabled || needsShade ? t.ink : t.inkMuted,
-                    height: 1.35,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (needsShade)
-                Text(chooseShadeLabel!, style: AppText.label.copyWith(color: t.accentDark))
-              else
-                Text(
-                  formatPrice(price),
-                  style: AppText.label.copyWith(color: selected ? t.ink : t.inkMuted),
-                ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

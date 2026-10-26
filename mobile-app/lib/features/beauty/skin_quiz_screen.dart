@@ -18,6 +18,7 @@ import '../worlds/world_theme.dart';
 import 'beauty_providers.dart';
 import 'beauty_strings.dart';
 import 'beauty_widgets.dart';
+import '../../core/config/app_config.dart';
 
 typedef _Opt = ({String emoji, Map<SkinType, int> score});
 
@@ -378,7 +379,7 @@ class _QuizResult extends ConsumerWidget {
     final match = ref.watch(skinMatchProvider);
     final type = profile.skinType;
     // «ديما» بالعربي فقط — قرار المالكة.
-    final showAdvisor = ref.watch(languageCodeProvider) == 'ar';
+    final showAdvisor = AppConfig.advisorFor(ref.watch(languageCodeProvider));
     final pillStyle = TextButton.styleFrom(
       foregroundColor: Colors.white,
       backgroundColor: Colors.white.withValues(alpha: 0.18),

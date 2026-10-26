@@ -14,6 +14,14 @@ class AppConfig {
   /// مسار الشراء (الرئيسية، القوائم، المنتج، السلة، الدفع، الحساب) إلى ألوان العالم.
   static const bool darkModeEnabled = false;
 
+  /// «ديما» المستشارة الشخصية: مؤجّلة لتحديث قادم — كل نقاط دخولها مخفية (الزر العائم،
+  /// بطاقة المنتج، اقتراح البحث، المساعدة، اختبار البشرة، المسار /advisor وروابطه).
+  /// ملفاتها في features/advisor باقية كما هي؛ إعادتها = true هنا.
+  static const bool advisorEnabled = false;
+
+  /// «ديما» ظاهرة بهذه اللغة؟ (مفعّلة، وبالعربية فقط).
+  static bool advisorFor(String lang) => advisorEnabled && lang == 'ar';
+
   static const String appScheme = 'https';
 
   /// أصل الموقع: `https://deemaalhayat.com`

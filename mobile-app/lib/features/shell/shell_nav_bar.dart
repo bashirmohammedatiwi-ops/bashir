@@ -42,10 +42,12 @@ class ShellNavBar extends StatelessWidget {
   static const _minTabW = 44.0;
 
   /// نمط اسم التبويب المختار — يُقاس به عرض الحبّة.
+  /// ارتفاع السطر يتّسع لأذيال الحروف العربية (بـ 1 كانت تُقصّ من الأسفل داخل ClipRect).
   static final _labelStyle = AppText.label.copyWith(
     color: Colors.white,
     fontSize: 13,
-    height: 1,
+    height: 1.45,
+    leadingDistribution: TextLeadingDistribution.even,
     fontWeight: FontWeight.w800,
   );
 

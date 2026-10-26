@@ -180,6 +180,12 @@ class ProductListingBody extends ConsumerStatefulWidget {
 
 enum _BrandListingPhase { inCategory, otherBrand, done }
 
+/// سقف صفحات «باقي البراند» التي تُجلب دفعة واحدة — بعدها تكمل مع التمرير.
+const _maxEagerOtherPages = 12;
+
+/// سقف صفحات تكملة القسم (المقترحات بعد فاصل نهاية القسم).
+const _maxContinuationPages = 8;
+
 /// صفحات قائمة «براند داخل قسم»: منتجاته في القسم أولاً ثم باقي منتجاته.
 ///
 /// إعادة التحميل تملأ نسخة جديدة وتستبدلها دفعة واحدة — القديمة تبقى ظاهرة حتى ذلك.
@@ -203,6 +209,12 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
   int _page = 1;
   bool _hasMore = true;
   _SplitPages _split = _SplitPages();
+
+  /// تكملة القائمة بعد انتهاء منتجات القسم: منتجات القسم الأعلى (أو الأكثر مبيعاً)
+  /// تحت فاصل واضح، بلا تكرار لما ظهر فوقه.
+  final List<Product> _more = [];
+  int _morePage = 1;
+  bool _moreHasMore = true;
   bool _loading = false;
 
   /// لم تصل أي صفحة بعد (أو بدأ تحميل جديد بلا منتجات ظاهرة).
@@ -262,9 +274,51 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
       widget.brandId != null &&
       (widget.categoryId != null || widget.subcategoryId != null || widget.tertiaryCategoryId != null);
 
-  bool get _effectiveHasMore => _splitBrandByCategory ? _split.hasMore : _hasMore;
+  bool get _effectiveHasMore =>
+      _splitBrandByCategory ? _split.hasMore : (_hasMore || (_continuation != null && _moreHasMore));
 
-  List<Product> get _visibleItems => _splitBrandByCategory ? _split.visible : _items;
+  List<Product> get _visibleItems => _splitBrandByCategory ? _split.visible : [..._items, ..._more];
+
+  /// أعلى القسم الحالي: الثالث ← الفرعي، الفرعي ← الرئيسي، الرئيسي ← الأكثر مبيعاً في المتجر.
+  /// null حين لا تكملة (براند، بحث، مختارات، عالم، فلتر محتوى خاص). لا يحتاج شجرة
+  /// الأقسام: القسم الأعلى من الرابط أو من بيانات المنتجات نفسها.
+  ({String? categoryId, String? subcategoryId, bool bestSellers})? get _continuation {
+    if (widget.brandId != null || (widget.search?.trim().isNotEmpty ?? false)) return null;
+    if (widget.ids != null || widget.world != null || widget.concernSlug != null) return null;
+    if (widget.skinType != null || widget.minDiscount != null) return null;
+    final roots = ref.read(categoriesProvider).valueOrNull ?? const <Category>[];
+    final first = _items.isEmpty ? null : _items.first;
+    final tertiary = widget.tertiaryCategoryId;
+    final sub = widget.subcategoryId;
+    if (tertiary != null) {
+      final parent = sub ?? findParentCategory(roots, tertiary)?.id ?? first?.subcategoryId;
+      if (parent == null || parent.isEmpty || parent == tertiary) return null;
+      return (categoryId: null, subcategoryId: parent, bestSellers: false);
+    }
+    if (sub != null) {
+      final root = widget.categoryId ?? findRootCategory(roots, sub)?.id ?? first?.category?.id;
+      if (root == null || root.isEmpty || root == sub) return null;
+      return (categoryId: root, subcategoryId: null, bestSellers: false);
+    }
+    if (widget.categoryId != null) return (categoryId: null, subcategoryId: null, bestSellers: true);
+    return null;
+  }
+
+  String _continuationLabel(AppStrings s, String lang, List<Category> roots) {
+    final c = _continuation;
+    if (c == null || c.bestSellers) return s.mayAlsoLike;
+    final id = c.subcategoryId ?? c.categoryId!;
+    Category? cat = findCategoryById(roots, id);
+    if (cat == null) {
+      for (final p in _more) {
+        if (p.subcategory?.id == id) cat = p.subcategory;
+        if (p.category?.id == id) cat = p.category;
+        if (cat != null) break;
+      }
+    }
+    return cat == null ? s.mayAlsoLike : s.moreFromSection(cat.localizedName(lang));
+  }
+
 
   @override
   void dispose() {
@@ -386,7 +440,14 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
     }
   }
 
+  void _clearMore() {
+    _more.clear();
+    _morePage = 1;
+    _moreHasMore = true;
+  }
+
   void _clearItems() {
+    _clearMore();
     _items.clear();
     _page = 1;
     _hasMore = true;
@@ -404,6 +465,7 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
   }
 
   Future<void> _fetchStandardListing(int gen, {required bool reset, required bool force}) async {
+    if (!reset && !_hasMore) return _fetchContinuation(gen);
     final page = reset ? 1 : _page;
     final result = await _queryProducts(
       page: page,
@@ -416,6 +478,7 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
     setState(() {
       if (reset) {
         _items.clear();
+        _clearMore();
         _pagesAppended = 0;
         _total = result.total;
       } else {
@@ -428,6 +491,42 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
       _page = page + 1;
     });
     _precacheLatest(result.items);
+    // انتهى القسم والصفحة قصيرة (لا تمرير يطلب المزيد): التكملة تُجلب تلقائياً.
+    if (!_hasMore && _continuation != null && _more.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && gen == _gen) _fetch();
+      });
+    }
+  }
+
+  /// الصفحة التالية من تكملة القسم. صفحات كلها مكررة (منتجات القسم نفسه داخل القسم
+  /// الأعلى) تُتخطّى فوراً حتى يظهر جديد.
+  Future<void> _fetchContinuation(int gen) async {
+    final c = _continuation;
+    if (c == null) {
+      setState(() => _moreHasMore = false);
+      return;
+    }
+    while (true) {
+      final result = await _queryProducts(
+        page: _morePage,
+        categoryId: c.categoryId,
+        subcategoryId: c.subcategoryId,
+        bestSellersOnly: c.bestSellers,
+      );
+      if (!mounted || gen != _gen) return;
+      final seen = {for (final p in _items) p.id, for (final p in _more) p.id};
+      final fresh = result.items.where((p) => seen.add(p.id)).toList();
+      final more = result.hasNext && _morePage < _maxContinuationPages;
+      setState(() {
+        _more.addAll(fresh);
+        _moreHasMore = more;
+        _morePage++;
+        _pagesAppended++;
+      });
+      _precacheLatest(fresh);
+      if (fresh.isNotEmpty || !more) return;
+    }
   }
 
   Future<void> _fetchSplitBrandListing(int gen, {required bool reset, required bool force}) async {
@@ -481,9 +580,9 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
         if (!pages.otherHasMore) pages.phase = _BrandListingPhase.done;
         if (live) setState(() {});
         _precacheLatest(batch);
-        // دفعة كلها مكررة (أو بلا قسم): لا شيء جديد يظهر — نكمل للصفحة التالية فوراً
-        // بدل هياكل تحميل عالقة تنتظر حركة تمرير.
-        if (pages.otherHasMore && !batch.any((p) => p.category != null)) continue;
+        // باقي منتجات البراند تُجلب كاملة دفعة بعد دفعة (حتى سقف معقول): المجموعات تظهر
+        // كاملة بأعدادها الصحيحة ولا تتبدّل أماكنها مع التمرير.
+        if (pages.otherHasMore && pages.otherPage <= _maxEagerOtherPages) continue;
         return true;
       }
 
@@ -551,6 +650,7 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
     String? categoryId,
     String? subcategoryId,
     String? tertiaryCategoryId,
+    bool bestSellersOnly = false,
   }) {
     return ref
         .read(apiServiceProvider)
@@ -563,7 +663,7 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
           brandId: widget.brandId,
           search: widget.search,
           isNew: widget.isNew ? true : null,
-          isBestSeller: widget.isBestSeller ? true : null,
+          isBestSeller: widget.isBestSeller || bestSellersOnly ? true : null,
           isPromo: widget.isPromo || _onSale ? true : null,
           isFeatured: widget.isFeatured ? true : null,
           concernSlug: widget.concernSlug,
@@ -614,9 +714,14 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
 
     for (final p in _split.other) {
       final cat = p.category;
-      if (cat == null) continue;
       final String key;
       final String label;
+      if (cat == null) {
+        // بلا قسم: لا تختفي — مجموعة «منتجات أخرى» في آخر القائمة.
+        groups.putIfAbsent('_none', () => []).add(p);
+        labels.putIfAbsent('_none', () => s.otherProductsGroup);
+        continue;
+      }
       final subId = p.subcategory?.id ?? p.subcategoryId;
       if (bySubcategory && subId != null && subId.isNotEmpty) {
         key = subId;
@@ -630,8 +735,20 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
       labels.putIfAbsent(key, () => label);
     }
 
+    // ترتيب المجموعات كترتيب الأقسام في المتجر، لا حسب أي منتج وصل أولاً.
+    final order = <String, int>{};
+    void walk(List<Category> nodes) {
+      for (final c in nodes) {
+        order.putIfAbsent(c.id, () => order.length);
+        walk(c.children);
+      }
+    }
+
+    walk(roots);
+    final entries = groups.entries.toList()
+      ..sort((a, b) => (order[a.key] ?? 1 << 20).compareTo(order[b.key] ?? 1 << 20));
     return [
-      for (final e in groups.entries)
+      for (final e in entries)
         BrandCategoryGroup(
           categoryId: e.key,
           label: '${labels[e.key] ?? ''} · ${s.brandGroupCount(e.value.length)}',
@@ -745,7 +862,7 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
           extraSlots: extraSlots,
           footer: footer,
         );
-      } else {
+      } else if (_more.isEmpty) {
         grid = ProductGrid.sliver(
           products: _items,
           showPromoBadge: widget.isPromo,
@@ -755,6 +872,28 @@ class _ProductListingBodyState extends ConsumerState<ProductListingBody> {
           extraSlots: extraSlots,
           footer: footer,
         );
+      } else {
+        final sectionName = _resolveCategoryScopeName(lang, roots) ?? title;
+        grid = SliverMainAxisGroup(slivers: [
+          ProductGrid.sliver(
+            products: _items,
+            showPromoBadge: widget.isPromo,
+            showRating: true,
+            listingStyle: true,
+            padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 6),
+          ),
+          SliverToBoxAdapter(child: BrandCategorySectionDivider(label: s.sectionEndDivider(sectionName))),
+          SliverToBoxAdapter(child: ListingContinuationHeading(label: _continuationLabel(s, lang, roots))),
+          ProductGrid.sliver(
+            products: _more,
+            showPromoBadge: widget.isPromo,
+            showRating: true,
+            listingStyle: true,
+            padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 6, ListingTheme.padH, 32),
+            extraSlots: extraSlots,
+            footer: footer,
+          ),
+        ]);
       }
       // تحميل جديد فوق نتائج ظاهرة: تبقى معتمة وغير قابلة للمس حتى تصل الجديدة.
       content = SliverAnimatedOpacity(

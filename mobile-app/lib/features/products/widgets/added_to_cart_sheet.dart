@@ -6,20 +6,16 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/free_shipping_progress.dart';
-import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/horizontal_product_list.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/product.dart';
 import '../../cart/cart_provider.dart';
-import '../../catalog/catalog_providers.dart';
 import '../../worlds/world_theme.dart';
 import '../../worlds/worlds_provider.dart';
 
 /// نصوص ورقة «أُضيف لسلتكِ».
 extension _AddedSheetStringsX on AppStrings {
   String get addedToYourBag => isAr ? 'أُضيف لسلتكِ' : 'Added to your bag';
-  String get goesWellWith => isAr ? 'يكمّل معه' : 'Goes well with it';
   String get checkoutNow => isAr ? 'إتمام الشراء' : 'Checkout';
   String bagWithCount(int n) => isAr ? 'السلة (\u2066$n\u2069)' : 'Bag ($n)';
 }
@@ -67,11 +63,9 @@ class _AddedSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
-    final s = ref.s;
     final cart = ref.watch(cartProvider);
     final unit = product.unitFor(shade);
     final image = shade?.image?.thumb ?? shade?.image?.full ?? product.coverUrl;
-    final pairs = ref.watch(boughtTogetherProvider(product.id)).valueOrNull?.items.where((p) => p.id != product.id).toList() ?? const <Product>[];
 
     return SingleChildScrollView(
       child: Column(
@@ -170,16 +164,6 @@ class _AddedSheet extends ConsumerWidget {
               compact: true,
             ),
           ),
-          if (pairs.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-              child: Text(s.goesWellWith, style: AppText.title3.copyWith(color: t.ink)),
-            ),
-            HorizontalProductList(
-              products: pairs.take(8).toList(),
-              padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
-            ),
-          ],
           const SizedBox(height: 14),
         ],
       ),

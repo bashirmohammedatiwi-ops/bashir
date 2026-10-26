@@ -21,6 +21,7 @@ import '../../core/widgets/ui/ui.dart';
 import '../../data/models/barcode_lookup.dart';
 import '../../data/services/api_service.dart';
 import 'search_strings.dart';
+import '../../core/config/app_config.dart';
 
 /// تنسيقات الباركود الخطي للمنتجات (بدون QR).
 const _barcodeFormats = <BarcodeFormat>[
@@ -128,7 +129,7 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> with WidgetsBinding
 
     var route = resolveScannedLink(raw);
     // «ديما» بالعربي فقط — رابطها لا يُفتح بلغة أخرى.
-    if (route != null && route.startsWith('/advisor') && ref.read(languageCodeProvider) != 'ar') route = null;
+    if (route != null && route.startsWith('/advisor') && !AppConfig.advisorFor(ref.read(languageCodeProvider))) route = null;
     if (route != null) {
       HapticFeedback.mediumImpact();
       // مسار تبويب (الرئيسية بعالم، البراندات ببحث…): يبدّل التبويب ويغلق الماسح معاً.
