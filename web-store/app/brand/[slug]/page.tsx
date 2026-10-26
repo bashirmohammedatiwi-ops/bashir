@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!b) return { title: "البراند غير موجود" };
   return {
     title: `${brandLabel(b.name)} — منتجات أصلية`,
-    description: `تسوّقي منتجات ${b.name} الأصلية في العراق مع توصيل سريع والدفع عند الاستلام أو بالبطاقة.`,
+    description: `تسوّقي منتجات ${b.name} الأصلية في العراق مع توصيل سريع والدفع عند الاستلام.`,
     alternates: { canonical: brandHref(b.slug) },
     openGraph: b.logo ? { images: [mediaUrl(b.logo, "medium")] } : undefined,
   };

@@ -142,6 +142,7 @@ class CheckoutPaymentCard extends StatelessWidget {
               selected: false,
               badge: s.cardComingSoon,
               onTap: null,
+              footer: const _CardNetworks(),
             ),
         ],
       ),

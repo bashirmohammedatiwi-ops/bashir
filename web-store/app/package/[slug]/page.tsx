@@ -86,7 +86,7 @@ export default async function PackagePage({ params }: { params: { slug: string }
                 <Icon name="shield" size={16} className="text-accent-dark" /> منتجات أصلية 100%
               </li>
               <li className="flex items-center gap-1.5">
-                <Icon name="cash" size={16} className="text-accent-dark" /> كاش أو بطاقة
+                <Icon name="cash" size={16} className="text-accent-dark" /> الدفع عند الاستلام
               </li>
             </ul>
           </div>

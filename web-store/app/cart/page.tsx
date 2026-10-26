@@ -163,7 +163,7 @@ export default function CartPage() {
               <Icon name="shield" size={20} className="text-accent-dark" /> منتجات أصلية
             </span>
             <span className="flex flex-col items-center gap-1">
-              <Icon name="cash" size={20} className="text-accent-dark" /> كاش أو بطاقة
+              <Icon name="cash" size={20} className="text-accent-dark" /> الدفع عند الاستلام
             </span>
             <span className="flex flex-col items-center gap-1">
               <Icon name="truck" size={20} className="text-accent-dark" /> لكل المحافظات

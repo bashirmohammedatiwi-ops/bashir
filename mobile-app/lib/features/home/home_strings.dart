@@ -15,8 +15,8 @@ extension HomeStringsX on AppStrings {
   String get homeTrustDeliverySub => isAr ? 'لكل المحافظات' : 'Nationwide';
   String get homeTrustAuthentic => isAr ? 'منتجات أصلية' : 'Authentic';
   String get homeTrustAuthenticSub => isAr ? '100% مضمونة' : '100% guaranteed';
-  String get homeTrustCod => isAr ? 'ادفعي كما تحبين' : 'Pay your way';
-  String get homeTrustCodSub => isAr ? 'نقداً أو بالبطاقة' : 'Cash or card';
+  String get homeTrustCod => isAr ? 'الدفع عند الاستلام' : 'Cash on delivery';
+  String get homeTrustCodSub => isAr ? 'ادفعي حين يصلكِ طلبكِ' : 'Pay when your order arrives';
   String get homeTrustSupport => isAr ? 'نساعدكِ' : 'We’re here';
   String get homeTrustSupportSub => isAr ? 'دعم مباشر' : 'Live support';
   String get homeFooterLine => isAr ? 'جمالكِ يستحق الأصلي' : 'Your beauty deserves the real thing';

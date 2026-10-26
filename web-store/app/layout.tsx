@@ -29,7 +29,7 @@ const plex = IBM_Plex_Sans_Arabic({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: `${STORE_NAME} — ${STORE_TAGLINE}`, template: `%s | ${STORE_NAME}` },
-  description: "تسوّقي مستحضرات التجميل والعناية والعطور الأصلية من أشهر الماركات العالمية، مع توصيل لكل محافظات العراق والدفع عند الاستلام أو بالبطاقة.",
+  description: "تسوّقي مستحضرات التجميل والعناية والعطور الأصلية من أشهر الماركات العالمية، مع توصيل لكل محافظات العراق والدفع عند الاستلام.",
   applicationName: STORE_NAME,
   openGraph: { type: "website", locale: "ar_IQ", siteName: STORE_NAME, images: [{ url: "/og.png", width: 1200, height: 630 }] },
   twitter: { card: "summary_large_image", images: ["/og.png"] },

@@ -232,7 +232,7 @@ class AppStrings {
   String get loyaltyPointsCount => isAr ? 'نقطة ولاء' : 'loyalty points';
   String get version => isAr ? 'الإصدار' : 'Version';
   String get aboutDescription => isAr
-      ? 'متجر ديما الحياة لمستحضرات التجميل والعناية. الدفع عند الاستلام أو بالبطاقة.'
+      ? 'متجر ديما الحياة لمستحضرات التجميل والعناية. الدفع عند الاستلام.'
       : 'Deema Alhayat beauty and care store. Cash on delivery.';
 
   // ─── Categories ───────────────────────────────────────────────────────────
@@ -388,7 +388,7 @@ class AppStrings {
   String shadePosition(int current, int total) =>
       isAr ? '$current من $total' : '$current of $total';
   String get authentic100 => isAr ? 'منتجات\nأصلية 100%' : '100%\nAuthentic';
-  String get securePayment => isAr ? 'نقداً\nأو بالبطاقة' : 'Cash\nor card';
+  String get securePayment => isAr ? 'الدفع\nعند الاستلام' : 'Cash on\ndelivery';
   String get thanksForReview => isAr ? 'شكراً على تقييمك!' : 'Thanks for your review!';
   String get ratingsTitle => isAr ? 'التقييمات' : 'Ratings';
   String get addReview => isAr ? 'أضيفي تقييماً' : 'Add a review';
@@ -658,10 +658,10 @@ class AppStrings {
   String get requiredField => isAr ? 'مطلوب' : 'Required';
   String get paymentMethod => isAr ? 'طريقة الدفع' : 'Payment method';
   String get cardComingSoon => isAr ? 'قريباً' : 'Soon';
-  String get cardPayment => isAr ? 'بطاقة ائتمان / مدى' : 'Credit / debit card';
+  String get cardPayment => isAr ? 'الدفع بالبطاقة' : 'Card payment';
   String get cardPaymentSoon => isAr
-      ? 'قريباً — سيتم تفعيل الدفع الإلكتروني'
-      : 'Coming soon — online payment will be enabled';
+      ? 'ماستركارد وفيزا وكي كارد — قريباً'
+      : 'Mastercard, Visa and Qi Card — coming soon';
   String get orderNotes => isAr ? 'ملاحظات الطلب' : 'Order notes';
   String get orderNotesHint =>
       isAr ? 'تعليمات إضافية للتوصيل (اختياري)' : 'Extra delivery instructions (optional)';

@@ -367,7 +367,7 @@ export default function CheckoutPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               {[
                 { id: "COD" as const, icon: "cash" as const, title: "الدفع عند الاستلام", sub: "ادفعي نقداً حين يصلكِ الطلب", on: true },
-                { id: "CARD" as const, icon: "shield" as const, title: "بطاقة كي كارد / ماستركارد", sub: cardEnabled ? "دفع آمن عبر بوابة كي كارد" : "غير متاحة حالياً", on: cardEnabled },
+                { id: "CARD" as const, icon: "shield" as const, title: cardEnabled ? "الدفع بالبطاقة" : "الدفع بالبطاقة — قريباً", sub: cardEnabled ? "ماستركارد · فيزا · كي كارد — دفع آمن عبر بوابة كي كارد" : "ماستركارد · فيزا · كي كارد", on: cardEnabled },
               ].map((o) => (
                 <button
                   key={o.id}
