@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { formatPhoneLocal } from "@/lib/phone";
@@ -69,6 +70,9 @@ export default function ProfilePage() {
           {busy === "pass" ? "…" : "تغيير كلمة المرور"}
         </button>
       </div>
+      <Link href="/delete-account" className="block text-center text-sm font-bold text-ink-muted hover:text-sale">
+        حذف الحساب
+      </Link>
     </div>
   );
 }

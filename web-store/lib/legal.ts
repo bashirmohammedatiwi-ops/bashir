@@ -94,7 +94,7 @@ export const privacySections: Record<LegalLang, LegalSection[]> = {
       id: "retention",
       title: "الاحتفاظ بالبيانات",
       intro:
-        "نحتفظ ببيانات الحساب طالما كان نشطاً. يمكنك حذف حسابك من التطبيق (حسابي ← حذف الحساب).",
+        "نحتفظ ببيانات الحساب طالما كان نشطاً. يمكنك حذف حسابك في أي وقت من التطبيق (حسابي ← حذف الحساب) أو من الموقع: deemaalhayat.com/delete-account.",
     },
     {
       id: "rights",
@@ -139,7 +139,7 @@ export const privacySections: Record<LegalLang, LegalSection[]> = {
       id: "retention",
       title: "Retention",
       intro:
-        "We keep account data while your account is active. You can delete your account in the app (Account → Delete Account).",
+        "We keep account data while your account is active. You can delete your account at any time in the app (Account → Delete Account) or on the web: deemaalhayat.com/delete-account.",
     },
     {
       id: "rights",

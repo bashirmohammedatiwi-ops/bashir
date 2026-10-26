@@ -119,7 +119,7 @@ class LegalDocumentScreen extends ConsumerWidget {
 لا نبيع بياناتك الشخصية. نشارك الحد الأدنى اللازم مع شركاء التوصيل لتسليم طلبك.
 
 الاحتفاظ بالبيانات
-نحتفظ ببيانات الحساب طالما كان نشطاً. يمكنك حذف حسابك من التطبيق (حسابي ← حذف الحساب).
+نحتفظ ببيانات الحساب طالما كان نشطاً. يمكنك حذف حسابك في أي وقت من التطبيق (حسابي ← حذف الحساب) أو من الموقع: deemaalhayat.com/delete-account.
 
 حقوقك
 يمكنك تعديل بياناتك أو حذف حسابك من داخل التطبيق، أو التواصل معنا عبر قنوات الدعم.
@@ -147,7 +147,7 @@ Sharing
 We do not sell your personal data. We share only what is necessary with delivery partners to fulfill your order.
 
 Retention
-We keep account data while your account is active. You can delete your account in the app (Account → Delete Account).
+We keep account data while your account is active. You can delete your account at any time in the app (Account → Delete Account) or on the web: deemaalhayat.com/delete-account.
 
 Your rights
 You may update or delete your account in the app, or contact us through support channels.
