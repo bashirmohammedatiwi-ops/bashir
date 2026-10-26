@@ -51,6 +51,9 @@ String arPoints(int n) {
 String arProducts(int n) => arCount(n, one: 'منتج واحد', two: 'منتجان', few: 'منتجات', many: 'منتجاً');
 
 /// «خطوة واحدة» / «خطوتان» / «4 خطوات» / «12 خطوة».
+/// «صنف واحد» / «صنفان» / «4 أصناف» / «12 صنفاً» — عدد المنتجات المختلفة (لا القطع).
+String arKinds(int n) => arCount(n, one: 'صنف واحد', two: 'صنفان', few: 'أصناف', many: 'صنفاً');
+
 String arSteps(int n) => arCount(n, one: 'خطوة واحدة', two: 'خطوتان', few: 'خطوات', many: 'خطوة');
 
 /// «قطعة واحدة» / «قطعتان» / «3 قطع» / «12 قطعة».
@@ -569,6 +572,14 @@ class AppStrings {
       isAr ? 'أضيفي منتجات قبل إتمام الطلب' : 'Add products before checkout';
   String get goToCart => isAr ? 'الذهاب للسلة' : 'Go to Cart';
   String itemCountLabel(int count) => itemsCount(count);
+
+  /// «4 أصناف · 7 قطع» — الأصناف المختلفة ومجموع القطع (القطع تُذكر فقط إن اختلفت).
+  String itemsSummary(int kinds, int pieces) => isAr
+      ? (kinds == pieces ? arKinds(kinds) : '${arKinds(kinds)} · ${arPieces(pieces)}')
+      : (kinds == pieces
+            ? enCount(kinds, 'item', 'items')
+            : '${enCount(kinds, 'item', 'items')} · ${enCount(pieces, 'piece', 'pieces')}');
+  String get itemsInOrder => isAr ? 'عدد الأصناف' : 'Items';
   String get confirmOrder => isAr ? 'تأكيد الطلب' : 'Place Order';
   String get delete => isAr ? 'حذف' : 'Delete';
   String get deleteAddressConfirm =>

@@ -6,7 +6,7 @@ import '../../core/utils/friendly_error.dart';
 extension CheckoutStringsX on AppStrings {
   String get secureCheckout => isAr ? 'طلب آمن ومضمون' : 'Safe & secure order';
   String get itemsInOrder => isAr ? 'منتجات الطلب' : 'Items in your order';
-  String showAllItems(int n) => isAr ? 'عرض الكل ($n)' : 'Show all ($n)';
+  String showAllItems(int n) => isAr ? 'عرض كل الأصناف ($n)' : 'Show all items ($n)';
   String get showLess => isAr ? 'عرض أقل' : 'Show less';
   String get savedAddresses => isAr ? 'عناويني المحفوظة' : 'Saved addresses';
   String get calculating => isAr ? 'جارٍ الحساب…' : 'Calculating…';

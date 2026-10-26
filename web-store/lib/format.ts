@@ -12,6 +12,10 @@ export function arCount(n: number, one: string, two: string, few: string, many: 
   return `${formatNumber(n)} ${many}`;
 }
 export const arProducts = (n: number) => arCount(n, "منتج واحد", "منتجان", "منتجات", "منتج");
+export const arKinds = (n: number) => arCount(n, "صنف واحد", "صنفان", "أصناف", "صنفاً");
+export const arPieces = (n: number) => arCount(n, "قطعة واحدة", "قطعتان", "قطع", "قطعة");
+/** «4 أصناف · 7 قطع» — القطع تُذكر فقط إن اختلفت عن الأصناف. */
+export const itemsSummary = (kinds: number, pieces: number) => (kinds === pieces ? arKinds(kinds) : `${arKinds(kinds)} · ${arPieces(pieces)}`);
 export const arPoints = (n: number) => arCount(n, "نقطة واحدة", "نقطتين", "نقاط", "نقطة");
 
 const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];

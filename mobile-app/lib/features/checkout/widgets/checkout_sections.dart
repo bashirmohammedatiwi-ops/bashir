@@ -652,6 +652,11 @@ class _CheckoutSummaryCardState extends State<CheckoutSummaryCard> {
         children: [
           CheckoutSectionHeader(icon: Icons.receipt_long_outlined, title: s.orderSummary, step: 3),
           if (items.isNotEmpty) ...[
+            _Row(
+              label: s.itemsInOrder,
+              value: s.itemsSummary(items.length, items.fold<int>(0, (n, e) => n + e.quantity)),
+            ),
+            const SizedBox(height: 10),
             AnimatedSize(
               duration: const Duration(milliseconds: 240),
               curve: Curves.easeOutCubic,

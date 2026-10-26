@@ -10,7 +10,11 @@ import 'checkout_theme.dart';
 /// (التوصيل ← الدفع ← التأكيد). الضغط على خطوة يمرّر إلى قسمها.
 class CheckoutHeader extends StatelessWidget {
   final AppStrings s;
+  /// عدد الأصناف المختلفة في السلة.
   final int itemCount;
+
+  /// مجموع القطع (الكميات).
+  final int? pieceCount;
   final VoidCallback onBack;
   final int activeStep;
   final ValueChanged<int>? onStepTap;
@@ -19,6 +23,7 @@ class CheckoutHeader extends StatelessWidget {
     super.key,
     required this.s,
     required this.itemCount,
+    this.pieceCount,
     required this.onBack,
     this.activeStep = 0,
     this.onStepTap,
@@ -60,7 +65,7 @@ class CheckoutHeader extends StatelessWidget {
                     children: [
                       Icon(Icons.shopping_bag_outlined, size: 14, color: t.accent),
                       const SizedBox(width: 5),
-                      Text(s.itemCountLabel(itemCount), style: AppText.micro.copyWith(color: t.accentDark)),
+                      Text(s.itemsSummary(itemCount, pieceCount ?? itemCount), style: AppText.micro.copyWith(color: t.accentDark)),
                     ],
                   ),
                 ),

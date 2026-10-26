@@ -12,7 +12,7 @@ import { useHydrated, useLoyaltyRules, useSettings } from "@/components/Provider
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
-import { arPoints, arProducts, formatNumber, formatPrice } from "@/lib/format";
+import { arPoints, formatNumber, formatPrice, itemsSummary } from "@/lib/format";
 import { useCartMath } from "@/lib/hooks/cartMath";
 import { deliveryLabel, useAddresses, useZones } from "@/lib/hooks/delivery";
 import { formatPhoneLocal, isValidIraqiPhone, normalizePhone } from "@/lib/phone";
@@ -218,7 +218,7 @@ export default function CheckoutPage() {
     );
 
   const rows: SummaryRow[] = [
-    { label: `المنتجات (${arProducts(m.count)})`, value: m.subtotal },
+    { label: `المنتجات (${itemsSummary(m.lines.length, m.count)})`, value: m.subtotal },
     ...(m.packSaving ? [{ label: "توفير الباقات", value: m.packSaving, tone: "saving" as const }] : []),
     ...(m.couponDiscount ? [{ label: `كود ${m.coupon?.code}`, value: m.couponDiscount, tone: "saving" as const }] : []),
     pickup

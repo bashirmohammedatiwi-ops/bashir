@@ -855,7 +855,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               valueListenable: _activeStep,
               builder: (_, step, __) => CheckoutHeader(
                 s: s,
-                itemCount: cart.count,
+                itemCount: cart.items.length,
+                pieceCount: cart.count,
                 onBack: _back,
                 activeStep: step,
                 onStepTap: _jumpToStep,
