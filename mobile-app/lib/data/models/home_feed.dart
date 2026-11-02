@@ -12,6 +12,31 @@ class FlashSale {
   const FlashSale({this.endsAt, this.products = const []});
 }
 
+/// إعداد الرفوف الشخصية لواجهة عالم من لوحة التحكم (world.homeShelves).
+/// [hide] أسماء HomeSlotKind المخفية، [startAfter] بعد كم قسم يبدأ التخلّل،
+/// [every] رفّ بعد كل كم قسم — القيم الغائبة = السلوك الافتراضي.
+class HomeShelvesConfig {
+  final Set<String> hide;
+  final int? startAfter;
+  final int? every;
+
+  const HomeShelvesConfig({this.hide = const {}, this.startAfter, this.every});
+
+  static HomeShelvesConfig? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    int? n(Object? v, int min, int max) {
+      final p = v == null ? null : num.tryParse(v.toString())?.round();
+      return p?.clamp(min, max);
+    }
+
+    return HomeShelvesConfig(
+      hide: asStringList(raw['hide']).toSet(),
+      startAfter: n(raw['startAfter'], 0, 30),
+      every: n(raw['every'], 1, 6),
+    );
+  }
+}
+
 class HomeFeed {
   final List<HomeSection> sections;
   final List<AppBanner> banners;
@@ -24,6 +49,8 @@ class HomeFeed {
   final List<Product> featured;
   final List<Product> promoProducts;
   final StoreSettings settings;
+  /// رفوف واجهة العالم — null خارج العوالم أو بلا إعداد.
+  final HomeShelvesConfig? homeShelves;
 
   const HomeFeed({
     this.sections = const [],
@@ -37,6 +64,7 @@ class HomeFeed {
     this.featured = const [],
     this.promoProducts = const [],
     this.settings = const StoreSettings(),
+    this.homeShelves,
   });
 
   factory HomeFeed.fromJson(Map<String, dynamic> json) {
@@ -56,6 +84,7 @@ class HomeFeed {
       featured: asList(json['featuredProducts']).map(Product.fromJson).toList(),
       promoProducts: asList(json['promoProducts']).map(Product.fromJson).toList(),
       settings: StoreSettings.fromJson(asMap(json['settings'])),
+      homeShelves: HomeShelvesConfig.fromJson(asMap(json['world'])['homeShelves']),
     );
   }
 

@@ -4,7 +4,7 @@ import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { invalidateCache } from "../../common/memory-cache.util";
 import { PrismaService } from "../../common/prisma.service";
 import { WORLD_SEEDS } from "./worlds.defaults";
-import { UpdateWorldDto } from "./dto/update-world.dto";
+import { HOME_SHELF_KEYS, HomeShelfKey, UpdateWorldDto } from "./dto/update-world.dto";
 
 const worldInclude = {
   coverImage: true,
@@ -99,11 +99,14 @@ export class WorldsService {
     const exists = await this.prisma.world.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException("World not found");
 
-    const { categoryIds, bannerIds, galleryMediaIds, budgetTiers, ...rest } = dto;
+    const { categoryIds, bannerIds, galleryMediaIds, budgetTiers, homeShelves, ...rest } = dto;
     const data: Prisma.WorldUpdateInput = { ...rest };
     if (budgetTiers !== undefined) {
       const tiers = cleanBudgetTiers(budgetTiers);
       data.budgetTiers = tiers.length ? tiers : Prisma.DbNull;
+    }
+    if (homeShelves !== undefined) {
+      data.homeShelves = cleanHomeShelves(homeShelves) ?? Prisma.DbNull;
     }
     await this.prisma.world.update({ where: { id }, data });
 
@@ -185,4 +188,31 @@ export function cleanBudgetTiers(raw: unknown): { min: number | null; max: numbe
     .filter((t) => (t.min != null || t.max != null) && (t.min == null || t.max == null || t.min < t.max))
     .slice(0, 4)
     .sort((a, b) => (a.min ?? 0) - (b.min ?? 0) || (a.max ?? Infinity) - (b.max ?? Infinity));
+}
+
+export type HomeShelvesConfig = { hide?: HomeShelfKey[]; startAfter?: number; every?: number };
+
+/**
+ * إعداد الرفوف الشخصية بعد التنظيف: مفاتيح معروفة بلا تكرار، startAfter بين 0 و30، every بين 1 و6.
+ * لا شيء يُغيّر الافتراضي = null (العمود فارغ والتطبيق يعرض السلوك الحالي).
+ */
+export function cleanHomeShelves(raw: unknown): HomeShelvesConfig | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const src = raw as { hide?: unknown; startAfter?: unknown; every?: unknown };
+  const out: HomeShelvesConfig = {};
+  if (Array.isArray(src.hide)) {
+    const known = new Set<string>(HOME_SHELF_KEYS);
+    const hide = [...new Set(src.hide.map(String).filter((k) => known.has(k)))] as HomeShelfKey[];
+    if (hide.length) out.hide = hide;
+  }
+  const int = (v: unknown, min: number, max: number) => {
+    if (v === null || v === undefined || v === "") return undefined;
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : undefined;
+  };
+  const startAfter = int(src.startAfter, 0, 30);
+  const every = int(src.every, 1, 6);
+  if (startAfter !== undefined) out.startAfter = startAfter;
+  if (every !== undefined) out.every = every;
+  return Object.keys(out).length ? out : null;
 }

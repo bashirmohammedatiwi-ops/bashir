@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, ColorPicker, Input, InputNumber, Space, Switch, Typography, message } from "antd";
+import { Button, Card, Checkbox, ColorPicker, Input, InputNumber, Space, Switch, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BulkMediaPicker } from "@/components/home-builder/BulkMediaPicker";
@@ -43,9 +43,26 @@ type WorldRow = {
   categories?: { categoryId: string; category?: { id: string; name?: string; nameAr?: string } }[];
   gallery?: GalleryRow[];
   budgetTiers?: BudgetTier[] | null;
+  homeShelves?: HomeShelves | null;
 };
 
 type BudgetTier = { min?: number | null; max?: number | null };
+type HomeShelves = { hide?: string[]; startAfter?: number; every?: number };
+
+/** الرفوف الشخصية التلقائية في رئيسية العالم (المفاتيح = HomeSlotKind في التطبيق). */
+const HOME_SHELVES: { key: string; label: string }[] = [
+  { key: "cart", label: "تذكير السلة" },
+  { key: "coupons", label: "الكوبونات" },
+  { key: "buyAgain", label: "اطلبيها مرة ثانية" },
+  { key: "continueShopping", label: "أكملي من حيث توقفتِ" },
+  { key: "needs", label: "احتياجاتكِ" },
+  { key: "routine", label: "روتيني" },
+  { key: "wishlist", label: "المفضلة" },
+  { key: "brands", label: "الماركات" },
+  { key: "budget", label: "تسوّقي حسب ميزانيتكِ" },
+  { key: "promise", label: "شريط الوعود" },
+  { key: "gift", label: "عالم الهدايا" },
+];
 
 /** النطاقات الافتراضية (تظهر في التطبيق إن لم تُحدَّد للعالم). */
 const DEFAULT_BUDGET: BudgetTier[] = [
@@ -210,6 +227,9 @@ function WorldCard({
   const [budget, setBudget] = useState<BudgetTier[]>(() => budgetFromWorld(world));
   const setTier = (i: number, key: "min" | "max", v: number | null) =>
     setBudget((list) => list.map((t, k) => (k === i ? { ...t, [key]: v } : t)));
+  const [hideShelves, setHideShelves] = useState<string[]>(world.homeShelves?.hide ?? []);
+  const [shelvesStart, setShelvesStart] = useState<number | null>(world.homeShelves?.startAfter ?? null);
+  const [shelvesEvery, setShelvesEvery] = useState<number | null>(world.homeShelves?.every ?? null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -225,6 +245,9 @@ function WorldCard({
     setBannerIds(banners.filter((b) => b.worldId === world.id).map((b) => b.id));
     setGallery(galleryFromWorld(world));
     setBudget(budgetFromWorld(world));
+    setHideShelves(world.homeShelves?.hide ?? []);
+    setShelvesStart(world.homeShelves?.startAfter ?? null);
+    setShelvesEvery(world.homeShelves?.every ?? null);
   }, [world, banners]);
 
   return (
@@ -314,6 +337,29 @@ function WorldCard({
               استرجاع الافتراضي
             </Button>
           </div>
+        </div>
+        <div>
+          <Typography.Text strong>الرفوف الشخصية في الرئيسية</Typography.Text>
+          <Typography.Text type="secondary" style={{ display: "block", marginTop: 4 }}>
+            رفوف تلقائية تتخلّل أقسام الصفحة. علّمي ما تريدين إخفاءه في هذا العالم، وحدّدي بعد كم قسم تبدأ وكل كم قسم يظهر رفّ (فارغ = الافتراضي 1).
+          </Typography.Text>
+          <Checkbox.Group
+            value={hideShelves}
+            onChange={(v) => setHideShelves(v as string[])}
+            style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}
+            options={HOME_SHELVES.map((s) => ({ value: s.key, label: `إخفاء «${s.label}»` }))}
+          />
+          <Space wrap style={{ marginTop: 10 }}>
+            <label>
+              تبدأ بعد القسم{" "}
+              <InputNumber value={shelvesStart ?? undefined} onChange={(v) => setShelvesStart(v == null ? null : Number(v))} min={0} max={30} precision={0} placeholder="1" style={{ width: 90 }} />
+            </label>
+            <label>
+              رفّ كل{" "}
+              <InputNumber value={shelvesEvery ?? undefined} onChange={(v) => setShelvesEvery(v == null ? null : Number(v))} min={1} max={6} precision={0} placeholder="1" style={{ width: 90 }} />{" "}
+              أقسام
+            </label>
+          </Space>
         </div>
         <div>
           <Typography.Text strong>الأقسام الفرعية لهذا العالم</Typography.Text>
@@ -482,6 +528,11 @@ function WorldCard({
               categoryIds,
               galleryMediaIds: gallery.map((item) => item.mediaId),
               budgetTiers: budget.filter((t) => t.min != null || t.max != null),
+              homeShelves: {
+                hide: hideShelves,
+                ...(shelvesStart != null ? { startAfter: shelvesStart } : {}),
+                ...(shelvesEvery != null ? { every: shelvesEvery } : {}),
+              },
             }, bannerIds)
           }
           style={{ justifySelf: "start" }}
