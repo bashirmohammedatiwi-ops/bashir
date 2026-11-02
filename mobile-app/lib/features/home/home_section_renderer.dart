@@ -300,6 +300,8 @@ HomeSection? _autoFlashSale(HomeFeed feed, DateTime now) {
 ///
 /// [personal] (واجهة عالم): الرفوف الشخصية فتحات مستقلة — السلة والكوبونات و«اطلبيها
 /// مجدداً» بعد الرأس، والبقية بين أقسام لوحة التحكم حتى لا تدفعها شاشات للأسفل.
+/// إعداد العالم (feed.homeShelves) يخفي رفوفاً، ويؤخّر بدء التخلّل (startAfter قسماً،
+/// افتراضياً 1) ويباعد بينها (رفّ كل every أقسام، افتراضياً 1).
 List<HomeSectionSlot> resolveHomeSectionSlots(
   HomeFeed feed, {
   bool personal = false,
@@ -307,19 +309,35 @@ List<HomeSectionSlot> resolveHomeSectionSlots(
 }) {
   final slots = <HomeSectionSlot>[];
   final heroIds = homeHeroCategoryIds(feed);
+  final config = feed.homeShelves;
+  final hidden = config?.hide ?? const <String>{};
+  bool shown(HomeSlotKind k) => !hidden.contains(k.name);
+  final startAfter = config?.startAfter ?? 1;
+  final every = config?.every ?? 1;
 
   slots.add(
     HomeSectionSlot(section: _fixedHeroSection(feed), kind: HomeSlotKind.hero),
   );
-  if (personal) slots.addAll(_leadShelves.map(_personal));
+  if (personal) slots.addAll(_leadShelves.where(shown).map(_personal));
 
   final flash = _autoFlashSale(feed, now ?? DateTime.now());
   if (flash != null) {
     slots.add(HomeSectionSlot(section: flash, kind: HomeSlotKind.flashSale));
   }
 
-  final later = personal ? [..._interleavedShelves] : <HomeSlotKind>[];
+  final later = personal
+      ? _interleavedShelves.where(shown).toList()
+      : <HomeSlotKind>[];
+  // رفّ بعد القسم رقم startAfter ثم كل every أقسام (0 = قبل أول قسم).
+  void interleave(int cmsCount) {
+    if (later.isEmpty || cmsCount < startAfter) return;
+    if ((cmsCount - startAfter) % every != 0) return;
+    slots.add(_personal(later.removeAt(0)));
+  }
+
   var firstAfterHero = true;
+  var cmsCount = 0;
+  interleave(cmsCount);
   for (final s in _cmsSections(feed)) {
     if (!shouldShowHomeSection(s, heroCategoryIds: heroIds)) continue;
     slots.add(
@@ -329,7 +347,7 @@ List<HomeSectionSlot> resolveHomeSectionSlots(
       ),
     );
     firstAfterHero = false;
-    if (later.isNotEmpty) slots.add(_personal(later.removeAt(0)));
+    interleave(++cmsCount);
   }
   slots.addAll(later.map(_personal));
 

@@ -875,6 +875,8 @@ model World {
   coverImageId  String?
   /// «تسوّقي حسب ميزانيتكِ»: حتى 4 نطاقات أسعار [{min, max}] بالدينار — فارغ = الافتراضي.
   budgetTiers   Json?
+  /// الرفوف الشخصية التلقائية في واجهة العالم: {hide: [مفاتيح HomeSlotKind], startAfter, every} — فارغ = الافتراضي.
+  homeShelves   Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

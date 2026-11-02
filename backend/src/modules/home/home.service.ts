@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { CmsPageKey } from "@prisma/client";
+import { CmsPageKey, Prisma } from "@prisma/client";
 import { CmsBilingualService } from "../../common/cms-bilingual.service";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
@@ -14,6 +14,7 @@ import { isPackageLive, packageInclude, publicPackage, worldScope } from "../cms
 import { publicConcern } from "../cms/skin-concerns.service";
 import { loyaltyRules } from "../loyalty/loyalty.rules";
 import { giftWrapFeeOf } from "../settings/settings.service";
+import { cleanHomeShelves } from "../worlds/worlds.service";
 
 const productInclude = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -122,7 +123,7 @@ export class HomeService {
     settings: Record<string, unknown>,
     worldId: string | null = null,
     scope: WorldScope = { subIds: [], legacyRootIds: [] },
-    world: { id: string; slug: string; nameAr: string; nameEn: string | null; taglineAr: string | null; taglineEn: string | null; accentColor: string; canvasColor: string; inkColor: string; surfaceColor: string } | null = null,
+    world: { id: string; slug: string; nameAr: string; nameEn: string | null; taglineAr: string | null; taglineEn: string | null; accentColor: string; canvasColor: string; inkColor: string; surfaceColor: string; homeShelves?: Prisma.JsonValue | null } | null = null,
   ) {
     const flashEndsAt = (settings as any).flashSaleEndsAt ?? null;
     const s = settings as Record<string, unknown>;
@@ -243,6 +244,8 @@ export class HomeService {
             canvasColor: world.canvasColor,
             inkColor: world.inkColor,
             surfaceColor: world.surfaceColor,
+            // رفوف الواجهة الشخصية (إخفاء/موضع) — null = ترتيب التطبيق الافتراضي.
+            homeShelves: cleanHomeShelves(world.homeShelves),
           }
         : null,
       sections,
