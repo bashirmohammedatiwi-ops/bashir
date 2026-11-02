@@ -44,6 +44,8 @@ export const DEFAULT_STORE_SETTINGS = {
   hideEmptyTertiary: false,
   hideOutOfStock: false,
   hideProductsWithoutImages: false,
+  // رف «اطلبيها مرة ثانية» في التطبيق (يعمل مع كل نسخ التطبيق: الإخفاء = قائمة فارغة).
+  showBuyAgain: true,
 };
 
 /** رسوم تغليف الهدية من الإعدادات — رقم صحيح غير سالب (افتراضياً 3000 د.ع). */

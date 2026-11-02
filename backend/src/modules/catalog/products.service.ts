@@ -626,6 +626,8 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
    * بسعره ومخزونه الحاليين — المتوفر فقط.
    */
   async buyAgain(userId: string, limit = 12) {
+    const s = (await this.settings.getAll()) as Record<string, unknown>;
+    if (s.showBuyAgain === false) return [];
     const take = Math.min(Math.max(limit, 1), 20);
     const rows = await this.prisma.orderItem.findMany({
       where: { order: { userId, status: { notIn: ["CANCELLED", "REFUNDED"] } } },

@@ -33,6 +33,7 @@ interface Settings {
   hideEmptySubcategories?: boolean;
   hideEmptyTertiary?: boolean;
   hideOutOfStock?: boolean;
+  showBuyAgain?: boolean;
   hideProductsWithoutImages?: boolean;
 }
 
@@ -207,6 +208,14 @@ export default function SettingsPage() {
                         name="hideOutOfStock"
                         label="إخفاء المنتجات التي مخزونها 0"
                         tooltip="المنتجات النافدة تختفي من التطبيق وتعود تلقائياً عند توفر المخزون"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        name="showBuyAgain"
+                        label="إظهار «اطلبيها مرة ثانية» في التطبيق"
+                        tooltip="رف مشتريات الزبونة السابقة في الرئيسية وصفحة الحساب — الإيقاف يخفيه من كل العوالم فوراً"
                         valuePropName="checked"
                       >
                         <Switch />
