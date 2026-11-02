@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.deemaalhayat.app",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_RELEASE_SHA256_FINGERPRINT"
+        "31:6E:DE:94:35:8B:70:3F:03:7F:8C:2B:6C:E6:D1:2B:D5:3E:05:06:24:3E:6E:91:E8:94:67:FE:6F:2B:B1:C6",
+        "45:3E:79:A1:4A:F4:F6:86:14:4E:38:3F:DE:FF:2A:35:9F:6B:80:9B:92:01:02:BA:51:97:7F:8E:78:9A:B2:16"
       ]
     }
   }
