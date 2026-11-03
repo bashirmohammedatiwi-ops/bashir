@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+ <linearGradient id="gold" x1="0" x2="1" y1="0" y2="0">
+  <stop offset="0" stop-color="#7A5420"/><stop offset=".08" stop-color="#B98A3E"/><stop offset=".2" stop-color="#F8E3AE"/><stop offset=".3" stop-color="#FFF6D8"/><stop offset=".42" stop-color="#D9AE62"/><stop offset=".62" stop-color="#A97B33"/><stop offset=".82" stop-color="#E7C37E"/><stop offset=".93" stop-color="#9A6F2C"/><stop offset="1" stop-color="#6B4818"/>
+ </linearGradient>
+ <linearGradient id="goldLight" x1="0" x2="1" y1="0" y2="0">
+  <stop offset="0" stop-color="#8E6628"/><stop offset=".14" stop-color="#E6C47F"/><stop offset=".28" stop-color="#FFF9E4"/><stop offset=".45" stop-color="#EBCB8B"/><stop offset=".7" stop-color="#BE9247"/><stop offset=".88" stop-color="#F0D59C"/><stop offset="1" stop-color="#83602A"/>
+ </linearGradient>
+ <linearGradient id="lacquer" x1="0" x2="1" y1="0" y2="0">
+  <stop offset="0" stop-color="#14091F"/><stop offset=".12" stop-color="#2E1A45"/><stop offset=".24" stop-color="#7B5AA6"/><stop offset=".31" stop-color="#B79BDA"/><stop offset=".4" stop-color="#4A2C70"/><stop offset=".7" stop-color="#26143B"/><stop offset=".9" stop-color="#3C2459"/><stop offset="1" stop-color="#120820"/>
+ </linearGradient>
+ <linearGradient id="bullet" x1="0" x2="1" y1="0" y2="0">
+  <stop offset="0" stop-color="#7A0F2C"/><stop offset=".18" stop-color="#C21F4B"/><stop offset=".34" stop-color="#F0557B"/><stop offset=".5" stop-color="#D42A57"/><stop offset=".8" stop-color="#A5163D"/><stop offset="1" stop-color="#6A0B25"/>
+ </linearGradient>
+ <linearGradient id="face" x1="0" x2="1" y1="1" y2="0">
+  <stop offset="0" stop-color="#E9456F"/><stop offset=".5" stop-color="#FF8AA6"/><stop offset="1" stop-color="#FFC2D0"/>
+ </linearGradient>
+ <linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="spark"><stop offset="0" stop-color="#FFF8E0"/><stop offset=".55" stop-color="#F4D58D"/><stop offset="1" stop-color="#C99A45"/></radialGradient>
+ <filter id="sh" filterUnits="userSpaceOnUse" x="0" y="700" width="1024" height="324"><feGaussianBlur stdDeviation="22"/></filter>
+ <filter id="s2" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<g transform="translate(-46 -44) scale(1.09)">
+<ellipse cx="520" cy="930" rx="205" ry="26" fill="#3A1A4A" opacity=".38" filter="url(#sh)"/>
+<!-- base -->
+<path d="M352 612h320v286c0 18-14 30-32 30H384c-18 0-32-12-32-30z" fill="url(#lacquer)"/>
+<rect x="352" y="612" width="320" height="10" fill="#000" opacity=".28"/>
+<rect x="392" y="640" width="26" height="262" rx="13" fill="#fff" opacity=".14" filter="url(#s2)"/>
+<rect x="352" y="884" width="320" height="14" fill="url(#gold)"/>
+<!-- collar -->
+<rect x="376" y="456" width="272" height="160" rx="6" fill="url(#gold)"/>
+<rect x="376" y="456" width="272" height="14" fill="url(#goldLight)"/>
+<rect x="376" y="592" width="272" height="24" fill="url(#goldLight)"/>
+<rect x="376" y="590" width="272" height="3" fill="#6B4818" opacity=".55"/>
+<rect x="376" y="470" width="272" height="3" fill="#6B4818" opacity=".45"/>
+<!-- inner tube -->
+<rect x="412" y="372" width="200" height="88" fill="url(#goldLight)"/>
+<rect x="412" y="372" width="200" height="8" fill="#FFF7DF" opacity=".8"/>
+<rect x="412" y="452" width="200" height="8" fill="#6B4818" opacity=".4"/>
+<!-- bullet -->
+<path d="M428 372V236c0-14 6-26 16-36L556 96c14-13 40-4 40 17v259z" fill="url(#bullet)"/>
+<path d="M428 240c0-14 6-26 16-38L556 96c14-13 40-4 40 17 0 18-6 34-20 48-34 36-88 86-118 96-16 6-30-2-30-17z" fill="url(#face)"/>
+<path d="M452 214L560 114c8-7 20-4 20 6" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".7"/>
+<rect x="452" y="262" width="20" height="106" rx="10" fill="url(#fade)"/>
+<!-- sparkles -->
+<path d="M738 196c6 44 14 52 58 58-44 6-52 14-58 58-6-44-14-52-58-58 44-6 52-14 58-58z" fill="url(#spark)"/>
+<path d="M286 336c4 28 9 33 37 37-28 4-33 9-37 37-4-28-9-33-37-37 28-4 33-9 37-37z" fill="url(#spark)"/>
+<path d="M792 470c3 18 6 21 24 24-18 3-21 6-24 24-3-18-6-21-24-24 18-3 21-6 24-24z" fill="url(#spark)" opacity=".85"/>
+</g>
+</svg>

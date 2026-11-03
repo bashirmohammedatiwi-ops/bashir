@@ -1,0 +1,36 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "manager-web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5077",
+        "--directory",
+        "/private/tmp/claude-502/-Users-cloud--cursor-worktrees-full-app-puf/b74995a7-89aa-4d03-bd84-2c4fa392b3fa/scratchpad/webbuild"
+      ],
+      "port": 5077
+    },
+    {
+      "name": "web-store",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "web-store",
+        "run",
+        "dev"
+      ],
+      "port": 3002
+    },
+    {
+      "name": "app-web-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "/private/tmp/claude-502/-Volumes-ADATA-SD810-Projects-full-app-worktrees-puf/7182e1b7-8063-4300-9d1f-6536cf8c6e1e/scratchpad/proxy.js"
+      ],
+      "port": 5099
+    }
+  ]
+}

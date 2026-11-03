@@ -1,0 +1,1382 @@
+{
+ "new": [
+  {
+   "draftId": "00fb1e49-7819-4329-a3a6-2087db3b5d31",
+   "barcode": "3600541609570",
+   "brand": "garnier",
+   "nameAr": "غارنييه سكن أكتيف بيور أكتيف مرطب مطفي للتحكم بالزيوت - 50 مل",
+   "nameEn": "Garnier SkinActive Pure Active Matte Control Moisturiser 50ml",
+   "dAr": "مرطب يومي خفيف من غارنييه بيور أكتيف للبشرة الدهنية والمعرضة للشوائب.\n\n• يمنح مظهراً مطفياً يدوم حتى 8 ساعات.\n• قوام خفيف غير دهني يمتص بسرعة.\n• يساعد على التحكم بإفراز الزيوت ولمعان البشرة.\n• يُستخدم صباحاً على بشرة نظيفة.",
+   "dEn": "Lightweight daily moisturiser from Garnier Pure Active for oily, blemish-prone skin.\n\n• Up to 8h matte look.\n• Non-greasy, fast-absorbing texture.\n• Helps control oil and shine.\n• Apply in the morning on clean skin.",
+   "cat": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+   "sub": "07661898-571a-4a88-aa6c-76dcdbf53029",
+   "ter": "21801439-d0e9-4106-b5e8-dfdd70ffeb8d",
+   "price": 14250,
+   "originalPrice": 14250,
+   "stock": 0,
+   "images": [
+    "n1_0.jpg"
+   ],
+   "slug": "garnier-skinactive-pure-active-matte-control-moisturiser-50ml-609570",
+   "sku": "AI-3600541609570"
+  },
+  {
+   "draftId": "2681b016-6e98-44fa-964a-7b747d53c307",
+   "barcode": "8680923359922",
+   "brand": "dr-clinic",
+   "nameAr": "دكتور كلينك سيروم الكافيين لشد وتفتيح محيط العين",
+   "nameEn": "Dr Clinic Firm & Bright Eye Caffeine Serum",
+   "dAr": "سيروم لمحيط العين من دكتور كلينك بالكافيين وفيتامين C وحمض الهيالورونيك.\n\n• يستهدف الهالات الداكنة وانتفاخ العين.\n• يساعد على شد وإشراقة منطقة تحت العين.\n• يرطّب البشرة الرقيقة حول العين.\n• يُطبّق صباحاً ومساءً بالتربيت الخفيف.",
+   "dEn": "Eye-contour serum from Dr Clinic with caffeine, vitamin C and hyaluronic acid.\n\n• Targets dark circles and puffiness.\n• Helps firm and brighten the under-eye area.\n• Hydrates the delicate eye contour.\n• Pat gently morning and evening.",
+   "cat": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+   "sub": "07661898-571a-4a88-aa6c-76dcdbf53029",
+   "ter": "09bedca5-0c6c-4a71-9b03-4bf29cecaf53",
+   "price": 18500,
+   "originalPrice": 18500,
+   "stock": 2,
+   "images": [
+    "n2_0.jpg"
+   ],
+   "slug": "dr-clinic-firm-bright-eye-caffeine-serum-359922",
+   "sku": "AI-8680923359922"
+  },
+  {
+   "draftId": "e373d538-6284-49a9-af47-36f758a47f2e",
+   "barcode": "047400302860",
+   "brand": "gillette",
+   "nameAr": "جيليت فيوجن 5 بروجلايد شفرات حلاقة رجالية - 4 شفرات",
+   "nameEn": "Gillette Fusion5 ProGlide Men's Razor Blades - 4 Cartridges",
+   "dAr": "شفرات بديلة أصلية من جيليت فيوجن 5 بروجلايد لحلاقة ناعمة ومريحة.\n\n• 5 شفرات رفيعة لحلاقة قريبة بأقل احتكاك.\n• شريط مرطّب لانزلاق سلس.\n• تناسب جميع مقابض فيوجن 5 وبروجلايد.\n• العبوة تحتوي 4 شفرات.",
+   "dEn": "Genuine Gillette Fusion5 ProGlide replacement cartridges for a smooth, comfortable shave.\n\n• 5 thinner blades for a close shave with less tug.\n• Lubrastrip for a smooth glide.\n• Fits all Fusion5 and ProGlide handles.\n• Pack of 4 cartridges.",
+   "cat": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+   "sub": "01300f8f-9b4d-4d15-904c-e045383c9b97",
+   "ter": "1a192be8-a3b7-453b-81ae-b840a69227e9",
+   "price": 19000,
+   "originalPrice": 19000,
+   "stock": 23,
+   "images": [
+    "n3_0.jpg"
+   ],
+   "slug": "gillette-fusion5-proglide-men-s-razor-blades-4-cartridges-302860",
+   "sku": "AI-047400302860"
+  },
+  {
+   "draftId": "f51f2aa3-ab59-4469-9caf-f58b56f2a322",
+   "barcode": "3614274626841",
+   "brand": "valentino",
+   "nameAr": "عطر فالنتينو دونا بورن إن روما بيربل ميلانكوليا أو دو بارفيوم 50 مل (تستر)",
+   "nameEn": "Valentino Donna Born In Roma Purple Melancholia Eau de Parfum 50ml (Tester)",
+   "dAr": "دونا بورن إن روما بيربل ميلانكوليا من فالنتينو — عطر نسائي بتركيز أو دو بارفيوم، سعة 50 مل.\n• إصدار من عائلة بورن إن روما بزجاجتها المرصّعة الشهيرة باللون البنفسجي.\n• نسخة تستر أصلية: نفس العطر بعبوة اختبار بدون علبة فاخرة.\n• منتج أصلي 100٪.",
+   "dEn": "Donna Born In Roma Purple Melancholia by Valentino — a women's fragrance, Eau de Parfum, 50 ml.\n• A Born In Roma edition in the iconic studded bottle, in purple.\n• Genuine tester: the same fragrance in tester packaging.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 111500,
+   "originalPrice": 111500,
+   "stock": 1,
+   "images": [
+    "n5_0.jpg"
+   ],
+   "slug": "valentino-donna-born-in-roma-purple-melancholia-eau-de-parfum-50ml-tester-626841",
+   "sku": "AI-3614274626841"
+  },
+  {
+   "draftId": "b2ac7c21-e9ec-4513-a0b4-6b8045961cbe",
+   "barcode": "3614274798319",
+   "brand": "valentino",
+   "nameAr": "عطر فالنتينو فينديتا دونا أو دو بارفيوم 90 مل",
+   "nameEn": "Valentino Vendetta Donna Eau de Parfum 90ml",
+   "dAr": "فينديتا دونا من فالنتينو — عطر نسائي بتركيز أو دو بارفيوم، سعة 90 مل.\n• عطر زهري بلمسة التيوبروز.\n• منتج أصلي 100٪.",
+   "dEn": "Vendetta Donna by Valentino — a women's fragrance, Eau de Parfum, 90 ml.\n• A floral fragrance with tuberose.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 192500,
+   "originalPrice": 192500,
+   "stock": 6,
+   "images": [
+    "n6_0.jpg"
+   ],
+   "slug": "valentino-vendetta-donna-eau-de-parfum-90ml-798319",
+   "sku": "AI-3614274798319"
+  },
+  {
+   "draftId": "3d284b87-1242-4569-aea3-a0a1fca87da0",
+   "barcode": "3614274798203",
+   "brand": "valentino",
+   "nameAr": "عطر فالنتينو فينديتا أومو أو دو بارفيوم 90 مل",
+   "nameEn": "Valentino Vendetta Uomo Eau de Parfum 90ml",
+   "dAr": "فينديتا أومو من فالنتينو — عطر رجالي بتركيز أو دو بارفيوم، سعة 90 مل.\n• عطر رجالي دافئ بلمسة الزنجبيل.\n• منتج أصلي 100٪.",
+   "dEn": "Vendetta Uomo by Valentino — a men's fragrance, Eau de Parfum, 90 ml.\n• A warm men's fragrance with ginger.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 185500,
+   "originalPrice": 185500,
+   "stock": 6,
+   "images": [
+    "n7_0.jpg"
+   ],
+   "slug": "valentino-vendetta-uomo-eau-de-parfum-90ml-798203",
+   "sku": "AI-3614274798203"
+  },
+  {
+   "draftId": "308bff89-1039-4ed5-bd4b-e27acde971de",
+   "barcode": "6287020283369",
+   "brand": "ibraq",
+   "nameAr": "عطر إبراق دايموند كولكشن أو دو بارفيوم 100 مل",
+   "nameEn": "Ibraq Diamond Collection Eau de Parfum 100ml",
+   "dAr": "دايموند كولكشن من إبراق — عطر للجنسين بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Diamond Collection by Ibraq — a unisex fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 35750,
+   "originalPrice": 35750,
+   "stock": 2,
+   "images": [
+    "n13_0.jpg"
+   ],
+   "slug": "ibraq-diamond-collection-eau-de-parfum-100ml-283369",
+   "sku": "AI-6287020283369"
+  },
+  {
+   "draftId": "48cd1776-2e5e-4c7b-bc4c-79d8e93806b4",
+   "barcode": "6287042405619",
+   "brand": "assaf",
+   "nameAr": "عطر عساف فرانكل أفينتوس أو دو بارفيوم 100 مل",
+   "nameEn": "Assaf Frankel Aventus Eau de Parfum 100ml",
+   "dAr": "فرانكل أفينتوس من عساف — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Frankel Aventus by Assaf — a men's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 33000,
+   "originalPrice": 33000,
+   "stock": 0,
+   "images": [
+    "n14_0.jpg"
+   ],
+   "slug": "assaf-frankel-aventus-eau-de-parfum-100ml-405619",
+   "sku": "AI-6287042405619"
+  },
+  {
+   "draftId": "63d00a6e-1dee-4e0b-a75d-d5427f21bf95",
+   "barcode": "6287042405343",
+   "brand": "assaf",
+   "nameAr": "عطر عساف فرانكل إيماجنيشن أو دو بارفيوم 100 مل",
+   "nameEn": "Assaf Frankel Imagination Eau de Parfum 100ml",
+   "dAr": "فرانكل إيماجنيشن من عساف — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Frankel Imagination by Assaf — a men's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 33000,
+   "originalPrice": 33000,
+   "stock": 0,
+   "images": [
+    "n15_0.jpg"
+   ],
+   "slug": "assaf-frankel-imagination-eau-de-parfum-100ml-405343",
+   "sku": "AI-6287042405343"
+  },
+  {
+   "draftId": "34751bb2-84ff-4699-b302-b625c1503bcf",
+   "barcode": "6287042409716",
+   "brand": "assaf",
+   "nameAr": "عطر عساف أتاكس بلو أو دو بارفيوم 125 مل",
+   "nameEn": "Assaf Attacks Blue Eau de Parfum 125ml",
+   "dAr": "أتاكس بلو من عساف — عطر رجالي بتركيز أو دو بارفيوم، سعة 125 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Attacks Blue by Assaf — a men's fragrance, Eau de Parfum, 125 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 53000,
+   "originalPrice": 53000,
+   "stock": 15,
+   "images": [
+    "n16_0.jpg"
+   ],
+   "slug": "assaf-attacks-blue-eau-de-parfum-125ml-409716",
+   "sku": "AI-6287042409716"
+  },
+  {
+   "draftId": "1b24c205-59cf-44ef-8d5f-d572c22befd9",
+   "barcode": "8054754407235",
+   "brand": "dolce--gabbana",
+   "nameAr": "عطر دولتشي آند غابانا لايت بلو كابري إن لوف أو دو بارفيوم 100 مل",
+   "nameEn": "Dolce & Gabbana Light Blue Capri In Love Eau de Parfum 100ml",
+   "dAr": "لايت بلو كابري إن لوف من دولتشي آند غابانا — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n\n• المكونات العطرية: الياسمين والتفاح.\n• إصدار كابري إن لوف بعلبة الزخارف الزرقاء المستوحاة من جزيرة كابري.\n• منتج أصلي 100٪.",
+   "dEn": "Light Blue Capri In Love by Dolce & Gabbana — a women's fragrance, Eau de Parfum, 100 ml.\n\n• Notes: jasmine and apple.\n• Capri In Love edition with blue majolica-inspired packaging.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 114000,
+   "originalPrice": 114000,
+   "stock": 6,
+   "images": [
+    "n17_0.jpg"
+   ],
+   "slug": "dolce-gabbana-light-blue-capri-in-love-eau-de-parfum-100ml-407235",
+   "sku": "AI-8054754407235"
+  },
+  {
+   "draftId": "260e5921-126e-4d5a-8e4c-01c488080a55",
+   "barcode": "8054754407280",
+   "brand": "dolce--gabbana",
+   "nameAr": "عطر دولتشي آند غابانا لايت بلو كابري إن لوف بور هوم أو دو بارفيوم 100 مل",
+   "nameEn": "Dolce & Gabbana Light Blue Capri In Love Pour Homme Eau de Parfum 100ml",
+   "dAr": "لايت بلو كابري إن لوف بور هوم من دولتشي آند غابانا — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• إصدار كابري إن لوف الرجالي بعلبة الزخارف الزرقاء.\n• منتج أصلي 100٪.",
+   "dEn": "Light Blue Capri In Love Pour Homme by Dolce & Gabbana — a men's fragrance, Eau de Parfum, 100 ml.\n• The men's Capri In Love edition with blue majolica-inspired packaging.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 102000,
+   "originalPrice": 102000,
+   "stock": 5,
+   "images": [
+    "n18_0.jpg"
+   ],
+   "slug": "dolce-gabbana-light-blue-capri-in-love-pour-homme-eau-de-parfum-100ml-407280",
+   "sku": "AI-8054754407280"
+  },
+  {
+   "draftId": "81adac65-a121-4c34-abb0-1774fa3c1dcf",
+   "barcode": "3145891322125",
+   "brand": "chanel",
+   "nameAr": "شانيل بودرة بودر يونيفرسيل ليبر السائبة رقم 12 - 30 غ",
+   "nameEn": "Chanel Poudre Universelle Libre Natural Finish Loose Powder No. 12 30g",
+   "dAr": "بودرة سائبة من شانيل بلمسة نهائية طبيعية تثبّت المكياج وتنعّم البشرة.\n\n• الدرجة 12.\n• قوام ناعم جداً يمنح بشرة مخملية بمظهر طبيعي.\n• تثبّت كريم الأساس وتقلل اللمعان.\n• العبوة 30 غ.",
+   "dEn": "Chanel loose powder with a natural finish that sets make-up and smooths the skin.\n\n• Shade 12.\n• Ultra-fine texture for a velvety, natural look.\n• Sets foundation and reduces shine.\n• 30 g.",
+   "cat": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+   "sub": "2bbecee1-084d-446c-b4fd-65f769130de9",
+   "ter": "828bbfd2-d611-417a-bdca-0f5424a61171",
+   "price": 41250,
+   "originalPrice": 41250,
+   "stock": 1,
+   "images": [
+    "n20_0.jpg"
+   ],
+   "slug": "chanel-poudre-universelle-libre-natural-finish-loose-powder-no-12-30g-322125",
+   "sku": "AI-3145891322125"
+  },
+  {
+   "draftId": "303cc842-3ef4-4c0f-b998-5b124e2cb4d2",
+   "barcode": "085715328564",
+   "brand": "guess",
+   "nameAr": "غيس باليت الشفاه نود لوك بوك",
+   "nameEn": "Guess Lip Nude Look Book",
+   "dAr": "مجموعة ألوان شفاه بدرجات النود من غيس في باليت عملي على شكل كتاب.\n\n• درجات نود متنوعة لإطلالات يومية وسهرات.\n• تصميم مدمج مناسب للحقيبة.\n• مثالية كهدية.",
+   "dEn": "A Guess nude lip collection in a handy book-style palette.\n\n• Assorted nude shades for day and night looks.\n• Compact, travel-friendly design.\n• A great gift.",
+   "cat": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+   "sub": "56da5b82-c847-4e9b-9cea-cc901236189f",
+   "ter": "3b99e300-81d4-4f79-a74e-005f4e037222",
+   "price": 23750,
+   "originalPrice": 23750,
+   "stock": 1,
+   "images": [
+    "n22_0.jpg"
+   ],
+   "slug": "guess-lip-nude-look-book-328564",
+   "sku": "AI-085715328564"
+  },
+  {
+   "draftId": "b15f04f9-73cc-44b7-a248-b7fe22d465b3",
+   "barcode": "602004101020",
+   "brand": "benefit",
+   "nameAr": "بنفت مجموعة الحواجب براو ماجيك تريكس من حنان القاضي",
+   "nameEn": "Benefit Brow Magic Tricks by Hanan Alqadi Set",
+   "dAr": "مجموعة حواجب من بنفت بالتعاون مع خبيرة التجميل حنان القاضي.\n\n• تضم منتجات بنفت لتحديد وتعبئة وتثبيت الحواجب.\n• علبة إصدار خاص بتصميم حنان القاضي.\n• مثالية كهدية لمحبات الحواجب المثالية.",
+   "dEn": "Benefit brow set in collaboration with make-up artist Hanan Alqadi.\n\n• Benefit brow products to define, fill and set.\n• Special-edition box designed with Hanan Alqadi.\n• A perfect gift for brow lovers.",
+   "cat": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+   "sub": "92ebe64a-9091-4460-9f12-68ecbdf4e1e9",
+   "ter": "d80ee9e0-cf30-4137-9a20-88ea349bf25b",
+   "price": 61750,
+   "originalPrice": 61750,
+   "stock": 23,
+   "images": [
+    "n23_0.jpg"
+   ],
+   "slug": "benefit-brow-magic-tricks-by-hanan-alqadi-set-101020",
+   "sku": "AI-602004101020"
+  },
+  {
+   "draftId": "83042a8b-79c4-4199-a1cb-8c68118b0827",
+   "barcode": "3616305947345",
+   "brand": "burberry",
+   "nameAr": "عطر بربري هيرو بارفيوم إليكسير 60 مل",
+   "nameEn": "Burberry Hero Parfum Elixir 60ml",
+   "dAr": "هيرو من بربري — عطر رجالي بتركيز بارفيوم إليكسير، سعة 60 مل.\n\n• المكونات العطرية: الفانيليا والجلد وخشب الأرز.\n• منتج أصلي 100٪.",
+   "dEn": "Hero by Burberry — a men's fragrance, Parfum Elixir, 60 ml.\n\n• Notes: vanilla, leather and cedarwood.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 135000,
+   "originalPrice": 135000,
+   "stock": 4,
+   "images": [
+    "n26_0.jpg"
+   ],
+   "slug": "burberry-hero-parfum-elixir-60ml-947345",
+   "sku": "AI-3616305947345"
+  },
+  {
+   "draftId": "314ce87e-f126-4d55-8f3e-3c8cda312563",
+   "barcode": "3614274788891",
+   "brand": "yves-saint-laurent",
+   "nameAr": "عطر إيف سان لوران بلاك أوبيوم بينك غليز أو دو بارفيوم 90 مل",
+   "nameEn": "Yves Saint Laurent Black Opium Pink Glaze Eau de Parfum 90ml",
+   "dAr": "بلاك أوبيوم بينك غليز من إيف سان لوران — عطر نسائي بتركيز أو دو بارفيوم، سعة 90 مل.\n\n• المكونات العطرية: الفراولة واليوسفي الأخضر والبرغموت والياسمين وزهر البرتقال والفانيليا والقهوة والبنزوين والعنبر والباتشولي.\n• الإصدار الأكثر فاكهية ومرحاً في عائلة بلاك أوبيوم.\n• منتج أصلي 100٪.",
+   "dEn": "Black Opium Pink Glaze by Yves Saint Laurent — a women's fragrance, Eau de Parfum, 90 ml.\n\n• Notes: strawberry, green mandarin, bergamot, jasmine, orange blossom, vanilla, coffee, benzoin, amber and patchouli.\n• The most playful, fruity take on Black Opium.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 192500,
+   "originalPrice": 192500,
+   "stock": 6,
+   "images": [
+    "n32_0.jpg",
+    "n32_1.jpg"
+   ],
+   "slug": "yves-saint-laurent-black-opium-pink-glaze-eau-de-parfum-90ml-788891",
+   "sku": "AI-3614274788891"
+  },
+  {
+   "draftId": "51847aa9-19f4-4dcc-9114-df2ddf8fb77e",
+   "barcode": "719346633505",
+   "brand": "giorgio-beverly-hills",
+   "nameAr": "عطر جورجيو بيفرلي هيلز جورجيو غولد أو دو بارفيوم 100 مل",
+   "nameEn": "Giorgio Beverly Hills Giorgio Gold Eau de Parfum 100ml",
+   "dAr": "جورجيو غولد من جورجيو بيفرلي هيلز — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Giorgio Gold by Giorgio Beverly Hills — a women's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 35750,
+   "originalPrice": 35750,
+   "stock": 4,
+   "images": [
+    "n33_0.jpg"
+   ],
+   "slug": "giorgio-beverly-hills-giorgio-gold-eau-de-parfum-100ml-633505",
+   "sku": "AI-719346633505"
+  },
+  {
+   "draftId": "4ab3c66d-e3a0-4556-b2b4-6f3cbdddcca6",
+   "barcode": "3700134412935",
+   "brand": "geparlys",
+   "nameAr": "عطر جيبارليس يس آي آم ذا كوين ليدي أو دو بارفيوم 100 مل",
+   "nameEn": "Geparlys Yes I Am The Queen Lady Eau de Parfum 100ml",
+   "dAr": "يس آي آم ذا كوين ليدي من جيبارليس — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Yes I Am The Queen Lady by Geparlys — a women's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 68000,
+   "originalPrice": 68000,
+   "stock": 7,
+   "images": [
+    "n35_0.jpg"
+   ],
+   "slug": "geparlys-yes-i-am-the-queen-lady-eau-de-parfum-100ml-412935",
+   "sku": "AI-3700134412935"
+  },
+  {
+   "draftId": "1863fe88-d533-4558-867e-373d91721f00",
+   "barcode": "3349668528677",
+   "brand": "paco-rabanne",
+   "nameAr": "عطر رابان أوليمبيا أو دو بارفيوم 80 مل",
+   "nameEn": "Rabanne Olympéa Eau de Parfum 80ml",
+   "dAr": "أوليمبيا من رابان — عطر نسائي بتركيز أو دو بارفيوم، سعة 80 مل.\n\n• المكونات العطرية: الفانيليا المملّحة واليوسفي الأخضر والياسمين وزنبق الزنجبيل وخشب الصندل.\n• منتج أصلي 100٪.",
+   "dEn": "Olympéa by Rabanne — a women's fragrance, Eau de Parfum, 80 ml.\n\n• Notes: salted vanilla, green mandarin, jasmine, ginger lily and sandalwood.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 116500,
+   "originalPrice": 116500,
+   "stock": 1,
+   "images": [
+    "n37_0.jpg"
+   ],
+   "slug": "rabanne-olympea-eau-de-parfum-80ml-528677",
+   "sku": "AI-3349668528677"
+  },
+  {
+   "draftId": "1c5d349a-0637-4e8e-8cb2-c63814180d65",
+   "barcode": "3349668662388",
+   "brand": "paco-rabanne",
+   "nameAr": "عطر رابان ون مليون نايت إليكسير بارفيوم إليكسير 100 مل",
+   "nameEn": "Rabanne 1 Million Night Elixir Parfum Elixir 100ml",
+   "dAr": "ون مليون نايت إليكسير من رابان — عطر رجالي بتركيز بارفيوم إليكسير، سعة 100 مل.\n\n• المكونات العطرية: اليوسفي وشراب القيقب واللابدانوم.\n• إصدار محدود بطابع عنبري حلو ودافئ.\n• منتج أصلي 100٪.",
+   "dEn": "1 Million Night Elixir by Rabanne — a men's fragrance, Parfum Elixir, 100 ml.\n\n• Notes: mandarin, maple syrup and labdanum.\n• Limited edition with a warm, ambery-gourmand character.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 162750,
+   "originalPrice": 162750,
+   "stock": 6,
+   "images": [
+    "n39_0.jpg",
+    "n39_1.jpg"
+   ],
+   "slug": "rabanne-1-million-night-elixir-parfum-elixir-100ml-662388",
+   "sku": "AI-3349668662388"
+  },
+  {
+   "draftId": "cd5ca7b8-fff3-41fc-8894-79a0222fd1b6",
+   "barcode": "3349668524730",
+   "brand": "paco-rabanne",
+   "nameAr": "عطر رابان بلاك إكس إس بوشن فور هير أو دو تواليت 80 مل",
+   "nameEn": "Rabanne Black XS Potion for Her Eau de Toilette 80ml",
+   "dAr": "بلاك إكس إس بوشن فور هير من رابان — عطر نسائي بتركيز أو دو تواليت، سعة 80 مل.\n• إصدار محدود.\n• منتج أصلي 100٪.",
+   "dEn": "Black XS Potion for Her by Rabanne — a women's fragrance, Eau de Toilette, 80 ml.\n• Limited edition.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 145750,
+   "originalPrice": 145750,
+   "stock": 1,
+   "images": [
+    "n40_0.jpg"
+   ],
+   "slug": "rabanne-black-xs-potion-for-her-eau-de-toilette-80ml-524730",
+   "sku": "AI-3349668524730"
+  },
+  {
+   "draftId": "eb8dacd4-eb2d-4759-a49f-184867ee77bc",
+   "barcode": "3385858757857",
+   "brand": "elite-moment",
+   "nameAr": "عطر إيليت إليغانت بور هوم برايفت كولكشن أو دو بارفيوم 100 مل",
+   "nameEn": "Elite Elegant Pour Homme Private Collection Eau de Parfum 100ml",
+   "dAr": "إليغانت بور هوم برايفت كولكشن من إيليت — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Elegant Pour Homme Private Collection by Elite — a men's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 41250,
+   "originalPrice": 82500,
+   "stock": 55,
+   "images": [
+    "n42_0.jpg"
+   ],
+   "slug": "elite-elegant-pour-homme-private-collection-eau-de-parfum-100ml-757857",
+   "sku": "AI-3385858757857"
+  },
+  {
+   "draftId": "a73ec3a9-eb1d-4516-b8ca-ab791034683e",
+   "barcode": "3616306690295",
+   "brand": "boss",
+   "nameAr": "عطر بوس فيم أو دو بارفيوم 75 مل",
+   "nameEn": "BOSS Femme Eau de Parfum 75ml",
+   "dAr": "فيم من بوس — عطر نسائي بتركيز أو دو بارفيوم، سعة 75 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Femme by BOSS — a women's fragrance, Eau de Parfum, 75 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 51000,
+   "originalPrice": 51000,
+   "stock": 10,
+   "images": [
+    "n44_0.jpg"
+   ],
+   "slug": "boss-femme-eau-de-parfum-75ml-690295",
+   "sku": "AI-3616306690295"
+  },
+  {
+   "draftId": "86e1e654-b152-4ad4-80af-7fc13109b616",
+   "barcode": "3616306690271",
+   "brand": "boss",
+   "nameAr": "عطر بوس ما في أو دو بارفيوم 75 مل",
+   "nameEn": "BOSS Ma Vie Eau de Parfum 75ml",
+   "dAr": "ما في من بوس — عطر نسائي بتركيز أو دو بارفيوم، سعة 75 مل.\n\n• المكونات العطرية: زهر الصبّار والفريزيا والياسمين وخشب الأرز.\n• منتج أصلي 100٪.",
+   "dEn": "Ma Vie by BOSS — a women's fragrance, Eau de Parfum, 75 ml.\n\n• Notes: cactus blossom, freesia, jasmine and cedarwood.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 51750,
+   "originalPrice": 51750,
+   "stock": 11,
+   "images": [
+    "n45_0.jpg"
+   ],
+   "slug": "boss-ma-vie-eau-de-parfum-75ml-690271",
+   "sku": "AI-3616306690271"
+  },
+  {
+   "draftId": "e41a7a5a-12b0-4ed3-8eb8-ae27ab38dc09",
+   "barcode": "3607345741918",
+   "brand": "chopard",
+   "nameAr": "عطر شوبارد نوبل سيدار أو دو تواليت 80 مل",
+   "nameEn": "Chopard Noble Cedar Eau de Toilette 80ml",
+   "dAr": "نوبل سيدار من شوبارد — عطر للجنسين بتركيز أو دو تواليت، سعة 80 مل.\n• عطر خشبي يتمحور حول خشب الأرز.\n• منتج أصلي 100٪.",
+   "dEn": "Noble Cedar by Chopard — a unisex fragrance, Eau de Toilette, 80 ml.\n• A woody fragrance built around cedarwood.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 102250,
+   "originalPrice": 102250,
+   "stock": 1,
+   "images": [
+    "n46_0.jpg"
+   ],
+   "slug": "chopard-noble-cedar-eau-de-toilette-80ml-741918",
+   "sku": "AI-3607345741918"
+  },
+  {
+   "draftId": "510eee32-d55a-4878-adc2-50503ab6b7ed",
+   "barcode": "3700134412942",
+   "brand": "geparlys",
+   "nameAr": "عطر كولكشن بريفيه بوا نوار أو دو بارفيوم 100 مل",
+   "nameEn": "Collection Privée Bois Noir Eau de Parfum 100ml",
+   "dAr": "بوا نوار من كولكشن بريفيه — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Bois Noir by Collection Privée — a men's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 56750,
+   "originalPrice": 56750,
+   "stock": 6,
+   "images": [
+    "n47_0.jpg"
+   ],
+   "slug": "collection-privee-bois-noir-eau-de-parfum-100ml-412942",
+   "sku": "AI-3700134412942"
+  },
+  {
+   "draftId": "5af1a79f-43f5-484a-85b6-4bda997736dc",
+   "barcode": "3700134412980",
+   "brand": "glenn-perri",
+   "nameAr": "عطر جلين بيري ميس لوفر أو دو بارفيوم 85 مل",
+   "nameEn": "Glenn Perri Miss Lover Eau de Parfum 85ml",
+   "dAr": "ميس لوفر من جلين بيري — عطر نسائي بتركيز أو دو بارفيوم، سعة 85 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Miss Lover by Glenn Perri — a women's fragrance, Eau de Parfum, 85 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 56750,
+   "originalPrice": 56750,
+   "stock": 3,
+   "images": [
+    "n48_0.jpg"
+   ],
+   "slug": "glenn-perri-miss-lover-eau-de-parfum-85ml-412980",
+   "sku": "AI-3700134412980"
+  },
+  {
+   "draftId": "c14c0523-cbc2-45ac-845a-4f49bceac028",
+   "barcode": "840797119383",
+   "brand": "banana-republic",
+   "nameAr": "عطر بانانا ريبابليك إم أو دو بارفيوم 125 مل",
+   "nameEn": "Banana Republic M Eau de Parfum 125ml",
+   "dAr": "إم من بانانا ريبابليك — عطر رجالي بتركيز أو دو بارفيوم، سعة 125 مل.\n• منتج أصلي 100٪.",
+   "dEn": "M by Banana Republic — a men's fragrance, Eau de Parfum, 125 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 22600,
+   "originalPrice": 28250,
+   "stock": 10,
+   "images": [
+    "n49_0.jpg"
+   ],
+   "slug": "banana-republic-m-eau-de-parfum-125ml-119383",
+   "sku": "AI-840797119383"
+  },
+  {
+   "draftId": "19d179ca-cf7d-4fec-b6e9-b395a8f2fa09",
+   "barcode": "783320413698",
+   "brand": "bvlgari",
+   "nameAr": "عطر بولغاري أكوا بور هوم أو دو تواليت 100 مل",
+   "nameEn": "Bvlgari Aqva Pour Homme Eau de Toilette 100ml",
+   "dAr": "أكوا بور هوم من بولغاري — عطر رجالي بتركيز أو دو تواليت، سعة 100 مل.\n\n• المكونات العطرية: اليوسفي ونبات البوسيدونيا البحري والعنبر المعدني.\n• عطر مائي منعش مستوحى من البحر.\n• منتج أصلي 100٪.",
+   "dEn": "Aqva Pour Homme by Bvlgari — a men's fragrance, Eau de Toilette, 100 ml.\n\n• Notes: mandarin, posidonia and mineral amber.\n• A fresh aquatic fragrance inspired by the sea.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 117000,
+   "originalPrice": 117000,
+   "stock": 2,
+   "images": [
+    "n51_0.jpg"
+   ],
+   "slug": "bvlgari-aqva-pour-homme-eau-de-toilette-100ml-413698",
+   "sku": "AI-783320413698"
+  },
+  {
+   "draftId": "75049ccc-f012-4546-b4f7-94bf4b21007d",
+   "barcode": "7640233340691",
+   "brand": "elie-saab",
+   "nameAr": "عطر إيلي صعب لوم إنتنس أو دو بارفيوم إنتنس 100 مل",
+   "nameEn": "Elie Saab L'Homme Intense Eau de Parfum Intense 100ml",
+   "dAr": "لوم إنتنس من إيلي صعب — عطر رجالي بتركيز أو دو بارفيوم إنتنس، سعة 100 مل.\n• عطر خشبي جلدي بانتعاش حمضي، بزجاجة قابلة لإعادة التعبئة.\n• منتج أصلي 100٪.",
+   "dEn": "L'Homme Intense by Elie Saab — a men's fragrance, Eau de Parfum Intense, 100 ml.\n• Woody-leathery with citrus freshness, in a refillable bottle.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 122000,
+   "originalPrice": 122000,
+   "stock": 3,
+   "images": [
+    "n53_0.jpg",
+    "n53_1.jpg"
+   ],
+   "slug": "elie-saab-l-homme-intense-eau-de-parfum-intense-100ml-340691",
+   "sku": "AI-7640233340691"
+  },
+  {
+   "draftId": "528398e9-daea-441b-bbf8-ddbbf238b4b2",
+   "barcode": "3595471061102",
+   "brand": "mercedes-benz",
+   "nameAr": "عطر مرسيدس بنز مان غراي أو دو تواليت 100 مل",
+   "nameEn": "Mercedes-Benz Man Grey Eau de Toilette 100ml",
+   "dAr": "مان غراي من مرسيدس بنز — عطر رجالي بتركيز أو دو تواليت، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Man Grey by Mercedes-Benz — a men's fragrance, Eau de Toilette, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 51250,
+   "originalPrice": 51250,
+   "stock": 3,
+   "images": [
+    "n54_0.jpg"
+   ],
+   "slug": "mercedes-benz-man-grey-eau-de-toilette-100ml-061102",
+   "sku": "AI-3595471061102"
+  },
+  {
+   "draftId": "d917fffe-47fd-40ba-976f-3a773fa87f5e",
+   "barcode": "3346133100024",
+   "brand": "hermes",
+   "nameAr": "عطر هيرمس غالوب ديرمس بارفيوم 100 مل",
+   "nameEn": "Hermès Galop d'Hermès Parfum 100ml",
+   "dAr": "غالوب ديرمس من هيرمس — عطر نسائي بتركيز بارفيوم، سعة 100 مل.\n\n• المكونات العطرية: الجلد والورد.\n• منتج أصلي 100٪.",
+   "dEn": "Galop d'Hermès by Hermès — a women's fragrance, Parfum, 100 ml.\n\n• Notes: leather and rose.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 413500,
+   "originalPrice": 413500,
+   "stock": 1,
+   "images": [
+    "n55_0.jpg"
+   ],
+   "slug": "hermes-galop-d-hermes-parfum-100ml-100024",
+   "sku": "AI-3346133100024"
+  },
+  {
+   "draftId": "4f071bf7-3923-4a13-aa56-776d6ff24864",
+   "barcode": "3419020912007",
+   "brand": "nobel",
+   "nameAr": "عطر نوبل غارنيت أو دو بارفيوم 100 مل",
+   "nameEn": "Nobel Garnette Eau de Parfum 100ml",
+   "dAr": "غارنيت من نوبل — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Garnette by Nobel — a women's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 77250,
+   "originalPrice": 77250,
+   "stock": 3,
+   "images": [
+    "n56_0.jpg"
+   ],
+   "slug": "nobel-garnette-eau-de-parfum-100ml-912007",
+   "sku": "AI-3419020912007"
+  },
+  {
+   "draftId": "ec8ff607-e820-4de2-bb11-dc6022cd6f5b",
+   "barcode": "7640111205111",
+   "brand": "jaguar",
+   "nameAr": "عطر جاكوار فيجن 3 أو دو تواليت 100 مل (تستر)",
+   "nameEn": "Jaguar Vision III Eau de Toilette 100ml (Tester)",
+   "dAr": "فيجن 3 من جاكوار — عطر رجالي بتركيز أو دو تواليت، سعة 100 مل.\n• نسخة تستر أصلية: نفس العطر بعبوة اختبار بدون علبة فاخرة.\n• منتج أصلي 100٪.",
+   "dEn": "Vision III by Jaguar — a men's fragrance, Eau de Toilette, 100 ml.\n• Genuine tester: the same fragrance in tester packaging.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 22500,
+   "originalPrice": 22500,
+   "stock": 0,
+   "images": [
+    "EXISTING:7910567c-77a8-4ab5-a522-c04cce2e9305"
+   ],
+   "slug": "jaguar-vision-iii-eau-de-toilette-100ml-tester-205111",
+   "sku": "AI-7640111205111"
+  },
+  {
+   "draftId": "38569c3e-0447-40aa-a8b0-6dbda2eee59f",
+   "barcode": "3388714281623",
+   "brand": "generic",
+   "nameAr": "عطر آمور بور فيم أو دو بارفيوم 100 مل",
+   "nameEn": "Amour Pour Femme Eau de Parfum 100ml",
+   "dAr": "بور فيم من آمور — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Pour Femme by Amour — a women's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 105000,
+   "originalPrice": 105000,
+   "stock": 6,
+   "images": [
+    "n58_0.jpg"
+   ],
+   "slug": "amour-pour-femme-eau-de-parfum-100ml-281623",
+   "sku": "AI-3388714281623"
+  },
+  {
+   "draftId": "4a21681a-713d-4551-91e7-c8373181b705",
+   "barcode": "3274872485006",
+   "brand": "givenchy",
+   "nameAr": "عطر جيفنشي فيري إيريزيستبل أو دو بارفيوم 75 مل",
+   "nameEn": "Givenchy Very Irresistible Eau de Parfum 75ml",
+   "dAr": "فيري إيريزيستبل من جيفنشي — عطر نسائي بتركيز أو دو بارفيوم، سعة 75 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Very Irresistible by Givenchy — a women's fragrance, Eau de Parfum, 75 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 134750,
+   "originalPrice": 134750,
+   "stock": 2,
+   "images": [
+    "n59_0.jpg"
+   ],
+   "slug": "givenchy-very-irresistible-eau-de-parfum-75ml-485006",
+   "sku": "AI-3274872485006"
+  },
+  {
+   "draftId": "d1b24ae9-6815-4afd-af4f-213b62278334",
+   "barcode": "3274872485037",
+   "brand": "givenchy",
+   "nameAr": "عطر جيفنشي فيري إيريزيستبل أو دو تواليت 80 مل",
+   "nameEn": "Givenchy Very Irresistible Eau de Toilette 80ml",
+   "dAr": "فيري إيريزيستبل من جيفنشي — عطر نسائي بتركيز أو دو تواليت، سعة 80 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Very Irresistible by Givenchy — a women's fragrance, Eau de Toilette, 80 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 117500,
+   "originalPrice": 117500,
+   "stock": 2,
+   "images": [
+    "n60_0.jpg"
+   ],
+   "slug": "givenchy-very-irresistible-eau-de-toilette-80ml-485037",
+   "sku": "AI-3274872485037"
+  },
+  {
+   "draftId": "54f7ef03-e39a-4c05-addd-1bacbdd576e9",
+   "barcode": "3419020917606",
+   "brand": "generic",
+   "nameAr": "عطر دي بي سي سيغنتشر كريستال أو دو بارفيوم 50 مل",
+   "nameEn": "DBC Signature Crystal Eau de Parfum 50ml",
+   "dAr": "سيغنتشر كريستال من دي بي سي — عطر نسائي بتركيز أو دو بارفيوم، سعة 50 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Signature Crystal by DBC — a women's fragrance, Eau de Parfum, 50 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 36000,
+   "originalPrice": 36000,
+   "stock": 4,
+   "images": [
+    "n61_0.jpg"
+   ],
+   "slug": "dbc-signature-crystal-eau-de-parfum-50ml-917606",
+   "sku": "AI-3419020917606"
+  },
+  {
+   "draftId": "8f8660d4-3ff6-4d61-96f9-9ebe7b1000b3",
+   "barcode": "5050136448448",
+   "brand": "avon",
+   "nameAr": "عطر آفون تودي تومورو أولويز تومورو فور هيم أو دو تواليت 75 مل",
+   "nameEn": "Avon Today Tomorrow Always Tomorrow for Him Eau de Toilette 75ml",
+   "dAr": "تودي تومورو أولويز تومورو فور هيم من آفون — عطر رجالي بتركيز أو دو تواليت، سعة 75 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Today Tomorrow Always Tomorrow for Him by Avon — a men's fragrance, Eau de Toilette, 75 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 25000,
+   "originalPrice": 25000,
+   "stock": 2,
+   "images": [
+    "n62_0.jpg"
+   ],
+   "slug": "avon-today-tomorrow-always-tomorrow-for-him-eau-de-toilette-75ml-448448",
+   "sku": "AI-5050136448448"
+  },
+  {
+   "draftId": "2677a3a6-d379-4bc0-89b7-190e0418cb35",
+   "barcode": "5059018291158",
+   "brand": "avon",
+   "nameAr": "عطر آفون فار أواي غلامور أو دو بارفيوم 50 مل",
+   "nameEn": "Avon Far Away Glamour Eau de Parfum 50ml",
+   "dAr": "فار أواي غلامور من آفون — عطر نسائي بتركيز أو دو بارفيوم، سعة 50 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Far Away Glamour by Avon — a women's fragrance, Eau de Parfum, 50 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 29250,
+   "originalPrice": 29250,
+   "stock": 9,
+   "images": [
+    "n63_0.jpg"
+   ],
+   "slug": "avon-far-away-glamour-eau-de-parfum-50ml-291158",
+   "sku": "AI-5059018291158"
+  },
+  {
+   "draftId": "f692a377-b57f-4e4f-bd0e-c5604b030df3",
+   "barcode": "5059018288592",
+   "brand": "avon",
+   "nameAr": "عطر آفون فار أواي أو دو بارفيوم 50 مل",
+   "nameEn": "Avon Far Away Eau de Parfum 50ml",
+   "dAr": "فار أواي من آفون — عطر نسائي بتركيز أو دو بارفيوم، سعة 50 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Far Away by Avon — a women's fragrance, Eau de Parfum, 50 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 20750,
+   "originalPrice": 20750,
+   "stock": 3,
+   "images": [
+    "n64_0.jpg"
+   ],
+   "slug": "avon-far-away-eau-de-parfum-50ml-288592",
+   "sku": "AI-5059018288592"
+  },
+  {
+   "draftId": "55377a3d-1279-4ccc-9a11-7092a87a7fef",
+   "barcode": "3614271645784",
+   "brand": "viktor--rolf",
+   "nameAr": "عطر فيكتور آند رولف بونبون سبرينغ سمر أسيدوليه أو دو تواليت 50 مل",
+   "nameEn": "Viktor & Rolf Bonbon Spring Summer Acidulée Eau de Toilette 50ml",
+   "dAr": "بونبون سبرينغ سمر أسيدوليه من فيكتور آند رولف — عطر نسائي بتركيز أو دو تواليت، سعة 50 مل.\n• إصدار ربيع وصيف بنسخة أو دو تواليت أسيدوليه المنعشة.\n• منتج أصلي 100٪.",
+   "dEn": "Bonbon Spring Summer Acidulée by Viktor & Rolf — a women's fragrance, Eau de Toilette, 50 ml.\n• Spring-summer edition, Eau de Toilette Acidulée.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 128750,
+   "originalPrice": 128750,
+   "stock": 2,
+   "images": [
+    "n66_0.jpg"
+   ],
+   "slug": "viktor-rolf-bonbon-spring-summer-acidulee-eau-de-toilette-50ml-645784",
+   "sku": "AI-3614271645784"
+  },
+  {
+   "draftId": "919cae88-e4ce-497c-a2fd-dd03623b59ff",
+   "barcode": "5050136318918",
+   "brand": "avon",
+   "nameAr": "عطر آفون بيرسيف أو دو بارفيوم 50 مل",
+   "nameEn": "Avon Perceive Eau de Parfum 50ml",
+   "dAr": "بيرسيف من آفون — عطر نسائي بتركيز أو دو بارفيوم، سعة 50 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Perceive by Avon — a women's fragrance, Eau de Parfum, 50 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 25000,
+   "originalPrice": 25000,
+   "stock": 2,
+   "images": [
+    "n71_0.jpg"
+   ],
+   "slug": "avon-perceive-eau-de-parfum-50ml-318918",
+   "sku": "AI-5050136318918"
+  },
+  {
+   "draftId": "213d95b5-aa3e-4fc7-96e3-829e0cbf22e0",
+   "barcode": "3419020918009",
+   "brand": "nobel",
+   "nameAr": "عطر نوبل أتراكتيفو بارفيوم 100 مل",
+   "nameEn": "Nobel Attractivo Parfum 100ml",
+   "dAr": "أتراكتيفو من نوبل — عطر رجالي بتركيز بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Attractivo by Nobel — a men's fragrance, Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 102500,
+   "originalPrice": 102500,
+   "stock": 2,
+   "images": [
+    "n72_0.jpg"
+   ],
+   "slug": "nobel-attractivo-parfum-100ml-918009",
+   "sku": "AI-3419020918009"
+  },
+  {
+   "draftId": "126bf199-c4e0-41f0-83a5-792274712f39",
+   "barcode": "6300020181289",
+   "brand": "prive",
+   "nameAr": "عطر بريفيه سوبريم أو دو بارفيوم 100 مل",
+   "nameEn": "Privé Supreme Eau de Parfum 100ml",
+   "dAr": "سوبريم من بريفيه — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Supreme by Privé — a men's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 55750,
+   "originalPrice": 55750,
+   "stock": 9,
+   "images": [
+    "n73_0.jpg"
+   ],
+   "slug": "prive-supreme-eau-de-parfum-100ml-181289",
+   "sku": "AI-6300020181289"
+  },
+  {
+   "draftId": "2177b3bc-f039-40a2-bdaf-7b28a8f3662b",
+   "barcode": "3318398888122",
+   "brand": "generic",
+   "nameAr": "عطر دنزل رويال كولكشن في آي بي عود بارفيوم 100 مل",
+   "nameEn": "Denzel Royal Collection VIP Oud Parfum 100ml",
+   "dAr": "رويال كولكشن في آي بي عود من دنزل — عطر للجنسين بتركيز بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Royal Collection VIP Oud by Denzel — a unisex fragrance, Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 80250,
+   "originalPrice": 80250,
+   "stock": 5,
+   "images": [
+    "n75_0.jpg"
+   ],
+   "slug": "denzel-royal-collection-vip-oud-parfum-100ml-888122",
+   "sku": "AI-3318398888122"
+  },
+  {
+   "draftId": "3a7dc1d8-f33f-4b5d-b911-1b07492705d2",
+   "barcode": "3792025052337",
+   "brand": "generic",
+   "nameAr": "عطر كورنر هوم إنتنس إكستريم أو دو بارفيوم 100 مل",
+   "nameEn": "Corner Perfume Homme Intense Extreme Eau de Parfum 100ml",
+   "dAr": "هوم إنتنس إكستريم من كورنر — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Homme Intense Extreme by Corner Perfume — a men's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 37500,
+   "originalPrice": 37500,
+   "stock": 2,
+   "images": [
+    "n77_0.jpg"
+   ],
+   "slug": "corner-perfume-homme-intense-extreme-eau-de-parfum-100ml-052337",
+   "sku": "AI-3792025052337"
+  },
+  {
+   "draftId": "4d66b2a7-27a4-4ada-8e62-278d16243565",
+   "barcode": "3792025052252",
+   "brand": "generic",
+   "nameAr": "عطر كورنر سوفاج إليكسير إكستريم أو دو بارفيوم 100 مل",
+   "nameEn": "Corner Perfume Sauvage Elixir Extreme Eau de Parfum 100ml",
+   "dAr": "سوفاج إليكسير إكستريم من كورنر — عطر رجالي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Sauvage Elixir Extreme by Corner Perfume — a men's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 37500,
+   "originalPrice": 37500,
+   "stock": 2,
+   "images": [
+    "n78_0.jpg"
+   ],
+   "slug": "corner-perfume-sauvage-elixir-extreme-eau-de-parfum-100ml-052252",
+   "sku": "AI-3792025052252"
+  },
+  {
+   "draftId": "94e0058f-9a18-4634-b666-8bba7689dc40",
+   "barcode": "3792025052269",
+   "brand": "generic",
+   "nameAr": "عطر كورنر أومبري نوماد إكستريم أو دو بارفيوم 100 مل",
+   "nameEn": "Corner Perfume Ombre Nomade Extreme Eau de Parfum 100ml",
+   "dAr": "أومبري نوماد إكستريم من كورنر — عطر للجنسين بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Ombre Nomade Extreme by Corner Perfume — a unisex fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 37500,
+   "originalPrice": 37500,
+   "stock": 2,
+   "images": [
+    "n79_0.jpg"
+   ],
+   "slug": "corner-perfume-ombre-nomade-extreme-eau-de-parfum-100ml-052269",
+   "sku": "AI-3792025052269"
+  },
+  {
+   "draftId": "2b5bac29-d439-419f-bbbb-966e593be647",
+   "barcode": "3792024102514",
+   "brand": "generic",
+   "nameAr": "عطر كورنر سي باشن إكستريم أو دو بارفيوم 100 مل",
+   "nameEn": "Corner Perfume Si Passion Extreme Eau de Parfum 100ml",
+   "dAr": "سي باشن إكستريم من كورنر — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Si Passion Extreme by Corner Perfume — a women's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 37500,
+   "originalPrice": 37500,
+   "stock": 3,
+   "images": [
+    "n80_0.jpg"
+   ],
+   "slug": "corner-perfume-si-passion-extreme-eau-de-parfum-100ml-102514",
+   "sku": "AI-3792024102514"
+  },
+  {
+   "draftId": "4d62147e-6e38-486b-a938-f89fc8f30dc2",
+   "barcode": "085805123154",
+   "brand": "elizabeth-arden",
+   "nameAr": "عطر إليزابيث أردن سبلندور أو دو بارفيوم 30 مل",
+   "nameEn": "Elizabeth Arden Splendor Eau de Parfum 30ml",
+   "dAr": "سبلندور من إليزابيث أردن — عطر نسائي بتركيز أو دو بارفيوم، سعة 30 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Splendor by Elizabeth Arden — a women's fragrance, Eau de Parfum, 30 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 24250,
+   "originalPrice": 24250,
+   "stock": 6,
+   "images": [
+    "n81_0.jpg"
+   ],
+   "slug": "elizabeth-arden-splendor-eau-de-parfum-30ml-123154",
+   "sku": "AI-085805123154"
+  },
+  {
+   "draftId": "bc51ae47-b8e4-45e6-a8ad-92497c15f528",
+   "barcode": "9808458480204",
+   "brand": "generic",
+   "nameAr": "عطر لورد كولكشن لورد بور هوم أو دو بارفيوم 30 مل",
+   "nameEn": "Lord Collection Lord Pour Homme Eau de Parfum 30ml",
+   "dAr": "لورد بور هوم من لورد كولكشن — عطر رجالي بتركيز أو دو بارفيوم، سعة 30 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Lord Pour Homme by Lord Collection — a men's fragrance, Eau de Parfum, 30 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 23750,
+   "originalPrice": 23750,
+   "stock": 6,
+   "images": [
+    "n82_0.jpg"
+   ],
+   "slug": "lord-collection-lord-pour-homme-eau-de-parfum-30ml-480204",
+   "sku": "AI-9808458480204"
+  },
+  {
+   "draftId": "daaebca4-aa9e-4288-b820-ad01cef22371",
+   "barcode": "3439600056655",
+   "brand": "mugler",
+   "nameAr": "عطر موغلر أنجل أو دو بارفيوم 100 مل",
+   "nameEn": "Mugler Angel Eau de Parfum 100ml",
+   "dAr": "أنجل من موغلر — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n\n• المكونات العطرية: الباتشولي والبرالين والفانيليا.\n• زجاجة النجمة الأيقونية القابلة لإعادة التعبئة.\n• منتج أصلي 100٪.",
+   "dEn": "Angel by Mugler — a women's fragrance, Eau de Parfum, 100 ml.\n\n• Notes: patchouli, praline and vanilla.\n• The iconic refillable star bottle.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 156750,
+   "originalPrice": 156750,
+   "stock": 2,
+   "images": [
+    "n83_0.jpg"
+   ],
+   "slug": "mugler-angel-eau-de-parfum-100ml-056655",
+   "sku": "AI-3439600056655"
+  },
+  {
+   "draftId": "8c45f73c-0bf9-440a-bf11-0c2d5b1b95c8",
+   "barcode": "8427395660206",
+   "brand": "angel-schlesser",
+   "nameAr": "عطر أنجل شليسر هوم أو دو تواليت 125 مل",
+   "nameEn": "Angel Schlesser Homme Eau de Toilette 125ml",
+   "dAr": "هوم من أنجل شليسر — عطر رجالي بتركيز أو دو تواليت، سعة 125 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Homme by Angel Schlesser — a men's fragrance, Eau de Toilette, 125 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "8dca642a-1194-4101-b5cc-486ca1664e89",
+   "ter": null,
+   "price": 101250,
+   "originalPrice": 101250,
+   "stock": 2,
+   "images": [
+    "n84_0.jpg"
+   ],
+   "slug": "angel-schlesser-homme-eau-de-toilette-125ml-660206",
+   "sku": "AI-8427395660206"
+  },
+  {
+   "draftId": "fd86ce9b-e0fb-496e-a098-3b275336b817",
+   "barcode": "6291107975764",
+   "brand": "la-fede",
+   "nameAr": "عطر لا فيدي أوبيولنس فيردي أو دو بارفيوم 100 مل",
+   "nameEn": "La Fede Opulence Verde Eau de Parfum 100ml",
+   "dAr": "أوبيولنس فيردي من لا فيدي — عطر للجنسين بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Opulence Verde by La Fede — a unisex fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 40750,
+   "originalPrice": 40750,
+   "stock": 9,
+   "images": [
+    "n86_0.jpg"
+   ],
+   "slug": "la-fede-opulence-verde-eau-de-parfum-100ml-975764",
+   "sku": "AI-6291107975764"
+  },
+  {
+   "draftId": "b2d687e6-de15-4d2f-b8c3-6afb9eac2e6d",
+   "barcode": "6291107974569",
+   "brand": "la-fede",
+   "nameAr": "عطر لا فيدي أوبيولنس نوار أو دو بارفيوم 100 مل",
+   "nameEn": "La Fede Opulence Noir Eau de Parfum 100ml",
+   "dAr": "أوبيولنس نوار من لا فيدي — عطر للجنسين بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Opulence Noir by La Fede — a unisex fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 39250,
+   "originalPrice": 39250,
+   "stock": 3,
+   "images": [
+    "n87_0.jpg"
+   ],
+   "slug": "la-fede-opulence-noir-eau-de-parfum-100ml-974569",
+   "sku": "AI-6291107974569"
+  },
+  {
+   "draftId": "f683d120-58fe-48cf-9107-fac2bc3dee6b",
+   "barcode": "6291107975849",
+   "brand": "khadlaj",
+   "nameAr": "عطر خدلج كابوس أمبر غولد أو دو بارفيوم 100 مل",
+   "nameEn": "Khadlaj Kapus Amber Gold Eau de Parfum 100ml",
+   "dAr": "كابوس أمبر غولد من خدلج — عطر للجنسين بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Kapus Amber Gold by Khadlaj — a unisex fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 44000,
+   "originalPrice": 44000,
+   "stock": 18,
+   "images": [
+    "n89_0.jpg"
+   ],
+   "slug": "khadlaj-kapus-amber-gold-eau-de-parfum-100ml-975849",
+   "sku": "AI-6291107975849"
+  },
+  {
+   "draftId": "d6945456-b836-42a4-8c5b-1005fc5c1d59",
+   "barcode": "6291107974514",
+   "brand": "la-fede",
+   "nameAr": "عطر لا فيدي كود لا ميزون إكستريه دو بارفيوم 100 مل",
+   "nameEn": "La Fede Code La Maison Extrait de Parfum 100ml",
+   "dAr": "كود لا ميزون من لا فيدي — عطر للجنسين بتركيز إكستريه دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Code La Maison by La Fede — a unisex fragrance, Extrait de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 40750,
+   "originalPrice": 40750,
+   "stock": 12,
+   "images": [
+    "n90_0.jpg"
+   ],
+   "slug": "la-fede-code-la-maison-extrait-de-parfum-100ml-974514",
+   "sku": "AI-6291107974514"
+  },
+  {
+   "draftId": "dd758821-0321-4c7f-87fb-fa8bfaa85fc1",
+   "barcode": "6291107974521",
+   "brand": "la-fede",
+   "nameAr": "عطر لا فيدي كود روج بيوتي إكستريه دو بارفيوم 100 مل",
+   "nameEn": "La Fede Code Rouge Beauty Extrait de Parfum 100ml",
+   "dAr": "كود روج بيوتي من لا فيدي — عطر نسائي بتركيز إكستريه دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Code Rouge Beauty by La Fede — a women's fragrance, Extrait de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 40750,
+   "originalPrice": 40750,
+   "stock": 11,
+   "images": [
+    "n91_0.jpg"
+   ],
+   "slug": "la-fede-code-rouge-beauty-extrait-de-parfum-100ml-974521",
+   "sku": "AI-6291107974521"
+  },
+  {
+   "draftId": "5f99344a-62de-4c8f-9616-4631c79fcdca",
+   "barcode": "6291107972312",
+   "brand": "la-fede",
+   "nameAr": "عطر لا فيدي فيرست ليدي إكستريه دو بارفيوم 100 مل",
+   "nameEn": "La Fede First Lady Extrait de Parfum 100ml",
+   "dAr": "فيرست ليدي من لا فيدي — عطر نسائي بتركيز إكستريه دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "First Lady by La Fede — a women's fragrance, Extrait de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 40750,
+   "originalPrice": 40750,
+   "stock": 15,
+   "images": [
+    "n92_0.jpg"
+   ],
+   "slug": "la-fede-first-lady-extrait-de-parfum-100ml-972312",
+   "sku": "AI-6291107972312"
+  },
+  {
+   "draftId": "44275350-f2d8-4dc5-b619-c9d722fb9fb2",
+   "barcode": "8437018391042",
+   "brand": "botanicae",
+   "nameAr": "عطر بوتانيكاي شمال أو دو بارفيوم 100 مل",
+   "nameEn": "Botanicae Shomal Eau de Parfum 100ml",
+   "dAr": "شمال من بوتانيكاي — عطر للجنسين بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Shomal by Botanicae — a unisex fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+   "ter": null,
+   "price": 31000,
+   "originalPrice": 31000,
+   "stock": 8,
+   "images": [
+    "n93_0.jpg"
+   ],
+   "slug": "botanicae-shomal-eau-de-parfum-100ml-391042",
+   "sku": "AI-8437018391042"
+  },
+  {
+   "draftId": "5948d3db-d065-4f1d-9598-ee34c728ef52",
+   "barcode": "3700134408051",
+   "brand": "glenn-perri",
+   "nameAr": "عطر جلين بيري ريليفانس أو دو بارفيوم 100 مل",
+   "nameEn": "Glenn Perri Relevance Eau de Parfum 100ml",
+   "dAr": "ريليفانس من جلين بيري — عطر نسائي بتركيز أو دو بارفيوم، سعة 100 مل.\n• منتج أصلي 100٪.",
+   "dEn": "Relevance by Glenn Perri — a women's fragrance, Eau de Parfum, 100 ml.\n• 100% authentic.",
+   "cat": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+   "sub": "1ba9f472-af81-4708-9304-07f3435b6b24",
+   "ter": null,
+   "price": 34000,
+   "originalPrice": 34000,
+   "stock": 8,
+   "images": [
+    "n95_0.jpg"
+   ],
+   "slug": "glenn-perri-relevance-eau-de-parfum-100ml-408051",
+   "sku": "AI-3700134408051"
+  }
+ ],
+ "existing": [
+  {
+   "kind": "addShade",
+   "productId": "45f8907c-23c4-4513-bb41-291613e8bca0",
+   "shadeName": "2.0",
+   "colorHex": "#E2B48F",
+   "img": "n21_0.jpg",
+   "draftId": "6bcf1f47-175c-43bb-923d-8430e89f0d86",
+   "barcode": "773602235391"
+  },
+  {
+   "kind": "relink",
+   "productId": "28b1a642-61a6-4dfb-adfa-98ca5f48de5a",
+   "draftId": "0425cf8f-05ec-4b8a-89ae-23050a0f29c3",
+   "barcode": "3614272798700"
+  },
+  {
+   "kind": "activate",
+   "productId": "007eaf4c-2223-4d5e-9ce9-099d8d944374",
+   "draftId": "376d774a-7444-4a76-9eaa-c8d94313239b",
+   "barcode": "3385858874469"
+  },
+  {
+   "kind": "relink",
+   "productId": "7dee9e9c-523f-4760-aac4-dda0a18e1b26",
+   "draftId": "b6a5bf3d-0369-420e-a7f0-da880ab89117",
+   "barcode": "7640233342930"
+  },
+  {
+   "kind": "relink",
+   "productId": "8c9814f3-c8f5-48bd-8867-e72f55ab10bd",
+   "draftId": "f7dde690-a9ef-4101-888c-90044a1f5542",
+   "barcode": "8056860212536"
+  },
+  {
+   "kind": "activate",
+   "productId": "8e0a1e11-0ce6-4ff7-b83d-c089dcf4475b",
+   "draftId": "e88f510a-9446-4131-850f-24b59ae134e7",
+   "barcode": "3516641417314"
+  }
+ ],
+ "rename": {
+  "4840d04e-2948-455c-96b6-318a7c8c76f3": [
+   "عطر دولتشي آند غابانا لايت بلو بور هوم أو دو تواليت 100 مل",
+   "Dolce & Gabbana Light Blue Pour Homme Eau de Toilette 100ml"
+  ]
+ },
+ "files": [
+  "n1_0.jpg",
+  "n2_0.jpg",
+  "n3_0.jpg",
+  "n5_0.jpg",
+  "n6_0.jpg",
+  "n7_0.jpg",
+  "n13_0.jpg",
+  "n14_0.jpg",
+  "n15_0.jpg",
+  "n16_0.jpg",
+  "n17_0.jpg",
+  "n18_0.jpg",
+  "n20_0.jpg",
+  "n22_0.jpg",
+  "n23_0.jpg",
+  "n26_0.jpg",
+  "n32_0.jpg",
+  "n32_1.jpg",
+  "n33_0.jpg",
+  "n35_0.jpg",
+  "n37_0.jpg",
+  "n39_0.jpg",
+  "n39_1.jpg",
+  "n40_0.jpg",
+  "n42_0.jpg",
+  "n44_0.jpg",
+  "n45_0.jpg",
+  "n46_0.jpg",
+  "n47_0.jpg",
+  "n48_0.jpg",
+  "n49_0.jpg",
+  "n51_0.jpg",
+  "n53_0.jpg",
+  "n53_1.jpg",
+  "n54_0.jpg",
+  "n55_0.jpg",
+  "n56_0.jpg",
+  "n58_0.jpg",
+  "n59_0.jpg",
+  "n60_0.jpg",
+  "n61_0.jpg",
+  "n62_0.jpg",
+  "n63_0.jpg",
+  "n64_0.jpg",
+  "n66_0.jpg",
+  "n71_0.jpg",
+  "n72_0.jpg",
+  "n73_0.jpg",
+  "n75_0.jpg",
+  "n77_0.jpg",
+  "n78_0.jpg",
+  "n79_0.jpg",
+  "n80_0.jpg",
+  "n81_0.jpg",
+  "n82_0.jpg",
+  "n83_0.jpg",
+  "n84_0.jpg",
+  "n86_0.jpg",
+  "n87_0.jpg",
+  "n89_0.jpg",
+  "n90_0.jpg",
+  "n91_0.jpg",
+  "n92_0.jpg",
+  "n93_0.jpg",
+  "n95_0.jpg",
+  "n21_0.jpg"
+ ]
+}

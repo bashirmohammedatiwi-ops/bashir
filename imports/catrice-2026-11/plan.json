@@ -1,0 +1,4343 @@
+{
+ "products": [
+  {
+   "id": "d64f54ec-89db-415a-9d4a-99ec53f19872",
+   "slug": "catrice-eye-brow-stylist-pencil-with-brush",
+   "rename": null,
+   "shades": [
+    {
+     "id": "3ec8f08c-3cd7-4cd0-abdc-38b4f26697d9",
+     "barcode": "4250338487752",
+     "name": "020 date with ash-ton",
+     "colorHex": "#7C6158",
+     "img": "s_4250338487752.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 0
+    },
+    {
+     "id": "2f01110d-d043-47d7-bdd7-ac9be9f56b0e",
+     "barcode": "4059729030542",
+     "name": "025 Perfect BROWn",
+     "colorHex": "#6E5046",
+     "img": "s_4059729030542.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 1
+    },
+    {
+     "id": "25fe3c74-b032-40a0-823c-0a2fc5cd5967",
+     "barcode": "4250338487769",
+     "name": "030 brow-n-eyed peas",
+     "colorHex": "#4E3729",
+     "img": "s_4250338487769.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 2
+    },
+    {
+     "id": "c6fcd655-da83-48c1-bb98-e94adeb87b88",
+     "barcode": "4059729030559",
+     "name": "035 Brown Eye Crown",
+     "colorHex": "#5E504D",
+     "img": "s_4059729030559.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 3
+    },
+    {
+     "id": "8ab2f4f6-8d20-4276-af97-a3fbd2a68b0d",
+     "barcode": "4250587768367",
+     "name": "040 Don't Let Me Brow'n",
+     "colorHex": "#5C4C3D",
+     "img": "s_4250587768367.jpg",
+     "isActive": true,
+     "price": 4950,
+     "originalPrice": 4950,
+     "discountPercent": 0,
+     "stock": 10,
+     "position": 4
+    },
+    {
+     "id": "db1fc8ae-3eff-4838-8919-f6ce2b6d4fd4",
+     "barcode": "4059729488152",
+     "name": "070 Chestnut Charm",
+     "colorHex": "#5A311B",
+     "img": "s_4059729488152.jpg",
+     "isActive": true,
+     "price": 5750,
+     "originalPrice": 5750,
+     "discountPercent": 0,
+     "stock": 5,
+     "position": 5
+    }
+   ],
+   "primary": "s_4250338487752.jpg",
+   "texture": null,
+   "extras": [
+    "c1434a80-32b5-4c6d-9e92-7b30b78b12ff",
+    "bf2555b3-940f-4443-aef2-d770968c21bb"
+   ]
+  },
+  {
+   "id": "cba0cbde-fecd-4701-a4d6-b399b03c5aac",
+   "slug": "catrice-hd-liquid-coverage-foundation-30-ml",
+   "rename": null,
+   "shades": [
+    {
+     "id": "21d852a9-f5b8-4348-834e-f679f8ec77e1",
+     "barcode": "4250947598283",
+     "name": "010 Light Beige",
+     "colorHex": "#E0B783",
+     "img": "s_4250947598283.jpg",
+     "isActive": true,
+     "price": 12150,
+     "originalPrice": 13500,
+     "discountPercent": 10,
+     "stock": 0,
+     "position": 0
+    },
+    {
+     "id": "b00f2b26-18be-44e0-b938-b6bb8f835ade",
+     "barcode": "4250947598290",
+     "name": "020 Rose Beige",
+     "colorHex": "#E4B281",
+     "img": "s_4250947598290.jpg",
+     "isActive": true,
+     "price": 12150,
+     "originalPrice": 13500,
+     "discountPercent": 10,
+     "stock": 0,
+     "position": 1
+    },
+    {
+     "id": "f9c2fcbe-6d1a-4a86-8440-b0fabe65559e",
+     "barcode": "4250947598306",
+     "name": "030 Sand Beige",
+     "colorHex": "#DEAE7D",
+     "img": "s_4250947598306.jpg",
+     "isActive": true,
+     "price": 12150,
+     "originalPrice": 13500,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 2
+    },
+    {
+     "id": "d68ac37a-4f3e-4eab-b317-988335080ee6",
+     "barcode": "4059729034380",
+     "name": "032 Nude Beige",
+     "colorHex": "#C19E76",
+     "img": "s_4059729034380.jpg",
+     "isActive": true,
+     "price": 12150,
+     "originalPrice": 13500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 3
+    },
+    {
+     "id": "348f06f7-30f5-4e0c-b004-512a72c3892d",
+     "barcode": "4059729034410",
+     "name": "036 Hazelnut Beige",
+     "colorHex": "#C9A478",
+     "img": "s_4059729034410.jpg",
+     "isActive": true,
+     "price": 12150,
+     "originalPrice": 13500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 4
+    },
+    {
+     "id": "cf2ca35c-5cb8-43b8-b811-d5a078822137",
+     "barcode": "4250947598313",
+     "name": "040 Warm Beige",
+     "colorHex": "#B88E68",
+     "img": "s_4250947598313.jpg",
+     "isActive": true,
+     "price": 12150,
+     "originalPrice": 13500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 5
+    }
+   ],
+   "primary": "s_4250947598306.jpg",
+   "texture": null,
+   "extras": [
+    "b2df516d-d17d-4401-8e0b-5f97850b9215",
+    "52134c45-531c-4f75-bc95-53f6c8f47350"
+   ]
+  },
+  {
+   "id": "592c4187-faf9-4462-92cc-d3fe498a6707",
+   "slug": "catrice-its-easy-tattoo-liner-waterproof-4059729191397",
+   "rename": null,
+   "single": {
+    "barcode": "4059729191397",
+    "price": 6525,
+    "originalPrice": 7250,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4059729191397.jpg",
+   "texture": null,
+   "extras": [
+    "b51954ea-a81d-41cc-b333-b1ab34a426af"
+   ]
+  },
+  {
+   "id": "d816a7e0-97a0-4473-9356-f0185cb5447e",
+   "slug": "catrice-its-easy-black-liner-010-4059729191731",
+   "rename": null,
+   "single": {
+    "barcode": "4059729191731",
+    "price": 6075,
+    "originalPrice": 6750,
+    "discountPercent": 10,
+    "stock": 6
+   },
+   "primary": "s_4059729191731.jpg",
+   "texture": null,
+   "extras": [
+    "5cebc0e0-0dc9-4914-ab72-8d523f25f262"
+   ]
+  },
+  {
+   "id": "7842b22d-862f-49db-8c1b-dfeae456419f",
+   "slug": "catrice-slim-matic-ultra-precise-brow-pencil-waterproof-0-05g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "0a5615d9-5fcc-4483-a1ec-95ca85eaf554",
+     "barcode": "4251232227277",
+     "name": "020 Medium",
+     "colorHex": "#8E6F5D",
+     "img": "s_4251232227277.jpg",
+     "isActive": true,
+     "price": 5850,
+     "originalPrice": 6500,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "86b0b39d-7f0b-4b91-827d-16ce3a36f8b9",
+     "barcode": "4059729191779",
+     "name": "025 Warm Brown",
+     "colorHex": "#433127",
+     "img": "s_4059729191779.jpg",
+     "isActive": true,
+     "price": 4950,
+     "originalPrice": 5500,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 1
+    },
+    {
+     "id": "68b299ea-aa7b-4935-9194-9813755790f1",
+     "barcode": "4059729191762",
+     "name": "050 Chocolate",
+     "colorHex": "#352820",
+     "img": "s_4059729191762.jpg",
+     "isActive": true,
+     "price": 5400,
+     "originalPrice": 6000,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 2
+    }
+   ],
+   "primary": "s_4251232227277.jpg",
+   "texture": "t_4251232227277.jpg",
+   "extras": [
+    "79fa7aa2-a394-465e-bbb1-80863e8b3866"
+   ]
+  },
+  {
+   "id": "70730423-e5ac-448d-9bbe-5dc325ea8e8c",
+   "slug": "catrice-liquid-camouflage-high-coverage-concealer-001-fair-ivory",
+   "rename": null,
+   "shades": [
+    {
+     "id": "b545cacb-05bc-49f5-98c0-75c477ef2a1a",
+     "barcode": "4059729203229",
+     "name": "001 Fair Ivory",
+     "keep": true,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4250947563618",
+     "name": "005 Light Natural",
+     "colorHex": "#E5B992",
+     "img": "s_4250947563618.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 1
+    },
+    {
+     "id": "a11a87a0-e30f-4d70-851b-5549c7d6208f",
+     "barcode": "4250947544662",
+     "name": "010 Porcellain",
+     "colorHex": "#DBB19B",
+     "img": "s_4250947544662.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 2
+    },
+    {
+     "id": "e845a63e-5908-4b26-a74d-34304c25a220",
+     "barcode": "4251232284324",
+     "name": "015 Honey",
+     "colorHex": "#E5C3A8",
+     "img": "s_4251232284324.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 3
+    },
+    {
+     "id": "3e7bc8c6-ea1b-434a-869a-3a7416c93230",
+     "barcode": "4250947544686",
+     "name": "020 Light Beige",
+     "colorHex": "#E5B48B",
+     "img": "s_4250947544686.jpg",
+     "isActive": true,
+     "price": 8250,
+     "originalPrice": 8250,
+     "discountPercent": 0,
+     "stock": 4,
+     "position": 4
+    },
+    {
+     "id": null,
+     "barcode": "4059729203250",
+     "name": "036 Hazelnut Beige",
+     "colorHex": "#C3A076",
+     "img": "s_4059729203250.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 5
+    },
+    {
+     "id": null,
+     "barcode": "4059729203274",
+     "name": "048 Desert Beige",
+     "colorHex": "#B68253",
+     "img": "s_4059729203274.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 6
+    }
+   ],
+   "primary": "s_4250947563618.jpg",
+   "texture": null,
+   "extras": [
+    "3b866e41-ff81-420c-a47a-569886220eb6"
+   ]
+  },
+  {
+   "id": "5dd59b89-5f38-4a65-b8a3-a780eb397128",
+   "slug": "catrice-calligraph-pro-precise-24h-matt-liner-waterproof-no-010",
+   "rename": null,
+   "single": {
+    "barcode": "4059729222022",
+    "price": 7875,
+    "originalPrice": 8750,
+    "discountPercent": 10,
+    "stock": 3
+   },
+   "primary": "s_4059729222022.jpg",
+   "texture": null,
+   "extras": [
+    "03ef22c0-d2d8-41dd-a127-d2b1248dd652",
+    "354cb4d0-7872-4f1d-94a6-bd578abfd273",
+    "070f19f5-477a-4315-9506-826ef15ff228",
+    "a6ce0f49-03de-4720-ad15-530c2d0820e3"
+   ]
+  },
+  {
+   "id": "ba17f9ba-d96c-42d4-98fd-3d88111f01ca",
+   "slug": "catrice-ten-sational-10-in-1-dream-primer-010-4059729222978",
+   "rename": null,
+   "single": {
+    "barcode": "4059729222978",
+    "price": 11025,
+    "originalPrice": 12250,
+    "discountPercent": 10,
+    "stock": 7
+   },
+   "primary": "s_4059729222978.jpg",
+   "texture": null,
+   "extras": [
+    "737d628b-8512-47b2-982d-48f18d9e8edf"
+   ]
+  },
+  {
+   "id": "c5cf6afa-3439-4c36-94d5-7d2a1761f54c",
+   "slug": "catrice-hemp-mint-glow-lip-balm-no-010",
+   "rename": null,
+   "single": {
+    "barcode": "4059729248336",
+    "price": 8100,
+    "originalPrice": 9000,
+    "discountPercent": 10,
+    "stock": 3
+   },
+   "primary": "s_4059729248336.jpg",
+   "texture": "t_4059729248336.jpg",
+   "extras": [
+    "821dd6ef-246b-4746-9cf3-1f8f4d2e78d6",
+    "6281ed4d-93c0-46ad-82b7-bedb4b98e405",
+    "7815d8fb-b827-4df8-a254-9a15ab12e0a8",
+    "5a759935-0c4a-44fb-bde6-1f73803a57b0",
+    "e5386622-4662-4bdb-8011-aa7477047d1c",
+    "56b180b9-3b1d-4496-85f5-0c916fbf3f7d",
+    "70cae0a9-7965-4caf-aaa3-156f2d337f9d"
+   ]
+  },
+  {
+   "id": "288f158b-92b5-4346-a7b2-64dd44777e47",
+   "slug": "catrice-matt-pro-ink-non-transfer-liquid-lipstick-5-ml",
+   "rename": null,
+   "shades": [
+    {
+     "id": "b8ac172a-dd16-44e9-a641-3edf7c4d613e",
+     "barcode": "4059729248343",
+     "name": "010 Trust In Me",
+     "keep": true,
+     "position": 0
+    },
+    {
+     "id": "d76192c8-1627-4661-8f11-4959f389ee45",
+     "barcode": "4059729248367",
+     "name": "030 This Is Attitude",
+     "keep": true,
+     "position": 1
+    },
+    {
+     "id": "5b51f989-664a-41fc-9e7d-90e981acdf27",
+     "barcode": "4059729248381",
+     "name": "050",
+     "colorHex": "#d38f9a",
+     "img": "s_4059729248381.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 2
+    },
+    {
+     "id": "ed6b4318-f85e-4149-8ffa-0f0a96bbebc6",
+     "barcode": "4059729248398",
+     "name": "060 I Choose Passion",
+     "keep": true,
+     "position": 3
+    },
+    {
+     "id": "20f33ecb-57ba-4c41-b72e-3416044ccdca",
+     "barcode": "4059729248411",
+     "name": "080 Dream Big",
+     "keep": true,
+     "position": 4
+    },
+    {
+     "id": "b6c2cf07-49d2-4935-ad4e-9c027206903e",
+     "barcode": "4059729248428",
+     "name": "090 This Is My Statement",
+     "keep": true,
+     "position": 5
+    },
+    {
+     "id": "87d57380-f4f9-49a5-8659-884f403c5ea4",
+     "barcode": "4059729248435",
+     "name": "100 Courage Code",
+     "colorHex": "#86202e",
+     "img": "s_4059729248435.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 6
+    },
+    {
+     "id": "208a9f14-d222-47c0-8030-afd1ebbeeb79",
+     "barcode": "4059729358851",
+     "name": "110 Perfectly Imperfect",
+     "keep": true,
+     "position": 7
+    },
+    {
+     "id": "6668d676-074d-41c7-b938-72c05bec2e9c",
+     "barcode": "4059729358899",
+     "name": "120 Fearless and Heroic",
+     "keep": true,
+     "position": 8
+    },
+    {
+     "id": "9abc336d-a7b6-4847-b0b0-3db088e92fc0",
+     "barcode": "4059729358936",
+     "name": "130 Exclusively Me",
+     "keep": true,
+     "position": 9
+    },
+    {
+     "id": "f800abbe-949c-411e-85a9-6541ad6db0a9",
+     "barcode": "4059729358974",
+     "name": "140 Dare To Be Bold",
+     "keep": true,
+     "position": 10
+    }
+   ],
+   "primary": "s_4059729248381.jpg",
+   "texture": null,
+   "extras": [
+    "610710c4-399d-4341-84e0-fcd6359749a5",
+    "26cdf5c0-8733-470a-8218-4949e0da291e"
+   ]
+  },
+  {
+   "id": "11d2a304-a4b9-4252-8cbe-5b1be4e0738a",
+   "slug": "catrice-more-than-glow-highlighter-no-020-59-g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "e1402ed5-d9ff-4329-8dfb-f8bea98d16c0",
+     "barcode": "4059729268242",
+     "name": "020 Supreme Rose Beam",
+     "colorHex": "#F8D3B9",
+     "img": "s_4059729268242.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "5c49bc54-b858-4775-9f7d-460559c57217",
+     "barcode": "4059729515018",
+     "name": "040 Absolute Blushin' Bright",
+     "colorHex": "#C9987A",
+     "img": "s_4059729515018.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729268242.jpg",
+   "texture": null,
+   "extras": [
+    "529e4dea-e7e0-4191-ae56-2f93d3bde848",
+    "5b49dfb9-de7e-4db0-afa6-943b0f16153a",
+    "cb860409-e610-40f6-b854-e4e40c8ee9aa",
+    "3c9a030d-3aaf-4cf7-9bac-78fe5064cab1",
+    "79e3a625-6c4d-411d-8991-6718f0056357",
+    "ddd1b084-747e-43c5-a179-174df1f05a38",
+    "cc01eb70-8111-4a18-a779-bdb65cb00685",
+    "0ebbc7e9-f718-469e-8779-abcf2e4c163b",
+    "d956fb26-bdbc-4815-b246-a3d8e71b2659"
+   ]
+  },
+  {
+   "id": "c09b64e1-c197-4827-89fe-0935f8c081e4",
+   "slug": "catrice-24h-brush-liner-4059729274946",
+   "rename": null,
+   "single": {
+    "barcode": "4059729274946",
+    "price": 6525,
+    "originalPrice": 7250,
+    "discountPercent": 10,
+    "stock": 5
+   },
+   "primary": "s_4059729274946.jpg",
+   "texture": null,
+   "extras": [
+    "a8eaeb87-b79a-4a23-81b0-385fc96b3e77"
+   ]
+  },
+  {
+   "id": "37cd0e72-d66c-46a1-a9c9-fe20af8ebfbc",
+   "slug": "catrice-24h-brush-liner-waterproof-4059729274953",
+   "rename": null,
+   "single": {
+    "barcode": "4059729274953",
+    "price": 6975,
+    "originalPrice": 7750,
+    "discountPercent": 10,
+    "stock": 5
+   },
+   "primary": "s_4059729274953.jpg",
+   "texture": null,
+   "extras": [
+    "12004d09-51d2-400a-a239-4fd0e3f0d0ee"
+   ]
+  },
+  {
+   "id": "6cb8b5d4-78b0-4c40-b24a-452edba30e07",
+   "slug": "catrice-plumping-lip-liner-0-35g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "b7bebe41-dd53-4be2-9e0b-77b5d4b72667",
+     "barcode": "4059729276667",
+     "name": "010 Understated Chic",
+     "colorHex": "#9E5949",
+     "img": "s_4059729276667.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4059729276698",
+     "name": "040 Starring Role",
+     "colorHex": "#81453D",
+     "img": "s_4059729276698.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 1
+    },
+    {
+     "id": "8d421b61-387f-4354-9dba-bc4d8dc01187",
+     "barcode": "4059729276711",
+     "name": "060 Cheers To Life",
+     "colorHex": "#7B3D3E",
+     "img": "s_4059729276711.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 2
+    },
+    {
+     "id": "ce7055c6-f007-4982-aa54-b1c93c531dd2",
+     "barcode": "4059729419736",
+     "name": "069 Mainhattan",
+     "colorHex": "#865C50",
+     "img": "s_4059729419736.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 0,
+     "position": 3
+    },
+    {
+     "id": "e9f31ee8-7d09-4c67-b223-561dd015d6b8",
+     "barcode": "4059729276759",
+     "name": "100 Go All-Out",
+     "colorHex": "#6F362D",
+     "img": "s_4059729276759.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 4
+    },
+    {
+     "id": "d6be7b6c-42c3-4af0-899c-90022a067d2d",
+     "barcode": "4059729334671",
+     "name": "110 Stay Seductive",
+     "colorHex": "#A21C3F",
+     "img": "s_4059729334671.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 5
+    },
+    {
+     "id": "7fe66f8f-d405-462a-9b44-e7f8390bd81a",
+     "barcode": "4059729334718",
+     "name": "120 Stay Powerful",
+     "colorHex": "#94262F",
+     "img": "s_4059729334718.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 9,
+     "position": 6
+    },
+    {
+     "id": "a82856a6-1960-4a37-81d5-5ba225dd21db",
+     "barcode": "4059729334756",
+     "name": "130 Translucent Grace",
+     "colorHex": "#f4efee",
+     "img": "s_4059729334756.jpg",
+     "isActive": true,
+     "price": 2250,
+     "originalPrice": 2500,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 7
+    },
+    {
+     "id": "a107f2b5-c1ce-45c0-8e61-e29cdcb74233",
+     "barcode": "4059729377715",
+     "name": "150 Queen Vibes",
+     "colorHex": "#8B5B51",
+     "img": "s_4059729377715.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 8
+    },
+    {
+     "id": "289bea27-f631-499e-b546-27466c6bc83f",
+     "barcode": "4059729419774",
+     "name": "170 Chocolate Lover",
+     "colorHex": "#694F42",
+     "img": "s_4059729419774.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 9
+    },
+    {
+     "id": "7baa33ff-658f-4a01-bff9-bf55d8925e20",
+     "barcode": "4059729419743",
+     "name": "180 Cherry Lady",
+     "colorHex": "#652631",
+     "img": "s_4059729419743.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 10
+    },
+    {
+     "id": "7bb4f4f5-0aa1-41bd-b815-64e82f2edc38",
+     "barcode": "4059729419767",
+     "name": "200 Rosie Feels Rosy",
+     "colorHex": "#CB6968",
+     "img": "s_4059729419767.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 11
+    }
+   ],
+   "primary": "s_4059729276667.jpg",
+   "texture": "t_4059729276667.jpg",
+   "extras": [
+    "a824f9fd-9c1e-413a-af8b-3f4cd0365489"
+   ]
+  },
+  {
+   "id": "7e0d7d21-b9a8-4a58-a803-a105cd4e3482",
+   "slug": "catrice-true-skin-high-cover-concealer-020-warm-beige",
+   "rename": null,
+   "shades": [
+    {
+     "id": "fbd3243f-41fb-4e5a-86ac-ca6f5e7482fe",
+     "barcode": "4059729277077",
+     "name": "005 Warm Macadamia",
+     "colorHex": "#F0CBB1",
+     "img": "s_4059729277077.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4059729277084",
+     "name": "010 Cool Cashmere",
+     "colorHex": "#E9BDA4",
+     "img": "s_4059729277084.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 11,
+     "position": 1
+    },
+    {
+     "id": null,
+     "barcode": "4059729281975",
+     "name": "015 Warm Vanilla",
+     "colorHex": "#E8B99B",
+     "img": "s_4059729281975.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 25,
+     "position": 2
+    },
+    {
+     "id": "0606e585-90b9-48a9-8c4e-f83da2208d77",
+     "barcode": "4059729277091",
+     "name": "020 Warm Beige",
+     "colorHex": "#DFB293",
+     "img": "s_4059729277091.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 42,
+     "position": 3
+    },
+    {
+     "id": "f8a18c11-0fbb-43af-a3ad-0b8aac41a4a0",
+     "barcode": "4059729277114",
+     "name": "032 Neutral Biscuit",
+     "colorHex": "#DBB08D",
+     "img": "s_4059729277114.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 11,
+     "position": 4
+    },
+    {
+     "id": null,
+     "barcode": "4059729285980",
+     "name": "039 Warm Olive",
+     "colorHex": "#D9AD88",
+     "img": "s_4059729285980.jpg",
+     "isActive": true,
+     "price": 8100,
+     "originalPrice": 9000,
+     "discountPercent": 10,
+     "stock": 10,
+     "position": 5
+    }
+   ],
+   "primary": "s_4059729277077.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "53003e42-7b29-4ff1-aa12-76a3d55d281c",
+   "slug": "catrice-go-big-go-bold-deep-black-mascara-4059729280961",
+   "rename": null,
+   "single": {
+    "barcode": "4059729280961",
+    "price": 8550,
+    "originalPrice": 9500,
+    "discountPercent": 10,
+    "stock": 2
+   },
+   "primary": "s_4059729280961.jpg",
+   "texture": "t_4059729280961.jpg",
+   "extras": [
+    "f0fa4669-fa80-4a20-aae2-7c8b63905126"
+   ]
+  },
+  {
+   "id": "6cf7eccb-bc63-490d-a5bd-9220648fafc5",
+   "slug": "catrice-go-big-go-bold-waterproof-mascara-4059729281005",
+   "rename": null,
+   "single": {
+    "barcode": "4059729281005",
+    "price": 8550,
+    "originalPrice": 9500,
+    "discountPercent": 10,
+    "stock": 7
+   },
+   "primary": "s_4059729281005.jpg",
+   "texture": "t_4059729281005.jpg",
+   "extras": [
+    "adaf762f-55ce-44de-9ae1-e17c7f1e6ac4"
+   ]
+  },
+  {
+   "id": "3834b76d-c730-4fb1-afb3-9e7028014f9d",
+   "slug": "catrice-oil-control-matt-fixing-spray",
+   "rename": null,
+   "single": {
+    "barcode": "4059729312525",
+    "price": 9900,
+    "originalPrice": 11000,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4059729312525.jpg",
+   "texture": "t_4059729312525.jpg",
+   "extras": [
+    "4da3947a-6113-4dbc-9bc9-a114e73eda48"
+   ]
+  },
+  {
+   "id": "fbd6009f-642b-4863-9433-a514cc6a6215",
+   "slug": "catrice-loose-banana-4059729327475",
+   "rename": null,
+   "single": {
+    "barcode": "4059729327475",
+    "price": 9675,
+    "originalPrice": 10750,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4059729327475.jpg",
+   "texture": "t_4059729327475.jpg",
+   "extras": [
+    "6ee09d4f-b7e5-4dea-91d8-d0ff815b436f"
+   ]
+  },
+  {
+   "id": "fcca6320-6510-49fa-97ad-9787619bf70e",
+   "slug": "catrice-20h-ultra-precision-gel-eye-pencil-waterproof",
+   "rename": null,
+   "shades": [
+    {
+     "id": "bed982c5-d14b-408d-8f96-a947b5ac6958",
+     "barcode": "4059729329264",
+     "name": "010 Black",
+     "colorHex": "#000000",
+     "img": "s_4059729329264.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "260b645a-d251-4ef0-b1c5-0f89bbb80762",
+     "barcode": "4059729329349",
+     "name": "030 Brownie",
+     "colorHex": "#37261E",
+     "img": "s_4059729329349.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 1
+    },
+    {
+     "id": "19d26be6-6543-463e-b6fe-345558365d44",
+     "barcode": "4059729329424",
+     "name": "050 Blue",
+     "colorHex": "#253451",
+     "img": "s_4059729329424.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 2
+    },
+    {
+     "id": "30056f15-d4f6-4f8c-8660-d5d0a0d1c64b",
+     "barcode": "4059729397744",
+     "name": "100 Light Up",
+     "colorHex": "#F2D0B7",
+     "img": "s_4059729397744.jpg",
+     "isActive": true,
+     "price": 5750,
+     "originalPrice": 5750,
+     "discountPercent": 0,
+     "stock": 4,
+     "position": 3
+    },
+    {
+     "id": "9b494b12-d4d8-42da-9753-42091fd71037",
+     "barcode": "4059729444370",
+     "name": "110 Rosy Copper",
+     "colorHex": "#DD8B66",
+     "img": "s_4059729444370.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 4
+    }
+   ],
+   "primary": "s_4059729329264.jpg",
+   "texture": "t_4059729329264.jpg",
+   "extras": []
+  },
+  {
+   "id": "27c66c07-b369-46a7-9084-8eee9f67e298",
+   "slug": "catrice-glam-doll-sensitive-volume-mascara-010-black-10-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729329783",
+    "price": 8100,
+    "originalPrice": 9000,
+    "discountPercent": 10,
+    "stock": 2
+   },
+   "primary": "s_4059729329783.jpg",
+   "texture": "t_4059729329783.jpg",
+   "extras": [
+    "66aaab3e-eece-4c11-bd72-a172150e8083",
+    "2467e9ec-934d-4c36-9409-ad89c869355d",
+    "e32c310b-40a7-49fa-aef7-dea00bde1961",
+    "c793615a-4eb9-4897-838a-052e48cf1f43",
+    "b82dc0c3-9cfa-4561-a39b-7bd530823312",
+    "701ea515-a7f8-49a5-b733-2289bf6077f9",
+    "474e2883-2b4c-4c63-8b73-f903090b86f0",
+    "616979b3-185a-494c-b013-18a0dd5303b9",
+    "47025568-7dd6-4395-9f24-571e676dc12e"
+   ]
+  },
+  {
+   "id": "ef09cac0-4c50-449e-b29a-e59a70b9ffd1",
+   "slug": "catrice-brow-powder-set-waterproof",
+   "rename": null,
+   "shades": [
+    {
+     "id": "565932ac-e2a9-4dbc-8246-4b462230d3ae",
+     "barcode": "4059729354501",
+     "name": "010 Ash Blond",
+     "keep": true,
+     "position": 0
+    },
+    {
+     "id": "83289032-3add-493a-9fcd-d2420c8d0a9b",
+     "barcode": "4059729354549",
+     "name": "020 Ash Brown",
+     "colorHex": "#5F574E",
+     "img": "s_4059729354549.jpg",
+     "isActive": true,
+     "price": 7750,
+     "originalPrice": 7750,
+     "discountPercent": 0,
+     "stock": 0,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729354549.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "429ff8fe-ba30-4150-94d6-e5a9c9e47963",
+   "slug": "catrice-kohl-kajal-waterproof-4059729356239",
+   "rename": null,
+   "shades": [
+    {
+     "id": "8f4c8a57-698a-41a5-81fe-59673cd17931",
+     "barcode": "4059729356239",
+     "name": "010 Check Chic Black",
+     "colorHex": "#000000",
+     "img": "s_4059729356239.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 0
+    },
+    {
+     "id": "adf817ae-95f0-4ab6-a8ba-f83edf43b3bb",
+     "barcode": "4059729356277",
+     "name": "020 Tweet White",
+     "colorHex": "#FFFFFF",
+     "img": "s_4059729356277.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 1
+    },
+    {
+     "id": null,
+     "barcode": "4059729356390",
+     "name": "050 Beat Anthrazit",
+     "colorHex": "#333534",
+     "img": "s_4059729356390.jpg",
+     "isActive": true,
+     "price": 4275,
+     "originalPrice": 4750,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 2
+    },
+    {
+     "id": null,
+     "barcode": "4059729356437",
+     "name": "060 Classy Blue-y Navy",
+     "colorHex": "#17467E",
+     "img": "s_4059729356437.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 13,
+     "position": 3
+    },
+    {
+     "id": "e11ec4a2-2e1b-41cc-8697-3430d6df21f2",
+     "barcode": "4059729356475",
+     "name": "070 Turquoise Sense",
+     "colorHex": "#0677BD",
+     "img": "s_4059729356475.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 4
+    },
+    {
+     "id": null,
+     "barcode": "4059729418968",
+     "name": "090 La La Lavender",
+     "colorHex": "#C891CB",
+     "img": "s_4059729418968.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 5
+    },
+    {
+     "id": "a7dd0daf-37ac-4296-b4db-f9728ad29994",
+     "barcode": "4059729444547",
+     "name": "140 Frosty Mint",
+     "colorHex": "#97DCD9",
+     "img": "s_4059729444547.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 6
+    },
+    {
+     "id": "c7d978f3-0b34-4f81-a334-d3a2a89341e1",
+     "barcode": "4059729444738",
+     "name": "150 Ultra Marine",
+     "colorHex": "#3343CC",
+     "img": "s_4059729444738.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 7
+    },
+    {
+     "id": null,
+     "barcode": "4059729444592",
+     "name": "160 Baby Blue",
+     "colorHex": "#ADCBE5",
+     "img": "s_4059729444592.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 8
+    },
+    {
+     "id": "0cf6bc8b-1470-4133-bb62-9174e68334e6",
+     "barcode": "4059729514790",
+     "name": "190 Bright Nude",
+     "colorHex": "#FFC99A",
+     "img": "s_4059729514790.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 9
+    },
+    {
+     "id": null,
+     "barcode": "4059729514806",
+     "name": "200 Pretty in Pink",
+     "colorHex": "#EC4E5C",
+     "img": "s_4059729514806.jpg",
+     "isActive": true,
+     "price": 4050,
+     "originalPrice": 4500,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 10
+    }
+   ],
+   "primary": "s_4059729356239.jpg",
+   "texture": "t_4059729356239.jpg",
+   "extras": [
+    "74374d22-1d9d-4037-9523-583ff3c887ea"
+   ]
+  },
+  {
+   "id": "00beea89-557e-46d0-9e5f-b327e931ad65",
+   "slug": "catrice-super-glue-brow-styling-gel-no-010",
+   "rename": null,
+   "single": {
+    "barcode": "4059729357823",
+    "price": 8775,
+    "originalPrice": 9750,
+    "discountPercent": 10,
+    "stock": 2
+   },
+   "primary": "s_4059729357823.jpg",
+   "texture": "t_4059729357823.jpg",
+   "extras": [
+    "ce5465b2-885f-43da-9a10-191022613692",
+    "7aece1c5-5436-4381-8361-b7363597e065"
+   ]
+  },
+  {
+   "id": "a6584523-8bec-44b4-b649-7bad7811544f",
+   "slug": "catrice-the-mattifier-oil-control-4059729357939",
+   "rename": null,
+   "single": {
+    "barcode": "4059729357939",
+    "price": 9000,
+    "originalPrice": 10000,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4059729357939.jpg",
+   "texture": "t_4059729357939.jpg",
+   "extras": [
+    "67a9ac46-ae5c-43fa-b974-77a961dcfbe5"
+   ]
+  },
+  {
+   "id": "82ac711d-8219-4c2e-802a-48266a6e78e6",
+   "slug": "catrice-under-eye-brightener-no-010",
+   "rename": [
+    "كاتريس مفتّح منطقة تحت العين أندر آي برايتنر",
+    "Catrice Under Eye Brightener"
+   ],
+   "shades": [
+    {
+     "id": null,
+     "barcode": "4059729375759",
+     "name": "010 Light Rose",
+     "colorHex": "#D6A596",
+     "img": "s_4059729375759.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 0,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4059729419095",
+     "name": "020 Warm Nude",
+     "colorHex": "#FAB689",
+     "img": "s_4059729419095.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729419095.jpg",
+   "texture": "t_4059729375759.jpg",
+   "extras": [
+    "ebb8fb1f-0755-472c-b4a5-1e95ad0c8af3",
+    "3c9807b1-763e-4f36-a54c-88da768704a4"
+   ]
+  },
+  {
+   "id": "40f3b2a8-d6f5-4464-8c97-a2c2a0ad6f19",
+   "slug": "catrice-ink-eyeliner-010-best-in-black-17-g",
+   "rename": null,
+   "single": {
+    "barcode": "4059729393500",
+    "price": 6525,
+    "originalPrice": 7250,
+    "discountPercent": 10,
+    "stock": 6
+   },
+   "primary": "s_4059729393500.jpg",
+   "texture": "t_4059729393500.jpg",
+   "extras": [
+    "a56d7779-cc00-4248-bacc-1f1c023a4ee9",
+    "d5ff5c8c-b38f-4dbb-bb48-2854fdd77a19",
+    "19cfa664-44bc-4845-8b05-9dd5e55ab57e",
+    "f9939d59-7616-44f2-9a23-25102fdde89c",
+    "623b9236-77ce-429c-93f2-9589f0a47f0a",
+    "a0a0e8af-0235-46de-974b-6b92ad36eeed",
+    "485a3147-a481-4c19-ac57-46b13d814cfa"
+   ]
+  },
+  {
+   "id": "80c46304-da5c-490f-9c4a-667d965e144d",
+   "slug": "catrice-ink-eyeliner-waterproof-010-stay-in-black-17-g",
+   "rename": null,
+   "single": {
+    "barcode": "4059729393517",
+    "price": 6975,
+    "originalPrice": 7750,
+    "discountPercent": 10,
+    "stock": 5
+   },
+   "primary": "s_4059729393517.jpg",
+   "texture": "t_4059729393517.jpg",
+   "extras": [
+    "892a3e8b-8209-4fa7-86e8-39d938767529",
+    "14d6d012-2f76-476c-80ad-a5452f9ea021",
+    "a9939351-3160-4299-9c5d-6be74ba9654a",
+    "c47dbdb6-6298-4c78-9424-1bd835cf8ba9",
+    "1f711d47-51b7-473e-9ddd-54b57e35a752"
+   ]
+  },
+  {
+   "id": "cd4953f4-742b-4584-bdd1-4111df75fcb5",
+   "slug": "catrice-glam-doll-endless-lash-mascara-black",
+   "rename": null,
+   "single": {
+    "barcode": "4059729393661",
+    "price": 8100,
+    "originalPrice": 9000,
+    "discountPercent": 10,
+    "stock": 2
+   },
+   "primary": "s_4059729393661.jpg",
+   "texture": "t_4059729393661.jpg",
+   "extras": []
+  },
+  {
+   "id": "0eeef9ae-e524-409a-b3e8-0179d226144f",
+   "slug": "catrice-go-big-go-bold-24h-wear-extreme-false-lash-effect-mascara",
+   "rename": null,
+   "single": {
+    "barcode": "4059729393678",
+    "price": 8550,
+    "originalPrice": 9500,
+    "discountPercent": 10,
+    "stock": 9
+   },
+   "primary": "s_4059729393678.jpg",
+   "texture": "t_4059729393678.jpg",
+   "extras": [
+    "e966f741-2b03-455f-84a4-670590a572ca",
+    "e56f2bb4-f3f2-47f5-bc99-ab4e82c39d4a",
+    "30a11361-3f35-4758-aa37-c89c4f55ceef"
+   ]
+  },
+  {
+   "id": "3636a9a5-642d-4526-a119-9a24afbd03c9",
+   "slug": "catrice-cosmetic-sharpener-4059729393685",
+   "rename": null,
+   "single": {
+    "barcode": "4059729393685",
+    "price": 4750,
+    "originalPrice": 4750,
+    "discountPercent": 0,
+    "stock": 3
+   },
+   "primary": "s_4059729393685.jpg",
+   "texture": null,
+   "extras": [
+    "4b0be360-5592-4d34-a5a0-5aa6c4b3a091"
+   ]
+  },
+  {
+   "id": "7484c70e-b810-4099-b307-a64b8d786d7f",
+   "slug": "catrice-18h-hd-matte-powder-foundation-8-g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "dc67d9a9-c907-4e1b-bd53-04fcc2d5748f",
+     "barcode": "4059729393753",
+     "name": "010W",
+     "colorHex": "#F8DBB3",
+     "img": "s_4059729393753.jpg",
+     "isActive": true,
+     "price": 11025,
+     "originalPrice": 12250,
+     "discountPercent": 10,
+     "stock": 0,
+     "position": 0
+    },
+    {
+     "id": "b6c48741-63c1-4bd5-b301-32e510d4307f",
+     "barcode": "4059729393760",
+     "name": "012W",
+     "colorHex": "#F1D29C",
+     "img": "s_4059729393760.jpg",
+     "isActive": true,
+     "price": 11025,
+     "originalPrice": 12250,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 1
+    },
+    {
+     "id": "6a4d05cc-1f04-40f4-a5ff-d6b1153fc514",
+     "barcode": "4059729393777",
+     "name": "015N",
+     "colorHex": "#F0CA9B",
+     "img": "s_4059729393777.jpg",
+     "isActive": true,
+     "price": 11025,
+     "originalPrice": 12250,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 2
+    },
+    {
+     "id": "7b1fa0a2-d79a-4558-8a8e-201b5708403a",
+     "barcode": "4059729393784",
+     "name": "020N",
+     "colorHex": "#F2D1A4",
+     "img": "s_4059729393784.jpg",
+     "isActive": true,
+     "price": 11025,
+     "originalPrice": 12250,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729393760.jpg",
+   "texture": "t_4059729393753.jpg",
+   "extras": [
+    "d3e3d51b-959a-4b11-adfd-1eaf29645c3b",
+    "3329ed6b-e041-4cc5-ad9a-f11f08528436"
+   ]
+  },
+  {
+   "id": "4f44a131-853f-4ec2-9a0a-31ec4c93071f",
+   "slug": "catrice-nude-drop-tinted-serum-foundation-30-ml",
+   "rename": null,
+   "shades": [
+    {
+     "id": "5c200401-5fbc-46f2-bc00-1e85bc00239f",
+     "barcode": "4059729399861",
+     "name": "010N",
+     "keep": true,
+     "position": 0
+    },
+    {
+     "id": "d91db4d7-a4b6-4bfd-9c20-a417c94613f3",
+     "barcode": "4059729399946",
+     "name": "030C",
+     "colorHex": "#CBA882",
+     "img": "s_4059729399946.jpg",
+     "isActive": true,
+     "price": 13275,
+     "originalPrice": 14750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729399946.jpg",
+   "texture": null,
+   "extras": [
+    "88b5d780-9605-4259-b985-da020ae754c9",
+    "f51b82ef-6f92-4bb5-8eac-8e2a788ac4b8"
+   ]
+  },
+  {
+   "id": "de40767e-58b2-484b-a643-6f61993d9ae0",
+   "slug": "catrice-scandalous-matte-lipstick-3-5-g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "697706b4-a71b-4c74-8234-cdcc86685fd7",
+     "barcode": "4059729402226",
+     "name": "040 Rosy Seduction",
+     "keep": true,
+     "position": 0
+    },
+    {
+     "id": "646fe00b-f3bb-4e22-a371-812d8efb6f4e",
+     "barcode": "4059729402264",
+     "name": "050 Sucker For Love",
+     "keep": true,
+     "position": 1
+    },
+    {
+     "id": "94e9bac3-1200-46f2-b439-4f552ce0bd6d",
+     "barcode": "4059729402301",
+     "name": "060 Good Intentions",
+     "colorHex": "#B55E66",
+     "img": "s_4059729402301.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 2
+    },
+    {
+     "id": "84f91edd-9a4e-4439-a796-8e7c2bf53ad3",
+     "barcode": "4059729402462",
+     "name": "100 Muse Of Inspiration",
+     "keep": true,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729402301.jpg",
+   "texture": null,
+   "extras": [
+    "fff9546e-4765-4acf-8dea-0cf5219bd745",
+    "8ca033ae-dcf3-4555-8343-f6ead7f48072"
+   ]
+  },
+  {
+   "id": "a77f2917-d071-4468-aaa0-23c40313bcbf",
+   "slug": "catrice-calligraph-pro-precise-20h-matte-liner-010-black",
+   "rename": null,
+   "single": {
+    "barcode": "4059729418791",
+    "price": 7250,
+    "originalPrice": 7250,
+    "discountPercent": 0,
+    "stock": 4
+   },
+   "primary": "s_4059729418791.jpg",
+   "texture": "t_4059729418791.jpg",
+   "extras": [
+    "61494012-ce50-43fc-8725-e2b8341aa9f6",
+    "da2b25a4-dbf9-44a2-8aa0-56ed369b8582"
+   ]
+  },
+  {
+   "id": "7abc1756-2693-4452-9cb1-530c11042749",
+   "slug": "catrice-melted-sun-cream-bronzer-020-beach-babe-9-g",
+   "rename": null,
+   "single": {
+    "barcode": "4059729419248",
+    "price": 9000,
+    "originalPrice": 10000,
+    "discountPercent": 10,
+    "stock": 1
+   },
+   "primary": "s_4059729419248.jpg",
+   "texture": "t_4059729419248.jpg",
+   "extras": [
+    "bf624090-bcce-4e78-81ea-5f1bab3e444c",
+    "24f0fdf1-4aa4-4550-9df6-ea2bdc95bb95",
+    "0b04a856-8805-4208-bc75-53ae8866c658"
+   ]
+  },
+  {
+   "id": "666d5dcc-323c-45f5-9243-3b67718443e2",
+   "slug": "catrice-soft-glam-filter-fluid-no-010-fair-light",
+   "rename": [
+    "كاتريس سائل سوفت جلام فلتر",
+    "Catrice Soft Glam Filter Fluid"
+   ],
+   "shades": [
+    {
+     "id": null,
+     "barcode": "4059729419293",
+     "name": "010 Fair - Light",
+     "colorHex": "#F6D4A6",
+     "img": "s_4059729419293.jpg",
+     "isActive": true,
+     "price": 13950,
+     "originalPrice": 15500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4059729419309",
+     "name": "020 Light - Medium",
+     "colorHex": "#E4BC89",
+     "img": "s_4059729419309.jpg",
+     "isActive": true,
+     "price": 13950,
+     "originalPrice": 15500,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729419293.jpg",
+   "texture": "t_4059729419293.jpg",
+   "extras": [
+    "4b918bc5-82dc-4348-8dfa-773f1fc0a4a1",
+    "8589e3c6-ff8b-423e-ae47-412e880b27b0",
+    "0f77421a-2331-4fa0-ab29-f38ad8616ab1"
+   ]
+  },
+  {
+   "id": "8cf48c47-05f2-4791-a674-0f56f7bfe608",
+   "slug": "catrice-glitter-glam-glow-lip-balm-4059729419590",
+   "rename": null,
+   "single": {
+    "barcode": "4059729419590",
+    "price": 9000,
+    "originalPrice": 10000,
+    "discountPercent": 10,
+    "stock": 0
+   },
+   "primary": "s_4059729419590.jpg",
+   "texture": "t_4059729419590.jpg",
+   "extras": [
+    "4db91c67-25e0-4d1f-962a-9cacc467272c"
+   ]
+  },
+  {
+   "id": "1093499d-21b7-4b5d-9954-433863d4ef0c",
+   "slug": "catrice-glossin-glow-tinted-lip-oil-10-keep-it-juicy-4059729419606",
+   "rename": null,
+   "shades": [
+    {
+     "id": "c7593e7f-6be8-4bc8-a55f-9a41ed7a185f",
+     "barcode": "4059729419606",
+     "name": "010 Keep It Juicy",
+     "colorHex": "#FFC4C8",
+     "img": "s_4059729419606.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 0
+    },
+    {
+     "id": "ba0a8da8-f3a4-48fc-8943-5e08c20a1feb",
+     "barcode": "4059729419613",
+     "name": "020 Drama Mama",
+     "colorHex": "#E8474C",
+     "img": "s_4059729419613.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 1
+    },
+    {
+     "id": null,
+     "barcode": "4059729419637",
+     "name": "040 Glossip Girl",
+     "colorHex": "#E05387",
+     "img": "s_4059729419637.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 2
+    },
+    {
+     "id": null,
+     "barcode": "4059729489852",
+     "name": "060 Party Crasher",
+     "colorHex": "#EFF1EC",
+     "img": "s_4059729489852.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 3
+    },
+    {
+     "id": "3b3541e7-a588-40bb-b73e-a81afb723ddc",
+     "barcode": "4059729515438",
+     "name": "070 Make A Move",
+     "colorHex": "#9E2340",
+     "img": "s_4059729515438.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 4
+    }
+   ],
+   "primary": "s_4059729419606.jpg",
+   "texture": "t_4059729419606.jpg",
+   "extras": [
+    "2069f35a-8723-40c0-95a9-cc956b89813e"
+   ]
+  },
+  {
+   "id": "6f5f3e86-d77a-4fa5-a0c7-fdc2c6970742",
+   "slug": "catrice-care-in-colours-lip-balm",
+   "rename": null,
+   "shades": [
+    {
+     "id": "b7f198f4-872a-41ac-a211-f1cc963f1fac",
+     "barcode": "4059729445391",
+     "name": "020 Feelin' Pretty",
+     "colorHex": "#C36E67",
+     "img": "s_4059729445391.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 0
+    },
+    {
+     "id": "5fdefc30-7f95-4975-b127-469171226616",
+     "barcode": "4059729445414",
+     "name": "030 Bubbly Friday",
+     "colorHex": "#9E3E49",
+     "img": "s_4059729445414.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 1
+    },
+    {
+     "id": "dff166df-937f-4783-b4f3-04a8f2308d51",
+     "barcode": "4059729445438",
+     "name": "040 Hot Take",
+     "colorHex": "#A20E24",
+     "img": "s_4059729445438.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 2
+    },
+    {
+     "id": "881ddfa4-786a-4c19-9dfc-92516cc26696",
+     "barcode": "4059729489937",
+     "name": "060 Half Baked Cookies",
+     "colorHex": "#8E5043",
+     "img": "s_4059729489937.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729445391.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "116fb5eb-4a82-4306-8cb3-2cc4c24ce1b8",
+   "slug": "catrice-perfect-duo-xxl-effect-mascara-010-black-8-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729487933",
+    "price": 11025,
+    "originalPrice": 12250,
+    "discountPercent": 10,
+    "stock": 3
+   },
+   "primary": "s_4059729487933.jpg",
+   "texture": "t_4059729487933.jpg",
+   "extras": [
+    "a77609d1-db31-4247-9949-7ab81d93fa11",
+    "ed98bbb2-1ac7-42be-a7f2-70f2f531a962",
+    "717cc1fe-d192-477b-b4bb-9e30d655e798",
+    "816914da-f2ff-4ec4-8dd2-b1b542d1e2d1"
+   ]
+  },
+  {
+   "id": "ab556587-5c9c-456a-b65c-fe8fd80327b0",
+   "slug": "catrice-instant-bright-serum-concealer",
+   "rename": null,
+   "shades": [
+    {
+     "id": "ba3b7de2-36d0-47fc-83f1-3bfafce9cc34",
+     "barcode": "4059729488381",
+     "name": "010C",
+     "colorHex": "#C29F8B",
+     "img": "s_4059729488381.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 0
+    },
+    {
+     "id": "4a270f7f-7880-4981-b594-e78e16161758",
+     "barcode": "4059729488329",
+     "name": "020W",
+     "colorHex": "#C69A7D",
+     "img": "s_4059729488329.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 1
+    },
+    {
+     "id": "e7e19443-823c-41e8-b546-385ddfe3d60b",
+     "barcode": "4059729488466",
+     "name": "032N",
+     "colorHex": "#C29A80",
+     "img": "s_4059729488466.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 2
+    }
+   ],
+   "primary": "s_4059729488381.jpg",
+   "texture": "t_4059729488329.jpg",
+   "extras": []
+  },
+  {
+   "id": "04a42047-a06d-4286-8c56-54687159a579",
+   "slug": "catrice-the-protector-hydrate-spf-30-primer-22-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729488633",
+    "price": 9000,
+    "originalPrice": 10000,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4059729488633.jpg",
+   "texture": "t_4059729488633.jpg",
+   "extras": [
+    "9806d890-74ca-4738-9237-9753e5742473",
+    "92650b7d-b692-4289-83a7-bf1c83c9c256",
+    "96c3cbc1-2ec0-4c3c-aa2c-4db16e717f48"
+   ]
+  },
+  {
+   "id": "3be8ed56-5f8d-4610-a114-af11709529f5",
+   "slug": "catrice-endless-matte-liquid-lipstick",
+   "rename": null,
+   "shades": [
+    {
+     "id": "aa111d65-8bf3-463b-b94f-5206dbdeae82",
+     "barcode": "4059729489562",
+     "name": "010 Get Undressed",
+     "colorHex": "#D5937D",
+     "img": "s_4059729489562.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 0
+    },
+    {
+     "id": "ad0030f3-6792-404b-b7ed-4fc98d7ed7fa",
+     "barcode": "4059729489586",
+     "name": "020 Lovely Nude",
+     "colorHex": "#AC6C53",
+     "img": "s_4059729489586.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    },
+    {
+     "id": "112b9558-0d0d-4688-9d1c-56eb9e79af22",
+     "barcode": "4059729489609",
+     "name": "030 Truly Yours",
+     "colorHex": "#8D6049",
+     "img": "s_4059729489609.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 2
+    },
+    {
+     "id": "7a470524-267e-44de-8d3b-89a47344f196",
+     "barcode": "4059729489623",
+     "name": "040 Wifey",
+     "colorHex": "#B65145",
+     "img": "s_4059729489623.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 3
+    },
+    {
+     "id": "f3ce43de-2d51-49f0-9e9f-34df07d8bd64",
+     "barcode": "4059729489647",
+     "name": "050 Kiss Me Quick",
+     "colorHex": "#BE635E",
+     "img": "s_4059729489647.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 4
+    },
+    {
+     "id": "d4208b34-4fd4-4775-a377-872f0c3929a3",
+     "barcode": "4059729489661",
+     "name": "060 Red Flag",
+     "colorHex": "#BC0311",
+     "img": "s_4059729489661.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 5
+    },
+    {
+     "id": "33acdb51-05fe-45dc-85c7-132573f0e97c",
+     "barcode": "4059729489708",
+     "name": "080 Love Potion",
+     "colorHex": "#9E252C",
+     "img": "s_4059729489708.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 6
+    },
+    {
+     "id": "d3b2a1d2-6450-4760-a30c-3ead23352327",
+     "barcode": "4059729489722",
+     "name": "090 No Broken Hearts",
+     "colorHex": "#8B3E2A",
+     "img": "s_4059729489722.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 7
+    },
+    {
+     "id": "521a4b90-8c7a-4595-abbc-2545ff496d04",
+     "barcode": "4059729489746",
+     "name": "100 Coffee Date?",
+     "colorHex": "#583426",
+     "img": "s_4059729489746.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 8
+    },
+    {
+     "id": "bd42f988-af25-4ad5-81d2-84e341981348",
+     "barcode": "4059729489784",
+     "name": "110 Pralines and Flowers",
+     "colorHex": "#7D411D",
+     "img": "s_4059729489784.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 9
+    },
+    {
+     "id": "b115f498-b675-4cfa-b94c-2c3cec8e33fc",
+     "barcode": "4059729489807",
+     "name": "120 Candlelight Kiss",
+     "colorHex": "#99442F",
+     "img": "s_4059729489807.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 9,
+     "position": 10
+    },
+    {
+     "id": "c486dcb0-f083-4084-b7c7-de11c4c3374f",
+     "barcode": "4059729503985",
+     "name": "130 So What",
+     "colorHex": "#902C1C",
+     "img": "s_4059729503985.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 11
+    }
+   ],
+   "primary": "s_4059729489562.jpg",
+   "texture": "t_4059729489562.jpg",
+   "extras": []
+  },
+  {
+   "id": "84cea614-ad0b-4219-a12a-19c4488efeed",
+   "slug": "catrice-kiss-glow-cream-blush-stick-18g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "ef2397d2-3cc2-4a75-9f65-94ee44a69178",
+     "barcode": "4059729513373",
+     "name": "C01 Cheeky Flirt",
+     "colorHex": "#ff7766",
+     "img": "s_4059729513373.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 0
+    }
+   ],
+   "primary": "s_4059729513373.jpg",
+   "texture": null,
+   "extras": [
+    "b789a8e9-2976-45f3-90b9-6e9ddbd7e62a"
+   ]
+  },
+  {
+   "id": "f7437420-d06f-4ccb-9453-7aa9239fd7a4",
+   "slug": "catrice-kiss-glow-plumping-lip-liner-0-35g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "94c5f296-e451-42b3-b33a-55e2037d4354",
+     "barcode": "4059729513656",
+     "name": "C02 Don't Miss A Kiss",
+     "colorHex": "#e3a3a3",
+     "img": "s_4059729513656.jpg",
+     "isActive": true,
+     "price": 4725,
+     "originalPrice": 5250,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 0
+    },
+    {
+     "id": "155bb48a-e842-4514-aac8-5c2c298dd1e8",
+     "barcode": "4059729513694",
+     "name": "C03 Kiss Alert",
+     "colorHex": "#a74667",
+     "img": "s_4059729513694.jpg",
+     "isActive": true,
+     "price": 4725,
+     "originalPrice": 5250,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729513656.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "e7fc2dc7-4914-4f04-a5b7-351531b32770",
+   "slug": "catrice-hyper-lash-mascara-10-ml",
+   "rename": null,
+   "shades": [
+    {
+     "id": "80fb7e64-3ac7-4dd1-b217-0f2755177357",
+     "barcode": "4059729514424",
+     "name": "010 Electric Black",
+     "colorHex": "#000000",
+     "img": "s_4059729514424.jpg",
+     "isActive": true,
+     "price": 10800,
+     "originalPrice": 12000,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 0
+    },
+    {
+     "id": "b4e7feeb-7611-4e15-9dcb-517108f1a4b3",
+     "barcode": "4059729540034",
+     "name": "030 Burgundy Bliss",
+     "colorHex": "#722E2F",
+     "img": "s_4059729540034.jpg",
+     "isActive": true,
+     "price": 10800,
+     "originalPrice": 12000,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729514424.jpg",
+   "texture": "t_4059729514424.jpg",
+   "extras": []
+  },
+  {
+   "id": "45963998-265c-4bc1-b869-70173f550f4f",
+   "slug": "catrice-superproof-brush-liner-waterproof-no-010-045-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729514462",
+    "price": 6975,
+    "originalPrice": 7750,
+    "discountPercent": 10,
+    "stock": 6
+   },
+   "primary": "s_4059729514462.jpg",
+   "texture": "t_4059729514462.jpg",
+   "extras": [
+    "b363da02-2ff7-4bcf-9e1f-e16f50faebf7",
+    "269c1c03-af3e-4106-a320-8e66df5f06ee",
+    "a5ab3ba4-e20b-4386-8582-41cc54432db0"
+   ]
+  },
+  {
+   "id": "71fbb592-d8e4-4b4e-b8a0-ce70fa7b70b9",
+   "slug": "catrice-under-eye-brightener-setting-powder-no-010-23-g",
+   "rename": [
+    "كاتريس بودرة تثبيت تحت العين أندر آي برايتنر - 2.3 غ",
+    "Catrice Under Eye Brightener Setting Powder 2.3 g"
+   ],
+   "shades": [
+    {
+     "id": null,
+     "barcode": "4059729514554",
+     "name": "010 Light Rose",
+     "colorHex": "#FFD5B5",
+     "img": "s_4059729514554.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4059729514561",
+     "name": "020 Warm Nude",
+     "colorHex": "#FFDEAB",
+     "img": "s_4059729514561.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729514554.jpg",
+   "texture": "t_4059729514554.jpg",
+   "extras": [
+    "66384343-8f5a-4031-a282-9aecbf7d82e9",
+    "0d3c3c68-7513-4e9b-9585-75b63969f5ac",
+    "6a801de3-f297-469f-8363-16f107d3233c"
+   ]
+  },
+  {
+   "id": "f5ea7019-15e7-4d1c-8864-ca4a6ecf711f",
+   "slug": "catrice-tiny-treasures-eyeshadow-palette-020-wild-berry",
+   "rename": [
+    "كاتريس باليت ظلال العيون تايني تريجرز",
+    "Catrice Tiny Treasures Eyeshadow Palette"
+   ],
+   "shades": [
+    {
+     "id": null,
+     "barcode": "4059729514684",
+     "name": "010 Everyday Essentials",
+     "colorHex": "#A9764A",
+     "img": "s_4059729514684.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4059729514707",
+     "name": "020 Wild Berry",
+     "colorHex": "#BA676D",
+     "img": "s_4059729514707.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729514684.jpg",
+   "texture": "t_4059729514684.jpg",
+   "extras": []
+  },
+  {
+   "id": "ae8b2ed5-25b7-4ba7-93c6-cf5ee30599e4",
+   "slug": "catrice-blushin-charm-multi-stick",
+   "rename": null,
+   "shades": [
+    {
+     "id": "3254d8bd-82f3-4451-8227-9a6f9baf1d77",
+     "barcode": "4059729514899",
+     "name": "010 Pink Sweetheart",
+     "colorHex": "#FE5761",
+     "img": "s_4059729514899.jpg",
+     "isActive": true,
+     "price": 9450,
+     "originalPrice": 10500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 0
+    },
+    {
+     "id": "b60ad80e-50f7-465d-85eb-c8831c1f6dbf",
+     "barcode": "4059729514912",
+     "name": "020 Coral Cutie",
+     "colorHex": "#FF5E51",
+     "img": "s_4059729514912.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 1
+    },
+    {
+     "id": "557a6670-0961-43e1-b974-a9db5b51c273",
+     "barcode": "4059729514974",
+     "name": "030 Ruby Darling",
+     "colorHex": "#A5363F",
+     "img": "s_4059729514974.jpg",
+     "isActive": true,
+     "price": 9450,
+     "originalPrice": 10500,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 2
+    },
+    {
+     "id": "8b12e215-0243-4cb8-a2b5-10c1c1610811",
+     "barcode": "4059729514950",
+     "name": "050 Radiant Honey",
+     "colorHex": "#D66B59",
+     "img": "s_4059729514950.jpg",
+     "isActive": true,
+     "price": 9450,
+     "originalPrice": 10500,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729514899.jpg",
+   "texture": "t_4059729514899.jpg",
+   "extras": []
+  },
+  {
+   "id": "3b8c21b6-d0de-476c-ab1e-6524ccb490d2",
+   "slug": "catrice-soft-glam-filter-stick",
+   "rename": null,
+   "shades": [
+    {
+     "id": "72fb1e71-103e-4935-85ed-389ebe2ba623",
+     "barcode": "4059729515254",
+     "name": "010 Fair - Light",
+     "colorHex": "#CC9D81",
+     "img": "s_4059729515254.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 0
+    },
+    {
+     "id": "e8b56197-657f-4288-b51b-a958e418da11",
+     "barcode": "4059729515278",
+     "name": "015 Light",
+     "colorHex": "#C69374",
+     "img": "s_4059729515278.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    },
+    {
+     "id": "1071a3ef-86a7-4623-b15d-d82f93228a10",
+     "barcode": "4059729515292",
+     "name": "020 Light - Medium",
+     "colorHex": "#A27659",
+     "img": "s_4059729515292.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 2
+    },
+    {
+     "id": "04efc89b-1506-4099-b6b6-ce1c31723e3f",
+     "barcode": "4059729515315",
+     "name": "030 Medium",
+     "colorHex": "#A17558",
+     "img": "s_4059729515315.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 10000,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729515254.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "85803db3-e7a7-4566-9923-f88f011254d6",
+   "slug": "catrice-melt-plump-lip-plumper",
+   "rename": null,
+   "shades": [
+    {
+     "id": "075e9194-d4c4-46aa-ab98-10041f84b5a1",
+     "barcode": "4059729515476",
+     "name": "020 Hyp-nude-tized",
+     "colorHex": "#E17A69",
+     "img": "s_4059729515476.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "517caa5e-9e19-4c5d-b22e-43c171211dde",
+     "barcode": "4059729515490",
+     "name": "030 Tipsy In Love",
+     "colorHex": "#955345",
+     "img": "s_4059729515490.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 1
+    },
+    {
+     "id": "74414889-b0bd-4016-bdb8-3899af387c26",
+     "barcode": "4059729515513",
+     "name": "040 Call Nine Wine Wine",
+     "colorHex": "#962831",
+     "img": "s_4059729515513.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 2
+    },
+    {
+     "id": "4d194b69-6ce1-4b89-93fc-a7557c15a213",
+     "barcode": "4059729515537",
+     "name": "050 Tropic Like It’s Hot",
+     "colorHex": "#DE2C50",
+     "img": "s_4059729515537.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729515476.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "51055398-1d2c-46f5-bfdd-bd4a2311aea8",
+   "slug": "catrice-lip-artist-6in1-lipstick-lip-liner",
+   "rename": null,
+   "shades": [
+    {
+     "id": "e4d55f53-332f-4773-bdce-5e8a6c21ff3d",
+     "barcode": "4059729515940",
+     "name": "010 Always Together",
+     "colorHex": "#B76E5B",
+     "img": "s_4059729515940.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 0
+    },
+    {
+     "id": "1d30ae77-92db-4c7f-ac2e-60e10078edac",
+     "barcode": "4059729515964",
+     "name": "020 Never Apart",
+     "colorHex": "#AC524F",
+     "img": "s_4059729515964.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 1
+    },
+    {
+     "id": "c431aebc-83bd-475a-95a9-2c8d4c9ec3e1",
+     "barcode": "4059729515988",
+     "name": "030 Best Friends Forever",
+     "colorHex": "#B45B4D",
+     "img": "s_4059729515988.jpg",
+     "isActive": true,
+     "price": 8750,
+     "originalPrice": 8750,
+     "discountPercent": 0,
+     "stock": 1,
+     "position": 2
+    },
+    {
+     "id": "9231b3c9-bc4c-4d33-ab05-7aa045be8a2a",
+     "barcode": "4059729516008",
+     "name": "040 Sisters By Heart",
+     "colorHex": "#7D463E",
+     "img": "s_4059729516008.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729515940.jpg",
+   "texture": "t_4059729515940.jpg",
+   "extras": []
+  },
+  {
+   "id": "07ee47a5-7c42-4e82-ae1c-3e6b69681992",
+   "slug": "catrice-tubing-stay-in-place-volume-mascara-010-panda-proof-11-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729539830",
+    "price": 10575,
+    "originalPrice": 11750,
+    "discountPercent": 10,
+    "stock": 3
+   },
+   "primary": "s_4059729539830.jpg",
+   "texture": "t_4059729539830.jpg",
+   "extras": [
+    "a40def63-5157-49a2-ae0d-5a3e28f7021e"
+   ]
+  },
+  {
+   "id": "d70a9e20-5a97-43a5-b5b4-c85ba25bd150",
+   "slug": "catrice-hyper-lash-waterproof-mascara-010-electric-black-11-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729539847",
+    "price": 10800,
+    "originalPrice": 12000,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4059729539847.jpg",
+   "texture": "t_4059729539847.jpg",
+   "extras": [
+    "3f5ecedc-6b31-4bc2-86cf-9468d1447fc9"
+   ]
+  },
+  {
+   "id": "8e348266-ccbb-4654-82a3-54e2fb697c9b",
+   "slug": "catrice-invisible-cover-cushion-foundation-spf-30",
+   "rename": null,
+   "shades": [
+    {
+     "id": "edf2c26c-9079-4246-8be9-366c27e73238",
+     "barcode": "4059729540393",
+     "name": "015W",
+     "colorHex": "#D5AC8E",
+     "img": "s_4059729540393.jpg",
+     "isActive": true,
+     "price": 15300,
+     "originalPrice": 17000,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "159c0b1f-fa0a-40c1-911b-e91f8d5c84f6",
+     "barcode": "4059729594501",
+     "name": "021W",
+     "colorHex": "#CDA37D",
+     "img": "s_4059729594501.jpg",
+     "isActive": true,
+     "price": 15300,
+     "originalPrice": 17000,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    },
+    {
+     "id": "f0fea3ad-8358-439c-a534-e12a5a5cbc29",
+     "barcode": "4059729540416",
+     "name": "033W",
+     "colorHex": "#BA8C68",
+     "img": "s_4059729540416.jpg",
+     "isActive": true,
+     "price": 15300,
+     "originalPrice": 17000,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 2
+    }
+   ],
+   "primary": "s_4059729540393.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "4e335054-eb2e-4447-8bd8-342429c7b37b",
+   "slug": "catrice-blend-bond-setting-spray-55-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729540430",
+    "price": 9450,
+    "originalPrice": 10500,
+    "discountPercent": 10,
+    "stock": 1
+   },
+   "primary": "s_4059729540430.jpg",
+   "texture": null,
+   "extras": [
+    "49d08992-c29d-4262-be17-a1b96fa3d0f5",
+    "dafc2f92-04ad-4824-8f4a-6d0aa1fb62c2"
+   ]
+  },
+  {
+   "id": "98baa84e-6255-41ec-bbad-039273cc6496",
+   "slug": "catrice-velvet-pudding-blurring-blush",
+   "rename": null,
+   "shades": [
+    {
+     "id": "b45d96b5-bc41-4e90-b7e4-231dcaf96b4d",
+     "barcode": "4059729540485",
+     "name": "010 Raspberry Fudge",
+     "colorHex": "#D18288",
+     "img": "s_4059729540485.jpg",
+     "isActive": true,
+     "price": 8775,
+     "originalPrice": 9750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "07af11e0-4696-458c-8bb4-a96e1a6a276f",
+     "barcode": "4059729540508",
+     "name": "020 Peach Pudding",
+     "colorHex": "#FF9E7E",
+     "img": "s_4059729540508.jpg",
+     "isActive": true,
+     "price": 8775,
+     "originalPrice": 9750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729540485.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "0985f470-567d-4ac8-923d-b89710d60278",
+   "slug": "catrice-soft-blur-matte-setting-powder",
+   "rename": null,
+   "shades": [
+    {
+     "id": "3792c5e0-f4f7-401b-ad80-69dc3c556843",
+     "barcode": "4059729547231",
+     "name": "002 Absolute Translucent",
+     "colorHex": "#FCCFAE",
+     "img": "s_4059729547231.jpg",
+     "isActive": true,
+     "price": 10350,
+     "originalPrice": 11500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 0
+    },
+    {
+     "id": "2db9ca73-ed41-4d29-9b30-52962439fa6c",
+     "barcode": "4059729540614",
+     "name": "020 Light",
+     "colorHex": "#F8CC9D",
+     "img": "s_4059729540614.jpg",
+     "isActive": true,
+     "price": 10350,
+     "originalPrice": 11500,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729547231.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "ec170c89-5311-4336-958d-877475ddcd2c",
+   "slug": "catrice-soft-glam-baked-blush-5-6-g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "6bce33fe-d17a-42dd-8ba3-9ca47a50fc20",
+     "barcode": "4059729540935",
+     "name": "010 On Cloud Pink",
+     "colorHex": "#FF8C87",
+     "img": "s_4059729540935.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 0
+    },
+    {
+     "id": "498aea22-0ebf-4fcd-8ac0-8075bec6c61a",
+     "barcode": "4059729540959",
+     "name": "020 Peachy Breeze",
+     "colorHex": "#E97B5A",
+     "img": "s_4059729540959.jpg",
+     "isActive": true,
+     "price": 9250,
+     "originalPrice": 9250,
+     "discountPercent": 0,
+     "stock": 4,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729540935.jpg",
+   "texture": "t_4059729540935.jpg",
+   "extras": [
+    "fa92d8be-e8e1-44a9-9600-6073d180e22c",
+    "ad559ac9-7a20-44d4-8458-455037751470"
+   ]
+  },
+  {
+   "id": "4b5f84cb-e7c5-4600-b145-7638d8ca4b6b",
+   "slug": "catrice-pillow-like-matte-lip-mousse",
+   "rename": null,
+   "shades": [
+    {
+     "id": "b80f0d65-a7f7-4125-8b1b-1ecad0bbc2ca",
+     "barcode": "4059729541123",
+     "name": "010 Blurreal",
+     "colorHex": "#9D3E3A",
+     "img": "s_4059729541123.jpg",
+     "isActive": true,
+     "price": 8775,
+     "originalPrice": 9750,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 0
+    },
+    {
+     "id": "151b5110-87a4-417d-9dc7-df272538a5e4",
+     "barcode": "4059729541147",
+     "name": "020 Air Affair",
+     "colorHex": "#9D3430",
+     "img": "s_4059729541147.jpg",
+     "isActive": true,
+     "price": 9750,
+     "originalPrice": 9750,
+     "discountPercent": 0,
+     "stock": 4,
+     "position": 1
+    },
+    {
+     "id": "01fd115f-0191-4133-9f03-7fc48d53d3d3",
+     "barcode": "4059729541161",
+     "name": "030 Mousse-t Be Love",
+     "colorHex": "#AB2D31",
+     "img": "s_4059729541161.jpg",
+     "isActive": true,
+     "price": 8775,
+     "originalPrice": 9750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 2
+    },
+    {
+     "id": "a4e9c94a-47bb-4c8a-a4d8-0579779915af",
+     "barcode": "4059729541208",
+     "name": "050 Red-y Or Not",
+     "colorHex": "#AF292A",
+     "img": "s_4059729541208.jpg",
+     "isActive": true,
+     "price": 9750,
+     "originalPrice": 9750,
+     "discountPercent": 0,
+     "stock": 9,
+     "position": 3
+    },
+    {
+     "id": "b476f67a-ca50-45f3-a8cb-fd30afd9d20a",
+     "barcode": "4059729541222",
+     "name": "060 Dream On, Matte",
+     "colorHex": "#8C2127",
+     "img": "s_4059729541222.jpg",
+     "isActive": true,
+     "price": 9750,
+     "originalPrice": 9750,
+     "discountPercent": 0,
+     "stock": 2,
+     "position": 4
+    }
+   ],
+   "primary": "s_4059729541123.jpg",
+   "texture": "t_4059729541123.jpg",
+   "extras": []
+  },
+  {
+   "id": "5e78f3f2-a695-4c0f-8bdb-cd3930bc2e3d",
+   "slug": "catrice-gloss-obsessed-lip-glaze-2-5-ml",
+   "rename": null,
+   "shades": [
+    {
+     "id": "112c62ba-bd27-4a96-bedf-90fea29167df",
+     "barcode": "4059729541284",
+     "name": "010 Gloss Therapy",
+     "colorHex": "#F8F8F8",
+     "img": "s_4059729541284.jpg",
+     "isActive": true,
+     "price": 5850,
+     "originalPrice": 6500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 0
+    },
+    {
+     "id": "47b8a42b-fb9a-41c7-997a-45118461652f",
+     "barcode": "4059729541307",
+     "name": "020 Same Gloss, Different Day",
+     "colorHex": "#FC8888",
+     "img": "s_4059729541307.jpg",
+     "isActive": true,
+     "price": 5850,
+     "originalPrice": 6500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    },
+    {
+     "id": "4457eef3-2f17-4415-80bf-49e7a542e053",
+     "barcode": "4059729541321",
+     "name": "030 Gloss Over It",
+     "colorHex": "#F1004F",
+     "img": "s_4059729541321.jpg",
+     "isActive": true,
+     "price": 5850,
+     "originalPrice": 6500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 2
+    },
+    {
+     "id": "baf3a488-ca21-4f38-8ff8-4d2b73d53168",
+     "barcode": "4059729541345",
+     "name": "040 Pout Of Office",
+     "colorHex": "#A64A4B",
+     "img": "s_4059729541345.jpg",
+     "isActive": true,
+     "price": 5850,
+     "originalPrice": 6500,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 3
+    },
+    {
+     "id": "eeb12a01-725c-433c-b969-5ece679453a0",
+     "barcode": "4059729548238",
+     "name": "060 Gloss and Found",
+     "colorHex": "#661615",
+     "img": "s_4059729548238.jpg",
+     "isActive": true,
+     "price": 5850,
+     "originalPrice": 6500,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 4
+    }
+   ],
+   "primary": "s_4059729541284.jpg",
+   "texture": "t_4059729541284.jpg",
+   "extras": [
+    "2f832648-d88d-4e0e-b4bb-785794c5c88f",
+    "64484230-35cb-4fb8-9abb-aa15832446e4",
+    "000cca9e-3be3-4ed0-8790-31654b4b7abd",
+    "062df8c5-7e55-4a89-8742-7c668c581df8",
+    "c74486f1-ee38-4142-a25d-68c7666748fa",
+    "69ad3361-eeee-435a-9c9a-4219b0daed77"
+   ]
+  },
+  {
+   "id": "cfd83c67-7cd3-41ea-a026-62df2c33796f",
+   "slug": "catrice-colour-cushion-juicy-lip-oil",
+   "rename": null,
+   "shades": [
+    {
+     "id": "730b2064-ca20-43b5-b50a-f9385bf00882",
+     "barcode": "4059729541383",
+     "name": "010 Bae Watch",
+     "colorHex": "#E86050",
+     "img": "s_4059729541383.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "0c846259-31a4-4d55-b6ae-8584ea4af3d5",
+     "barcode": "4059729541406",
+     "name": "020 Gloss Angeles",
+     "colorHex": "#FF6853",
+     "img": "s_4059729541406.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 1
+    },
+    {
+     "id": "6f3a8700-3b94-4116-bfa4-6a6629ebab53",
+     "barcode": "4059729541420",
+     "name": "030 Palm Punch",
+     "colorHex": "#FF1471",
+     "img": "s_4059729541420.jpg",
+     "isActive": true,
+     "price": 8325,
+     "originalPrice": 9250,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 2
+    },
+    {
+     "id": "ea5fe892-2031-4ef5-97d8-d19687f83742",
+     "barcode": "4059729541468",
+     "name": "050 · Drenched Drama",
+     "keep": true,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729541383.jpg",
+   "texture": "t_4059729541383.jpg",
+   "extras": []
+  },
+  {
+   "id": "f907d913-5a52-475c-988f-4d1efdd5f661",
+   "slug": "catrice-hollyglazing-glazing-eyeshadow-c01-fa-la-la-luminesce-17-g",
+   "rename": null,
+   "single": {
+    "barcode": "4059729552990",
+    "price": 5400,
+    "originalPrice": 6000,
+    "discountPercent": 10,
+    "stock": 1
+   },
+   "primary": "s_4059729552990.jpg",
+   "texture": null,
+   "extras": [
+    "8544f0e5-f2ff-4088-8ecb-692ccd6d7396",
+    "da0df903-aedd-472b-9471-1dd399cdf877"
+   ]
+  },
+  {
+   "id": "6eb92da0-a361-46ff-badb-871f253ae7a6",
+   "slug": "catrice-hollyglazing-liquid-blush-2-8ml",
+   "rename": null,
+   "shades": [
+    {
+     "id": null,
+     "barcode": "4059729553188",
+     "name": "C01 Blushin’ Through the Snow",
+     "colorHex": "#F1705A",
+     "img": "s_4059729553188.jpg",
+     "isActive": true,
+     "price": 5400,
+     "originalPrice": 6000,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 0
+    },
+    {
+     "id": "e0309459-14a0-4199-be76-164cb7af7098",
+     "barcode": "4059729553225",
+     "name": "C02 Wine Not?",
+     "colorHex": "#5E1C1E",
+     "img": "s_4059729553225.jpg",
+     "isActive": true,
+     "price": 5400,
+     "originalPrice": 6000,
+     "discountPercent": 10,
+     "stock": 1,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729553188.jpg",
+   "texture": null,
+   "extras": [
+    "8fdff516-8fca-4b39-960a-fc567a029654"
+   ]
+  },
+  {
+   "id": "b9cc2374-0426-4828-ba20-d0f783bad473",
+   "slug": "catrice-daily-duo-eyeshadow-010",
+   "rename": [
+    "كاتريس ثنائي ظلال العيون ديلي ديو",
+    "Catrice Daily Duo Eyeshadow"
+   ],
+   "shades": [
+    {
+     "id": null,
+     "barcode": "4059729586735",
+     "name": "010 Everyday Nude",
+     "colorHex": "#F3B57E",
+     "img": "s_4059729586735.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": null,
+     "barcode": "4059729586759",
+     "name": "020 On The Go Rosé",
+     "colorHex": "#F1BC9D",
+     "img": "s_4059729586759.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 0,
+     "position": 1
+    },
+    {
+     "id": null,
+     "barcode": "4059729586773",
+     "name": "030 Deep Nude",
+     "colorHex": "#AD7C55",
+     "img": "s_4059729586773.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 2
+    }
+   ],
+   "primary": "s_4059729586735.jpg",
+   "texture": null,
+   "extras": [
+    "ed8298a8-bb1d-4f4e-869b-141f269cc6c1",
+    "d79aff90-93b3-4d7f-bfff-62c26fb024b4",
+    "037c2462-e3ec-4f08-a713-00babb85b32d",
+    "97a287cc-a96f-43c8-86f2-0c578f614ee7"
+   ]
+  },
+  {
+   "id": "b268f7e4-53a4-4dd2-89fb-244d6b5054db",
+   "slug": "catrice-hyper-liner-brush-eyeliner-010-classic-black",
+   "rename": null,
+   "single": {
+    "barcode": "4059729586797",
+    "price": 7875,
+    "originalPrice": 8750,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4059729586797.jpg",
+   "texture": "t_4059729586797.jpg",
+   "extras": [
+    "9167c270-6ce4-4ec4-acde-388538465e13",
+    "b11195cd-2b91-400a-9766-1f030b9c7754"
+   ]
+  },
+  {
+   "id": "ca117558-87e0-411f-ba5f-0c56e69eab27",
+   "slug": "catrice-micro-blade-brow-pen-waterproof",
+   "rename": null,
+   "shades": [
+    {
+     "id": "088edb7d-e8ba-4ef4-a80e-f28e38338917",
+     "barcode": "4059729586957",
+     "name": "010 Soft Blonde",
+     "colorHex": "#927150",
+     "img": "s_4059729586957.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 0
+    },
+    {
+     "id": "444bdd69-2d01-4ad2-b51d-96b7c7f5e762",
+     "barcode": "4059729586964",
+     "name": "020 Deep Taupe",
+     "colorHex": "#7F6856",
+     "img": "s_4059729586964.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    },
+    {
+     "id": "dab8b6eb-d590-42ee-9857-6eb6bd91df78",
+     "barcode": "4059729586971",
+     "name": "030 True Brown",
+     "colorHex": "#685944",
+     "img": "s_4059729586971.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 2
+    },
+    {
+     "id": "03c27e5b-2a0f-421c-a432-1e6e9fcccc77",
+     "barcode": "4059729586988",
+     "name": "040 Bold Espresso",
+     "colorHex": "#494031",
+     "img": "s_4059729586988.jpg",
+     "isActive": true,
+     "price": 7875,
+     "originalPrice": 8750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729586957.jpg",
+   "texture": "t_4059729586957.jpg",
+   "extras": []
+  },
+  {
+   "id": "28bf9ac4-9973-4975-ab67-c659e2de452d",
+   "slug": "catrice-lift-laminate-brow-gel-010-transparent-5-g",
+   "rename": null,
+   "single": {
+    "barcode": "4059729587152",
+    "price": 9225,
+    "originalPrice": 10250,
+    "discountPercent": 10,
+    "stock": 8
+   },
+   "primary": "s_4059729587152.jpg",
+   "texture": "t_4059729587152.jpg",
+   "extras": [
+    "f58ca7e6-b35c-4eb1-9998-50024e2a5de9",
+    "60d690d6-3678-4a4f-b5f8-6196e75dfb0d",
+    "fb68253b-9e38-41ad-b430-ddc0fccbb87b",
+    "ac450483-a459-430b-8973-b5b277dd9de8"
+   ]
+  },
+  {
+   "id": "f6d2969d-9b52-4502-a21a-d1b4a339c4d8",
+   "slug": "catrice-lift-laminate-brow-tool",
+   "rename": null,
+   "single": {
+    "barcode": "4059729587169",
+    "price": 5850,
+    "originalPrice": 6500,
+    "discountPercent": 10,
+    "stock": 6
+   },
+   "primary": "s_4059729587169.jpg",
+   "texture": null,
+   "extras": [
+    "24fba4c8-1fb1-4f32-8a09-c7dd9aa715c7"
+   ]
+  },
+  {
+   "id": "8345402b-130f-4437-971c-c4c5ce33515b",
+   "slug": "catrice-soft-blur-powder-blush-030-cinnamon-5-g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "7bc6c0b0-1692-420c-8e1c-e21864bbff77",
+     "barcode": "4059729587282",
+     "name": "030 Cinnamon Sugar",
+     "colorHex": "#C76655",
+     "img": "s_4059729587282.jpg",
+     "isActive": true,
+     "price": 7750,
+     "originalPrice": 7750,
+     "discountPercent": 0,
+     "stock": 3,
+     "position": 0
+    },
+    {
+     "id": "23093469-6081-4a9b-9d11-cb2f633faad5",
+     "barcode": "4059729587305",
+     "name": "040 Pink Positive",
+     "colorHex": "#FA8480",
+     "img": "s_4059729587305.jpg",
+     "isActive": true,
+     "price": 7750,
+     "originalPrice": 7750,
+     "discountPercent": 0,
+     "stock": 5,
+     "position": 1
+    },
+    {
+     "id": "530f3381-2dbe-4c73-b258-907b80635c64",
+     "barcode": "4059729587343",
+     "name": "060 Berry me later!",
+     "colorHex": "#BD605B",
+     "img": "s_4059729587343.jpg",
+     "isActive": true,
+     "price": 7750,
+     "originalPrice": 7750,
+     "discountPercent": 0,
+     "stock": 4,
+     "position": 2
+    }
+   ],
+   "primary": "s_4059729587282.jpg",
+   "texture": null,
+   "extras": [
+    "26248fb2-d655-4038-b81a-c71021f59cfc",
+    "c21d0da1-06a8-4d4f-9aa0-91df06679b69",
+    "ab1d765c-4888-475e-8e65-e9ea1c55248b"
+   ]
+  },
+  {
+   "id": "a5137e1f-19e4-4f8e-84d8-c32e692389d7",
+   "slug": "catrice-extreme-blur-mattifying-primer-25-g",
+   "rename": null,
+   "single": {
+    "barcode": "4059729587626",
+    "price": 9450,
+    "originalPrice": 10500,
+    "discountPercent": 10,
+    "stock": 2
+   },
+   "primary": "s_4059729587626.jpg",
+   "texture": "t_4059729587626.jpg",
+   "extras": [
+    "c0a7a0cd-d7d9-497f-bc61-29eddd71674f",
+    "6b11364d-8957-4479-9431-d942329ed040",
+    "f58f2261-104c-4481-8081-d27b09866508"
+   ]
+  },
+  {
+   "id": "1e241b4c-a271-4a1d-8c35-41c47c137463",
+   "slug": "catrice-aura-glam-bouncy-highlighter-4-5-g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "c6c9fa2a-6992-4602-8bea-400e9f15f414",
+     "barcode": "4059729587886",
+     "name": "010 Moonlit Sand",
+     "colorHex": "#CEB098",
+     "img": "s_4059729587886.jpg",
+     "isActive": true,
+     "price": 9450,
+     "originalPrice": 10500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 0
+    },
+    {
+     "id": "b5e0a33b-3a1b-48e9-9be8-d6e81edf164b",
+     "barcode": "4059729593269",
+     "name": "020 Whispering Gold",
+     "colorHex": "#EBBD82",
+     "img": "s_4059729593269.jpg",
+     "isActive": true,
+     "price": 9450,
+     "originalPrice": 10500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729587886.jpg",
+   "texture": "t_4059729587886.jpg",
+   "extras": []
+  },
+  {
+   "id": "6417455b-0354-417f-83cb-7996ed9ee4f6",
+   "slug": "catrice-soft-blur-matte-airbrush-powder-10-g",
+   "rename": null,
+   "shades": [
+    {
+     "id": "9eef3479-8d3a-4e99-84f3-6c23149db19b",
+     "barcode": "4059729594587",
+     "name": "005C",
+     "colorHex": "#FBDAC7",
+     "img": "s_4059729594587.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 0
+    },
+    {
+     "id": "5a47a895-12f8-4d7a-9763-cda060143f80",
+     "barcode": "4059729587961",
+     "name": "030W",
+     "colorHex": "#EAB89D",
+     "img": "s_4059729587961.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 1
+    },
+    {
+     "id": "5d92e260-c934-4761-ac01-a2df3305370b",
+     "barcode": "4059729594426",
+     "name": "031W",
+     "colorHex": "#EFB899",
+     "img": "s_4059729594426.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 2
+    },
+    {
+     "id": "58467b34-5c52-4e7c-b42c-360d950c4b17",
+     "barcode": "4059729594440",
+     "name": "040W",
+     "colorHex": "#D79C72",
+     "img": "s_4059729594440.jpg",
+     "isActive": true,
+     "price": 7425,
+     "originalPrice": 8250,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729594587.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "dc01570e-0a84-4c0e-8224-f82ce50a3191",
+   "slug": "catrice-filler-supreme-lip-gloss",
+   "rename": null,
+   "shades": [
+    {
+     "id": "edd068b0-b571-437a-91f5-9daa14f19178",
+     "barcode": "4059729588548",
+     "name": "010 High Gloss, Low Drama",
+     "keep": true,
+     "position": 0
+    },
+    {
+     "id": "e7d918d8-293c-4e12-ade0-921e56bb6b77",
+     "barcode": "4059729588562",
+     "name": "020 Fairytale Filter",
+     "colorHex": "#F7817F",
+     "img": "s_4059729588562.jpg",
+     "isActive": true,
+     "price": 7750,
+     "originalPrice": 7750,
+     "discountPercent": 0,
+     "stock": 3,
+     "position": 1
+    },
+    {
+     "id": "ae9d72dd-4294-4037-a306-69f7a6cb57d6",
+     "barcode": "4059729588586",
+     "name": "030 Miss Behave",
+     "colorHex": "#DA6666",
+     "img": "s_4059729588586.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 2
+    },
+    {
+     "id": "e137f7a7-44c6-478c-8b04-7872c3b0aaf9",
+     "barcode": "4059729588609",
+     "name": "040 Drama Certified",
+     "colorHex": "#CF3251",
+     "img": "s_4059729588609.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 3
+    },
+    {
+     "id": "a32d934f-7c2a-4e56-9364-908741211010",
+     "barcode": "4059729588623",
+     "name": "050 Nude, Not Rude",
+     "colorHex": "#C16E5E",
+     "img": "s_4059729588623.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 4
+    },
+    {
+     "id": "b8b51df6-0198-4d97-8792-2168a7ec3ea8",
+     "barcode": "4059729588647",
+     "name": "060 Too Juicy To Care",
+     "colorHex": "#E40023",
+     "img": "s_4059729588647.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 5
+    },
+    {
+     "id": "00bdd6cb-7f87-4b75-b166-c90195b70554",
+     "barcode": "4059729588661",
+     "name": "070 Golden Hour Flex",
+     "colorHex": "#AA491E",
+     "img": "s_4059729588661.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 6
+    },
+    {
+     "id": "4e6f8d10-4807-41a9-8e8d-c925944abf9a",
+     "barcode": "4059729588685",
+     "name": "080 The Sugarcoated Truth",
+     "colorHex": "#FFC394",
+     "img": "s_4059729588685.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 7
+    },
+    {
+     "id": "4c2bfe27-f862-4da3-ae3e-0ecc58a78d05",
+     "barcode": "4059729588708",
+     "name": "090 Say Less, Serve More",
+     "colorHex": "#9B5243",
+     "img": "s_4059729588708.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 8
+    },
+    {
+     "id": "1797353e-5cd8-4ac9-9678-8220c6761e10",
+     "barcode": "4059729588722",
+     "name": "100 Cinnamon Glazed",
+     "colorHex": "#B3553C",
+     "img": "s_4059729588722.jpg",
+     "isActive": true,
+     "price": 6975,
+     "originalPrice": 7750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 9
+    }
+   ],
+   "primary": "s_4059729588562.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "b953de31-9430-4845-b36f-ad28912f0a3e",
+   "slug": "catrice-gel-glide-long-lasting-lip-liner",
+   "rename": null,
+   "shades": [
+    {
+     "id": "7bf67148-2fe5-4f0b-b1cc-be662bf1f062",
+     "barcode": "4059729588869",
+     "name": "010 Princess Charming",
+     "colorHex": "#D8695E",
+     "img": "s_4059729588869.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 0
+    },
+    {
+     "id": "25caa515-ae6d-4d9a-bbde-ce9458d286fa",
+     "barcode": "4059729588876",
+     "name": "020 Drip The Drama",
+     "colorHex": "#A44D46",
+     "img": "s_4059729588876.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 1
+    },
+    {
+     "id": "dc95d149-50c6-45cf-86c3-f86163b21846",
+     "barcode": "4059729588883",
+     "name": "030 Left On Red",
+     "colorHex": "#C81D25",
+     "img": "s_4059729588883.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 2
+    },
+    {
+     "id": "bada8d3a-a196-4768-b1b6-1422b6140486",
+     "barcode": "4059729588890",
+     "name": "040 Latte Lines",
+     "colorHex": "#A6513C",
+     "img": "s_4059729588890.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 2,
+     "position": 3
+    },
+    {
+     "id": "f0ccd5ea-521f-444d-b54a-fa9596109a09",
+     "barcode": "4059729588906",
+     "name": "050 Sip & Slay",
+     "colorHex": "#7D3529",
+     "img": "s_4059729588906.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 4
+    },
+    {
+     "id": "3fc6af61-2de0-4310-a911-7db12e08783e",
+     "barcode": "4059729588913",
+     "name": "060 Deep Talk",
+     "colorHex": "#743B28",
+     "img": "s_4059729588913.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 3,
+     "position": 5
+    },
+    {
+     "id": "10befa83-8635-43ef-8dfa-62bab0f01854",
+     "barcode": "4059729588920",
+     "name": "070 Line Me Softly",
+     "colorHex": "#E0867D",
+     "img": "s_4059729588920.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 6
+    },
+    {
+     "id": "89575eab-94e1-47f3-8fec-0bcb3b9b2543",
+     "barcode": "4059729588937",
+     "name": "080 Sass & Flirty",
+     "colorHex": "#A2383A",
+     "img": "s_4059729588937.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 7
+    },
+    {
+     "id": "1b9bcd0e-e3b4-49d6-952f-1d9e0fc843f3",
+     "barcode": "4059729588944",
+     "name": "090 Toffee Talk",
+     "colorHex": "#804B3B",
+     "img": "s_4059729588944.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 7,
+     "position": 8
+    },
+    {
+     "id": "ceb0f598-03ce-4c05-913c-a12254630f2d",
+     "barcode": "4059729588999",
+     "name": "100 Bare Trace",
+     "colorHex": "#F8F8F8",
+     "img": "s_4059729588999.jpg",
+     "isActive": true,
+     "price": 5175,
+     "originalPrice": 5750,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 9
+    }
+   ],
+   "primary": "s_4059729588869.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "b4777f19-c503-4ea8-aeb7-fbd70e6c9bdf",
+   "slug": "catrice-peptide-bliss-lip-balm",
+   "rename": null,
+   "shades": [
+    {
+     "id": "ecf5cfca-f504-47c6-8141-f2eb52c48aae",
+     "barcode": "4059729591524",
+     "name": "020 Blissberry",
+     "colorHex": "#90403F",
+     "img": "s_4059729591524.jpg",
+     "isActive": true,
+     "price": 6750,
+     "originalPrice": 7500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 0
+    },
+    {
+     "id": "cf7d7f02-6abb-41f4-8940-07e563cf90f7",
+     "barcode": "4059729591531",
+     "name": "030 Dew Not Disturb",
+     "colorHex": "#A8001C",
+     "img": "s_4059729591531.jpg",
+     "isActive": true,
+     "price": 6750,
+     "originalPrice": 7500,
+     "discountPercent": 10,
+     "stock": 4,
+     "position": 1
+    },
+    {
+     "id": "20b0c063-a811-46f8-927b-0e0c7607b6ea",
+     "barcode": "4059729591548",
+     "name": "040 Toffee Touched",
+     "colorHex": "#A44D32",
+     "img": "s_4059729591548.jpg",
+     "isActive": true,
+     "price": 6750,
+     "originalPrice": 7500,
+     "discountPercent": 10,
+     "stock": 5,
+     "position": 2
+    },
+    {
+     "id": "705b3da8-84c8-4b19-8e1d-ecce32031d87",
+     "barcode": "4059729591555",
+     "name": "050 Glazed & Gorgeous",
+     "colorHex": "#7D372B",
+     "img": "s_4059729591555.jpg",
+     "isActive": true,
+     "price": 6750,
+     "originalPrice": 7500,
+     "discountPercent": 10,
+     "stock": 6,
+     "position": 3
+    }
+   ],
+   "primary": "s_4059729591524.jpg",
+   "texture": null,
+   "extras": []
+  },
+  {
+   "id": "9b1fcaeb-0485-405c-9bae-583b2a3a7fcb",
+   "slug": "catrice-volume-shot-lip-plumper-c010-5-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729632890",
+    "price": 8500,
+    "originalPrice": 8500,
+    "discountPercent": 0,
+    "stock": 3
+   },
+   "primary": "s_4059729632890.jpg",
+   "texture": "t_4059729632890.jpg",
+   "extras": []
+  },
+  {
+   "id": "4b45b39a-655a-49d5-bbe6-7728d7b27fa0",
+   "slug": "catrice-water-glaze-lip-stain",
+   "rename": null,
+   "shades": [
+    {
+     "id": "2ee148ee-2922-4f64-ab66-73f9614bd163",
+     "barcode": "4059729632999",
+     "name": "C010 Liquid Desire",
+     "colorHex": "#F55766",
+     "img": "s_4059729632999.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 9000,
+     "discountPercent": 0,
+     "stock": 1,
+     "position": 0
+    },
+    {
+     "id": "3afdde96-0210-46b9-a99e-70fa0ce0a04c",
+     "barcode": "4059729633477",
+     "name": "C020 Liquid Crush",
+     "colorHex": "#A40032",
+     "img": "s_4059729633477.jpg",
+     "isActive": true,
+     "price": 9000,
+     "originalPrice": 9000,
+     "discountPercent": 0,
+     "stock": 6,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729632999.jpg",
+   "texture": "t_4059729632999.jpg",
+   "extras": []
+  },
+  {
+   "id": "c84d4b7a-421a-4b5f-b904-16450afd559e",
+   "slug": "catrice-cloud-tint-cushion-blush",
+   "rename": null,
+   "shades": [
+    {
+     "id": "ae779309-05db-419f-b7ed-ae7962bcfa6e",
+     "barcode": "4059729633170",
+     "name": "C010 Cloud 9 To 5",
+     "colorHex": "#F57A68",
+     "img": "s_4059729633170.jpg",
+     "isActive": true,
+     "price": 10000,
+     "originalPrice": 10000,
+     "discountPercent": 0,
+     "stock": 2,
+     "position": 0
+    },
+    {
+     "id": "bec49097-b813-426b-a21b-57450ebbaeaf",
+     "barcode": "4059729633194",
+     "name": "C030 Head In The Cloud",
+     "colorHex": "#CD5E55",
+     "img": "s_4059729633194.jpg",
+     "isActive": true,
+     "price": 10000,
+     "originalPrice": 10000,
+     "discountPercent": 0,
+     "stock": 0,
+     "position": 1
+    }
+   ],
+   "primary": "s_4059729633170.jpg",
+   "texture": "t_4059729633170.jpg",
+   "extras": []
+  },
+  {
+   "id": "7997f7ac-eec5-495b-9e9d-738b943a729c",
+   "slug": "catrice-cloud-tint-cushion-highlighter-c010-4-g",
+   "rename": null,
+   "single": {
+    "barcode": "4059729633200",
+    "price": 10000,
+    "originalPrice": 10000,
+    "discountPercent": 0,
+    "stock": 0
+   },
+   "primary": "s_4059729633200.jpg",
+   "texture": "t_4059729633200.jpg",
+   "extras": [
+    "114d26a7-faa9-4ccf-8477-caa6658329a0",
+    "5f61e07d-ee3f-495e-af35-117ba8527298"
+   ]
+  },
+  {
+   "id": "2f1baba7-eacd-480d-9391-6282b0e008b3",
+   "slug": "catrice-glaze-guard-bi-phase-serum-mist-spf-30-55-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4059729633255",
+    "price": 12500,
+    "originalPrice": 12500,
+    "discountPercent": 0,
+    "stock": 3
+   },
+   "primary": "s_4059729633255.jpg",
+   "texture": null,
+   "extras": [
+    "b9ca14e2-5b8e-4ed4-b6ee-2b48255397ec",
+    "5bfe2604-9292-4361-ade1-fb4a504ab51e"
+   ]
+  },
+  {
+   "id": "e0a41d43-8182-496d-ae5b-79fd67be0a30",
+   "slug": "catrice-lip-powder-cream",
+   "rename": null,
+   "shades": [
+    {
+     "id": "cc3b7ccf-1c30-420c-a219-fdd21bf2ebca",
+     "barcode": "4059729633347",
+     "name": "C010 Teddy Hug",
+     "colorHex": "#7C3E2F",
+     "img": "s_4059729633347.jpg",
+     "isActive": true,
+     "price": 9250,
+     "originalPrice": 9250,
+     "discountPercent": 0,
+     "stock": 0,
+     "position": 0
+    },
+    {
+     "id": "28806056-341e-4ab8-88f2-ac0496d22873",
+     "barcode": "4059729633354",
+     "name": "C020 Blushed Reality",
+     "colorHex": "#874642",
+     "img": "s_4059729633354.jpg",
+     "isActive": true,
+     "price": 8500,
+     "originalPrice": 8500,
+     "discountPercent": 0,
+     "stock": 0,
+     "position": 1
+    },
+    {
+     "id": "020274ce-8b5c-4a53-894b-a31ddd57c376",
+     "barcode": "4059729633361",
+     "name": "C030",
+     "keep": true,
+     "position": 2
+    }
+   ],
+   "primary": "s_4059729633347.jpg",
+   "texture": "t_4059729633347.jpg",
+   "extras": []
+  },
+  {
+   "id": "537bcf6f-ad38-48e0-9556-969e6e7018de",
+   "slug": "catrice-peptide-drip-lip-serum",
+   "rename": null,
+   "shades": [
+    {
+     "id": "e3bda96a-6fe5-43db-b9ac-24f656d88b29",
+     "barcode": "4059729633378",
+     "name": "C010 Flirty Flush",
+     "colorHex": "#FA6B6F",
+     "img": "s_4059729633378.jpg",
+     "isActive": true,
+     "price": 8500,
+     "originalPrice": 8500,
+     "discountPercent": 0,
+     "stock": 2,
+     "position": 0
+    },
+    {
+     "id": "4c65fb33-b363-4e4a-b0d4-41e9e74955e4",
+     "barcode": "4059729633385",
+     "name": "C020 Feelin' Peachy",
+     "colorHex": "#D54C44",
+     "img": "s_4059729633385.jpg",
+     "isActive": true,
+     "price": 10000,
+     "originalPrice": 10000,
+     "discountPercent": 0,
+     "stock": 2,
+     "position": 1
+    },
+    {
+     "id": "846dd79b-1808-4e6d-9ff7-ab1f23d84093",
+     "barcode": "4059729633392",
+     "name": "C030",
+     "keep": true,
+     "position": 2
+    }
+   ],
+   "primary": "s_4059729633378.jpg",
+   "texture": "t_4059729633378.jpg",
+   "extras": []
+  },
+  {
+   "id": "91911e54-37f2-448a-bfe5-f5d9421bf58c",
+   "slug": "catrice-allround-concealer-palette-010-6-g",
+   "rename": null,
+   "single": {
+    "barcode": "4250035261877",
+    "price": 8750,
+    "originalPrice": 8750,
+    "discountPercent": 0,
+    "stock": 3
+   },
+   "primary": "s_4250035261877.jpg",
+   "texture": "t_4250035261877.jpg",
+   "extras": [
+    "54ab3604-7bf1-4c99-aca5-604eb8b3f1a5",
+    "27fd4155-4cc9-4f93-9776-f4c74170a721"
+   ]
+  },
+  {
+   "id": "2f7a0353-a4cd-426f-8076-553b239ed70b",
+   "slug": "catrice-lash-brow-designer-shaping-and-conditioning-mascara-gel-4250587723779",
+   "rename": null,
+   "single": {
+    "barcode": "4250587723779",
+    "price": 5400,
+    "originalPrice": 5400,
+    "discountPercent": 0,
+    "stock": 6
+   },
+   "primary": "s_4250587723779.jpg",
+   "texture": null,
+   "extras": [
+    "66802321-b103-4c29-bfae-5658bff3eb36"
+   ]
+  },
+  {
+   "id": "69dfd6d1-1652-4471-852c-78a75c423b89",
+   "slug": "catrice-nude-illusion-loose-powder-transparent-matt",
+   "rename": null,
+   "single": {
+    "barcode": "4250947531518",
+    "price": 11500,
+    "originalPrice": 11500,
+    "discountPercent": 0,
+    "stock": 6
+   },
+   "primary": "s_4250947531518.jpg",
+   "texture": null,
+   "extras": [
+    "c5deba7a-6e1b-4a2c-a0d6-28c0ae750bd7",
+    "48d7641a-1bae-4b4f-8e7b-3b14f882966c",
+    "157e0810-a85a-45d8-afb2-f7b257f898a5",
+    "9a837d4a-2248-40a8-857b-289c4fe6c77b"
+   ]
+  },
+  {
+   "id": "8cba205e-7496-4365-9401-ae8a9e76ad38",
+   "slug": "catrice-lash-curler",
+   "rename": null,
+   "single": {
+    "barcode": "4250947543726",
+    "price": 8100,
+    "originalPrice": 9000,
+    "discountPercent": 10,
+    "stock": 4
+   },
+   "primary": "s_4250947543726.jpg",
+   "texture": null,
+   "extras": [
+    "9d614c83-8416-4a0c-a726-10b0e78e0cba"
+   ]
+  },
+  {
+   "id": "1ebc595b-b1e4-45cf-83d2-52b77af06d86",
+   "slug": "catrice-glam-doll-false-lashes-mascara-010-black",
+   "rename": null,
+   "single": {
+    "barcode": "4250947562277",
+    "price": 8100,
+    "originalPrice": 9000,
+    "discountPercent": 10,
+    "stock": 0
+   },
+   "primary": "s_4250947562277.jpg",
+   "texture": null,
+   "extras": [
+    "7d1cffdf-521a-4d74-85d7-83d59a7647f4",
+    "fdf60112-e0ca-4ff0-b05b-9b29f7dd875b"
+   ]
+  },
+  {
+   "id": "796efa6b-dce9-4162-be34-1fa45dc054f5",
+   "slug": "catrice-duo-eyebrow-defining-brush",
+   "rename": null,
+   "single": {
+    "barcode": "4250947562345",
+    "price": 5400,
+    "originalPrice": 6000,
+    "discountPercent": 10,
+    "stock": 3
+   },
+   "primary": "s_4250947562345.jpg",
+   "texture": null,
+   "extras": [
+    "7b51e1b2-f8b3-4a09-a21b-65f74cd5de60",
+    "3ee8c730-0daa-41dd-b635-f00cde73db54"
+   ]
+  },
+  {
+   "id": "fa143393-478b-45d9-a9e7-e55fc5de78aa",
+   "slug": "catrice-prime-fine-multitalent-fixing-spray-50-ml",
+   "rename": null,
+   "single": {
+    "barcode": "4250947598368",
+    "price": 9450,
+    "originalPrice": 10500,
+    "discountPercent": 10,
+    "stock": 3
+   },
+   "primary": "s_4250947598368.jpg",
+   "texture": null,
+   "extras": [
+    "51a0a6c3-09cf-467a-85d6-873db8fa4392"
+   ]
+  },
+  {
+   "id": "339010a6-f2aa-4ca0-97fc-faadcc796464",
+   "slug": "catrice-inside-eye-khol-kajal-4251232217605",
+   "rename": null,
+   "single": {
+    "barcode": "4251232217605",
+    "price": 5625,
+    "originalPrice": 6250,
+    "discountPercent": 10,
+    "stock": 14
+   },
+   "primary": "s_4251232217605.jpg",
+   "texture": "t_4251232217605.jpg",
+   "extras": [
+    "ebc9d0cf-094d-48ff-bd6a-78afe3fb828f"
+   ]
+  }
+ ],
+ "deactivate": [
+  "24c10ea6-fd81-4ca0-8af3-356d7218b5ad",
+  "bc624d70-7514-4c37-8268-8cdc630696b9",
+  "9a00e3e3-35aa-4f95-b047-22b0e2b7a619",
+  "53106e0d-a841-433b-b6a4-aad270a4b738",
+  "a8e2fd41-7649-4b5a-8cb0-ae1d8d4a7080",
+  "7dd07159-423f-4e9b-9d21-3543bf3700d4",
+  "d28e1783-10c5-4279-8f0a-05848edbdef8",
+  "2ce010ef-1a69-4d91-be0b-4a9ddc86febc",
+  "d2230022-83f7-4ac9-af30-6458ce8f2f07",
+  "a7eaeec3-91a2-4a93-8750-78d7c169355e",
+  "5a494bdf-b2cd-4b39-8fab-9518b2bdb22c",
+  "47d76588-dcb1-4c14-9550-8fe900bbcbbd"
+ ],
+ "files": [
+  "s_4059729030542.jpg",
+  "s_4059729030559.jpg",
+  "s_4059729034380.jpg",
+  "s_4059729034410.jpg",
+  "s_4059729191397.jpg",
+  "s_4059729191731.jpg",
+  "s_4059729191762.jpg",
+  "s_4059729191779.jpg",
+  "s_4059729203250.jpg",
+  "s_4059729203274.jpg",
+  "s_4059729222022.jpg",
+  "s_4059729222978.jpg",
+  "s_4059729246455.jpg",
+  "s_4059729246462.jpg",
+  "s_4059729248336.jpg",
+  "s_4059729248381.jpg",
+  "s_4059729248435.jpg",
+  "s_4059729268242.jpg",
+  "s_4059729274946.jpg",
+  "s_4059729274953.jpg",
+  "s_4059729276667.jpg",
+  "s_4059729276698.jpg",
+  "s_4059729276711.jpg",
+  "s_4059729276759.jpg",
+  "s_4059729277077.jpg",
+  "s_4059729277084.jpg",
+  "s_4059729277091.jpg",
+  "s_4059729277114.jpg",
+  "s_4059729280961.jpg",
+  "s_4059729281005.jpg",
+  "s_4059729281975.jpg",
+  "s_4059729285980.jpg",
+  "s_4059729312525.jpg",
+  "s_4059729327475.jpg",
+  "s_4059729329264.jpg",
+  "s_4059729329349.jpg",
+  "s_4059729329424.jpg",
+  "s_4059729329783.jpg",
+  "s_4059729334671.jpg",
+  "s_4059729334718.jpg",
+  "s_4059729334756.jpg",
+  "s_4059729354549.jpg",
+  "s_4059729356239.jpg",
+  "s_4059729356277.jpg",
+  "s_4059729356390.jpg",
+  "s_4059729356437.jpg",
+  "s_4059729356475.jpg",
+  "s_4059729357823.jpg",
+  "s_4059729357939.jpg",
+  "s_4059729375759.jpg",
+  "s_4059729377715.jpg",
+  "s_4059729393500.jpg",
+  "s_4059729393517.jpg",
+  "s_4059729393661.jpg",
+  "s_4059729393678.jpg",
+  "s_4059729393685.jpg",
+  "s_4059729393753.jpg",
+  "s_4059729393760.jpg",
+  "s_4059729393777.jpg",
+  "s_4059729393784.jpg",
+  "s_4059729397744.jpg",
+  "s_4059729399946.jpg",
+  "s_4059729402301.jpg",
+  "s_4059729418791.jpg",
+  "s_4059729418968.jpg",
+  "s_4059729419095.jpg",
+  "s_4059729419248.jpg",
+  "s_4059729419293.jpg",
+  "s_4059729419309.jpg",
+  "s_4059729419590.jpg",
+  "s_4059729419606.jpg",
+  "s_4059729419613.jpg",
+  "s_4059729419637.jpg",
+  "s_4059729419736.jpg",
+  "s_4059729419743.jpg",
+  "s_4059729419767.jpg",
+  "s_4059729419774.jpg",
+  "s_4059729444370.jpg",
+  "s_4059729444547.jpg",
+  "s_4059729444592.jpg",
+  "s_4059729444738.jpg",
+  "s_4059729445391.jpg",
+  "s_4059729445414.jpg",
+  "s_4059729445438.jpg",
+  "s_4059729487933.jpg",
+  "s_4059729488152.jpg",
+  "s_4059729488329.jpg",
+  "s_4059729488381.jpg",
+  "s_4059729488466.jpg",
+  "s_4059729488633.jpg",
+  "s_4059729489562.jpg",
+  "s_4059729489586.jpg",
+  "s_4059729489609.jpg",
+  "s_4059729489623.jpg",
+  "s_4059729489647.jpg",
+  "s_4059729489661.jpg",
+  "s_4059729489708.jpg",
+  "s_4059729489722.jpg",
+  "s_4059729489746.jpg",
+  "s_4059729489784.jpg",
+  "s_4059729489807.jpg",
+  "s_4059729489852.jpg",
+  "s_4059729489937.jpg",
+  "s_4059729503985.jpg",
+  "s_4059729513373.jpg",
+  "s_4059729513656.jpg",
+  "s_4059729513694.jpg",
+  "s_4059729514424.jpg",
+  "s_4059729514462.jpg",
+  "s_4059729514554.jpg",
+  "s_4059729514561.jpg",
+  "s_4059729514684.jpg",
+  "s_4059729514707.jpg",
+  "s_4059729514790.jpg",
+  "s_4059729514806.jpg",
+  "s_4059729514899.jpg",
+  "s_4059729514912.jpg",
+  "s_4059729514950.jpg",
+  "s_4059729514974.jpg",
+  "s_4059729515018.jpg",
+  "s_4059729515254.jpg",
+  "s_4059729515278.jpg",
+  "s_4059729515292.jpg",
+  "s_4059729515315.jpg",
+  "s_4059729515438.jpg",
+  "s_4059729515476.jpg",
+  "s_4059729515490.jpg",
+  "s_4059729515513.jpg",
+  "s_4059729515537.jpg",
+  "s_4059729515940.jpg",
+  "s_4059729515964.jpg",
+  "s_4059729515988.jpg",
+  "s_4059729516008.jpg",
+  "s_4059729539830.jpg",
+  "s_4059729539847.jpg",
+  "s_4059729540034.jpg",
+  "s_4059729540393.jpg",
+  "s_4059729540416.jpg",
+  "s_4059729540430.jpg",
+  "s_4059729540485.jpg",
+  "s_4059729540508.jpg",
+  "s_4059729540614.jpg",
+  "s_4059729540935.jpg",
+  "s_4059729540959.jpg",
+  "s_4059729541123.jpg",
+  "s_4059729541147.jpg",
+  "s_4059729541161.jpg",
+  "s_4059729541208.jpg",
+  "s_4059729541222.jpg",
+  "s_4059729541284.jpg",
+  "s_4059729541307.jpg",
+  "s_4059729541321.jpg",
+  "s_4059729541345.jpg",
+  "s_4059729541383.jpg",
+  "s_4059729541406.jpg",
+  "s_4059729541420.jpg",
+  "s_4059729547231.jpg",
+  "s_4059729548238.jpg",
+  "s_4059729552990.jpg",
+  "s_4059729553188.jpg",
+  "s_4059729553225.jpg",
+  "s_4059729586735.jpg",
+  "s_4059729586759.jpg",
+  "s_4059729586773.jpg",
+  "s_4059729586797.jpg",
+  "s_4059729586957.jpg",
+  "s_4059729586964.jpg",
+  "s_4059729586971.jpg",
+  "s_4059729586988.jpg",
+  "s_4059729587152.jpg",
+  "s_4059729587169.jpg",
+  "s_4059729587282.jpg",
+  "s_4059729587305.jpg",
+  "s_4059729587343.jpg",
+  "s_4059729587626.jpg",
+  "s_4059729587886.jpg",
+  "s_4059729587961.jpg",
+  "s_4059729588562.jpg",
+  "s_4059729588586.jpg",
+  "s_4059729588609.jpg",
+  "s_4059729588623.jpg",
+  "s_4059729588647.jpg",
+  "s_4059729588661.jpg",
+  "s_4059729588685.jpg",
+  "s_4059729588708.jpg",
+  "s_4059729588722.jpg",
+  "s_4059729588869.jpg",
+  "s_4059729588876.jpg",
+  "s_4059729588883.jpg",
+  "s_4059729588890.jpg",
+  "s_4059729588906.jpg",
+  "s_4059729588913.jpg",
+  "s_4059729588920.jpg",
+  "s_4059729588937.jpg",
+  "s_4059729588944.jpg",
+  "s_4059729588999.jpg",
+  "s_4059729591524.jpg",
+  "s_4059729591531.jpg",
+  "s_4059729591548.jpg",
+  "s_4059729591555.jpg",
+  "s_4059729593269.jpg",
+  "s_4059729594426.jpg",
+  "s_4059729594440.jpg",
+  "s_4059729594501.jpg",
+  "s_4059729594587.jpg",
+  "s_4059729632890.jpg",
+  "s_4059729632999.jpg",
+  "s_4059729633170.jpg",
+  "s_4059729633194.jpg",
+  "s_4059729633200.jpg",
+  "s_4059729633217.jpg",
+  "s_4059729633255.jpg",
+  "s_4059729633347.jpg",
+  "s_4059729633354.jpg",
+  "s_4059729633378.jpg",
+  "s_4059729633385.jpg",
+  "s_4059729633477.jpg",
+  "s_4250035261877.jpg",
+  "s_4250338487752.jpg",
+  "s_4250338487769.jpg",
+  "s_4250587723779.jpg",
+  "s_4250587768367.jpg",
+  "s_4250947531518.jpg",
+  "s_4250947543726.jpg",
+  "s_4250947544662.jpg",
+  "s_4250947544686.jpg",
+  "s_4250947562277.jpg",
+  "s_4250947562345.jpg",
+  "s_4250947563618.jpg",
+  "s_4250947598283.jpg",
+  "s_4250947598290.jpg",
+  "s_4250947598306.jpg",
+  "s_4250947598313.jpg",
+  "s_4250947598368.jpg",
+  "s_4251232217605.jpg",
+  "s_4251232227277.jpg",
+  "s_4251232284324.jpg",
+  "t_4059729248336.jpg",
+  "t_4059729276667.jpg",
+  "t_4059729280961.jpg",
+  "t_4059729281005.jpg",
+  "t_4059729312525.jpg",
+  "t_4059729327475.jpg",
+  "t_4059729329264.jpg",
+  "t_4059729329783.jpg",
+  "t_4059729356239.jpg",
+  "t_4059729357823.jpg",
+  "t_4059729357939.jpg",
+  "t_4059729375759.jpg",
+  "t_4059729393500.jpg",
+  "t_4059729393517.jpg",
+  "t_4059729393661.jpg",
+  "t_4059729393678.jpg",
+  "t_4059729393753.jpg",
+  "t_4059729418791.jpg",
+  "t_4059729419248.jpg",
+  "t_4059729419293.jpg",
+  "t_4059729419590.jpg",
+  "t_4059729419606.jpg",
+  "t_4059729487933.jpg",
+  "t_4059729488329.jpg",
+  "t_4059729488633.jpg",
+  "t_4059729489562.jpg",
+  "t_4059729514424.jpg",
+  "t_4059729514462.jpg",
+  "t_4059729514554.jpg",
+  "t_4059729514684.jpg",
+  "t_4059729514899.jpg",
+  "t_4059729515940.jpg",
+  "t_4059729539830.jpg",
+  "t_4059729539847.jpg",
+  "t_4059729540935.jpg",
+  "t_4059729541123.jpg",
+  "t_4059729541284.jpg",
+  "t_4059729541383.jpg",
+  "t_4059729586797.jpg",
+  "t_4059729586957.jpg",
+  "t_4059729587152.jpg",
+  "t_4059729587626.jpg",
+  "t_4059729587886.jpg",
+  "t_4059729632890.jpg",
+  "t_4059729632999.jpg",
+  "t_4059729633170.jpg",
+  "t_4059729633200.jpg",
+  "t_4059729633217.jpg",
+  "t_4059729633347.jpg",
+  "t_4059729633378.jpg",
+  "t_4250035261877.jpg",
+  "t_4251232217605.jpg",
+  "t_4251232227277.jpg"
+ ],
+ "new": [
+  {
+   "slug": "catrice-micro-slim-eye-pencil-waterproof",
+   "sku": "CAT-MICRO-SLIM-WP",
+   "nameAr": "كاتريس - قلم كحل مايكرو سليم مقاوم للماء",
+   "nameEn": "Catrice Micro Slim Eye Pencil Waterproof",
+   "descriptionAr": "قلم كحل مقاوم للماء من كاتريس برأس فائق النحافة لرسم خطوط دقيقة جداً على الجفن.\n\n• رأس رفيع جداً لخطوط دقيقة وأنيقة.\n• تركيبة مقاومة للماء تدوم طويلاً.\n• ألوان غنية عالية التصبّغ.\n• مناسب للخط العلوي والسفلي ولإطلالة التايت لاين.\n• نباتي وخالٍ من القسوة على الحيوانات.",
+   "descriptionEn": "Waterproof eye pencil with an ultra-fine tip for super-precise lines.\n\n• Ultra-fine tip for precise, elegant lines.\n• Long-lasting waterproof formula.\n• Highly pigmented shades.\n• Suits upper and lower lash lines and tightlining.\n• Vegan and cruelty-free.",
+   "cat": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+   "sub": "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+   "ter": "c8866117-67e0-4509-a887-60100775524b",
+   "shades": [
+    {
+     "barcode": "4059729246455",
+     "name": "010 Black Perfection",
+     "colorHex": "#1E1E1E",
+     "img": "s_4059729246455.jpg",
+     "price": 2700,
+     "originalPrice": 3000,
+     "discountPercent": 10,
+     "stock": 1
+    },
+    {
+     "barcode": "4059729246462",
+     "name": "020 Grey Definition",
+     "colorHex": "#5A5A5E",
+     "img": "s_4059729246462.jpg",
+     "price": 5400,
+     "originalPrice": 6000,
+     "discountPercent": 10,
+     "stock": 1
+    }
+   ]
+  },
+  {
+   "slug": "catrice-flawless-fusion-dual-phase-primer-c010",
+   "sku": "CAT-FLAWLESS-FUSION-C010",
+   "barcode": "4059729633217",
+   "nameAr": "كاتريس - برايمر فلوليس فيوجن ثنائي الطور C010",
+   "nameEn": "Catrice Flawless Fusion Dual-Phase Primer C010",
+   "descriptionAr": "برايمر ثنائي الطور من كاتريس يجمع بين طبقتين في عبوة واحدة لتحضير البشرة قبل المكياج.\n\n• يُرجّ قبل الاستخدام لدمج الطورين.\n• يمنح البشرة ملمساً ناعماً وإشراقة طبيعية.\n• يساعد على ثبات المكياج لفترة أطول.\n• خفيف على البشرة ومناسب للاستخدام اليومي.\n• يُطبّق على بشرة نظيفة قبل كريم الأساس.",
+   "descriptionEn": "Dual-phase primer that combines two layers in one bottle to prep the skin before make-up.\n\n• Shake before use to mix both phases.\n• Leaves skin smooth with a natural radiance.\n• Helps make-up last longer.\n• Lightweight for everyday use.\n• Apply to clean skin before foundation.",
+   "cat": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+   "sub": "2bbecee1-084d-446c-b4fd-65f769130de9",
+   "ter": "d179ae24-9cf5-4a70-8dbd-bedd0cfbef0b",
+   "img": "s_4059729633217.jpg",
+   "texture": "t_4059729633217.jpg",
+   "price": 10500,
+   "originalPrice": 10500,
+   "discountPercent": 0,
+   "stock": 2
+  }
+ ]
+}
