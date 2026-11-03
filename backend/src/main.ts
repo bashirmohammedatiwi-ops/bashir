@@ -33,7 +33,8 @@ async function bootstrap() {
       trustProxy: 1,
       bodyLimit: 30 * 1024 * 1024,
     }),
-    { bufferLogs: true },
+    // rawBody: مسارات مزامنة FOT تتحقق من توقيع HMAC على الجسم كما وصل بالبايت
+    { bufferLogs: true, rawBody: true },
   );
 
   await app.register(helmet, {

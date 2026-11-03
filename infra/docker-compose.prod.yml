@@ -90,6 +90,8 @@ services:
       QAMAR_SYNC_WEBHOOK_URL: ${QAMAR_SYNC_WEBHOOK_URL:-}
       QAMAR_SYNC_WEBHOOK_SECRET: ${QAMAR_SYNC_WEBHOOK_SECRET:-}
       QAMAR_SYNC_WEBHOOK_TIMEOUT_MS: ${QAMAR_SYNC_WEBHOOK_TIMEOUT_MS:-15000}
+      # مفتاح توقيع مزامنة FOT POS — في infra/.env على السيرفر فقط، بلا مفتاح تُرفض كل المزامنة
+      FOT_STORE_SYNC_KEY: ${FOT_STORE_SYNC_KEY:-}
       FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-}
       # بوابة الدفع كي كارد — بيانات الدخول في infra/.env على السيرفر فقط، والمفتاح العام في secrets/qi_pubkey.pem

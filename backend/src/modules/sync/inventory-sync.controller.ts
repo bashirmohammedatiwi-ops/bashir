@@ -18,6 +18,7 @@ import {
   InventorySyncItemDto,
   LookupBarcodesDto,
 } from "./dto/inventory-sync.dto";
+import { FotSignatureGuard } from "./fot-signature.guard";
 import { InventoryAdminService } from "./inventory-admin.service";
 import { InventorySyncService } from "./inventory-sync.service";
 import { StockAlertService } from "./stock-alert.service";
@@ -74,6 +75,7 @@ export class InventorySyncController {
   }
 
   @Public()
+  @UseGuards(FotSignatureGuard)
   @SkipThrottle()
   @Post("runs")
   async recordRun(@Body() dto: RecordPosSyncRunDto) {
@@ -107,6 +109,7 @@ export class InventorySyncController {
   }
 
   @Public()
+  @UseGuards(FotSignatureGuard)
   @SkipThrottle()
   @Post()
   syncOne(@Body() dto: InventorySyncItemDto) {
@@ -114,6 +117,7 @@ export class InventorySyncController {
   }
 
   @Public()
+  @UseGuards(FotSignatureGuard)
   @SkipThrottle()
   @Post("bulk")
   syncBulk(@Body() dto: BulkInventorySyncDto) {
