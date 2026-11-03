@@ -1,0 +1,134 @@
+[
+  {
+    "barcode": "5207042030438",
+    "line_en": "Matte Lipstick Pro",
+    "shade_number": "43",
+    "shade_name": "Nude Caramel",
+    "product_url": "https://grigi.gr/grigi-matte-lipstick-pro-no-43-nude-caramel-r-43",
+    "image_url": "https://grigi.gr/media/catalog/product/g/m/gmlpro_43_1.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/g/m/gml_43.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "epharmadora.com Grigi catalog JSON lists barCode 5207042030438 = 'Grigi Matte Lipstick No 43' (https://epharmadora.com/vendors/grigi/grigi-matte-lipstick-no-43.htm); same 030+NN prefix for all Matte Lipstick shades there. grigi.gr page title 'GRIGI MATTE LIPSTICKPRO No 43 NUDE CARAMEL', SKU ΤΚΜΡRΟ-43."
+  },
+  {
+    "barcode": "5207042385101",
+    "line_en": "Lipstick Pro (satin effect)",
+    "shade_number": "510",
+    "shade_name": "Nude Brown",
+    "product_url": null,
+    "image_url": "https://grigi.gr/media/catalog/product/g/l/glp_package_510.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/g/l/glp_510.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "boboconcept.bg product 7789 'GRIGI LIPSTICK PRO No. 510' Code 5207042385101; epharmadora.com lists 5207042385101 = 'Grigi Lipstick Pro No 510 Nude Brown'. No live grigi.gr product page for 510 (not in catalog/search; guessed URLs 404). Images exist on grigi.gr media (glp_package_510.jpg is 2457x2457; _1 variant 700x700 also exists)."
+  },
+  {
+    "barcode": "5207042385149",
+    "line_en": "Lipstick Pro (satin effect)",
+    "shade_number": "514",
+    "shade_name": "Nude Pink Cherry",
+    "product_url": "https://grigi.gr/grigi-lipstick-pro-514-nude-pink-cherry-514",
+    "image_url": "https://grigi.gr/media/catalog/product/g/l/glp_package_514.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/g/l/glp_514.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "epharmadora.com lists 5207042385149 = 'Grigi Lipstick Pro No 514 Nude Pink Cherry'. grigi.gr page 'GRIGI LIPSTICK PRO 514 NUDE PINK CHERRY', SKU ΤΚΝΠ-514, description says Satin Effect finish. Page gallery uses glp_package_514_1.jpg (700px); glp_package_514.jpg is the 2457px original of the same packshot."
+  },
+  {
+    "barcode": "5207042385316",
+    "line_en": "Lipstick Pro (satin effect)",
+    "shade_number": "531",
+    "shade_name": "Red Fire",
+    "product_url": null,
+    "image_url": "https://grigi.gr/media/catalog/product/g/l/glp_package_531.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/g/l/glp_531.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "epharmadora.com lists 5207042385316 = 'Grigi Lipstick Pro No 531 Red Fire'. Search engines index grigi.gr page 'GRIGI LIPSTICK PRO 531 RED FIRE' (https://grigi.gr/grigi-lipstick-pro-531-red-fire-531, SKU ΤΚΝΠ-531) but it now returns 404; pop-art.gr also sells 'GRIGI LIPSTICK PRO 531 RED FIRE'. Packshot visually red."
+  },
+  {
+    "barcode": "5207042390044",
+    "line_en": "Matte Long Stay Liquid Lipstick Mini (2ml)",
+    "shade_number": "04",
+    "shade_name": "Nude Pink",
+    "product_url": null,
+    "image_url": "https://grigi.gr/media/catalog/product/g/o/gomlspll-mini-04.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/G/O/GOMLSPLL-04NP_1_4.jpg",
+    "confidence": "matched-shade-number",
+    "evidence": "No retailer page found showing this exact EAN. Mini line prefix 5207042390xx inferred from a search-engine snippet of supermigo.gr ('Grigi MakeUp Matte Longstay Liquid Lipstick 03 2ml' = 5207042390037; site blocks direct fetch); full-size Longstay uses 5207042160xx. simitri.lt sells 'GRIGI MATTE LONG STAY LIQUID LIPSTICK MINI No 04 NUDE PINK'; grigi.gr full-size page 'MATTE LONGSTAY LIQUID LIPSTIK No4 NUDE PINK' (https://grigi.gr/grigi-make-up-only-matte-long-stay-power-liquid-lipstick-new-packaging-04). No live grigi.gr mini-04 page; mini packshot exists in grigi.gr media. Swatch is from the full-size No 4 page (same shade)."
+  },
+  {
+    "barcode": "5207042390433",
+    "line_en": "Matte Long Stay Liquid Lipstick Mini (2ml)",
+    "shade_number": "43",
+    "shade_name": "Cinnamon",
+    "product_url": null,
+    "image_url": "https://grigi.gr/media/catalog/product/g/o/gomlspll-mini-43.jpg",
+    "swatch_url": null,
+    "confidence": "matched-shade-number",
+    "evidence": "No page found showing this EAN; prefix inferred as for mini 04 (390+shade+check). Mini packshot gomlspll-mini-43.jpg exists on grigi.gr media (brown/cinnamon tube). No grigi.gr page for Longstay 43 (mini or full) is live; shade name 'Cinnamon' comes only from third-party retailer shade lists (e.g. mysofi.gr: '42 NUDE CINNAMON, 43 CINNAMON') - treat the NAME as unverified by GRIGI. No swatch image found."
+  },
+  {
+    "barcode": "5207042202132",
+    "line_en": "Waterproof Lip Silky Pencil",
+    "shade_number": "13",
+    "shade_name": "Light Nude",
+    "product_url": "https://grigi.gr/grigi-make-up-waterproof-lip-silky-pencil-13",
+    "image_url": "https://grigi.gr/media/catalog/product/g/l/glsp-13.jpeg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/G/W/GWLP-13_1_4.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "boboconcept.bg product 7582 'GRIGI SILKY PENCIL No. 13' (waterproof lip pencil) Code 5207042202132. grigi.gr 'GRIGI WATERPROOF LIP SILKY PENCIL No 13 LIGHT NUDE', SKU ΤΜΧ-13."
+  },
+  {
+    "barcode": "5207042202149",
+    "line_en": "Waterproof Lip Silky Pencil",
+    "shade_number": "14",
+    "shade_name": "Nude Caramel",
+    "product_url": "https://grigi.gr/grigi-make-up-waterproof-lip-silky-pencil-14",
+    "image_url": "https://grigi.gr/media/catalog/product/g/l/glsp-14.jpeg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/G/W/GWLP-14_1_4.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "boboconcept.bg product 7583 'GRIGI SILKY PENCIL No. 14' (waterproof lip pencil) Code 5207042202149. grigi.gr 'GRIGI WATERPROOF LIP SILKY PENCIL No 14 NUDE CARAMEL', SKU ΤΜΧ-14."
+  },
+  {
+    "barcode": "5207042202217",
+    "line_en": "Waterproof Lip Silky Pencil",
+    "shade_number": "21",
+    "shade_name": "Nude Pink Brown",
+    "product_url": "https://grigi.gr/grigi-make-up-waterproof-lip-silky-pencil-21",
+    "image_url": "https://grigi.gr/media/catalog/product/G/W/GWLP-21_3.jpeg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/G/W/GWLP-21_1_4.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "boboconcept.bg product 7587 'GRIGI SILKY PENCIL No. 21' (waterproof lip pencil) Code 5207042202217. grigi.gr 'GRIGI WATERPROOF LIP SILKY PENCIL No 21 NUDE PINK BROWN', SKU ΤΜΧ-21."
+  },
+  {
+    "barcode": "5207042202361",
+    "line_en": "Waterproof Lip Silky Pencil",
+    "shade_number": "36",
+    "shade_name": "Cinnamon Pink",
+    "product_url": "https://grigi.gr/grigi-waterproof-lip-silky-pencil-no-36-cinnamon-pink-36",
+    "image_url": "https://grigi.gr/media/catalog/product/g/l/glsp-36_3.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/g/l/glsp-36_1_1.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "epharmadora.com lists 5207042202361 = 'Grigi Silky Lip Pencil No 36 Cinnamon Pink'. grigi.gr 'GRIGI WATERPROOF LIP SILKY PENCIL No 36 CINNAMON PINK', SKU ΤΜΧ-36."
+  },
+  {
+    "barcode": "5207042201104",
+    "line_en": "Waterproof Eye Silky Pencil",
+    "shade_number": "10",
+    "shade_name": "Blue",
+    "product_url": "https://grigi.gr/grigi-make-up-waterproof-silky-eye-pencil-10",
+    "image_url": "https://grigi.gr/media/catalog/product/g/w/gwep-10.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/g/w/gwep-10-tex.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "epharmadora.com lists 5207042201104 = 'Grigi Waterproof Eye Silky Pencil No 10 Blue'. grigi.gr 'GRIGI WATERPROOF SILKY EYE PENCIL No 10 BLUE', SKU ΤΜΜ-10."
+  },
+  {
+    "barcode": "5207042201210",
+    "line_en": "Waterproof Eye Silky Pencil",
+    "shade_number": "21",
+    "shade_name": "Turquoise Blue",
+    "product_url": "https://grigi.gr/grigi-waterproof-eye-silky-pencil-no-21-turquoise-blue-21",
+    "image_url": "https://grigi.gr/media/catalog/product/g/w/gwep-21_1.jpg",
+    "swatch_url": "https://grigi.gr/media/catalog/product/g/e/gesp-21-tex.jpg",
+    "confidence": "confirmed-ean",
+    "evidence": "boboconcept.bg product 7674 'GRIGI SILKY PENCIL No. 21' (waterproof eye pencil) Code 5207042201210; epharmadora.com lists it as 'Grigi Waterproof Silky Eye Pencil No 21 Blue'. grigi.gr names the shade '21 TURQUOISE BLUE', SKU ΤΜΜ-21."
+  }
+]

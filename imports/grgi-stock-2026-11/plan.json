@@ -1,0 +1,386 @@
+{
+ "add": {
+  "5b910df1-8bbe-439c-b924-ca1bc66d767b": [
+   {
+    "barcode": "5207042030438",
+    "name": "43 Nude Caramel",
+    "colorHex": "#925658",
+    "img": "5207042030438.jpg"
+   }
+  ],
+  "41294991-915b-4715-9af7-f6b6ba908097": [
+   {
+    "barcode": "5207042385101",
+    "name": "510 Nude Brown",
+    "colorHex": "#9B706F",
+    "img": "5207042385101.jpg"
+   },
+   {
+    "barcode": "5207042385149",
+    "name": "514 Nude Pink Cherry",
+    "colorHex": "#9D5A6B",
+    "img": "5207042385149.jpg"
+   },
+   {
+    "barcode": "5207042385316",
+    "name": "531 Red Fire",
+    "colorHex": "#B92B34",
+    "img": "5207042385316.jpg"
+   }
+  ],
+  "8a357d6d-69b0-4c1f-acd9-aa891f21e9e9": [
+   {
+    "barcode": "5207042390044",
+    "name": "04 Nude Pink",
+    "colorHex": "#B9746F",
+    "img": "5207042390044.jpg"
+   },
+   {
+    "barcode": "5207042390433",
+    "name": "43 Cinnamon",
+    "colorHex": "#864D45",
+    "img": "5207042390433.jpg"
+   }
+  ],
+  "572e09f9-11f8-4a04-883f-73c03d10190c": [
+   {
+    "barcode": "5207042202132",
+    "name": "13 Light Nude",
+    "colorHex": "#A07265",
+    "img": "5207042202132.jpg"
+   },
+   {
+    "barcode": "5207042202149",
+    "name": "14 Nude Caramel",
+    "colorHex": "#B0716A",
+    "img": "5207042202149.jpg"
+   },
+   {
+    "barcode": "5207042202217",
+    "name": "21 Nude Pink Brown",
+    "colorHex": "#AD6567",
+    "img": "5207042202217.jpg"
+   },
+   {
+    "barcode": "5207042202361",
+    "name": "36 Cinnamon Pink",
+    "colorHex": "#7B493F",
+    "img": "5207042202361.jpg"
+   }
+  ],
+  "cc283f4c-6842-412f-811c-7d73b05d4d07": [
+   {
+    "barcode": "5207042201104",
+    "name": "10 Blue",
+    "colorHex": "#535A79",
+    "img": "5207042201104.jpg"
+   },
+   {
+    "barcode": "5207042201210",
+    "name": "21 Turquoise Blue",
+    "colorHex": "#608E9E",
+    "img": "5207042201210.jpg"
+   }
+  ],
+  "10c66f9e-890b-4150-a2da-2d55a85075aa": [
+   {
+    "barcode": "5207042770068",
+    "name": "06 Browny",
+    "colorHex": "#8E594B",
+    "img": "5207042770068.jpg"
+   }
+  ]
+ },
+ "new": [
+  {
+   "nameAr": "كريجي ظل عيون ستيك تويست آند غو برو",
+   "nameEn": "GRIGI Twist & Go Eyeshadow Stick Pro",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+    "07f14763-7a8b-4646-a057-8748e2b18bd4"
+   ],
+   "dAr": "ظل عيون على شكل ستيك من كريجي بتصميم تويست آند غو العملي.\n\n• قوام كريمي ينزلق بسهولة ويندمج بالأصابع أو الفرشاة.\n• لمعة شيمر ناعمة بألوان نيود وبرونزية.\n• يدوم طويلاً على الجفن.\n• مثالي للتطبيق السريع أثناء التنقل.",
+   "dEn": "GRIGI eyeshadow in a practical twist-up stick.\n\n• Creamy glide, easy to blend with fingers or a brush.\n• Soft shimmer in nude and bronze tones.\n• Long-lasting on the lid.\n• Perfect for quick application on the go.",
+   "shades": [
+    {
+     "barcode": "5207042206017",
+     "name": "101 Shimmer Shell",
+     "colorHex": "#C8AAA7",
+     "img": "5207042206017.jpg"
+    },
+    {
+     "barcode": "5207042206024",
+     "name": "102 Shimmer Sand",
+     "colorHex": "#A38575",
+     "img": "5207042206024.jpg"
+    },
+    {
+     "barcode": "5207042206031",
+     "name": "103 Shimmer Bronze",
+     "colorHex": "#BC9A82",
+     "img": "5207042206031.jpg"
+    },
+    {
+     "barcode": "5207042206048",
+     "name": "104 Shimmer Brown",
+     "colorHex": "#745448",
+     "img": "5207042206048.jpg"
+    }
+   ]
+  },
+  {
+   "nameAr": "كريجي قلم تحديد شفاه أوتوماتيك تويست آند غو برو",
+   "nameEn": "GRIGI Twist & Go Lipliner Pencil Pro",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "56da5b82-c847-4e9b-9cea-cc901236189f",
+    "54e393a9-90bf-41bb-beeb-c5364afce287"
+   ],
+   "dAr": "قلم تحديد شفاه أوتوماتيك من كريجي لا يحتاج إلى بري.\n\n• رأس دقيق لرسم حدود الشفاه بدقة.\n• قوام ناعم ولون غني يدوم طويلاً.\n• درجات نيود دافئة تناسب الإطلالات اليومية.\n• يمكن استخدامه لتعبئة الشفاه بالكامل.",
+   "dEn": "GRIGI twist-up automatic lip liner — no sharpening needed.\n\n• Precise tip for defined lips.\n• Smooth texture, rich long-lasting colour.\n• Warm nude shades for everyday looks.\n• Can be used to fill in the whole lip.",
+   "shades": [
+    {
+     "barcode": "5207042207144",
+     "name": "214 Nude Caramel",
+     "colorHex": "#824F51",
+     "img": "5207042207144.jpg"
+    },
+    {
+     "barcode": "5207042207168",
+     "name": "216 Warm Nude",
+     "colorHex": "#6D484E",
+     "img": "5207042207168.jpg"
+    },
+    {
+     "barcode": "5207042207212",
+     "name": "221 Nude Pink Brown",
+     "colorHex": "#7D3B45",
+     "img": "5207042207212.jpg"
+    },
+    {
+     "barcode": "5207042207366",
+     "name": "236 Cinnamon Pink",
+     "colorHex": "#6A2C32",
+     "img": "5207042207366.jpg"
+    },
+    {
+     "barcode": "5207042207403",
+     "name": "240 Frosted Brown",
+     "colorHex": "#5E4540",
+     "img": "5207042207403.jpg"
+    },
+    {
+     "barcode": "5207042207427",
+     "name": "242 Warm Rose Nude",
+     "colorHex": "#70464A",
+     "img": "5207042207427.jpg"
+    }
+   ]
+  },
+  {
+   "nameAr": "كريجي أحمر شفاه سائل لامع غلوس برو",
+   "nameEn": "GRIGI Gloss Liquid Lipstick Pro",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "56da5b82-c847-4e9b-9cea-cc901236189f",
+    "b53dd3be-ae16-47a4-a306-238f2060b8d8"
+   ],
+   "dAr": "أحمر شفاه سائل من كريجي بلمسة نهائية لامعة بتأثير الفينيل.\n\n• لون غني من أول تمريرة.\n• لمعان عالٍ يمنح الشفاه مظهراً ممتلئاً.\n• قوام مريح غير لزج.",
+   "dEn": "GRIGI liquid lipstick with a high-shine vinyl finish.\n\n• Rich colour in one swipe.\n• High gloss for fuller-looking lips.\n• Comfortable, non-sticky texture.",
+   "shades": [
+    {
+     "barcode": "5207042694074",
+     "name": "407 Vinyl Dark Nude Purple",
+     "colorHex": "#814954",
+     "img": "5207042694074.jpg"
+    },
+    {
+     "barcode": "5207042694081",
+     "name": "408 Vinyl Dark Nude Brown",
+     "colorHex": "#72393A",
+     "img": "5207042694081.jpg"
+    }
+   ]
+  },
+  {
+   "nameAr": "كريجي ليب كومبو أحمر شفاه سائل مطفي مع غلوس",
+   "nameEn": "GRIGI Lip Combo Matte Liquid Lipstick & Gloss",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "56da5b82-c847-4e9b-9cea-cc901236189f",
+    "b53dd3be-ae16-47a4-a306-238f2060b8d8"
+   ],
+   "dAr": "منتج ثنائي من كريجي يجمع أحمر شفاه سائل مطفي وغلوس لامع بلون متناسق.\n\n• استخدمي المطفي وحده لإطلالة مات، أو أضيفي الغلوس للمعة.\n• عبوة واحدة بطرفين عملية للحقيبة.\n• ألوان منسّقة جاهزة.",
+   "dEn": "GRIGI dual-ended lip product: matte liquid lipstick plus a matching gloss.\n\n• Wear the matte alone or top with gloss for shine.\n• One handy double-ended pack.\n• Ready-matched shades.",
+   "shades": [
+    {
+     "barcode": "5207042750015",
+     "name": "01 Pink Chic!",
+     "colorHex": "#B37D84",
+     "img": "5207042750015.jpg"
+    },
+    {
+     "barcode": "5207042750022",
+     "name": "02 Nude Mauve Pink",
+     "colorHex": "#A17273",
+     "img": "5207042750022.jpg"
+    },
+    {
+     "barcode": "5207042750039",
+     "name": "03 Nude Pink Brown",
+     "colorHex": "#945D5E",
+     "img": "5207042750039.jpg"
+    },
+    {
+     "barcode": "5207042750060",
+     "name": "06 Berry",
+     "colorHex": "#8D374D",
+     "img": "5207042750060.jpg"
+    }
+   ]
+  },
+  {
+   "nameAr": "كريجي كريم أساس برو لومينوس بمضخة إيرلس 30 مل",
+   "nameEn": "GRIGI Pro Airless Luminous Foundation 30ml",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "2bbecee1-084d-446c-b4fd-65f769130de9",
+    "036b1b3c-aa73-4dd1-bdd2-1a12f193645a"
+   ],
+   "dAr": "كريم أساس لومينوس من كريجي بعبوة إيرلس محكمة تحافظ على التركيبة.\n\n• لمسة نهائية مشرقة وطبيعية.\n• تغطية قابلة للبناء.\n• مضخة إيرلس تمنع دخول الهواء وتعطي كمية دقيقة.\n• العبوة 30 مل.",
+   "dEn": "GRIGI luminous foundation in an airless pump bottle that protects the formula.\n\n• Radiant, natural finish.\n• Buildable coverage.\n• Airless pump for precise, hygienic dosing.\n• 30 ml.",
+   "shades": [
+    {
+     "barcode": "5207042211271",
+     "name": "27 Natural",
+     "colorHex": "#C3AD93",
+     "img": "5207042211271.jpg"
+    },
+    {
+     "barcode": "5207042211288",
+     "name": "28 Golden Sand",
+     "colorHex": "#C3AD93",
+     "img": "5207042211288.jpg"
+    }
+   ]
+  },
+  {
+   "nameAr": "كريجي قلم حواجب ديفاينر رقم 04 بني",
+   "nameEn": "GRIGI Eyebrow Definer Pencil 04 Brown",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "92ebe64a-9091-4460-9f12-68ecbdf4e1e9",
+    "b1db1ac0-66ff-4912-8072-0c07e3fffda3"
+   ],
+   "single": "5207042100049",
+   "dAr": "قلم حواجب ديفاينر من كريجي باللون رقم 04 بني.\n\n• لتحديد وتعبئة الحواجب بمظهر طبيعي.\n• مزوّد بفرشاة لتمشيط الشعيرات ودمج اللون.\n• ثبات يدوم طوال اليوم.",
+   "dEn": "GRIGI Eyebrow Definer pencil in shade 04 Brown.\n\n• Defines and fills brows naturally.\n• Built-in spoolie to groom and blend.\n• All-day wear.",
+   "img": "5207042100049.jpg"
+  },
+  {
+   "nameAr": "كريجي قلم جل تحديد عيون بريميوم برو رقم 01 أسود",
+   "nameEn": "GRIGI Premium Gel Eyeliner Pencil Pro 01 Black",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+    "c8866117-67e0-4509-a887-60100775524b"
+   ],
+   "single": "5207042204020",
+   "dAr": "قلم جل لتحديد العيون من كريجي بريميوم برو باللون الأسود.\n\n• قوام جل كريمي ينزلق بسهولة.\n• لون أسود مكثّف.\n• ثبات طويل ومقاوم للتلطخ.\n• مناسب للخط الداخلي والخارجي.",
+   "dEn": "GRIGI Premium Pro gel eyeliner pencil in black.\n\n• Creamy gel glide.\n• Intense black colour.\n• Long-lasting, smudge-resistant.\n• For the waterline and lash line.",
+   "img": "5207042204020.jpg"
+  },
+  {
+   "nameAr": "كريجي برايمر أوبتيموم برو بمضخة إيرلس 30 مل",
+   "nameEn": "GRIGI Pro Airless Optimum Primer Pro 30ml",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "2bbecee1-084d-446c-b4fd-65f769130de9",
+    "d179ae24-9cf5-4a70-8dbd-bedd0cfbef0b"
+   ],
+   "single": "5207042231019",
+   "dAr": "برايمر أوبتيموم برو من كريجي بعبوة إيرلس.\n\n• يحضّر البشرة ويوحّد ملمسها قبل المكياج.\n• يساعد على ثبات كريم الأساس لفترة أطول.\n• العبوة 30 مل.",
+   "dEn": "GRIGI Optimum Primer Pro in an airless pump.\n\n• Preps and smooths skin before make-up.\n• Helps foundation last longer.\n• 30 ml.",
+   "img": "5207042231019.jpg"
+  },
+  {
+   "nameAr": "كريجي برايمر بيرفكت برو بمضخة إيرلس 30 مل",
+   "nameEn": "GRIGI Pro Airless Perfect Primer Pro 30ml",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "2bbecee1-084d-446c-b4fd-65f769130de9",
+    "d179ae24-9cf5-4a70-8dbd-bedd0cfbef0b"
+   ],
+   "single": "5207042231026",
+   "dAr": "برايمر بيرفكت برو من كريجي بعبوة إيرلس.\n\n• يمنح البشرة مظهراً ناعماً ومثالياً قبل المكياج.\n• يساعد على ثبات المكياج.\n• العبوة 30 مل.",
+   "dEn": "GRIGI Perfect Primer Pro in an airless pump.\n\n• Smooths for a flawless base.\n• Helps make-up last.\n• 30 ml.",
+   "img": "5207042231026.jpg"
+  },
+  {
+   "nameAr": "كريجي مثبت مكياج بيرفكت فيكسر برو 50 مل",
+   "nameEn": "GRIGI Perfect Fixer Make Up Pro 50ml",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "2bbecee1-084d-446c-b4fd-65f769130de9",
+    "afb26abb-e48f-4ced-8863-2c3ba1333505"
+   ],
+   "single": "5207042370015",
+   "dAr": "بخاخ تثبيت المكياج بيرفكت فيكسر برو من كريجي.\n\n• يثبّت المكياج لساعات طويلة.\n• رذاذ ناعم خفيف لا يُثقل البشرة.\n• يُرش من مسافة 20 سم بعد الانتهاء من المكياج.\n• العبوة 50 مل.",
+   "dEn": "GRIGI Perfect Fixer Make Up Pro setting spray.\n\n• Locks make-up in place for hours.\n• Fine, weightless mist.\n• Spray from 20 cm after make-up.\n• 50 ml.",
+   "img": "5207042370015.jpg"
+  },
+  {
+   "nameAr": "كريجي مرطب شفاه ملوّن غلو رقم 04 نود",
+   "nameEn": "GRIGI Glow Tinted Lip Balm 04 Nude",
+   "cat": [
+    "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "56da5b82-c847-4e9b-9cea-cc901236189f",
+    "5c279f28-2833-42d7-9211-8f72f2c4522f"
+   ],
+   "single": "5207042570040",
+   "dAr": "مرطب شفاه ملوّن من كريجي غلو باللون رقم 04 نود.\n\n• يرطّب الشفاه ويمنحها لوناً خفيفاً ولمعة طبيعية.\n• قوام ناعم مريح للاستخدام اليومي.",
+   "dEn": "GRIGI Glow tinted lip balm in 04 Nude.\n\n• Moisturises with a sheer tint and natural glow.\n• Soft, comfortable everyday texture.",
+   "img": "5207042570040.jpg"
+  }
+ ],
+ "files": [
+  "5207042030438.jpg",
+  "5207042100049.jpg",
+  "5207042201104.jpg",
+  "5207042201210.jpg",
+  "5207042202132.jpg",
+  "5207042202149.jpg",
+  "5207042202217.jpg",
+  "5207042202361.jpg",
+  "5207042204020.jpg",
+  "5207042206017.jpg",
+  "5207042206024.jpg",
+  "5207042206031.jpg",
+  "5207042206048.jpg",
+  "5207042207144.jpg",
+  "5207042207168.jpg",
+  "5207042207212.jpg",
+  "5207042207366.jpg",
+  "5207042207403.jpg",
+  "5207042207427.jpg",
+  "5207042211271.jpg",
+  "5207042211288.jpg",
+  "5207042231019.jpg",
+  "5207042231026.jpg",
+  "5207042370015.jpg",
+  "5207042385101.jpg",
+  "5207042385149.jpg",
+  "5207042385316.jpg",
+  "5207042390044.jpg",
+  "5207042390433.jpg",
+  "5207042570040.jpg",
+  "5207042694074.jpg",
+  "5207042694081.jpg",
+  "5207042750015.jpg",
+  "5207042750022.jpg",
+  "5207042750039.jpg",
+  "5207042750060.jpg",
+  "5207042770068.jpg"
+ ]
+}
