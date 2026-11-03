@@ -751,7 +751,7 @@ export class InventorySyncService {
   ) {
     const rows = chunk.map(
       ({ shadeId, item }) => Prisma.sql`(
-        ${shadeId}::uuid,
+        ${shadeId}::text,
         ${item.stock}::int,
         ${item.price}::int,
         ${item.originalPrice}::int,
@@ -944,7 +944,7 @@ export class InventorySyncService {
   ) {
     const rows = chunk.map(
       ({ productId, item }) => Prisma.sql`(
-        ${productId}::uuid,
+        ${productId}::text,
         ${item.price}::int,
         ${item.originalPrice}::int,
         ${item.discountPercent}::int,
