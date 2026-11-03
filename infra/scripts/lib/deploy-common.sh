@@ -349,19 +349,22 @@ sync_repo_from_github() {
     return 0
   fi
 
-  echo "==> Sync from GitHub (origin/main)..."
+  # الفرع الذي يعمل عليه السيرفر (production اليوم) — أو DEPLOY_BRANCH إن ضُبط
+  local branch="${DEPLOY_BRANCH:-$(git -C "$repo" symbolic-ref --quiet --short HEAD 2>/dev/null || echo production)}"
+
+  echo "==> Sync from GitHub (origin/${branch})..."
   local before remote
   before="$(git -C "$repo" rev-parse --short HEAD 2>/dev/null || echo none)"
-  git -C "$repo" fetch origin main
-  remote="$(git -C "$repo" rev-parse --short origin/main 2>/dev/null || echo none)"
+  git -C "$repo" fetch origin "+refs/heads/${branch}:refs/remotes/origin/${branch}"
+  remote="$(git -C "$repo" rev-parse --short "origin/${branch}" 2>/dev/null || echo none)"
   echo "    before: $before"
   echo "    remote: $remote"
 
-  if [[ "$(git -C "$repo" rev-parse HEAD)" != "$(git -C "$repo" rev-parse origin/main)" ]]; then
-    echo "==> Reset hard to origin/main (keeps infra/.env — gitignored)"
-    git -C "$repo" reset --hard origin/main
+  if [[ "$(git -C "$repo" rev-parse HEAD)" != "$(git -C "$repo" rev-parse "origin/${branch}")" ]]; then
+    echo "==> Reset hard to origin/${branch} (keeps infra/.env — gitignored)"
+    git -C "$repo" reset --hard "origin/${branch}"
   else
-    echo "==> Already on origin/main"
+    echo "==> Already on origin/${branch}"
   fi
 
   git -C "$repo" clean -fd \
