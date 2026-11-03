@@ -764,8 +764,7 @@ export class InventorySyncService {
         "stock" = v.stock,
         "price" = v.price,
         "originalPrice" = v."originalPrice",
-        "discountPercent" = v."discountPercent",
-        "updatedAt" = NOW()
+        "discountPercent" = v."discountPercent"
       FROM (VALUES ${Prisma.join(rows)}) AS v(
         id,
         stock,
