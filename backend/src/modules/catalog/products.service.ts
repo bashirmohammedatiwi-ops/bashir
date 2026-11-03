@@ -377,7 +377,22 @@ export class ProductsService {
       rankedSearchIds = pageIds;
       rawItems = pageIds.length ? await fetchItems({ id: { in: pageIds } }) : [];
     } else {
-      [total, rawItems] = await Promise.all([this.prisma.product.count({ where }), fetchItems(where, { skip, take: limit })]);
+      const priority = storefront && !brandId && (!q.sort || q.sort === "default" || q.sort === "brand")
+        ? await this.priorityProductsWhere()
+        : null;
+      if (priority) {
+        // البراندات المميزة (الوكالة الحصرية) أولاً في أقسامها، ثم البقية بترتيب البراندات المعتاد.
+        const first: Prisma.ProductWhereInput = { AND: [where, priority] };
+        const rest: Prisma.ProductWhereInput = { AND: [where, { NOT: priority }] };
+        const [pCount, rCount] = await Promise.all([this.prisma.product.count({ where: first }), this.prisma.product.count({ where: rest })]);
+        total = pCount + rCount;
+        const fromFirst = skip < pCount ? await fetchItems(first, { skip, take: Math.min(limit, pCount - skip) }) : [];
+        const need = limit - fromFirst.length;
+        const fromRest = need > 0 ? await fetchItems(rest, { skip: Math.max(0, skip - pCount), take: need }) : [];
+        rawItems = [...fromFirst, ...fromRest];
+      } else {
+        [total, rawItems] = await Promise.all([this.prisma.product.count({ where }), fetchItems(where, { skip, take: limit })]);
+      }
     }
 
     const items = rankedSearchIds.length
@@ -1426,6 +1441,18 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
       };
     }
     return null;
+  }
+
+  /**
+   * «براندات في المقدمة» من الإعدادات: منتجات هذه البراندات داخل الأقسام الرئيسية المختارة
+   * تتصدّر القوائم (مثلاً كريجي وريبيلا في المكياج) دون أن تمسّ ترتيب العطور أو بقية الأقسام.
+   */
+  private async priorityProductsWhere(): Promise<Prisma.ProductWhereInput | null> {
+    const s = (await this.settings.getAll()) as Record<string, unknown>;
+    const brandIds = Array.isArray(s.priorityBrandIds) ? (s.priorityBrandIds as unknown[]).filter((v): v is string => typeof v === "string") : [];
+    const rootIds = Array.isArray(s.priorityCategoryIds) ? (s.priorityCategoryIds as unknown[]).filter((v): v is string => typeof v === "string") : [];
+    if (!brandIds.length || !rootIds.length) return null;
+    return { brandId: { in: brandIds }, categoryId: { in: rootIds } };
   }
 
   private buildOrderBy(

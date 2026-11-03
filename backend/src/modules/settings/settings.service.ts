@@ -46,6 +46,9 @@ export const DEFAULT_STORE_SETTINGS = {
   hideProductsWithoutImages: false,
   // رف «اطلبيها مرة ثانية» في التطبيق (يعمل مع كل نسخ التطبيق: الإخفاء = قائمة فارغة).
   showBuyAgain: true,
+  // «براندات في المقدمة»: منتجات هذه البراندات أولاً داخل هذه الأقسام الرئيسية.
+  priorityBrandIds: [] as string[],
+  priorityCategoryIds: [] as string[],
 };
 
 /** رسوم تغليف الهدية من الإعدادات — رقم صحيح غير سالب (افتراضياً 3000 د.ع). */

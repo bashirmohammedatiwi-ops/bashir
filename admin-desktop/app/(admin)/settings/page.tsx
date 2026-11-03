@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Divider, Form, Input, InputNumber, Space, Switch, Tabs, message } from "antd";
+import { Alert, Button, Card, Divider, Form, Input, InputNumber, Select, Space, Switch, Tabs, message } from "antd";
 import { useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { mutations, queries } from "@/lib/queries";
@@ -34,6 +34,8 @@ interface Settings {
   hideEmptyTertiary?: boolean;
   hideOutOfStock?: boolean;
   showBuyAgain?: boolean;
+  priorityBrandIds?: string[];
+  priorityCategoryIds?: string[];
   hideProductsWithoutImages?: boolean;
 }
 
@@ -45,6 +47,13 @@ export default function SettingsPage() {
     queryKey: ["settings"],
     queryFn: queries.settings,
   });
+
+  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: () => queries.brands() });
+  const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: queries.categories });
+  const brandOptions = ((brands as { id: string; name: string }[] | undefined) ?? []).map((b) => ({ value: b.id, label: b.name }));
+  const rootOptions = ((categories as { id: string; name: string; parentId?: string | null }[] | undefined) ?? [])
+    .filter((c) => !c.parentId)
+    .map((c) => ({ value: c.id, label: c.name }));
 
   useEffect(() => {
     if (data) form.setFieldsValue(data);
@@ -219,6 +228,21 @@ export default function SettingsPage() {
                         valuePropName="checked"
                       >
                         <Switch />
+                      </Form.Item>
+                      <Divider>براندات في المقدمة</Divider>
+                      <Form.Item
+                        name="priorityBrandIds"
+                        label="البراندات التي تتصدّر القوائم"
+                        tooltip="منتجات هذه البراندات تظهر أولاً في الأقسام المختارة أدناه (مثل الوكالات الحصرية)"
+                      >
+                        <Select mode="multiple" allowClear showSearch optionFilterProp="label" options={brandOptions} placeholder="اختاري البراندات" />
+                      </Form.Item>
+                      <Form.Item
+                        name="priorityCategoryIds"
+                        label="في هذه الأقسام الرئيسية"
+                        tooltip="مثلاً المكياج والأظافر — بقية الأقسام (كالعطور) تبقى بترتيبها المعتاد"
+                      >
+                        <Select mode="multiple" allowClear showSearch optionFilterProp="label" options={rootOptions} placeholder="اختاري الأقسام" />
                       </Form.Item>
                       <Form.Item
                         name="hideProductsWithoutImages"
