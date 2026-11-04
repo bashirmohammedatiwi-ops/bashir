@@ -17,7 +17,7 @@ import { themeCss } from "@/lib/theme";
 import { SITE_URL, STORE_NAME, STORE_TAGLINE } from "@/lib/config";
 
 /** قبل الرسم: الوضع المحفوظ (فاتح/ليلي) أو وضع الجهاز — بلا وميض. */
-const THEME_BOOT = `(function(){try{var t=localStorage.getItem("dh-theme")||"system";var d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")}catch(e){}})()`;
+const THEME_BOOT = `(function(){try{var t=localStorage.getItem("dh-theme")||"light";var d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")}catch(e){}})()`;
 
 const plex = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
@@ -25,6 +25,10 @@ const plex = IBM_Plex_Sans_Arabic({
   variable: "--font-plex",
   display: "swap",
 });
+
+// كل الصفحات تُرسم عند الطلب: الرأس يقرأ كوكي «العالم»، والبناء داخل Docker لا يصل للـ API
+// فكانت صفحات مثل «الأقسام» تُحفظ فارغة ثم تفشل إعادة توليدها (DYNAMIC_SERVER_USAGE). الجلب نفسه يبقى مخزّناً (revalidate).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

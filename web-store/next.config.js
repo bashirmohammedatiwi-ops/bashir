@@ -8,6 +8,8 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   images: { unoptimized: true },
+  // TanStack Query يُنشر بصيغة حديثة (??=) — نترجمها حتى لا يتعطل الموقع على آيفونات iOS 13 وما قبلها.
+  transpilePackages: ["@tanstack/query-core", "@tanstack/react-query"],
   async rewrites() {
     // التطوير المحلي فقط: /api و/media يذهبان للـ API المحلي. في الإنتاج nginx يوجّه /api مباشرة.
     if (process.env.NODE_ENV !== "development") return [];
