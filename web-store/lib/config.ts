@@ -11,4 +11,6 @@ export const API_PUBLIC = "/api/v1";
 export const API_INTERNAL = process.env.API_INTERNAL_URL ?? "http://localhost:3100/api/v1";
 
 export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.deemaalhayat.app";
-export const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL ?? "";
+/** صفحة Google Play لا تظهر للعامة قبل اكتمال الاختبار المغلق — اقلبيها true بعد النشر للإنتاج. */
+export const PLAY_STORE_LIVE = false;
+export const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL || "https://apps.apple.com/iq/app/deema-alhayat/id6795212638";

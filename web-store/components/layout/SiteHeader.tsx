@@ -74,7 +74,7 @@ export function SiteHeader({
           <div className="container flex h-9 items-center justify-center gap-2 text-[13px] font-semibold">
             <Icon name="truck" size={16} />
             <span>توصيل مجاني لكل محافظات العراق للطلبات فوق {formatNumber(freeShipping)} د.ع</span>
-            <span className="hidden opacity-80 sm:inline">• الدفع عند الاستلام أو بالبطاقة</span>
+            <span className="hidden opacity-80 sm:inline">• الدفع عند الاستلام</span>
           </div>
         </div>
       )}

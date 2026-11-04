@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { ProductView } from "@/components/product/ProductView";
 import { ProductRow } from "@/components/product/ProductRow";
 import { RecentlyViewed } from "@/components/product/RecentlyViewed";
-import { BoughtTogether } from "@/components/product/BoughtTogether";
 import { Reviews } from "@/components/product/Reviews";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ApiError, serverTry } from "@/lib/api";
@@ -66,14 +65,12 @@ function Details({ p }: { p: Product }) {
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const p = await load(params.slug);
   if (!p) notFound();
-  const [together, sameCat] = await Promise.all([
-    serverTry<{ items: Product[] }>(`/products/${p.id}/bought-together`, { revalidate: 300 }),
+  // لا اقتراحات «تُشترى معاً» — قرار صاحب المتجر (مثل التطبيق).
+  const sameCat =
     p.subcategory || p.category
-      ? serverTry<Paged<Product>>(`/products?${p.subcategory ? `subcategoryId=${p.subcategory.id}` : `categoryId=${p.category!.id}`}&limit=14&sort=popular`, { revalidate: 300 })
-      : null,
-  ]);
+      ? await serverTry<Paged<Product>>(`/products?${p.subcategory ? `subcategoryId=${p.subcategory.id}` : `categoryId=${p.category!.id}`}&limit=14&sort=popular`, { revalidate: 300 })
+      : null;
   const related = (sameCat?.data ?? []).filter((x) => x.id !== p.id);
-  const pairs = (together?.items ?? []).filter((x) => x.id !== p.id);
   const ld = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -140,17 +137,6 @@ export default async function ProductPage({ params }: { params: { slug: string }
       <section className="container mt-10 md:mt-14">
         <Details p={p} />
       </section>
-      {pairs.length > 0 && (
-        <section className="container mt-10 md:mt-14">
-          <BoughtTogether product={p} pairs={pairs} />
-          {pairs.length > 2 && (
-            <div className="mt-8">
-              <SectionHeader title="يكمّله لكِ" subtitle="يُشترى عادةً مع هذا المنتج" />
-              <ProductRow products={pairs} />
-            </div>
-          )}
-        </section>
-      )}
       {related.length > 0 && (
         <section className="container mt-10 md:mt-14">
           <SectionHeader

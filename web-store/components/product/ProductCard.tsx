@@ -122,14 +122,14 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
           </p>
         )}
         <div className="mt-auto flex items-end justify-between gap-2 pt-1">
-          <span className="flex flex-col">
-            <span className={clsx("text-base font-extrabold tabular-nums", p.originalPrice > p.price ? "text-sale" : "text-ink")}>
+          <span className="flex min-w-0 flex-col">
+            <span className={clsx("whitespace-nowrap text-base font-extrabold tabular-nums", p.originalPrice > p.price ? "text-sale" : "text-ink")}>
               {formatNumber(p.price)} <span className="text-[11px]">د.ع</span>
             </span>
             {p.originalPrice > p.price && <s className="text-[11px] tabular-nums text-ink-muted">{formatNumber(p.originalPrice)}</s>}
           </span>
           {shadeCount > 1 && (
-            <span className="flex items-center gap-1" dir="ltr">
+            <span className="mb-1 flex flex-none items-center gap-1" dir="ltr">
               {shades.slice(0, 4).map((s) => (
                 <span key={s.id} className="h-3 w-3 rounded-full ring-1 ring-black/10" style={{ background: s.colorHexEnd ? `linear-gradient(135deg, ${s.colorHex}, ${s.colorHexEnd})` : s.colorHex }} />
               ))}

@@ -5,7 +5,7 @@ export function ListingSkeleton() {
     <div className="container animate-pulse py-4 md:py-6">
       <Skeleton className="h-4 w-40" />
       <Skeleton className="mt-3 h-28 rounded-[28px] md:h-36" />
-      <div className="mt-6 grid gap-6 lg:grid-cols-[260px_1fr]">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
         <Skeleton className="hidden h-96 lg:block" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 xl:grid-cols-4">
           {Array.from({ length: 8 }, (_, i) => (
@@ -28,7 +28,7 @@ export function ProductSkeleton() {
   return (
     <div className="container py-4">
       <Skeleton className="h-4 w-56" />
-      <div className="mt-4 grid gap-6 md:gap-10 lg:grid-cols-[1.05fr_1fr]">
+      <div className="mt-4 grid grid-cols-1 gap-6 md:gap-10 lg:grid-cols-[1.05fr_1fr]">
         <Skeleton className="aspect-square rounded-[32px]" />
         <div className="space-y-4">
           <Skeleton className="h-6 w-28 rounded-full" />

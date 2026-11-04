@@ -218,6 +218,12 @@ export type HomeSection = {
   bannerAspect?: number;
   shape?: string;
   kind?: string;
+  aspectRatio?: string | null;
+  tilesPerView?: number | null;
+  tileCornerRadius?: number | null;
+  marqueeSpeed?: number | null;
+  marqueeGap?: number | null;
+  fullBleed?: boolean;
 };
 
 export type LoyaltyRules = { pointValue: number; earnPercent: number; redeemStep: number; firstOrderBonus: number };

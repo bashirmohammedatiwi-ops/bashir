@@ -35,8 +35,15 @@ export function AdvisorLauncher() {
     } catch {
       return;
     }
-    const t = setTimeout(() => setHint(true), 9000);
-    return () => clearTimeout(t);
+    // يظهر مرة واحدة ثم يختفي وحده حتى لا يغطي المنتجات.
+    const show = setTimeout(() => setHint(true), 9000);
+    const hide = setTimeout(() => {
+      setHint(false);
+      try {
+        localStorage.setItem("dh-advisor-hint", "1");
+      } catch {}
+    }, 17000);
+    return () => (clearTimeout(show), clearTimeout(hide));
   }, [hydrated, entries.length]);
 
   if (!hydrated || hidden) return null;
@@ -50,7 +57,7 @@ export function AdvisorLauncher() {
   return (
     <>
       {!open && (
-        <div className="no-print fixed bottom-24 left-4 z-[45] flex items-end gap-2 md:bottom-6 md:left-6">
+        <div className={clsx("no-print fixed left-4 z-[45] flex items-end gap-2 md:bottom-6 md:left-6", path.startsWith("/product/") ? "bottom-[164px]" : "bottom-24")}>
           <button onClick={() => (dismissHint(), setOpen(true))} className="group relative rounded-full transition hover:scale-105" aria-label="اسألي ديما">
             <span className="absolute inset-0 animate-ping rounded-full bg-accent/30 [animation-duration:2.6s]" />
             <DeemaOrb size={58} />

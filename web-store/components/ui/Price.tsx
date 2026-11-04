@@ -7,7 +7,7 @@ export function Price({ value, old, size = "md", className }: { value: number; o
     <span className={clsx("inline-flex flex-wrap items-baseline gap-x-2", className)}>
       <span
         className={clsx(
-          "font-extrabold tabular-nums",
+          "whitespace-nowrap font-extrabold tabular-nums",
           hasOld ? "text-sale" : "text-ink",
           size === "sm" && "text-[15px]",
           size === "md" && "text-lg",
@@ -17,7 +17,7 @@ export function Price({ value, old, size = "md", className }: { value: number; o
         {formatNumber(value)} <span className={clsx("font-bold", size === "lg" ? "text-lg" : "text-xs")}>د.ع</span>
       </span>
       {hasOld && (
-        <s className={clsx("tabular-nums text-ink-muted", size === "lg" ? "text-base" : "text-xs")}>{formatNumber(old!)} د.ع</s>
+        <s className={clsx("whitespace-nowrap tabular-nums text-ink-muted", size === "lg" ? "text-base" : "text-xs")}>{formatNumber(old!)} د.ع</s>
       )}
     </span>
   );

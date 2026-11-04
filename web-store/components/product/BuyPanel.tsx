@@ -3,6 +3,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLoyaltyRules } from "../Providers";
 import { FreeShippingBar, QtyStepper } from "../cart/CartDrawer";
 import { api } from "@/lib/api";
@@ -174,7 +175,7 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
           <>
             <div ref={buyRow} className="flex items-center gap-3">
               <QtyStepper value={qty} min={1} max={stock > 0 ? stock : 99} onChange={setQty} />
-              <button onClick={() => doAdd()} className="btn-primary flex-1">
+              <button onClick={() => doAdd()} className="btn-primary min-w-0 flex-1 whitespace-nowrap px-4">
                 <Icon name="bag" size={19} /> {needShade ? "اختاري اللون" : "أضيفي للسلة"}
               </button>
               <button onClick={() => toggleWish(p)} className={clsx("grid h-12 w-12 flex-none place-items-center rounded-full border border-hairline transition hover:border-sale", liked ? "text-sale" : "text-ink-soft")} aria-label="المفضلة">
@@ -205,23 +206,25 @@ export function BuyPanel({ product: p, onShade }: { product: Product; onShade?: 
 
       <AskDeema productId={p.id} />
 
-      {sticky && !out && (
+      {/* عبر portal: الحاوية الأب فيها حركة transform تجعل fixed نسبياً لها فيظهر الشريط وسط الصفحة. */}
+      {sticky && !out && createPortal(
         <div className="fixed inset-x-3 bottom-[88px] z-[44] flex items-center gap-3 rounded-[24px] border border-hairline bg-surface/95 p-2.5 shadow-float backdrop-blur animate-fade-up lg:hidden">
           <div className="min-w-0 flex-1 ps-2">
             <p className="line-clamp-1 text-xs text-ink-muted">{shade ? shade.name : productName(p)}</p>
             <p className="font-extrabold tabular-nums">{formatPrice(price * qty)}</p>
           </div>
-          <button onClick={() => doAdd()} className="btn-primary h-11 px-5 text-sm">
+          <button onClick={() => doAdd()} className="btn-primary h-11 flex-none whitespace-nowrap px-5 text-sm">
             <Icon name="bag" size={17} /> {needShade ? "اختاري اللون" : "أضيفي للسلة"}
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold text-ink-soft">
         {[
           ["shield", "منتجات أصلية 100%"],
           ["truck", "توصيل لكل العراق"],
-          ["cash", "نقداً أو بالبطاقة"],
+          ["cash", "الدفع عند الاستلام"],
         ].map(([i, t]) => (
           <div key={t} className="rounded-2xl bg-surface p-3 shadow-card">
             <Icon name={i as never} className="mx-auto mb-1 text-accent-dark" />

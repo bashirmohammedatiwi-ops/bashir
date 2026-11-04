@@ -36,7 +36,8 @@ export default {
       },
       animation: {
         marquee: "marquee var(--marquee-speed, 30s) linear infinite",
-        "fade-up": "fade-up .5s cubic-bezier(.2,.8,.2,1) both",
+        // backwards لا both: بعد انتهاء الحركة لا يبقى transform فعّالاً، وإلا صار كل عنصر fixed بداخلها نسبياً للصفحة لا للشاشة.
+        "fade-up": "fade-up .5s cubic-bezier(.2,.8,.2,1) backwards",
         shimmer: "shimmer 1.4s infinite",
         pop: "pop .45s cubic-bezier(.2,.8,.2,1)",
       },

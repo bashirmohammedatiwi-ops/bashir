@@ -8,10 +8,11 @@ import type { Brand, Category, HomeSection, SectionItem } from "@/lib/types";
 import { PackageCard, RoutineCard } from "../beauty/PackageCards";
 import { ProductRow } from "../product/ProductRow";
 import { SectionHeader } from "../ui/SectionHeader";
+import { Icon } from "../ui/Icon";
 import { Countdown } from "./Countdown";
 
 const viewAll = (s: HomeSection) => (s.showViewAll === false ? null : s.viewAllQuery ? productsHref(Object.fromEntries(new URLSearchParams(s.viewAllQuery))) : null);
-const titleOf = (s: HomeSection) => (s.showTitle === false ? null : s.title);
+const titleOf = (s: HomeSection) => (s.showTitle === false ? null : s.title?.trim() || null);
 
 /** يعرض أقسام الرئيسية كما رُتّبت في منشئ الرئيسية (نفس أنواع التطبيق). */
 export function HomeSections({ sections }: { sections: HomeSection[] }) {
@@ -41,10 +42,21 @@ export function SectionView({ s, priority }: { s: HomeSection; priority?: boolea
       if (!s.products?.length) return null;
       return (
         <Wrap>
-          <div className="flex items-end justify-between">
-            <SectionHeader title={title ?? (s.type === "FLASH_SALE" ? "عرض سريع" : "مختارات")} subtitle={s.subtitle} href={viewAll(s)} />
-            {s.endsAt && <Countdown endsAt={s.endsAt} className="mb-6 rounded-full bg-sale px-3 py-1 text-sm font-extrabold text-white" />}
-          </div>
+          {title || s.type === "FLASH_SALE" ? (
+            <div className="flex items-end justify-between">
+              <SectionHeader title={title ?? "عرض سريع"} subtitle={s.subtitle} href={viewAll(s)} />
+              {s.endsAt && <Countdown endsAt={s.endsAt} className="mb-6 rounded-full bg-sale px-3 py-1 text-sm font-extrabold text-white" />}
+            </div>
+          ) : (
+            // بلا عنوان (كما في منشئ الرئيسية): رابط «عرض الكل» فقط إن وُجد.
+            viewAll(s) && (
+              <div className="mb-3 flex justify-end">
+                <Link href={viewAll(s)!} className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-bold text-accent-dark transition hover:bg-accent-light">
+                  عرض الكل <Icon name="chevronLeft" size={16} />
+                </Link>
+              </div>
+            )
+          )}
           <ProductRow products={s.products} priority={priority} />
         </Wrap>
       );
@@ -152,7 +164,7 @@ export function SectionView({ s, priority }: { s: HomeSection; priority?: boolea
     case "SECTION_GROUP":
       return s.children?.length ? (
         <section className="container py-5 md:py-8">
-          <div className="rounded-4xl p-4 md:p-8" style={{ background: s.backgroundColor ?? "rgb(var(--accent-light))" }}>
+          <div className="section-group rounded-4xl p-4 md:p-8" style={s.backgroundColor ? ({ "--group-bg": s.backgroundColor } as React.CSSProperties) : undefined}>
             {s.title && s.showTitle !== false && <h2 className="section-title mb-4">{s.title}</h2>}
             <div className="-mx-4 md:-mx-8">
               {s.children.map((c) => (
@@ -199,42 +211,91 @@ function PromoStrip({ s }: { s: HomeSection }) {
   return <div className="container py-3">{href ? <Link href={href}>{strip}</Link> : strip}</div>;
 }
 
+/** «2:1» أو «1.5» ← رقم (العرض ÷ الارتفاع). */
+function parseAspect(v?: string | number | null): number | null {
+  if (typeof v === "number") return v > 0 ? v : null;
+  const m = v?.trim().match(/^(\d+(?:\.\d+)?)\s*[:x×/]\s*(\d+(?:\.\d+)?)$/);
+  if (m) return Number(m[2]) > 0 ? Number(m[1]) / Number(m[2]) : null;
+  const n = Number(v);
+  return n > 0 ? n : null;
+}
+
+/** معرض الصور: يحترم شكل العرض ونسبة الصورة وعدد البطاقات من منشئ الرئيسية (مثل التطبيق) حتى لا تُقصّ الصور. */
 function Tiles({ s, title }: { s: HomeSection; title?: string | null }) {
   const items = (s.items ?? []).filter((it: SectionItem) => it.imageUrl || it.image);
   if (!items.length) return null;
   const circle = s.type === "CIRCLE_TILES" || s.shape === "circle";
-  const cols = s.layout === "grid3" ? 3 : s.layout === "grid4" ? 4 : items.length >= 4 ? 4 : items.length === 3 ? 3 : 2;
+  const raw = (s.display || s.layout || s.sectionLayout || "").toLowerCase();
+  const display = circle
+    ? "grid"
+    : raw === "marquee" || s.type === "IMAGE_MARQUEE"
+      ? "marquee"
+      : raw === "scroll" || raw === "carousel"
+        ? "scroll"
+        : "grid";
+  const aspect = circle ? 1 : parseAspect(s.aspectRatio) ?? parseAspect(s.bannerAspect) ?? 1;
+  const radius = circle ? undefined : s.tileCornerRadius != null ? Math.min(Math.max(s.tileCornerRadius, 0), 40) : 24;
+  const layout = (s.sectionLayout || s.layout || "").toLowerCase();
+  const cols = layout === "grid3" || layout === "3" ? 3 : layout === "grid4" || layout === "4" ? 4 : 2;
+  const gap = s.marqueeGap ?? 12;
+  const perView = Math.min(Math.max(s.tilesPerView ?? (display === "marquee" ? 2 : 2.5), 1), 4);
+
+  const tile = (it: SectionItem, key: string, className?: string, style?: React.CSSProperties) => {
+    const href = resolveLink(it.linkType, it.linkValue, it.link) ?? "#";
+    return (
+      <Link key={key} href={href} className={clsx("group block text-center", className)} style={style} draggable={false}>
+        <span
+          className={clsx("relative block overflow-hidden bg-accent-light shadow-card", circle && "rounded-full ring-2 ring-accent-soft")}
+          style={{ aspectRatio: String(aspect), borderRadius: radius }}
+        >
+          <img src={it.imageUrl || mediaUrl(it.image, "medium")} alt={it.title ?? ""} loading="lazy" draggable={false} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+          {!circle && it.title && (
+            <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-10 text-start text-sm font-extrabold text-white md:p-5 md:text-lg">
+              {it.title}
+            </span>
+          )}
+        </span>
+        {circle && it.title && <span className="mt-2 block text-xs font-bold text-ink-soft md:text-sm">{it.title}</span>}
+      </Link>
+    );
+  };
+
+  // عرض البطاقة على الهاتف = (عرض الصف − الفواصل) ÷ عدد البطاقات الظاهرة؛ الشاشات الكبيرة تعرض أكثر.
+  const width = { "--tile-w": `calc((100% - ${gap * (Math.ceil(perView) - 1)}px) / ${perView})` } as React.CSSProperties;
+  const widthCls = "w-[var(--tile-w)] flex-none md:w-[calc(40%-8px)] lg:w-[calc(30%-10px)]";
+
   return (
     <Wrap>
       {title && <SectionHeader title={title} subtitle={s.subtitle} />}
-      <div
-        className={clsx(
-          "grid gap-3 md:gap-5",
-          circle ? "grid-cols-4 sm:grid-cols-6 lg:grid-cols-8" : cols === 3 ? "grid-cols-3" : cols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2",
-        )}
-      >
-        {items.map((it) => {
-          const href = resolveLink(it.linkType, it.linkValue, it.link) ?? "#";
-          return (
-            <Link key={it.id} href={href} className="group text-center">
-              <span
-                className={clsx(
-                  "relative block overflow-hidden bg-accent-light shadow-card",
-                  circle ? "aspect-square rounded-full ring-2 ring-accent-soft" : cols === 4 ? "aspect-[4/5] rounded-3xl" : cols === 3 ? "aspect-[4/5] rounded-3xl md:aspect-[5/4]" : "aspect-[16/10] rounded-[28px] lg:aspect-[2/1]",
+      {display === "grid" ? (
+        <div
+          className={clsx(
+            "grid gap-3 md:gap-5",
+            circle ? "grid-cols-4 sm:grid-cols-6 lg:grid-cols-8" : cols === 3 ? "grid-cols-3 md:grid-cols-6" : cols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-4",
+          )}
+        >
+          {items.map((it) => tile(it, it.id))}
+        </div>
+      ) : display === "scroll" ? (
+        <div className="scroll-row -mx-4 px-4 md:mx-0 md:px-0" style={{ gap }}>
+          {items.map((it) => tile(it, it.id, clsx(widthCls, "snap-start"), width))}
+        </div>
+      ) : (
+        <div className={clsx("group/mq overflow-hidden", s.fullBleed !== false && "-mx-4 md:mx-0")}>
+          <div
+            className="flex w-max animate-marquee group-hover/mq:[animation-play-state:paused]"
+            style={{ ["--marquee-speed" as string]: `${Math.max(items.length * (12 - Math.min(Math.max(s.marqueeSpeed ?? 5, 1), 10)) * 1.4, 18)}s` }}
+          >
+            {[0, 1].map((copy) => (
+              <div key={copy} className="flex flex-none" style={{ gap, paddingInlineEnd: gap }} aria-hidden={copy === 1 || undefined}>
+                {items.map((it) =>
+                  tile(it, `${copy}-${it.id}`, "flex-none w-[calc((100vw-24px)/var(--tpv))] md:w-[360px] lg:w-[420px]", { ["--tpv" as string]: String(perView) }),
                 )}
-              >
-                <img src={it.imageUrl || mediaUrl(it.image, "medium")} alt={it.title ?? ""} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                {!circle && it.title && (
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-10 text-start text-sm font-extrabold text-white md:p-5 md:text-lg">
-                    {it.title}
-                  </span>
-                )}
-              </span>
-              {circle && it.title && <span className="mt-2 block text-xs font-bold text-ink-soft md:text-sm">{it.title}</span>}
-            </Link>
-          );
-        })}
-      </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </Wrap>
   );
 }

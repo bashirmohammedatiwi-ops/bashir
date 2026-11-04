@@ -69,6 +69,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </a>
         <Providers settings={feed?.settings ?? {}}>
           <NavProgress />
+          <AppBanner />
           <SiteHeader worlds={worlds} current={world} categories={categories} freeShipping={feed?.settings?.freeShippingThreshold ?? 0} />
           <main id="main" className="min-h-[60vh] pb-24 md:pb-0">{children}</main>
           <SiteFooter settings={feed?.settings ?? {}} categories={categories} />
@@ -77,7 +78,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <AdvisorLauncher />
           <QuickView />
           <CompareTray />
-          <AppBanner />
           <Toaster />
         </Providers>
       </body>

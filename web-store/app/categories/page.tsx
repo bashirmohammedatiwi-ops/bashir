@@ -51,7 +51,7 @@ export default async function CategoriesPage() {
                         {img(s) && <img src={img(s)} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />}
                       </span>
                       <span className="min-w-0">
-                        <span className="line-clamp-1 font-extrabold group-hover:text-accent-dark">{label(s)}</span>
+                        <span className="line-clamp-2 font-extrabold leading-snug group-hover:text-accent-dark">{label(s)}</span>
                         {!!s.productCount && <span className="text-xs text-ink-muted">{arProducts(s.productCount)}</span>}
                       </span>
                     </Link>

@@ -9,9 +9,12 @@ const nextConfig = {
   compress: true,
   images: { unoptimized: true },
   async rewrites() {
-    // التطوير المحلي فقط: /api يذهب للـ API المحلي. في الإنتاج nginx يوجّه /api مباشرة.
+    // التطوير المحلي فقط: /api و/media يذهبان للـ API المحلي. في الإنتاج nginx يوجّه /api مباشرة.
     if (process.env.NODE_ENV !== "development") return [];
-    return [{ source: "/api/:path*", destination: `${API_DEV}/api/:path*` }];
+    return [
+      { source: "/api/:path*", destination: `${API_DEV}/api/:path*` },
+      { source: "/media/:path*", destination: `${API_DEV}/media/:path*` },
+    ];
   },
   async redirects() {
     // روابط المتجر القديم والتطبيق (?slug=) ← المسارات الجديدة.

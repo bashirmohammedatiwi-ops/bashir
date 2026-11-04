@@ -174,7 +174,7 @@ export function ListingView({
   );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
       <aside className="hidden lg:block">
         <div className="card sticky top-36 max-h-[calc(100vh-10rem)] overflow-y-auto p-5">{Filters}</div>
       </aside>

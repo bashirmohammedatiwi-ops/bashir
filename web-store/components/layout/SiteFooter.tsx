@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { BrandLogo } from "../ui/BrandLogo";
-import { PLAY_STORE_URL, APP_STORE_URL } from "@/lib/config";
+import { PLAY_STORE_LIVE, PLAY_STORE_URL, APP_STORE_URL } from "@/lib/config";
 import { categoryHref } from "@/lib/links";
 import type { Category, HomeFeed } from "@/lib/types";
 import { Icon } from "../ui/Icon";
@@ -14,7 +14,7 @@ export function SiteFooter({ settings, categories }: { settings: HomeFeed["setti
         {[
           ["truck", "توصيل لكل العراق", "سريع ومتتبَّع حتى باب بيتكِ"],
           ["shield", "منتجات أصلية 100%", "من الوكلاء والموزعين المعتمدين"],
-          ["cash", "ادفعي كما تحبين", "نقداً عند الاستلام أو بالبطاقة"],
+          ["cash", "الدفع عند الاستلام", "ادفعي نقداً حين يصلكِ طلبكِ"],
           ["chat", "نساعدكِ دائماً", "دعم مباشر عبر واتساب"],
         ].map(([icon, title, sub]) => (
           <div key={title} className="flex items-center gap-4 rounded-3xl bg-canvas p-4">
@@ -37,9 +37,11 @@ export function SiteFooter({ settings, categories }: { settings: HomeFeed["setti
               متجركِ لمستحضرات التجميل والعناية والعطور الأصلية في العراق — اختيارات مدروسة، أسعار واضحة، وتوصيل لكل المحافظات.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <a href={PLAY_STORE_URL} target="_blank" rel="noopener" className="btn-ghost h-11 gap-2 px-4 text-sm">
-                <Icon name="box" size={18} /> Google Play
-              </a>
+              {PLAY_STORE_LIVE && (
+                <a href={PLAY_STORE_URL} target="_blank" rel="noopener" className="btn-ghost h-11 gap-2 px-4 text-sm">
+                  <Icon name="box" size={18} /> Google Play
+                </a>
+              )}
               {APP_STORE_URL && (
                 <a href={APP_STORE_URL} target="_blank" rel="noopener" className="btn-ghost h-11 gap-2 px-4 text-sm">
                   <Icon name="box" size={18} /> App Store
@@ -108,7 +110,7 @@ export function SiteFooter({ settings, categories }: { settings: HomeFeed["setti
         </div>
       </div>
       <div className="border-t border-hairline">
-        <div className="container flex flex-col items-center justify-between gap-3 py-5 text-xs text-ink-muted sm:flex-row">
+        <div className="container flex flex-col items-center justify-between gap-3 pb-[calc(env(safe-area-inset-bottom)+104px)] pt-5 text-xs text-ink-muted sm:flex-row md:pb-5">
           <span>© {new Date().getFullYear()} ديما الحياة — جميع الحقوق محفوظة</span>
           <span className="flex gap-4">
             <Link href="/privacy" className="hover:text-ink">سياسة الخصوصية</Link>

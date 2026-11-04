@@ -49,6 +49,10 @@
   .prose-ar { @apply text-[15px] leading-8 text-ink-soft; white-space: pre-line; }
 }
 
+/* مجموعة أقسام بلون من منشئ الرئيسية. في الوضع الليلي نأخذ لمسة من اللون فقط حتى يبقى النص مقروءاً. */
+.section-group { background: var(--group-bg, rgb(var(--accent-light))); }
+[data-theme="dark"] .section-group { background: color-mix(in srgb, var(--group-bg, rgb(var(--accent))) 9%, rgb(var(--surface))); }
+
 /* اتجاه العربية: الأسهم والأيقونات الاتجاهية تنقلب */
 [dir="rtl"] .flip-rtl { transform: scaleX(-1); }
 

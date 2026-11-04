@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useWishlist } from "@/lib/hooks/wishlist";
 import { useAuth } from "@/lib/stores/auth";
@@ -13,7 +13,6 @@ import { CouponBox } from "@/components/cart/CouponBox";
 import { ShippingFillers } from "@/components/cart/ShippingFillers";
 import { Breadcrumbs } from "@/components/catalog/PageHero";
 import { useHydrated, useLoyaltyRules } from "@/components/Providers";
-import { ProductRow } from "@/components/product/ProductRow";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
@@ -22,7 +21,6 @@ import { useCartMath } from "@/lib/hooks/cartMath";
 import { packageHref } from "@/lib/links";
 import { pointsFor } from "@/lib/pricing";
 import { useCart } from "@/lib/stores/cart";
-import type { Product } from "@/lib/types";
 
 export default function CartPage() {
   const hydrated = useHydrated();
@@ -49,13 +47,7 @@ export default function CartPage() {
       toast({ text: (e as Error).message, tone: "error" });
     }
   };
-  const first = m.lines[0]?.slug;
   const inCart = new Set(m.lines.map((l) => l.productId));
-  const recs = useQuery({
-    queryKey: ["bought-together", first],
-    enabled: !!first,
-    queryFn: () => api<{ items: Product[] }>(`/products/${encodeURIComponent(first!)}/bought-together`, { query: { limit: 12 }, auth: false }).then((r) => r.items ?? []),
-  });
 
   if (!hydrated)
     return (
@@ -174,12 +166,6 @@ export default function CartPage() {
 
       <ShippingFillers subtotal={m.subtotal} exclude={[...inCart]} />
 
-      {!!recs.data?.filter((p) => !inCart.has(p.id)).length && (
-        <section className="py-10">
-          <h2 className="section-title mb-4">يُشترى معها غالباً</h2>
-          <ProductRow products={recs.data.filter((p) => !inCart.has(p.id))} />
-        </section>
-      )}
     </div>
   );
 }

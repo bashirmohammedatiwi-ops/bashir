@@ -5,6 +5,9 @@ type Size = (typeof ORDER)[number];
 
 function abs(u?: string | null) {
   if (!u) return "";
+  // صور قديمة خُزّنت بعنوان http/IP السيرفر — المتصفح يحجبها في https، فنخدمها من نفس النطاق.
+  const local = u.match(/^https?:\/\/[^/]+(\/media\/.*)$/);
+  if (local) return local[1];
   if (u.startsWith("http")) return u;
   if (u.startsWith("/")) return u;
   return `/${u}`;

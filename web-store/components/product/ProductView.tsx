@@ -14,7 +14,7 @@ export function ProductView({ product }: { product: Product }) {
     return [...base, ...shadeImgs.filter((m) => !seen.has(m.id))];
   }, [product]);
   return (
-    <div className="grid gap-6 md:gap-10 lg:grid-cols-[1.05fr_1fr]">
+    <div className="grid grid-cols-1 gap-6 md:gap-10 lg:grid-cols-[1.05fr_1fr]">
       <Gallery images={images} alt={product.nameAr || product.name} discount={product.discountPercent} focusMedia={shade?.image ?? null} />
       <BuyPanel product={product} onShade={setShade} />
     </div>
