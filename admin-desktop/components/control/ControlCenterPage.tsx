@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Empty, Input, Select, Skeleton, Switch, Tag, Tooltip, message, Popconfirm } from "antd";
+import { Button, Empty, Input, Skeleton, Switch, Tag, Tooltip, message, Popconfirm } from "antd";
 import { BarcodeOutlined, EyeInvisibleOutlined, PictureOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/PageHeader";
 import { ControlProductDrawer, shadeSwatch } from "@/components/control/ControlProductDrawer";
@@ -13,6 +13,7 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { useLoadMoreSentinel } from "@/hooks/useLoadMoreSentinel";
 import "./control.css";
 
+import SmartSelect from "@/components/SmartSelect";
 const FILTERS = [
   { key: "all|", label: "الكل" },
   { key: "active|", label: "ظاهر" },
@@ -171,7 +172,7 @@ export function ControlCenterPage() {
               {f.label}
             </Tag.CheckableTag>
           ))}
-          <Select
+          <SmartSelect
             allowClear
             showSearch
             placeholder="كل البراندات"
@@ -179,7 +180,7 @@ export function ControlCenterPage() {
             value={brandId}
             onChange={setBrandId}
             optionFilterProp="label"
-            options={(brands ?? []).map((b) => ({ value: b.id, label: b.name }))}
+            options={(brands ?? []).map((b: any) => ({ value: b.id, label: b.name, search: b.slug }))}
           />
         </div>
       </div>

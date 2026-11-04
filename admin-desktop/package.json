@@ -17,7 +17,8 @@
     "dist": "npm run build && electron-builder --win",
     "dist:portable": "npm run build && electron-builder --win portable",
     "start": "electron .",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:smart-search": "npx tsx lib/smartSearch.spec.ts"
   },
   "license": "ISC",
   "private": true,

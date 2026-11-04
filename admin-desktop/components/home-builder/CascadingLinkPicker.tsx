@@ -9,6 +9,7 @@ import {
 } from "./link-target";
 import { ProductSearchSelect } from "./ProductSearchSelect";
 
+import SmartSelect from "@/components/SmartSelect";
 type EntityLists = {
   products?: any[];
   categories?: any[];
@@ -50,13 +51,6 @@ const NO_VALUE_TYPES = new Set<LinkTargetType>(["offers", "categoriesTab"]);
 
 function fullPath(listName: (string | number)[], fieldName: number, field: string) {
   return [...listName, fieldName, field];
-}
-
-function filterOption(input: string, option?: SearchOption) {
-  const q = input.toLowerCase().trim();
-  if (!q) return true;
-  const hay = (option?.searchLabel ?? option?.label ?? "").toString().toLowerCase();
-  return hay.includes(q);
 }
 
 function categoryOptions(categories: any[], rootsOnly = false): SearchOption[] {
@@ -179,10 +173,9 @@ function LinkValueField({
   if (linkType === "category") {
     return (
       <Form.Item {...itemProps} label="اختر القسم الرئيسي" rules={[{ required: true, message: "اختر قسماً" }]}>
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           placeholder="ابحث واختر القسم الرئيسي"
           options={categoryOptions(entities.categories ?? [], true)}
         />
@@ -193,10 +186,9 @@ function LinkValueField({
   if (linkType === "subcategory") {
     return (
       <Form.Item {...itemProps} label="اختر القسم الفرعي" rules={[{ required: true, message: "اختر قسماً فرعياً" }]}>
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           placeholder="ابحث واختر القسم الفرعي"
           options={subcategoryOptions(entities.subcategories ?? [])}
         />
@@ -207,10 +199,9 @@ function LinkValueField({
   if (linkType === "tertiary") {
     return (
       <Form.Item {...itemProps} label="اختر القسم الثانوي" rules={[{ required: true, message: "اختر قسماً ثانوياً" }]}>
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           placeholder="ابحث واختر القسم الثانوي"
           options={simpleOptions(entities.tertiary ?? [])}
         />
@@ -221,10 +212,9 @@ function LinkValueField({
   if (linkType === "brand") {
     return (
       <Form.Item {...itemProps} label="اختر البراند" rules={[{ required: true, message: "اختر برانداً" }]}>
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           placeholder="ابحث واختر البراند"
           options={simpleOptions(entities.brands ?? [])}
           notFoundContent="لا توجد براندات — أضفها من صفحة البراندات"
@@ -236,10 +226,9 @@ function LinkValueField({
   if (linkType === "package") {
     return (
       <Form.Item {...itemProps} label="اختر الباقة / الروتين" rules={[{ required: true, message: "اختر باقة" }]}>
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           placeholder="ابحث واختر الباقة"
           options={simpleOptions(entities.packages ?? [])}
         />
@@ -250,10 +239,9 @@ function LinkValueField({
   if (linkType === "skinConcern") {
     return (
       <Form.Item {...itemProps} label="اختر مشكلة البشرة" rules={[{ required: true, message: "اختر مشكلة بشرة" }]}>
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           placeholder="ابحث واختر مشكلة البشرة"
           options={slugOptions(entities.skinConcerns ?? [])}
         />
@@ -320,7 +308,7 @@ export function CascadingLinkPicker({
   return (
     <div className="hb-cascading-link">
       <Form.Item {...restField} name={[fieldName, "linkType"]} label="نوع الرابط">
-        <Select
+        <SmartSelect
           allowClear={optional}
           showSearch
           optionFilterProp="label"

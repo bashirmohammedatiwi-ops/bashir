@@ -1,11 +1,12 @@
 "use client";
 
-import { Form, Input, Select, Space, Typography } from "antd";
+import { Form, Input, Space, Typography } from "antd";
 import { LINK_TARGET_TYPES, LinkTargetType, PRODUCT_QUERY_PRESETS } from "./link-target";
 import { LinkPreviewChip } from "./LinkPreviewChip";
 import { QuickLinkBar } from "./QuickLinkBar";
 import { ProductSearchSelect } from "./ProductSearchSelect";
 
+import SmartSelect from "@/components/SmartSelect";
 type EntityLists = {
   products?: any[];
   categories?: any[];
@@ -31,13 +32,6 @@ const LINK_GROUPS: { label: string; types: LinkTargetType[] }[] = [
 
 function namePath(prefix: (string | number)[], field: string) {
   return prefix.length ? [...prefix, field] : field;
-}
-
-function filterOption(input: string, option?: SearchOption) {
-  const q = input.toLowerCase().trim();
-  if (!q) return true;
-  const hay = (option?.searchLabel ?? option?.label ?? "").toString().toLowerCase();
-  return hay.includes(q);
 }
 
 function categoryOptions(categories: any[], rootsOnly = false): SearchOption[] {
@@ -76,35 +70,31 @@ export function ProductScopeFields({ prefix = ["payload"], entities }: { prefix?
         تصفية إضافية (اختياري) — حدّد قسم أو براند لعرض منتجاته فقط
       </Typography.Text>
       <Form.Item name={[...prefix, "categoryId"]} label="قسم رئيسي">
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           placeholder="كل الأقسام"
           options={categoryOptions(entities.categories ?? [], true)}
         />
       </Form.Item>
       <Form.Item name={[...prefix, "subcategoryId"]} label="قسم فرعي">
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           options={subcategoryOptions(entities.subcategories ?? [])}
         />
       </Form.Item>
       <Form.Item name={[...prefix, "tertiaryCategoryId"]} label="قسم ثانوي">
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           options={simpleOptions(entities.tertiary ?? [])}
         />
       </Form.Item>
       <Form.Item name={[...prefix, "brandId"]} label="براند">
-        <Select
+        <SmartSelect
           allowClear
           showSearch
-          filterOption={filterOption}
           options={simpleOptions(entities.brands ?? [])}
         />
       </Form.Item>
@@ -137,7 +127,7 @@ export function LegacyManualLinkPicker({
     <div className="hb-link-picker">
       <QuickLinkBar prefix={prefix} />
       <Form.Item name={namePath(prefix, "linkType")} label="نوع الرابط">
-        <Select allowClear={optional} showSearch optionFilterProp="label" options={groupedLinkTypes} />
+        <SmartSelect allowClear={optional} showSearch optionFilterProp="label" options={groupedLinkTypes} />
       </Form.Item>
       <Form.Item noStyle shouldUpdate>
         {({ getFieldValue }) => {

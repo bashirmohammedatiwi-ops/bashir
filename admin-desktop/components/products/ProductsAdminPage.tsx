@@ -51,6 +51,7 @@ import { ProductsSortableList } from "@/components/products/ProductsSortableList
 import { BulkProductPasteModal } from "@/components/products/BulkProductPasteModal";
 import "./products-page.css";
 
+import SmartSelect from "@/components/SmartSelect";
 const ProductFormDrawer = dynamic(
   () =>
     import("@/components/products/ProductFormDrawer").then((m) => ({
@@ -754,7 +755,7 @@ export function ProductsAdminPage({
         </div>
 
         <div className="pp-toolbar-filters">
-          <Select
+          <SmartSelect
             allowClear={!reorderMode}
             placeholder={reorderMode ? "اختر البراند للترتيب *" : "البراند"}
             className="pp-filter"
@@ -762,6 +763,7 @@ export function ProductsAdminPage({
             options={(brandsData ?? []).map((b: any) => ({
               value: b.id,
               label: b.nameAr || b.name || b.nameEn,
+              search: [b.name, b.nameEn, b.slug],
             }))}
             showSearch
             optionFilterProp="label"
@@ -769,8 +771,9 @@ export function ProductsAdminPage({
           />
           {!reorderMode ? (
             <>
-          <Select
+          <SmartSelect
             allowClear
+            showSearch
             placeholder="القسم"
             className="pp-filter"
             value={filterCategoryId}
@@ -781,8 +784,9 @@ export function ProductsAdminPage({
               setFilterTertiaryCategoryId(undefined);
             }}
           />
-          <Select
+          <SmartSelect
             allowClear
+            showSearch
             placeholder="قسم فرعي"
             className="pp-filter"
             value={filterSubcategoryId}
@@ -796,8 +800,9 @@ export function ProductsAdminPage({
               setFilterTertiaryCategoryId(undefined);
             }}
           />
-          <Select
+          <SmartSelect
             allowClear
+            showSearch
             placeholder="قسم ثانوي"
             className="pp-filter"
             value={filterTertiaryCategoryId}
@@ -808,8 +813,9 @@ export function ProductsAdminPage({
             }))}
             onChange={(v) => setFilterTertiaryCategoryId(v)}
           />
-          <Select
+          <SmartSelect
             allowClear
+            showSearch
             placeholder="مشكلة البشرة"
             className="pp-filter"
             value={filterConcernId}

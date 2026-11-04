@@ -8,7 +8,6 @@ import {
   Modal,
   Popconfirm,
   Progress,
-  Select,
   Space,
   Switch,
   message,
@@ -24,6 +23,7 @@ import { mutations, queries } from "@/lib/queries";
 import { slugify } from "@/lib/slugify";
 import "./brands-page.css";
 
+import SmartSelect from "@/components/SmartSelect";
 const SYNC_BATCH = 40;
 
 export default function BrandsPage() {
@@ -338,7 +338,7 @@ export default function BrandsPage() {
           <span className="bp-filter-label">براندات بمنتجات نشطة فقط</span>
         </div>
         <div className="bp-toolbar-row">
-          <Select
+          <SmartSelect
             allowClear
             placeholder="القسم"
             style={{ minWidth: 170 }}
@@ -352,7 +352,7 @@ export default function BrandsPage() {
               setFilterTertiaryCategoryId(undefined);
             }}
           />
-          <Select
+          <SmartSelect
             allowClear
             placeholder="قسم فرعي"
             style={{ minWidth: 170 }}
@@ -366,7 +366,7 @@ export default function BrandsPage() {
               setFilterTertiaryCategoryId(undefined);
             }}
           />
-          <Select
+          <SmartSelect
             allowClear
             placeholder="قسم ثانوي"
             style={{ minWidth: 170 }}
@@ -425,7 +425,7 @@ export default function BrandsPage() {
         <p style={{ marginBottom: 12 }}>
           هذا البراند مرتبط بـ <strong>{deleteTarget?.productCount ?? 0}</strong> منتج. اختر برانداً لنقل المنتجات إليه.
         </p>
-        <Select
+        <SmartSelect
           style={{ width: "100%" }}
           showSearch
           optionFilterProp="label"

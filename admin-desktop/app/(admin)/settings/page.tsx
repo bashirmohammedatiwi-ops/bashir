@@ -1,10 +1,11 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Divider, Form, Input, InputNumber, Select, Space, Switch, Tabs, message } from "antd";
+import { Alert, Button, Card, Divider, Form, Input, InputNumber, Space, Switch, Tabs, message } from "antd";
 import { useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { mutations, queries } from "@/lib/queries";
 
+import SmartSelect from "@/components/SmartSelect";
 interface Settings {
   storeName: string;
   currency: string;
@@ -235,14 +236,14 @@ export default function SettingsPage() {
                         label="البراندات التي تتصدّر القوائم"
                         tooltip="منتجات هذه البراندات تظهر أولاً في الأقسام المختارة أدناه (مثل الوكالات الحصرية)"
                       >
-                        <Select mode="multiple" allowClear showSearch optionFilterProp="label" options={brandOptions} placeholder="اختاري البراندات" />
+                        <SmartSelect mode="multiple" allowClear showSearch optionFilterProp="label" options={brandOptions} placeholder="اختاري البراندات" />
                       </Form.Item>
                       <Form.Item
                         name="priorityCategoryIds"
                         label="في هذه الأقسام الرئيسية"
                         tooltip="مثلاً المكياج والأظافر — بقية الأقسام (كالعطور) تبقى بترتيبها المعتاد"
                       >
-                        <Select mode="multiple" allowClear showSearch optionFilterProp="label" options={rootOptions} placeholder="اختاري الأقسام" />
+                        <SmartSelect mode="multiple" allowClear showSearch optionFilterProp="label" options={rootOptions} placeholder="اختاري الأقسام" />
                       </Form.Item>
                       <Form.Item
                         name="hideProductsWithoutImages"

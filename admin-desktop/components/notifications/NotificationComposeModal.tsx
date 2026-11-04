@@ -7,6 +7,7 @@ import { MediaPicker } from "@/components/MediaPicker";
 import { mediaPreviewUrl, mediaThumb, mediaUrl } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
 
+import SmartSelect from "@/components/SmartSelect";
 const TYPES = [
   { value: "OFFER", label: "عرض" },
   { value: "NEW_ARRIVAL", label: "وصول جديد" },
@@ -342,7 +343,7 @@ export function NotificationComposeModal({ open, onClose }: Props) {
 
             {targetType === "USER" && (
               <Form.Item name="userId" label="العميل" rules={[{ required: true }]}>
-                <Select showSearch optionFilterProp="label" options={userOptions} placeholder="اختر عميلاً" />
+                <SmartSelect showSearch optionFilterProp="label" options={userOptions} placeholder="اختر عميلاً" />
               </Form.Item>
             )}
 
@@ -374,7 +375,7 @@ export function NotificationComposeModal({ open, onClose }: Props) {
               <Col span={12}>
                 {linkType && linkType !== "NONE" && linkType !== "EXTERNAL_URL" && linkType !== "OFFERS" && (
                   <Form.Item name="linkId" label="اختر" rules={[{ required: true }]}>
-                    <Select
+                    <SmartSelect
                       showSearch
                       optionFilterProp="label"
                       placeholder="ابحث واختر..."

@@ -55,6 +55,7 @@ import { resolveShadeColorHex } from "@/lib/shadeColorFromImage";
 import { mutations, queries } from "@/lib/queries";
 import "./catalog-import.css";
 
+import SmartSelect from "@/components/SmartSelect";
 const ALL_CATALOG_STORES = [
   "miswag",
   "najdalatheyah",
@@ -1370,7 +1371,7 @@ export default function CatalogImportPage() {
                       rules={[{ required: true, message: "البراند مطلوب" }]}
                       extra="يُختار تلقائياً من الكتالوج ويُنشأ إن لم يكن موجوداً"
                     >
-                      <Select
+                      <SmartSelect
                         allowClear
                         showSearch
                         optionFilterProp="label"
@@ -1381,7 +1382,7 @@ export default function CatalogImportPage() {
                       />
                     </Form.Item>
                     <Form.Item name="categoryId" label="القسم" className="span-2">
-                      <Select
+                      <SmartSelect
                         allowClear
                         showSearch
                         optionFilterProp="label"
@@ -1393,7 +1394,7 @@ export default function CatalogImportPage() {
                       />
                     </Form.Item>
                     <Form.Item name="subcategoryId" label="قسم فرعي">
-                      <Select
+                      <SmartSelect
                         allowClear
                         showSearch
                         optionFilterProp="label"
@@ -1404,7 +1405,7 @@ export default function CatalogImportPage() {
                       />
                     </Form.Item>
                     <Form.Item name="tertiaryCategoryId" label="قسم ثانوي">
-                      <Select
+                      <SmartSelect
                         allowClear
                         showSearch
                         optionFilterProp="label"

@@ -9,6 +9,7 @@ import { GalleryEditor, GroupEditor, emptyChild, emptyGallery, galleryPayload, t
 import { productCoverUrl } from "@/lib/productCover";
 import { mutations, queries } from "@/lib/queries";
 
+import SmartSelect from "@/components/SmartSelect";
 type ProductRow = {
   id: string;
   name?: string;
@@ -457,7 +458,7 @@ export function WorldHomeStudio({
 
               {draft.kind === "brand" ? (
                 <Space wrap>
-                  <Select
+                  <SmartSelect
                     showSearch
                     optionFilterProp="label"
                     style={{ minWidth: 260 }}

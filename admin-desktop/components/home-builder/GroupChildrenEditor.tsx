@@ -6,7 +6,6 @@ import {
   Collapse,
   Form,
   Input,
-  Select,
   Space,
   Typography,
 } from "antd";
@@ -14,6 +13,7 @@ import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { BUILDER_SECTION_TYPES, SectionType, normalizePayload } from "./section-types";
 import { GroupChildMiniEditor } from "./GroupChildMiniEditor";
 
+import SmartSelect from "@/components/SmartSelect";
 const { Text } = Typography;
 
 const GROUP_CHILD_TYPES = BUILDER_SECTION_TYPES.filter(
@@ -96,7 +96,7 @@ export function GroupChildrenEditor({ entities }: Props) {
                   }
                 >
                   <Form.Item {...rest} name={[name, "type"]} label="نوع القسم" rules={[{ required: true }]}>
-                    <Select
+                    <SmartSelect
                       showSearch
                       optionFilterProp="label"
                       options={GROUP_CHILD_TYPES.map((t) => ({

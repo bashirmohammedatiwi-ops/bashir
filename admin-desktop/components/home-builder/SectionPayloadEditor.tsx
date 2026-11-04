@@ -28,6 +28,7 @@ import { TileItemsList } from "./TileItemEditor";
 import { PhotoWallItemsEditor } from "./PhotoWallItemsEditor";
 import { PRODUCT_FILTERS, SectionType } from "./section-types";
 
+import SmartSelect from "@/components/SmartSelect";
 const { Text } = Typography;
 
 export type EditorEntities = {
@@ -253,7 +254,7 @@ export function SectionPayloadEditor(props: Props) {
                 </>
               ) : (
                 <Form.Item name={["payload", "bannerId"]} label="البنر">
-                  <Select
+                  <SmartSelect
                     showSearch
                     optionFilterProp="label"
                     placeholder="ابحث عن بنر..."

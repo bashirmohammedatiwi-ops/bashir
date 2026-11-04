@@ -1,12 +1,13 @@
 "use client";
 
-import { Button, Card, Form, Select, Typography } from "antd";
+import { Button, Card, Form, Typography } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { MediaPicker } from "@/components/MediaPicker";
 import { CardSizePicker } from "./CardSizePicker";
 import { LinkTargetPicker } from "./LinkTargetPicker";
 import { buildCategoryCatalog, catalogSelectOptions } from "./category-catalog";
 
+import SmartSelect from "@/components/SmartSelect";
 const { Text } = Typography;
 
 type Category = { id: string; name?: string; slug?: string; parentName?: string };
@@ -55,7 +56,7 @@ export function CategoryItemsEditor({
                   label="القسم"
                   rules={[{ required: true, message: "اختر قسماً" }]}
                 >
-                  <Select
+                  <SmartSelect
                     showSearch
                     optionFilterProp="label"
                     options={groupedOptions}

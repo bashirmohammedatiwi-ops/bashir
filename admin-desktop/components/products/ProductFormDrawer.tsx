@@ -23,6 +23,7 @@ import { normalizeBarcode } from "@/lib/barcode";
 import { displayProductName, productNameValidator } from "@/lib/productName";
 import { queries } from "@/lib/queries";
 
+import SmartSelect from "@/components/SmartSelect";
 const ProductImageDropzone = dynamic(
   () => import("@/components/ProductImageDropzone").then((m) => ({ default: m.ProductImageDropzone })),
   { ssr: false, loading: () => <div className="alhayaa-skeleton-block" /> },
@@ -265,15 +266,15 @@ export function ProductFormDrawer({
               />
             )}
             <Form.Item name="brandId" label="البراند" rules={[{ required: true }]}>
-              <Select
+              <SmartSelect
                 showSearch
                 optionFilterProp="label"
                 placeholder="اختر البراند"
-                options={(brandsData ?? []).map((b: any) => ({ value: b.id, label: b.name }))}
+                options={(brandsData ?? []).map((b: any) => ({ value: b.id, label: b.name, search: [b.nameAr, b.nameEn, b.slug] }))}
               />
             </Form.Item>
             <Form.Item name="categoryId" label="القسم">
-              <Select
+              <SmartSelect
                 allowClear
                 showSearch
                 optionFilterProp="label"
@@ -290,7 +291,7 @@ export function ProductFormDrawer({
                 name="subcategoryIds"
                 label="الأقسام الفرعية (يمكن اختيار أكثر من قسم)"
               >
-                <Select
+                <SmartSelect
                   mode="multiple"
                   allowClear
                   showSearch
@@ -306,7 +307,7 @@ export function ProductFormDrawer({
                 name="tertiaryCategoryIds"
                 label="الأقسام الثانوية (يمكن اختيار أكثر من قسم)"
               >
-                <Select
+                <SmartSelect
                   mode="multiple"
                   allowClear
                   showSearch

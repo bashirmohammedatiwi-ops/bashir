@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Select } from "antd";
+
+import SmartSelect from "@/components/SmartSelect";
 import { queries } from "@/lib/queries";
 
 /** اختيار العوالم التي يظهر فيها العنصر — فارغ = كل العوالم. */
@@ -14,7 +15,7 @@ export function WorldSlugsSelect({
 }) {
   const { data: worlds } = useQuery({ queryKey: ["worlds-manage"], queryFn: queries.worldsManage });
   return (
-    <Select
+    <SmartSelect
       mode="multiple"
       allowClear
       value={value ?? []}
