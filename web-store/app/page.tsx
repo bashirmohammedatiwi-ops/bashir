@@ -9,6 +9,7 @@ import { ForYourSkin } from "@/components/home/ForYourSkin";
 import { FlashSaleBand } from "@/components/home/FlashSaleBand";
 import { TrendingSearches } from "@/components/home/TrendingSearches";
 import { Icon } from "@/components/ui/Icon";
+import { SafeSection } from "@/components/ui/SafeSection";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { currentWorld, getHome, getWorlds } from "@/lib/data";
 
@@ -29,7 +30,7 @@ export default async function HomePage({ searchParams }: { searchParams: { world
     <div className="animate-fade-up">
       <section className="container pt-4 md:pt-6">
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <HeroCarousel banners={feed.banners} />
+          <SafeSection name="hero"><HeroCarousel banners={feed.banners} /></SafeSection>
           <aside className="hidden flex-col gap-4 lg:flex">
             <Link href="/skin-quiz" className="group relative flex flex-1 flex-col justify-end overflow-hidden rounded-4xl bg-gradient-to-br from-accent to-accent-dark p-6 text-white shadow-lift">
               <span className="absolute -left-6 -top-6 text-8xl opacity-30 transition group-hover:rotate-12">🔍</span>
@@ -52,10 +53,10 @@ export default async function HomePage({ searchParams }: { searchParams: { world
         </div>
       </section>
 
-      <TrendingSearches />
+      <SafeSection name="trending"><TrendingSearches /></SafeSection>
 
       <section className="container pt-5 md:pt-8">
-        <WorldStrip worlds={worlds} current={world} />
+        <SafeSection name="worlds"><WorldStrip worlds={worlds} current={world} /></SafeSection>
       </section>
 
       {feed.categories.length > 0 && (
@@ -67,13 +68,13 @@ export default async function HomePage({ searchParams }: { searchParams: { world
 
       {feed.flashSale?.endsAt && !feed.sections.some((x) => x.type === "FLASH_SALE") && <FlashSaleBand endsAt={feed.flashSale.endsAt} products={feed.flashSale.products ?? []} />}
 
-      <BuyAgain />
+      <SafeSection name="buy-again"><BuyAgain /></SafeSection>
 
-      <ForYourSkin />
+      <SafeSection name="for-your-skin"><ForYourSkin /></SafeSection>
 
-      <CouponsShelf world={world?.slug} />
+      <SafeSection name="coupons"><CouponsShelf world={world?.slug} /></SafeSection>
 
-      <HomeSections sections={feed.sections} />
+      <SafeSection name="sections"><HomeSections sections={feed.sections} /></SafeSection>
 
       {feed.brands.length > 0 && (
         <section className="container py-6 md:py-10">
@@ -82,7 +83,7 @@ export default async function HomePage({ searchParams }: { searchParams: { world
         </section>
       )}
 
-      <RecentlyViewed />
+      <SafeSection name="recently-viewed"><RecentlyViewed /></SafeSection>
     </div>
   );
 }

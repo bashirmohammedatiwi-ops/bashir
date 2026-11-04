@@ -17,15 +17,16 @@ export function ForYourSkin() {
   const [quiz, setQuiz] = useState<ReturnType<typeof loadSkin>>(null);
   useEffect(() => setQuiz(loadSkin()), []);
   const skinType = (quiz?.skinType ?? advisorProfile.skinType) as SkinType | undefined;
-  const concerns = quiz?.concerns?.length ? quiz.concerns : advisorProfile.concerns ?? [];
+  const concerns = Array.isArray(quiz?.concerns) && quiz.concerns.length ? quiz.concerns : Array.isArray(advisorProfile.concerns) ? advisorProfile.concerns : [];
   const q = useQuery({
     queryKey: ["for-skin", skinType, concerns.join(",")],
     enabled: hydrated && !!skinType,
     staleTime: 30 * 60_000,
     queryFn: () => api<Reply>("/advisor/chat", { method: "POST", auth: false, body: { message: "روتين عناية لبشرتي", profile: { ...advisorProfile, skinType, concerns } } }),
   });
-  if (!hydrated || !skinType || !q.data?.routine?.steps?.length) return null;
-  const t = SKIN[skinType];
+  // نوع بشرة غير معروف (قيمة قديمة محفوظة في الجهاز أو من ديما) كان يُسقط الرئيسية كلها.
+  const t = skinType && Object.prototype.hasOwnProperty.call(SKIN, skinType) ? SKIN[skinType] : null;
+  if (!hydrated || !t || !q.data?.routine?.steps?.length) return null;
   return (
     <section className="container py-6 md:py-10">
       <div className="grid items-start gap-5 rounded-[32px] bg-gradient-to-l from-accent-light via-surface to-accent-light p-5 ring-1 ring-accent/15 md:p-8 lg:grid-cols-[320px_1fr]">

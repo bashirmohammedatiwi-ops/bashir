@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/lib/stores/auth";
 import type { HomeFeed, LoyaltyRules } from "@/lib/types";
+import { reportClientError } from "@/lib/reportError";
 
 type Settings = HomeFeed["settings"];
 const SettingsCtx = createContext<Settings>({});
@@ -17,6 +18,14 @@ export function Providers({ children, settings }: { children: React.ReactNode; s
   );
   useEffect(() => {
     useAuth.getState().loadMe();
+    const onErr = (e: ErrorEvent) => reportClientError("window", e.error ?? e.message);
+    const onRej = (e: PromiseRejectionEvent) => reportClientError("promise", e.reason);
+    window.addEventListener("error", onErr);
+    window.addEventListener("unhandledrejection", onRej);
+    return () => {
+      window.removeEventListener("error", onErr);
+      window.removeEventListener("unhandledrejection", onRej);
+    };
   }, []);
   return (
     <SettingsCtx.Provider value={settings}>
