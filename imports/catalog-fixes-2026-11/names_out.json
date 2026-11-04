@@ -1,0 +1,402 @@
+[
+ {
+  "id": "ed9f7495-cea4-4429-b9c3-144185000ba2",
+  "nameEn": "A313 Vitamin A Retinol Pommade 50 g",
+  "confidence": "medium"
+ },
+ {
+  "id": "9f87d94f-e101-441d-9914-038eefb40156",
+  "nameEn": "Amouage Interlude Woman Eau de Parfum 100ml",
+  "confidence": "high"
+ },
+ {
+  "id": "ed235a02-07b9-47a4-9bb3-9c0e4b6fa1d6",
+  "nameEn": "Beauty of Joseon Matte Sun Stick: Mugwort + Camelia SPF50+ PA++++ 18 g",
+  "confidence": "high"
+ },
+ {
+  "id": "8a09141e-ced9-4aa3-9606-f1000ff25f31",
+  "nameEn": "Dior Homme Sport Eau de Toilette 125ml",
+  "confidence": "high"
+ },
+ {
+  "id": "ec89baf3-05c4-40c6-8fb9-fca1095c3c20",
+  "nameEn": "Dior Addict Eau Délice Eau de Toilette 50ml",
+  "confidence": "high"
+ },
+ {
+  "id": "a6d2f190-6bf2-4986-b6d5-47598f45192c",
+  "nameEn": "Dr. Althea 0.1% Gentle Retinol Serum 30ml",
+  "confidence": "high"
+ },
+ {
+  "id": "f5941cd8-48c8-41d7-8097-889debd47988",
+  "nameEn": "Helia-D Pro Active Retinol Eye Serum 15ml",
+  "confidence": "high"
+ },
+ {
+  "id": "2cb7678e-e1f5-4ec1-9b63-6d093115ea7a",
+  "nameEn": "Helia-D Pro Active Retinol Face Cream 50ml",
+  "confidence": "medium"
+ },
+ {
+  "id": "c8575acc-40ff-4014-a6be-c3859a720657",
+  "nameEn": "Helia-D Pro Active Retinol Concentrated Face Serum 50ml",
+  "confidence": "medium"
+ },
+ {
+  "id": "982a88c8-e967-4e75-8c57-39d8df6fab80",
+  "nameEn": "Jean Paul Gaultier Scandal Eau de Parfum 80ml",
+  "confidence": "high"
+ },
+ {
+  "id": "b1b92f91-f9d9-426e-ac4e-35beaae5aa89",
+  "nameEn": "Kahi Wrinkle Bounce Collagen Mist Ampoule 120ml",
+  "confidence": "high"
+ },
+ {
+  "id": "fa3cadf0-2947-4b79-9b8c-ef3446b7c45a",
+  "nameEn": "Loewe 001 Man Eau de Parfum 100ml",
+  "confidence": "high"
+ },
+ {
+  "id": "36a688f8-158d-4092-a680-4dfc8d68e0ff",
+  "nameEn": "NYX Angel Veil Skin Perfecting Primer 30ml",
+  "confidence": "high"
+ },
+ {
+  "id": "6ff74ff7-c5be-4a51-b00d-d5dcdb731e2a",
+  "nameEn": "Pantene Pro-V Curlastic Sulfate-Free Shampoo 400ml",
+  "confidence": "high"
+ },
+ {
+  "id": "f802f5f9-025d-4770-93f1-3d3a7bae167c",
+  "nameEn": "Pantene Pro-V Curlastic Curl Revival Serum 145ml",
+  "confidence": "high"
+ },
+ {
+  "id": "41bb30f4-6fe2-4338-b55f-9d57dac5cede",
+  "nameEn": "Pantene Pro-V Curlastic Defining Anti-Frizz Leave-On Cream 270ml",
+  "confidence": "high"
+ },
+ {
+  "id": "88a51430-52e0-49b8-a24e-b06647e290ee",
+  "nameEn": "Skin Academy Peptides & Retinol Correcting Eye Contour Cream",
+  "confidence": "high"
+ },
+ {
+  "id": "c3ccd487-b334-4ef5-8eb3-379780d91c47",
+  "nameEn": "The Balm Meet Matt(e) Hughes Mini Liquid Lipstick Kit Vol. 3 (6 pcs)",
+  "confidence": "medium"
+ },
+ {
+  "id": "86cfb397-4a56-47cd-a88e-a59562b556b4",
+  "nameEn": "The Balm Meet Matt(e) Hughes Mini Liquid Lipstick Kit Vol. 14",
+  "confidence": "medium"
+ },
+ {
+  "id": "f18a8904-f525-4a31-8616-2c87797fc8ee",
+  "nameEn": "The Balm Meet Matt(e) Hughes Mini Liquid Lipstick Kit Vol. 12",
+  "confidence": "medium"
+ },
+ {
+  "id": "e1288c2c-b2f4-4078-a46e-21c038514c25",
+  "nameEn": "The Balm Meet Matt(e) Hughes Mini Liquid Lipstick Kit Vol. 6",
+  "confidence": "medium"
+ },
+ {
+  "id": "c678162c-85e1-4e5f-931c-3bb717a76dea",
+  "nameEn": "The Balm Meet Matt(e) Hughes Nude Mini Liquid Lipstick Kit",
+  "confidence": "high"
+ },
+ {
+  "id": "0a0c73ed-21e5-471c-b996-84736da319aa",
+  "nameEn": "The Ordinary Glycolic Acid 7% Exfoliating Toner",
+  "confidence": "high"
+ },
+ {
+  "id": "c5b90f06-8184-48ef-876e-be8512f55c2e",
+  "nameEn": "The Ordinary 100% L-Ascorbic Acid Powder 20 g",
+  "confidence": "high"
+ },
+ {
+  "id": "d96f3d63-7fec-4156-856b-8284575cae63",
+  "nameEn": "Thomas Kosmala No.4 Après l'Amour Elixir Eau de Parfum 100ml",
+  "confidence": "high"
+ },
+ {
+  "id": "1ce9dbb3-f17d-4557-8d79-8c19c501bb2e",
+  "nameEn": "Unique'e Luxury Ocean The Rive Extrait de Parfum 100ml",
+  "confidence": "medium"
+ },
+ {
+  "id": "f728e609-0e2f-457e-ae71-6be53560b051",
+  "nameEn": "Unique'e Luxury Crush On Me Extrait de Parfum 100ml",
+  "confidence": "high"
+ },
+ {
+  "id": "0709e07e-cfb4-46b7-b0a7-9a8f80f2dd11",
+  "nameEn": "Eqqualberry Aloe PDRN Calming Serum 30ml",
+  "confidence": "high"
+ },
+ {
+  "id": "a79f0ec8-97c8-4934-9633-c35bf6f1a9cb",
+  "nameEn": "Isntree Hyaluronic Acid Aqua Gel Cream 100ml",
+  "confidence": "high"
+ },
+ {
+  "id": "714eee10-9c10-4a90-b952-96ba3e155a89",
+  "nameEn": "Parfums de Marly Kuhuyan Eau de Parfum 125ml",
+  "confidence": "high"
+ },
+ {
+  "id": "1838de54-334a-4ad3-b76b-3857b8b85209",
+  "nameEn": "Parfums de Marly Sedbury Eau de Parfum 75ml",
+  "confidence": "high"
+ },
+ {
+  "id": "f3083986-8d09-476c-99fb-22c1e19ba672",
+  "nameEn": "Celimax The Vita-A Retinol Shot Tightening Serum 30ml",
+  "confidence": "high"
+ },
+ {
+  "id": "ba17f9ba-d96c-42d4-98fd-3d88111f01ca",
+  "nameEn": "Catrice Ten!sational 10 in 1 Dream Primer 010",
+  "confidence": "medium"
+ },
+ {
+  "id": "f7c50c40-d339-4e93-b756-82e629ab8888",
+  "nameEn": "GRIGI Pro Multi Palette Trio 06 Pink Highlighter Paradise",
+  "confidence": "high"
+ },
+ {
+  "id": "9d301496-6407-4c70-bafe-b913d9e59f1b",
+  "nameEn": "GRIGI Pro Luminous Foundation 30ml",
+  "confidence": "medium"
+ },
+ {
+  "id": "6ed13437-1b34-4986-be1c-b430b8b4fde4",
+  "nameEn": "GRIGI Palette Pro 10 Colours 05 The Mocha Mousse Paradise",
+  "confidence": "high"
+ },
+ {
+  "id": "c0f22201-bffa-4f6c-9b74-a701ff46db7c",
+  "nameEn": "GRIGI Twist & Go Eyeliner Pencil Pro",
+  "confidence": "high"
+ },
+ {
+  "id": "0e9580d8-aae4-4e9c-8418-a8a76872698c",
+  "nameEn": "GRIGI Pro Palette 513 Metallic & Shimmer Eyeshadow The Copper Paradise (5 Shades)",
+  "confidence": "high"
+ },
+ {
+  "id": "63044ce9-8d22-4f38-b367-a0e50e0920e9",
+  "nameEn": "GRIGI Max Compact Powder",
+  "confidence": "high"
+ },
+ {
+  "id": "1b1ec0fc-9786-485a-b6e7-b15f161b50bc",
+  "nameEn": "GRIGI Premium Mascara Pro",
+  "confidence": "high"
+ },
+ {
+  "id": "c619ce48-7b7c-4261-9e82-2cc79ce03ce0",
+  "nameEn": "GRIGI Dipliner Premium Pro Liquid Eyeliner Black",
+  "confidence": "medium"
+ },
+ {
+  "id": "b4dba562-9d7f-4071-8024-d9a91ee7cd7d",
+  "nameEn": "GRIGI Eyebrow Definer Pencil 03 Elephant Grey",
+  "confidence": "high"
+ },
+ {
+  "id": "8a357d6d-69b0-4c1f-acd9-aa891f21e9e9",
+  "nameEn": "GRIGI Matte Long Stay Liquid Lipstick Mini",
+  "confidence": "high"
+ },
+ {
+  "id": "6f868ba1-f98b-41c3-8811-6d5db120b2ad",
+  "nameEn": "GRIGI Matte Pro Liquid Lipstick",
+  "confidence": "high"
+ },
+ {
+  "id": "41294991-915b-4715-9af7-f6b6ba908097",
+  "nameEn": "GRIGI Satin Lipstick Pro",
+  "confidence": "medium"
+ },
+ {
+  "id": "5b910df1-8bbe-439c-b924-ca1bc66d767b",
+  "nameEn": "GRIGI Matte Lipstick Pro",
+  "confidence": "high"
+ },
+ {
+  "id": "c58474fa-b946-4c32-9cb4-5259d32a8ec7",
+  "nameEn": "GRIGI The Sun Perception Tinted Face Cream SPF50 50ml",
+  "confidence": "high"
+ },
+ {
+  "id": "0e1599e6-6a11-4f1d-a3de-cd57aef38ffb",
+  "nameEn": "GRIGI Palette Pro 10 Colours 02 The Blues & Purple Paradise",
+  "confidence": "high"
+ },
+ {
+  "id": "3a0a8c8a-9ec0-4767-aa53-3a6f71b108fc",
+  "nameEn": "GRIGI Pro Multi Palette Trio 03 Bronzing Paradise",
+  "confidence": "high"
+ },
+ {
+  "id": "fd30f8d8-a333-43bf-ba4e-2f589e999717",
+  "nameEn": "GRIGI Pro Luminous Primer 3 in 1 30ml",
+  "confidence": "high"
+ },
+ {
+  "id": "1b115591-9a2f-4e1f-8498-80dca31d8240",
+  "nameEn": "GRIGI Miracle Mattifying Powder Pro",
+  "confidence": "high"
+ },
+ {
+  "id": "77db8550-7bb8-49ad-948f-e767445d0acd",
+  "nameEn": "GRIGI Premium Gel Eyeliner Pencil Pro 02 Brown",
+  "confidence": "high"
+ },
+ {
+  "id": "11153d41-7a63-4f35-adbf-fb3a5fa106dc",
+  "nameEn": "GRIGI Eye Silky Pencil Pro 201 Metallic Silver",
+  "confidence": "medium"
+ },
+ {
+  "id": "a7ab6a5b-2ca5-4e67-a322-d8209d287932",
+  "nameEn": "GRIGI Eyebrow Definer Pencil 08 Nude Dark",
+  "confidence": "high"
+ },
+ {
+  "id": "f00bccff-42d6-4a54-a9ee-33945c9e7154",
+  "nameEn": "GRIGI Liquid Blush Pro 04 Soft Peach Brown",
+  "confidence": "low"
+ },
+ {
+  "id": "78ccf425-ae0c-418a-8430-26a2e4a1880a",
+  "nameEn": "GRIGI Matte Pro Filler Foundation 30ml",
+  "confidence": "high"
+ },
+ {
+  "id": "31e4867b-a597-4521-9b98-d2961c7af192",
+  "nameEn": "GRIGI Ultra Pro Covering Liquid Concealer",
+  "confidence": "high"
+ },
+ {
+  "id": "278577bc-1676-4693-8a37-464f62d88292",
+  "nameEn": "GRIGI Pro Eyebrow Palette 506",
+  "confidence": "high"
+ },
+ {
+  "id": "c83292ee-f721-499a-8476-75d064d07dc9",
+  "nameEn": "GRIGI Gloss Liquid Lipstick 01 Transparent",
+  "confidence": "high"
+ },
+ {
+  "id": "8b743494-cc21-492f-b979-3f31d7a0cea6",
+  "nameEn": "GRIGI Volume Pro Mascara Jet Black",
+  "confidence": "medium"
+ },
+ {
+  "id": "99b19423-3cbd-4c48-9259-b577cb6b4f17",
+  "nameEn": "GRIGI Max Blush On Powder Blush",
+  "confidence": "high"
+ },
+ {
+  "id": "4885a4c5-5010-4cb8-98e2-37471ffce41e",
+  "nameEn": "GRIGI Length Pro Mascara Jet Black",
+  "confidence": "high"
+ },
+ {
+  "id": "c82948b9-b193-4a4b-bfe6-8d8e895cfa36",
+  "nameEn": "GRIGI Only Matte Long Stay Power Liquid Lipstick",
+  "confidence": "high"
+ },
+ {
+  "id": "053db9bc-e61f-459b-9b44-3440997d4402",
+  "nameEn": "GRIGI Premium Pro Waterproof Eyeliner 01 Black",
+  "confidence": "medium"
+ },
+ {
+  "id": "b72f488a-4632-4c58-8031-7698324eeb5a",
+  "nameEn": "GRIGI Pro Multi Palette Trio 01 Coral Paradise",
+  "confidence": "high"
+ },
+ {
+  "id": "6d5e579f-3c11-4e72-81c1-9453abd3a50f",
+  "nameEn": "GRIGI Pro Palette 502 Metallic & Shimmer Eyeshadow Cinnamon (5 Shades)",
+  "confidence": "high"
+ },
+ {
+  "id": "cc283f4c-6842-412f-811c-7d73b05d4d07",
+  "nameEn": "GRIGI Waterproof Eye Silky Pencil",
+  "confidence": "high"
+ },
+ {
+  "id": "eeb9ffcb-9f6b-44bd-b499-77859c8a3043",
+  "nameEn": "GRIGI Eyebrow Pro Pencil 07 Nude Grey",
+  "confidence": "high"
+ },
+ {
+  "id": "10c66f9e-890b-4150-a2da-2d55a85075aa",
+  "nameEn": "GRIGI On The Go Peptide Stick Blush",
+  "confidence": "high"
+ },
+ {
+  "id": "8b8a925e-9814-421f-9a28-b25292c9b76c",
+  "nameEn": "GRIGI Palette Pro 10 Colours 04 The Green Paradise",
+  "confidence": "high"
+ },
+ {
+  "id": "1e21904e-b86c-40ff-9fb4-ee8ffbbb3607",
+  "nameEn": "GRIGI Pro Palette 505 Metallic & Shimmer Eyeshadow Pastel Paradise (5 Shades)",
+  "confidence": "high"
+ },
+ {
+  "id": "36449cf8-3b22-4217-b882-5672809fe7b3",
+  "nameEn": "GRIGI On The Go Highlighter Stick 01 Transparent",
+  "confidence": "medium"
+ },
+ {
+  "id": "c696d885-aee7-4388-8bf4-8fd68bdaa6ea",
+  "nameEn": "GRIGI Eyebrow Pomade Pro",
+  "confidence": "high"
+ },
+ {
+  "id": "b361f8a8-fed2-4c2b-ab91-19ea609b3484",
+  "nameEn": "GRIGI Tinted Lip Oil Pro Mini 2ml",
+  "confidence": "medium"
+ },
+ {
+  "id": "b21b119a-44cf-4de2-bc9f-70464fbda97c",
+  "nameEn": "GRIGI Eyebrow Premium Pro Pencil",
+  "confidence": "high"
+ },
+ {
+  "id": "572e09f9-11f8-4a04-883f-73c03d10190c",
+  "nameEn": "GRIGI Waterproof Lip Silky Pencil",
+  "confidence": "high"
+ },
+ {
+  "id": "7d6af5b5-b8c3-4c66-b08c-bea4c5140140",
+  "nameEn": "GRIGI Pro Palette 503 Metallic & Shimmer Eyeshadow Fuchsia & Gold (5 Shades)",
+  "confidence": "high"
+ },
+ {
+  "id": "ebfd25d5-f5b3-4500-b325-162d157d40b3",
+  "nameEn": "Clarins Plant Gold Nutri-Revitalizing Oil-Emulsion 35ml",
+  "confidence": "high"
+ },
+ {
+  "id": "5e08d375-a680-496e-bf1d-bb414c818f6f",
+  "nameEn": "Clarins Bright Plus Moisturizing Emulsion",
+  "confidence": "high"
+ },
+ {
+  "id": "84ba1279-7634-4da8-8f9b-1cd63390ac93",
+  "nameEn": "Nora Bo Awadh Eyeliner Brush",
+  "confidence": "medium"
+ }
+]
