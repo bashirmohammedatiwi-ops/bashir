@@ -1,0 +1,211 @@
+[
+ {
+  "brand": "maybelline",
+  "file": "maybelline/mny_lifter-gloss_lips_16x9.jpg",
+  "url": "https://www.maybelline.de/-/media/project/loreal/brand-sites/mny/emea/dach/products/produkte_de/lippe/lipgloss/lifter-gloss/module/vorher-nachher/lipmacro6_mny_makl_liftergloss_1600x900.jpeg",
+  "w": 1600,
+  "h": 900,
+  "orientation": "landscape",
+  "what": "Lifter Gloss macro: full glossy nude-rose lips filling the frame, warm skin tones",
+  "subject_side": "center",
+  "free_space": "none (tight lip macro; overlay text needs a gradient or place over upper/lower skin band)"
+ },
+ {
+  "brand": "maybelline",
+  "file": "maybelline/mny_matte-ink_hustler_applicator_sq.jpg",
+  "url": "https://www.maybelline.de/-/media/project/loreal/brand-sites/mny/emea/dach/articles/lippen-make-up-tutorials/rote-lippen-schminken/250114-ssmi-reno-335-hustler-sofi-girich-macro-2828-2-r2.jpg",
+  "w": 1920,
+  "h": 1920,
+  "orientation": "square",
+  "what": "Super Stay Matte Ink (shade Hustler) being applied with doe-foot applicator; brick-red matte lips, clean light-pink background",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "maybelline",
+  "file": "maybelline/mny_matte-ink_shot-caller_red-lips_sq.jpg",
+  "url": "https://www.maybelline.de/-/media/project/loreal/brand-sites/mny/emea/dach/articles/lippen-make-up-tutorials/rote-lippen-schminken/250114-ssmi-reno-325-shot-caller-bridget-als-macro-1496-3-r2.jpg",
+  "w": 1920,
+  "h": 1919,
+  "orientation": "square",
+  "what": "Super Stay Matte Ink (shade Shot Caller) classic true-red matte lips macro, warm skin",
+  "subject_side": "center",
+  "free_space": "none (lip macro)"
+ },
+ {
+  "brand": "maybelline",
+  "file": "maybelline/mny_matte-ink_seductress_model_portrait.jpg",
+  "url": "https://www.maybelline.de/-/media/project/loreal/brand-sites/mny/emea/dach/articles/lippen-make-up-tutorials/tipps-fuer-schoene-lippen/250114-ssmi-reno-65-seductress-madison-stepec-fb-0991-r2.jpg",
+  "w": 1281,
+  "h": 1920,
+  "orientation": "portrait",
+  "what": "Super Stay Matte Ink (shade Seductress) model portrait, nude-rose matte lips, denim jacket + striped shirt, pure white background",
+  "subject_side": "center",
+  "free_space": "top"
+ },
+ {
+  "brand": "maybelline",
+  "file": "maybelline/mny_vinyl-ink_record-player_4x5.png",
+  "url": "https://www.maybelline.de/-/media/project/loreal/brand-sites/mny/emea/dach/articles/lippen-make-up-tutorials/rote-lippen-schminken/image-2025-10-02-11-16-14-992.png",
+  "w": 1500,
+  "h": 1875,
+  "orientation": "portrait",
+  "what": "Super Stay Vinyl Ink packs staged on a vinyl record player; monochrome hot-pink/magenta art direction (only pack text)",
+  "subject_side": "center",
+  "free_space": "top"
+ },
+ {
+  "brand": "maybelline",
+  "file": "maybelline/mny_tattoo-brow_model_16x9.jpg",
+  "url": "https://www.maybelline.co.uk/-/media/project/loreal/brand-sites/mny/emea/uk/make-up-trends/how-to-use-eyebrow-tattoo-peel-off-tint/maybelline-hero-banner.jpg",
+  "w": 1600,
+  "h": 900,
+  "orientation": "landscape",
+  "what": "Tattoo Brow campaign: blue-eyed brunette model brushing brows, smoky eye, dark background",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "astra",
+  "file": "astra/astra_outline-lip-pencil_neon-lips_landscape.jpg",
+  "url": "https://astramakeup.com/cdn/shop/files/7988-editorial-banner1.jpg",
+  "w": 2400,
+  "h": 1750,
+  "orientation": "landscape",
+  "what": "Outline Waterproof Lip Pencil editorial: profile with neon orange-red lips under orange spotlight, hot-pink background",
+  "subject_side": "center",
+  "free_space": "left"
+ },
+ {
+  "brand": "astra",
+  "file": "astra/astra_glitter-snowland_hero_landscape.jpg",
+  "url": "https://astramakeup.com/cdn/shop/files/Hero-Banner-Glitter-Snowland-Desktop.jpg",
+  "w": 2480,
+  "h": 1378,
+  "orientation": "landscape",
+  "what": "Glitter Snowland homepage hero: model in ski goggles + silver jacket with Astra products, lavender/snowy mountain palette (pack text only)",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "astra",
+  "file": "astra/astra_lip-bondage_red-rope-lips_4x5.jpg",
+  "url": "https://astramakeup.com/cdn/shop/files/8069-editorial-banner2.jpg",
+  "w": 1400,
+  "h": 1750,
+  "orientation": "portrait",
+  "what": "Lip Bondage vinyl liquid lipstick campaign: glossy red lips, red rope across face, warm skin",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "astra",
+  "file": "astra/astra_lip-creamynal_model-red_4x5.jpg",
+  "url": "https://astramakeup.com/cdn/shop/files/8053-editorial-banner3.jpg",
+  "w": 1400,
+  "h": 1750,
+  "orientation": "portrait",
+  "what": "Lip Creamynal campaign: model with berry-red lips, red faux-fur coat, deep red background",
+  "subject_side": "left",
+  "free_space": "right"
+ },
+ {
+  "brand": "astra",
+  "file": "astra/astra_creamynal-annarella_model_4x5.jpg",
+  "url": "https://astramakeup.com/cdn/shop/files/8105-editorial-banner2.jpg",
+  "w": 1400,
+  "h": 1750,
+  "orientation": "portrait",
+  "what": "Lip Creamynal Annarella: model portrait with dark-red matte lips, graphic eyeliner, braids, blue blurred background",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "astra",
+  "file": "astra/astra_chromo-therapy-mat_eye_4x5.jpg",
+  "url": "https://astramakeup.com/cdn/shop/files/8086-editorial-banner1.jpg",
+  "w": 1400,
+  "h": 1750,
+  "orientation": "portrait",
+  "what": "Chromo Therapy Mat liquid eyeshadow applied to eyelid; terracotta-rust eye, nude matte lips, close-up",
+  "subject_side": "left",
+  "free_space": "none"
+ },
+ {
+  "brand": "astra",
+  "file": "astra/astra_lipstylo-mat_candy-hearts_4x5.jpg",
+  "url": "https://astramakeup.com/cdn/shop/files/7998-editorial-banner1.jpg",
+  "w": 1400,
+  "h": 1750,
+  "orientation": "portrait",
+  "what": "Madame Lipstylo The Mat (red) lying on pastel candy hearts and marshmallows; premium product art",
+  "subject_side": "center",
+  "free_space": "none (busy background)"
+ },
+ {
+  "brand": "artdeco",
+  "file": "artdeco/artdeco_lipstick_red-lips-model_2x1.jpg",
+  "url": "https://artdeco.com/cdn/shop/files/1800x900_Promoslider_MoFaHW2026__Desktop_V1.jpg",
+  "w": 1800,
+  "h": 900,
+  "orientation": "landscape",
+  "what": "ARTDECO autumn/winter 2026 homepage slider: brunette model applying deep-red lipstick, leather jacket, soft lilac-white background",
+  "subject_side": "center",
+  "free_space": "left+right"
+ },
+ {
+  "brand": "artdeco",
+  "file": "artdeco/artdeco_blusher_carnations-model_2x1.jpg",
+  "url": "https://artdeco.de/cdn/shop/files/1800x900_Hero-Banner-Glamour2026_Desktop.jpg",
+  "w": 1800,
+  "h": 900,
+  "orientation": "landscape",
+  "what": "ARTDECO Glamour 2026 hero: model holding open compact blush to cheek, pink carnations, white-lilac background",
+  "subject_side": "center",
+  "free_space": "left (upper)"
+ },
+ {
+  "brand": "artdeco",
+  "file": "artdeco/artdeco_lipstick_bullets_16x9.jpg",
+  "url": "https://artdeco.com/cdn/shop/files/16-9_Background_Lipstick_V1.jpg",
+  "w": 1778,
+  "h": 1000,
+  "orientation": "landscape",
+  "what": "Lipstick bullets in pinks/corals with silver cases on white; premium texture art",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "artdeco",
+  "file": "artdeco/artdeco_glow-stick_model_sq.jpg",
+  "url": "https://artdeco.de/cdn/shop/files/Original_size_JPG-59416.3_Glow_Stick_2.jpg",
+  "w": 3000,
+  "h": 3000,
+  "orientation": "square",
+  "what": "Blonde model with rosy glowing cheeks holding Glow Stick (blush/highlighter stick family), dark warm background",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "artdeco",
+  "file": "artdeco/artdeco_bronzer_model_sq.jpg",
+  "url": "https://artdeco.com/cdn/shop/files/1000x1000_Image-with-Text_All-Seasons-Bronzing-Powder_Bronzing-2026.jpg",
+  "w": 2000,
+  "h": 2000,
+  "orientation": "square",
+  "what": "All Seasons Bronzing Powder campaign: model holding compact to face, pearl necklace, soft lilac background",
+  "subject_side": "left",
+  "free_space": "right (lower)"
+ },
+ {
+  "brand": "artdeco",
+  "file": "artdeco/artdeco_gelly-blush-stick_collage_sq.jpg",
+  "url": "https://artdeco.com/cdn/shop/files/2000x2000_Image-with-Text_Collage_Gel.ly-Blush.jpg",
+  "w": 2000,
+  "h": 2000,
+  "orientation": "square",
+  "what": "Gel.ly Blush Stick 4-tile collage: green-eyed model cheek swatches + stacked stick bullets; small 'N°3/N°8/N°5' shade labels",
+  "subject_side": "center",
+  "free_space": "none"
+ }
+]

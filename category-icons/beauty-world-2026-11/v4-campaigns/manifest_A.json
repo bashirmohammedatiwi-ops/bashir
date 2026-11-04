@@ -1,0 +1,156 @@
+[
+ {
+  "brand": "huda-beauty",
+  "file": "huda-beauty/huda_hero_brush_landscape.jpg",
+  "url": "https://hudabeauty.com/cdn/shop/files/A1-BANNER-BRONZE-FILTER-PALETTE_DESKTOP.webp",
+  "w": 6250,
+  "h": 2500,
+  "orientation": "landscape",
+  "what": "Huda Kattan applying bronzer with brush, holding brown face palette (Bronze Filter); soft blush-pink seamless background, chocolate/nude tones. Brand hero (homepage), no baked-in text",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "huda-beauty",
+  "file": "huda-beauty/huda_blush_filter_beauty.jpg",
+  "url": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/BLUSH-FILTER-PALETTE_REFRESH_PDP_BEAUTY_FINAL_STRAWBERRYLATTE.webp",
+  "w": 4167,
+  "h": 4861,
+  "orientation": "portrait",
+  "what": "Face close-up, rosy flushed cheeks + glossy brown-nude lips (Blush Filter look); pale pink background at left edge",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "huda-beauty",
+  "file": "huda-beauty/huda_blush_model_strawberry.jpg",
+  "url": "https://hudabeauty.com/cdn/shop/files/STRAWBERRY-LATTE-COLLECTION-BUNDLES_SUMMERS-HOTTEST-LOOK-SECOND-IMAGE.webp",
+  "w": 3000,
+  "h": 3500,
+  "orientation": "portrait",
+  "what": "Beauty portrait, sleek ponytail, strong pink blush, warm brown eyes, glossy nude lip (Blush Filter / lip look); pale pink background",
+  "subject_side": "center",
+  "free_space": "left"
+ },
+ {
+  "brand": "huda-beauty",
+  "file": "huda-beauty/huda_empowered_model.jpg",
+  "url": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-EMPOWERED-TILE2_5e095460-5e76-4cf1-ba16-c8281638a6e5.webp",
+  "w": 3000,
+  "h": 3500,
+  "orientation": "portrait",
+  "what": "Tight face close-up, gold glitter lids + mauve-nude lips (Empowered palette look); warm skin tones, dark edges",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "huda-beauty",
+  "file": "huda-beauty/huda_empowered_palette_orange.jpg",
+  "url": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-EMPOWERED-TILE9_82416de3-5bf6-457b-9803-fcd3d3fe0b9a.webp",
+  "w": 3000,
+  "h": 3500,
+  "orientation": "portrait",
+  "what": "Empowered eyeshadow palette open + closed, styled on glossy saffron/orange backdrop (premium still life; only pack text)",
+  "subject_side": "center",
+  "free_space": "top"
+ },
+ {
+  "brand": "huda-beauty",
+  "file": "huda-beauty/huda_matte_obsessions_eye.jpg",
+  "url": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-MATTEOBSESSIONS-COOL-TILE2_c5db76bc-313f-4922-ba39-3178dce3f5e3.webp",
+  "w": 3000,
+  "h": 3500,
+  "orientation": "portrait",
+  "what": "Extreme close-up, lilac/plum cut-crease with winged liner + mauve lip (Matte Obsessions Cool palette look)",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "make-up-for-ever",
+  "file": "make-up-for-ever/mufe_lip_campaign_duo_models.jpg",
+  "url": "https://makeupforever.sg/cdn/shop/files/flatlay-2048x2048_93a01f1a-2034-4bfb-a410-332e47109bd5.jpg",
+  "w": 2048,
+  "h": 2048,
+  "orientation": "square",
+  "what": "Two models embracing, one applying pink lipstick, other holding pink lip/cheek duo compact; lilac/pink campaign styling (from official MUFE Singapore site; lip line, not HD Skin)",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "nyx",
+  "file": "nyx/nyx_buttermelt_bronzer_model.jpg",
+  "url": "https://www.nyxcosmetics.com/on/demandware.static/-/Sites-nyxcosmetics-us-Library/default/dw2c1d4e50/images/pdpv2/NYX-Professional-Makeup-BUTTERMELT-BRONZER-07-BUTTA-DAYZ-0800897254742-Application-Makhala-01.jpg",
+  "w": 4000,
+  "h": 4000,
+  "orientation": "square",
+  "what": "Smiling face close-up, bronzed glowing skin, mauve smoky wing + glossy plum lip (Buttermelt Bronzer Butta Dayz); bright orange background; no overlay",
+  "subject_side": "center",
+  "free_space": "left"
+ },
+ {
+  "brand": "nyx",
+  "file": "nyx/nyx_butter_gloss_model.jpg",
+  "url": "https://www.nyxcosmetics.com/on/demandware.static/-/Sites-cpd-nyxusa-master-catalog/default/dw056d75c6/ProductImages/2024/LIPS/BLG-ALT-UPDATE/SUGAR-GLASS/NYX-Professional-Makeup-BUTTER-GLOSS-54-Clear-0800897226596-Application-Vanessa-01.jpg",
+  "w": 4000,
+  "h": 4000,
+  "orientation": "square",
+  "what": "Model with glassy lids and juicy glossy pink lips holding Butter Gloss Clear; lavender background. NOTE: thin camera-viewfinder frame with small corner text (PLAY / NO RETOUCHING / product name) - crop ~10% margins to remove",
+  "subject_side": "right",
+  "free_space": "none"
+ },
+ {
+  "brand": "nyx",
+  "file": "nyx/nyx_face_glue_model.jpg",
+  "url": "https://www.nyxcosmetics.com/on/demandware.static/-/Sites-cpd-nyxusa-master-catalog/default/dw12a031e7/ProductImages/2024/FACE/FACE-GLUE-PRIMER/NYX-Professional-Makeup-THE-FACE-GLUE-PRIMER-0800897266004-Application-Gigi-01.jpg",
+  "w": 4000,
+  "h": 4000,
+  "orientation": "square",
+  "what": "Smiling model with blue graphic liner holding The Face Glue Gripping Primer bottle; lavender background. NOTE: same viewfinder frame with small corner text - crop margins",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "nyx",
+  "file": "nyx/nyx_buttermelt_banner_wide.jpg",
+  "url": "https://www.nyxcosmetics.com/on/demandware.static/-/Sites-nyxcosmetics-us-Library/default/dwaf5c9db9/images/clp-top-banners/202407XX-DMI-NGL-CLP-Banner-FA24Reset-BMBL-Desktop-2880x540.jpg",
+  "w": 2880,
+  "h": 540,
+  "orientation": "landscape",
+  "what": "Buttermelt Blush compacts (open magenta pan + closed pink pack) on coral/pink wavy-checker pattern; very wide 5.3:1 strip, only pack text",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "nyx",
+  "file": "nyx/nyx_face_glue_banner_wide.jpg",
+  "url": "https://www.nyxcosmetics.com/on/demandware.static/-/Sites-nyxcosmetics-us-Library/default/dwe7faa98d/images/clp-top-banners/202501XX-DMI-NGL-CLP-Banner-SP25Reset-FGP01-Desktop-2880x540-primer-2024.jpg",
+  "w": 2880,
+  "h": 540,
+  "orientation": "landscape",
+  "what": "The Face Glue primer bottle with white cream splash on hot-pink background; very wide 5.3:1 strip, only pack text",
+  "subject_side": "right",
+  "free_space": "left"
+ },
+ {
+  "brand": "nyx",
+  "file": "nyx/nyx_fat_oil_cherry_hero.jpg",
+  "url": "https://www.nyxcosmetics.com/on/demandware.static/-/Sites-nyxcosmetics-us-Library/en_US/dw39bd4424/homepage/2026/Q3/202702-DMI-NGL-HPV2-ALaunch-CherryTease-ShoppableBanner-Desktop-2880x1600.jpg",
+  "w": 8640,
+  "h": 4800,
+  "orientation": "landscape",
+  "what": "Fat Oil Cherry Tease body oil + fragrance mist among giant glossy cherries on pink background (homepage hero; body line, not a store SKU); only pack text",
+  "subject_side": "center",
+  "free_space": "none"
+ },
+ {
+  "brand": "nyx",
+  "file": "nyx/nyx_cherry_tease_model_banner.jpg",
+  "url": "https://www.nyxcosmetics.com/on/demandware.static/-/Sites-nyxcosmetics-us-Library/en_US/dwd27df1f3/homepage/2026/Q3/202702-DMI-NGL-HPV2-ALaunch-CherryTease-Oil-ShoppableBanner-Desktop-2880x1120.jpg",
+  "w": 8640,
+  "h": 3360,
+  "orientation": "landscape",
+  "what": "Split banner: left half laughing model with pink eyes/red lips on pink-red zebra print holding Fat Oil; right half product with cherries + medium sticker text 'Smells like CHERRY & MUSK' (use left half crop for a clean shot)",
+  "subject_side": "left",
+  "free_space": "right"
+ }
+]
