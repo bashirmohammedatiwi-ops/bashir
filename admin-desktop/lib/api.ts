@@ -87,8 +87,23 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshPromise;
 }
 
-api.interceptors.request.use((config) => {
-  const token = inMemoryAccessToken ?? readPersistedToken();
+/** هل انتهى التوكن أو سينتهي خلال دقيقة؟ (قراءة exp من الـ JWT دون التحقق من توقيعه) */
+function tokenExpiresSoon(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as { exp?: number };
+    return typeof payload.exp === "number" && payload.exp * 1000 - Date.now() < 60_000;
+  } catch {
+    return false;
+  }
+}
+
+api.interceptors.request.use(async (config) => {
+  let token = inMemoryAccessToken ?? readPersistedToken();
+  // المسارات العامة (البراندات، الأقسام…) لا ترد 401 على توكن منتهٍ بل تعيد عرض المتجر المفلتر،
+  // فلا يتجدد التوكن وتظهر في اللوحة البراندات ذات المنتجات المتوفرة فقط — نجدّده مسبقاً.
+  if (token && tokenExpiresSoon(token) && !config.url?.includes("/auth/")) {
+    token = (await refreshAccessToken()) ?? token;
+  }
   if (token) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
