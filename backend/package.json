@@ -12,6 +12,7 @@
     "test:assistant": "npx tsx src/modules/assistant/intelligence/understand.spec.ts",
     "test:search": "npx tsx src/modules/advisor/engine/nlu.spec.ts",
     "test:phone": "npx tsx src/common/phone.util.spec.ts",
+    "test:section-visibility": "npx tsx src/modules/home/section-visibility.spec.ts",
     "test:fot-signature": "npx tsx src/modules/sync/fot-signature.guard.spec.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

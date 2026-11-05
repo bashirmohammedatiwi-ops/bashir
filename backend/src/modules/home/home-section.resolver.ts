@@ -23,6 +23,18 @@ const productInclude = {
 
 type Payload = Record<string, unknown>;
 
+/**
+ * قسم مجدول: payload.visibleFrom / payload.visibleUntil (ISO). خارج المدة لا يظهر في التطبيق والمتجر
+ * (ويبقى في لوحة التحكم) — لعروض موسمية تختفي وحدها، ونص عادي يعود بعدها.
+ */
+export function isVisibleNow(payload: Payload, now = Date.now()): boolean {
+  const from = typeof payload.visibleFrom === "string" ? Date.parse(payload.visibleFrom) : NaN;
+  const until = typeof payload.visibleUntil === "string" ? Date.parse(payload.visibleUntil) : NaN;
+  if (!Number.isNaN(from) && now < from) return false;
+  if (!Number.isNaN(until) && now >= until) return false;
+  return true;
+}
+
 /** حد المعرّفات في رابط «عرض الكل» لرف مختار (نفس حد `ids` في /products). */
 const MAX_VIEW_ALL_IDS = 50;
 
@@ -133,10 +145,12 @@ export class HomeSectionResolver {
     },
   ): Promise<ResolvedHomeSection[]> {
     const sections: ResolvedHomeSection[] = [];
+    const now = Date.now();
 
     for (const block of blocks) {
       try {
         const payload = (block.payload ?? {}) as Payload;
+        if (!isVisibleNow(payload, now)) continue;
         const section = await this.resolveBlock(block, payload, ctx);
         if (section && !this.isEmpty(section)) {
           sections.push(section);

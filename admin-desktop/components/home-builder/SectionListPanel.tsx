@@ -18,6 +18,33 @@ import { validateSection } from "./section-validation";
 
 const { Text } = Typography;
 
+const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("ar-IQ", { day: "numeric", month: "short" });
+
+/** قسم مجدول (visibleFrom / visibleUntil): يظهر في التطبيق ضمن المدة فقط. */
+function scheduleTag(payload: unknown) {
+  const p = (payload ?? {}) as { visibleFrom?: string; visibleUntil?: string };
+  if (!p.visibleFrom && !p.visibleUntil) return null;
+  const now = Date.now();
+  const from = p.visibleFrom ? Date.parse(p.visibleFrom) : NaN;
+  const until = p.visibleUntil ? Date.parse(p.visibleUntil) : NaN;
+  const ended = !Number.isNaN(until) && now >= until;
+  const waiting = !Number.isNaN(from) && now < from;
+  const label = ended
+    ? `انتهى ${fmtDay(p.visibleUntil!)}`
+    : waiting
+      ? `يظهر من ${fmtDay(p.visibleFrom!)}`
+      : p.visibleUntil
+        ? `حتى ${fmtDay(p.visibleUntil)}`
+        : `من ${fmtDay(p.visibleFrom!)}`;
+  return (
+    <Tooltip title="قسم مجدول: يظهر في التطبيق والمتجر ضمن هذه المدة فقط">
+      <Tag bordered={false} color={ended ? "default" : waiting ? "blue" : "gold"}>
+        {label}
+      </Tag>
+    </Tooltip>
+  );
+}
+
 export type ListBlock = {
   id: string;
   type: string;
@@ -201,6 +228,7 @@ export function SectionListPanel({
                       <Text type="secondary" ellipsis className="hb-list-summary">
                         {sectionSummary(block)}
                       </Text>
+                      {scheduleTag(block.payload)}
                     </div>
                   </div>
 
