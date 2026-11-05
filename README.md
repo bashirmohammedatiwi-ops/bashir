@@ -12,6 +12,7 @@ Monorepo for the Alhayaa e-commerce platform.
 | `infra/` | Docker Compose, Nginx, deployment scripts |
 | `mobile-app/` | Flutter customer app — API only (no mock data), synced with admin panel |
 | `manager-app/` | Flutter manager app — barcode scan (camera / Bluetooth / typed), product & shade on/off, image crop/frame, saved-barcode groups |
+| `fulfillment-app/` | Flutter order-fulfillment app (STAFF) — live order queue, barcode-scan picking, new-order alerts, local picker stats |
 | `docs/` | Project documentation |
 
 ## Quick start
