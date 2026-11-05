@@ -14,6 +14,13 @@ export function HeroCarousel({ banners }: { banners: Banner[] }) {
   const [paused, setPaused] = useState(false);
   const touch = useRef<number | null>(null);
   const n = banners.length;
+  // البنرات متراكبة في نفس المكان، فكلها «ظاهرة» للمتصفح ويحمّل ويفكّ كل الصور الكبيرة دفعة واحدة.
+  // نركّب صورة البنر الحالي والتالي فقط (وما عُرض سابقاً).
+  const [mounted, setMounted] = useState<number[]>([0, 1]);
+  useEffect(() => {
+    const next = (i + 1) % Math.max(n, 1);
+    setMounted((m) => (m.includes(i) && m.includes(next) ? m : Array.from(new Set([...m, i, next]))));
+  }, [i, n]);
   useEffect(() => {
     if (n < 2 || paused) return;
     const t = setInterval(() => setI((x) => (x + 1) % n), 5500);
@@ -36,7 +43,7 @@ export function HeroCarousel({ banners }: { banners: Banner[] }) {
       <div className="relative aspect-[16/9] md:aspect-[21/8] lg:aspect-auto lg:h-full lg:min-h-[360px]">
         {banners.map((b, k) => {
           const href = resolveLink(b.linkType, b.linkValue, b.link);
-          const img = (
+          const img = !mounted.includes(k) ? null : (
             <img
               src={b.imageUrl || mediaUrl(b.image, "large")}
               srcSet={b.imageUrl ? undefined : mediaSrcSet(b.image)}

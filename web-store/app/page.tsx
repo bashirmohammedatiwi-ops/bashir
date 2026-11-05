@@ -9,15 +9,23 @@ import { ForYourSkin } from "@/components/home/ForYourSkin";
 import { FlashSaleBand } from "@/components/home/FlashSaleBand";
 import { TrendingSearches } from "@/components/home/TrendingSearches";
 import { Icon } from "@/components/ui/Icon";
+import { Deferred } from "@/components/ui/Deferred";
 import { SafeSection } from "@/components/ui/SafeSection";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { slimHomeSections, toCardProduct } from "@/lib/cardProduct";
 import { currentWorld, getHome, getWorlds } from "@/lib/data";
 
 export const revalidate = 60;
 
 export default async function HomePage({ searchParams }: { searchParams: { world?: string } }) {
   const [worlds, world] = await Promise.all([getWorlds(), currentWorld(searchParams.world)]);
-  const feed = await getHome(world?.slug).catch(() => null);
+  const raw = await getHome(world?.slug).catch(() => null);
+  // منتجات خفيفة للبطاقات: الـ API يرسلها كاملة (~9KB للمنتج) وتُنسخ كلها في الصفحة.
+  const feed = raw && {
+    ...raw,
+    sections: slimHomeSections(raw.sections ?? []),
+    flashSale: raw.flashSale && { ...raw.flashSale, products: (raw.flashSale.products ?? []).map(toCardProduct) },
+  };
   if (!feed) {
     return (
       <div className="container py-24 text-center">
@@ -27,7 +35,7 @@ export default async function HomePage({ searchParams }: { searchParams: { world
     );
   }
   return (
-    <div className="animate-fade-up">
+    <div>
       <section className="container pt-4 md:pt-6">
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
           <SafeSection name="hero"><HeroCarousel banners={feed.banners} /></SafeSection>
@@ -77,10 +85,12 @@ export default async function HomePage({ searchParams }: { searchParams: { world
       <SafeSection name="sections"><HomeSections sections={feed.sections} /></SafeSection>
 
       {feed.brands.length > 0 && (
-        <section className="container py-6 md:py-10">
-          <SectionHeader title="براندات تحبينها" href="/brands" />
-          <BrandStrip brands={feed.brands.slice(0, 24)} />
-        </section>
+        <Deferred estimate={220}>
+          <section className="container py-6 md:py-10">
+            <SectionHeader title="براندات تحبينها" href="/brands" />
+            <BrandStrip brands={feed.brands.slice(0, 24)} />
+          </section>
+        </Deferred>
       )}
 
       <SafeSection name="recently-viewed"><RecentlyViewed /></SafeSection>

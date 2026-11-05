@@ -10,6 +10,7 @@ import { ProductRow } from "../product/ProductRow";
 import { SectionHeader } from "../ui/SectionHeader";
 import { Icon } from "../ui/Icon";
 import { Countdown } from "./Countdown";
+import { Deferred } from "../ui/Deferred";
 
 const viewAll = (s: HomeSection) => (s.showViewAll === false ? null : s.viewAllQuery ? productsHref(Object.fromEntries(new URLSearchParams(s.viewAllQuery))) : null);
 const titleOf = (s: HomeSection) => (s.showTitle === false ? null : s.title?.trim() || null);
@@ -19,11 +20,38 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
   const list = [...sections].sort((a, b) => a.position - b.position).filter((s) => s.type !== "HERO_BANNER");
   return (
     <>
-      {list.map((s, i) => (
-        <SectionView key={s.id} s={s} priority={i < 2} />
-      ))}
+      {list.map((s, i) =>
+        i < 2 ? (
+          <SectionView key={s.id} s={s} priority />
+        ) : (
+          <Deferred key={s.id} estimate={estimateHeight(s)}>
+            <SectionView s={s} />
+          </Deferred>
+        ),
+      )}
     </>
   );
+}
+
+/** ارتفاع تقريبي للقسم على الهاتف قبل تركيبه (يُستبدل بالارتفاع الحقيقي بعد أول عرض). */
+function estimateHeight(s: HomeSection): number {
+  switch (s.type) {
+    case "PRODUCT_LIST":
+    case "FLASH_SALE":
+      return 440;
+    case "PROMO_STRIP":
+      return 70;
+    case "SECTION_GROUP":
+      return 60 + (s.children ?? []).reduce((n, c) => n + estimateHeight(c), 0);
+    case "CUSTOM_BANNER":
+    case "BANNER_FULL":
+    case "BANNER_CAROUSEL":
+    case "BANNER_GRID_2":
+    case "BANNER_GRID_3":
+      return 200;
+    default:
+      return 300;
+  }
 }
 
 function Wrap({ children, className, bg }: { children: React.ReactNode; className?: string; bg?: string | null }) {

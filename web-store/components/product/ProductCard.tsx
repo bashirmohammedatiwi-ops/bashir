@@ -7,7 +7,7 @@ import { cardTitle } from "@/lib/brandSearch";
 import { brandLabel, formatNumber, productName } from "@/lib/format";
 import { useWishlist, useWishToggle } from "@/lib/hooks/wishlist";
 import { productHref } from "@/lib/links";
-import { listedShades, mediaUrl, productCover } from "@/lib/media";
+import { listedShades, mediaSrcSet, mediaUrl, productCover, productCoverMedia } from "@/lib/media";
 import { useCart } from "@/lib/stores/cart";
 import { useCompare } from "@/lib/stores/compare";
 import { useHydrated } from "../Providers";
@@ -17,6 +17,13 @@ import { Icon } from "../ui/Icon";
 import { DiscountBadge } from "../ui/Price";
 
 export { cardTitle };
+
+/** صورة التمرير الثانية تفيد من يملك مؤشراً فقط؛ على الهاتف تُحمَّل وتُفكّ دون أن تظهر. */
+let hoverCapable: boolean | null = null;
+function canHover() {
+  if (hoverCapable === null) hoverCapable = typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(hover: hover)").matches;
+  return hoverCapable;
+}
 
 export function ProductCard({ product: p, priority, className }: { product: Product; priority?: boolean; className?: string }) {
   const router = useRouter();
@@ -32,7 +39,7 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
   const shades = listedShades(p);
   const shadeCount = Math.max(shades.length, p._count?.shades ?? 0, p.shadeCount ?? 0);
   const out = p.stock <= 0;
-  const second = p.images?.[1]?.media ? mediaUrl(p.images[1].media, "small") : null;
+  const second = hydrated && canHover() && p.images?.[1]?.media ? mediaUrl(p.images[1].media, "small") : null;
 
   const quickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -56,6 +63,8 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
       <div className="relative aspect-[4/5] overflow-hidden bg-white">
         <img
           src={productCover(p, "small")}
+          srcSet={mediaSrcSet(productCoverMedia(p))}
+          sizes="(min-width: 1024px) 19vw, (min-width: 768px) 24vw, (min-width: 640px) 31vw, 46vw"
           alt={productName(p)}
           loading={priority ? "eager" : "lazy"}
           className={clsx("absolute inset-0 h-full w-full object-contain p-4 transition duration-500", second ? "group-hover:opacity-0" : "group-hover:scale-105", out && "opacity-50 grayscale")}
@@ -65,14 +74,14 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
           <DiscountBadge percent={p.discountPercent} />
           {p.isNew && <span className="rounded-full bg-night px-2 py-0.5 text-[11px] font-bold text-white">جديد</span>}
         </div>
-        {out && <span className="absolute inset-x-3 bottom-3 rounded-full bg-night/80 py-1.5 text-center text-xs font-bold text-white backdrop-blur">نفدت الكمية</span>}
+        {out && <span className="absolute inset-x-3 bottom-3 rounded-full bg-night/85 py-1.5 text-center text-xs font-bold text-white">نفدت الكمية</span>}
         <button
           onClick={(e) => {
             e.preventDefault();
             toggleWish(p);
           }}
           className={clsx(
-            "absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:scale-110",
+            "absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/95 shadow-sm transition hover:scale-110",
             liked ? "text-sale" : "text-ink-soft",
           )}
           aria-label="المفضلة"
@@ -85,7 +94,7 @@ export function ProductCard({ product: p, priority, className }: { product: Prod
             toggleCompare(p);
           }}
           className={clsx(
-            "absolute left-3 top-14 hidden h-9 w-9 place-items-center rounded-full shadow-sm backdrop-blur transition hover:scale-110 md:grid",
+            "absolute left-3 top-14 hidden h-9 w-9 place-items-center rounded-full shadow-sm transition hover:scale-110 md:grid",
             comparing ? "bg-accent-dark text-white" : "bg-white/90 text-ink-soft opacity-0 group-hover:opacity-100",
           )}
           aria-label={comparing ? "إزالة من المقارنة" : "أضيفي للمقارنة"}
