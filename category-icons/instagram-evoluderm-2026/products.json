@@ -1,0 +1,194 @@
+[
+ {
+  "id": "48e2fd3a-1afa-41f4-9ffe-875c086ac9ea",
+  "name": "إيفولوديرم - سيروم وجه بفيتامين C للإشراق 30 مل",
+  "nameEn": "Evoluderm - Vitamin C Serum 30ml",
+  "price": 15000,
+  "stock": 28,
+  "big": "https://deemaalhayat.com/media/product/2026/11/f252606a8529bf6c_large.webp"
+ },
+ {
+  "id": "68acbbc6-73a9-4a7d-b2b0-7f0788dfd284",
+  "name": "إيفولوديرم - كريم وجه للإشراق بفيتامين C 50 مل",
+  "nameEn": "Evoluderm - Vitamin C Radiance Cream 50ml",
+  "price": 15000,
+  "stock": 180,
+  "big": "https://deemaalhayat.com/media/product/2026/11/d8f72a9bf1810182_large.webp"
+ },
+ {
+  "id": "cf5ef994-4a56-440e-9f30-3e8abcdd42b5",
+  "name": "إيفولوديرم - جل استحمام للإشراق بفيتامين C 1 لتر",
+  "nameEn": "Evoluderm - Gel Corps Nettoyant Éclat Vitamine C 1L",
+  "price": 9000,
+  "stock": 101,
+  "big": "https://deemaalhayat.com/media/product/2026/09/829aeb69041c41d4_large.webp"
+ },
+ {
+  "id": "9f1b803b-819a-439b-b4d7-20efd604a7b1",
+  "name": "إيفولوديرم - لوشن جسم مرطّب للإشراق بفيتامين C 500 مل",
+  "nameEn": "Evoluderm - Vitamin C Radiance Moisturizing Body Lotion 500ml",
+  "price": 12000,
+  "stock": 33,
+  "big": "https://deemaalhayat.com/media/product/2026/09/2d873d5e8e31a37b_large.webp"
+ },
+ {
+  "id": "fc18452f-ed24-4f02-a715-fe7fb2a382cd",
+  "name": "إيفولوديرم - رغوة تنظيف ميسيلار بفيتامين C 150 مل",
+  "nameEn": "Evoluderm - Vitamin C Micellar Foam 150ml",
+  "price": 8000,
+  "stock": 181,
+  "big": "https://deemaalhayat.com/media/product/2026/11/f61287a801f926a4_large.webp"
+ },
+ {
+  "id": "ed6b6718-0487-440b-b8fb-2514ff038342",
+  "name": "إيفولوديرم - شامبو أرقان ديفان المغذّي 400 مل",
+  "nameEn": "Evoluderm - Argan Divin Nourishing Shampoo 400ml",
+  "price": 6500,
+  "stock": 87,
+  "big": "https://deemaalhayat.com/media/product/2026/09/d6286f715d6e1c58_large.webp"
+ },
+ {
+  "id": "8b7258cb-8309-48fd-8efe-6ef322e79c8e",
+  "name": "إيفولوديرم - بلسم شعر مغذٍّ وفك تشابك أرقان ديفان 200 مل",
+  "nameEn": "Evoluderm - Argan Divin Detangling & Nourishing Conditioner 200ml",
+  "price": 5000,
+  "stock": 296,
+  "big": "https://deemaalhayat.com/media/product/2026/09/0a9d64763e90e6ba_large.webp"
+ },
+ {
+  "id": "16265b66-8d5b-4804-bb96-621bac97b82f",
+  "name": "إيفولوديرم - زيت ما قبل الشامبو المغذّي أرقان ديفان 150 مل",
+  "nameEn": "Evoluderm - Argan Divin Nourishing Pre-Shampoo Oil 150ml",
+  "price": 10000,
+  "stock": 71,
+  "big": "https://deemaalhayat.com/media/product/2026/09/af6601ba6257dce2_large.webp"
+ },
+ {
+  "id": "890a1a33-1c54-4daa-b9e4-2a92c3149ed7",
+  "name": "إيفولوديرم - قناع شعر مغذٍّ أرقان ديفان 1 لتر",
+  "nameEn": "Evoluderm - Argan Divin Nourishing Hair Mask 1L",
+  "price": 15000,
+  "stock": 862,
+  "big": "https://deemaalhayat.com/media/product/2026/09/7edcc2a4c1c0733c_large.webp"
+ },
+ {
+  "id": "12b30dba-d8ed-40e9-94f5-da94034b1f99",
+  "name": "إيفولوديرم - قناع شعر مغذٍّ أرقان ديفان 500 مل",
+  "nameEn": "Evoluderm - Argan Divin Nourishing Hair Mask 500ml",
+  "price": 10000,
+  "stock": 146,
+  "big": "https://deemaalhayat.com/media/product/2026/11/2819e9eae3040418_large.webp"
+ },
+ {
+  "id": "0429b0aa-1844-48fb-ad34-d9d2c647ddab",
+  "name": "إيفولوديرم - جل استحمام كريمي أرقان ديفان 500 مل",
+  "nameEn": "Evoluderm - Argan Divin Creamy Shower Gel 500ml",
+  "price": 6000,
+  "stock": 203,
+  "big": "https://deemaalhayat.com/media/product/2026/09/2dd05ff27c9c43aa_large.webp"
+ },
+ {
+  "id": "4232d1aa-ac16-4132-a628-e1651462cbb5",
+  "name": "إيفولوديرم - لوشن جسم فائق التغذية أرقان ديفان 500 مل",
+  "nameEn": "Evoluderm - Argan Divin Ultra-Nourishing Body Lotion 500ml",
+  "price": 12000,
+  "stock": 52,
+  "big": "https://deemaalhayat.com/media/product/2026/09/4d7068bdd6571e20_large.webp"
+ },
+ {
+  "id": "2a5b76d5-6714-47e2-8e5b-c878d14beb57",
+  "name": "إيفولوديرم - قناع شعر مرطّب مونوي آ لا فولي 500 مل",
+  "nameEn": "Evoluderm - Monoï à la Folie Moisturizing Hair Mask 500ml",
+  "price": 10000,
+  "stock": 221,
+  "big": "https://deemaalhayat.com/media/product/2026/11/8edf48e2a3edbb6d_large.webp"
+ },
+ {
+  "id": "65cd972b-356c-41ea-a422-e723fdd14ddf",
+  "name": "إيفولوديرم - بخاخ معطر للشعر والجسم بزهر التياري مونوي 200 مل",
+  "nameEn": "Evoluderm - Brume Parfumée Monoï 200ml",
+  "price": 10000,
+  "stock": 100,
+  "big": "https://deemaalhayat.com/media/product/2026/09/a4166b42ff8657b1_large.webp"
+ },
+ {
+  "id": "20f9f6e2-62ea-4f42-ad67-fc815a8f4eb1",
+  "name": "إيفولوديرم - جل استحمام مونوي آ لا فولي 500 مل",
+  "nameEn": "Evoluderm - Monoï à la Folie Stimulating Shower 500ml",
+  "price": 6000,
+  "stock": 223,
+  "big": "https://deemaalhayat.com/media/product/2026/09/06ec98379245a633_large.webp"
+ },
+ {
+  "id": "94770bef-e990-4322-9006-ffc62e1226fe",
+  "name": "إيفولوديرم - لوشن جسم مرطّب مونوي آ لا فولي 500 مل",
+  "nameEn": "Evoluderm - Monoï à la Folie Moisturizing Body Lotion 500ml",
+  "price": 12000,
+  "stock": 58,
+  "big": "https://deemaalhayat.com/media/product/2026/09/751c6a6677136bdd_large.webp"
+ },
+ {
+  "id": "d866ee6f-e3af-4abc-8c7b-5773bf17aa4e",
+  "name": "إيفولوديرم - قناع شعر مرطّب مونوي آ لا فولي 1 لتر",
+  "nameEn": "Evoluderm - Monoï à la Folie Moisturizing Hair Mask 1L",
+  "price": 15000,
+  "stock": 905,
+  "big": "https://deemaalhayat.com/media/product/2026/09/5a9026035397082e_large.webp"
+ },
+ {
+  "id": "ab67e4d4-c888-40ed-909c-d8f69a96e0c3",
+  "name": "إيفولوديرم - قناع شعر ملمع بالزيت الثمين 1 لتر",
+  "nameEn": "Evoluderm - Huile Précieuse Enhancing Hair Mask 1L",
+  "price": 15000,
+  "stock": 908,
+  "big": "https://deemaalhayat.com/media/product/2026/09/825f5da218e6d590_large.webp"
+ },
+ {
+  "id": "b8ac8cf7-8676-4371-b5ce-ef5050d58918",
+  "name": "إيفولوديرم - كريم نهاري مضاد للتجاعيد شبيه بالريتينول 50 مل",
+  "nameEn": "Evoluderm - Crème Anti-Âge Jour Rétinol-Like 50ml",
+  "price": 15000,
+  "stock": 220,
+  "big": "https://deemaalhayat.com/media/product/2026/09/2502114ab303bc0b_large.webp"
+ },
+ {
+  "id": "6e72539a-9273-4ffa-8faa-fc8587392087",
+  "name": "إيفولوديرم - كريم ليلي مضاد للتجاعيد شبيه بالريتينول 50 مل",
+  "nameEn": "Evoluderm - Crème Anti-Âge Nuit Rétinol-Like 50ml",
+  "price": 15000,
+  "stock": 199,
+  "big": "https://deemaalhayat.com/media/product/2026/09/a8eb8453b036ed1c_large.webp"
+ },
+ {
+  "id": "df4077dc-b207-413d-8c79-8dfa29591912",
+  "name": "إيفولوديرم - سيروم وجه بحمض الهيالورونيك 30 مل",
+  "nameEn": "Evoluderm - Sérum Acide Hyaluronique 30ml",
+  "price": 15000,
+  "stock": 29,
+  "big": "https://deemaalhayat.com/media/product/2026/11/8f9571001fd3acbd_large.webp"
+ },
+ {
+  "id": "23de2a5a-1638-4d44-b4d0-a48d36e5a6d5",
+  "name": "إيفولوديرم - سيروم مركّز للإشراق بالجزر 30 مل",
+  "nameEn": "Evoluderm - Healthy Glow Carrot Concentrated Serum 30ml",
+  "price": 15000,
+  "stock": 101,
+  "big": "https://deemaalhayat.com/media/product/2026/11/0b54343e4e41b5b4_large.webp"
+ },
+ {
+  "id": "c62cc5d8-05ec-4ed9-8eb8-838840173efe",
+  "name": "إيفولوديرم - سيروم شعر بفيتامين C 100 مل",
+  "nameEn": "Evoluderm - Sérum Capillaire Vitamine C 100ml",
+  "price": 10000,
+  "stock": 195,
+  "big": "https://deemaalhayat.com/media/product/2026/11/6bbed5e97171a159_large.webp"
+ },
+ {
+  "id": "30ec2fb2-7bf1-4da4-a756-df8dbf60fe8f",
+  "name": "إيفولوديرم - علاج أطوال وأطراف الشعر المرطّب مونوي آ لا فولي 100 مل",
+  "nameEn": "Evoluderm - Monoï à la Folie Moisturizing Lengths & Ends Treatment 100ml",
+  "price": 6000,
+  "stock": 219,
+  "big": "https://deemaalhayat.com/media/product/2026/09/0d4d76a9c9b60a81_large.webp"
+ }
+]
