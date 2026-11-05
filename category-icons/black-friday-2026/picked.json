@@ -1,0 +1,564 @@
+{
+ "phyto_25": [
+  {
+   "id": "733a8342-f2da-4f31-bc71-bad59139fb22",
+   "slug": "phyto-nutrition-nourishing-shampoo-250-ml",
+   "name": "فيتو شامبو نوتريشن المغذي - 250 مل",
+   "active": false,
+   "stock": 10
+  },
+  {
+   "id": "fbab6987-eeaf-46cb-9f64-6911fdaf5aa1",
+   "slug": "phyto-intense-curls-anti-frizz-curls-gel-250ml",
+   "name": "جل فيتو إنتنس كيرلز لتحديد التموجات ومقاومة التجعد 250 مل",
+   "active": false,
+   "stock": 3
+  },
+  {
+   "id": "0470b63d-f338-490d-ae01-15a3d7b96665",
+   "slug": "phyto-laque-botanical-hairspray-flexible-hold-150ml",
+   "name": "بخاخ تثبيت الشعر فيتو لاك النباتي بتثبيت مرن 150 مل",
+   "active": false,
+   "stock": 2
+  },
+  {
+   "id": "efb6745e-984f-46aa-9dee-be30366cef28",
+   "slug": "phyto-softness-express-detangling-milk-150ml",
+   "name": "حليب فك تشابك الشعر فيتو سوفتنس إكسبريس 150 مل",
+   "active": false,
+   "stock": 2
+  },
+  {
+   "id": "ae796018-c7d3-4a44-86be-c6a73a368549",
+   "slug": "phyto-polleine-scalp-solution-purifying-concentrate-30-ml",
+   "name": "فيتو بوليين محلول مركز منقٍ لفروة الرأس - 30 مل",
+   "active": false,
+   "stock": 1
+  }
+ ],
+ "phyto_19": [
+  {
+   "id": "452e95c9-d5a7-45bd-a73c-6aae0ce6f1e3",
+   "slug": "phyto-phytocolor-677-light-brown-cappuccino-ammonia-free-permanent-hair-colour",
+   "name": "صبغة شعر فيتو فيتوكولور 6.77 بني فاتح كابتشينو دائمة خالية من الأمونيا",
+   "active": false,
+   "stock": 6
+  },
+  {
+   "id": "0687d77e-14aa-4c67-85e8-0312be5747fd",
+   "slug": "phyto-phytocolor-743-copper-golden-blonde-ammonia-free-permanent-hair-colour",
+   "name": "صبغة شعر فيتو فيتوكولور 7.43 أشقر نحاسي ذهبي دائمة خالية من الأمونيا",
+   "active": false,
+   "stock": 5
+  },
+  {
+   "id": "c4fb92b4-ec21-426c-981c-fd53ecb0a0bd",
+   "slug": "phyto-phytocolor-9-very-light-blonde-ammonia-free-permanent-hair-colour",
+   "name": "صبغة شعر فيتو فيتوكولور 9 أشقر فاتح جداً دائمة خالية من الأمونيا",
+   "active": false,
+   "stock": 4
+  },
+  {
+   "id": "a91ed66a-2db8-444b-81d7-4bec225a6db8",
+   "slug": "phyto-phytocolor-4-brown-ammonia-free-permanent-hair-colour",
+   "name": "صبغة الشعر فيتو فيتوكولور 4 بني دائمة خالية من الأمونيا",
+   "active": false,
+   "stock": 6
+  }
+ ],
+ "phyto_50": [
+  {
+   "id": "3923d90f-987c-4b56-b068-e484f0f1a5ac",
+   "slug": "phyto-phytocyane-men-anti-hair-loss-treatment-12-x-35-ml",
+   "name": "فيتو فيتوسيان أمبولات لعلاج تساقط الشعر للرجال - 12 × 3.5 مل",
+   "active": false,
+   "stock": 11
+  },
+  {
+   "id": "509ef736-c141-4e2d-84ed-7808cecbc1c3",
+   "slug": "phyto-phytocolor-shine-activating-care-150ml",
+   "name": "فيتو فيتوكولور عناية منشطة للمعان 150 مل",
+   "active": false,
+   "stock": 2
+  }
+ ],
+ "lierac_25": [
+  {
+   "id": "7470a897-cfd4-40e0-beed-6571cb2e2c73",
+   "slug": "lierac-premium-la-creme-voluptueuse-50ml",
+   "name": "لييراك بريميوم - كريم La Crème Voluptueuse الغني المضاد للشيخوخة 50 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "57b64036-6ef6-4301-996b-6301520e925e",
+   "slug": "lierac-premium-the-eye-cream-20ml",
+   "name": "لييراك بريميوم - كريم العيون Premium Yeux 20 مل",
+   "active": true,
+   "stock": 2
+  },
+  {
+   "id": "3e99da45-262b-4f24-84cb-6070b335492f",
+   "slug": "lierac-premium-the-absolute-serum-30ml",
+   "name": "لييراك بريميوم - سيروم The Absolute Serum 30 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "207a1a11-5b9a-4cb7-91ec-68f13dd7121d",
+   "slug": "lierac-premium-the-absolute-mask-50ml",
+   "name": "ليراك بريميوم ذا أبسولوت ماسك 50 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "e86da58f-2e54-486e-9b02-702215bb6a76",
+   "slug": "lierac-hydragenist-rehydrating-radiance-cream-gel-50ml",
+   "name": "لييراك هايدراجينيست - كريم-جل الإشراق المرطّب 50 مل",
+   "active": true,
+   "stock": 2
+  }
+ ],
+ "lierac_50": [
+  {
+   "id": "6a0b0d83-798d-476f-ab70-12fca60ca900",
+   "slug": "lierac-sunissime-tinted-velvety-sun-fluid-spf50-40ml",
+   "name": "لييراك سونيسيم - سائل واقي شمس ملوّن مخملي SPF 50+ 40 مل",
+   "active": true,
+   "stock": 5
+  },
+  {
+   "id": "89d3b414-9f76-46ef-8043-41d5cd4f7148",
+   "slug": "lierac-sunissime-protective-sun-stick-spf50-10g",
+   "name": "لييراك سونيسيم - ستيك واقي شمس SPF 50+ 10 غ",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "0fbe7a74-865f-4071-9e85-804cf355dbc3",
+   "slug": "lierac-sunissime-velvety-sun-fluid-spf50-40ml",
+   "name": "لييراك سونيسيم - سائل واقي شمس مخملي SPF 50+ للوجه 40 مل",
+   "active": true,
+   "stock": 2
+  },
+  {
+   "id": "ccd6a32b-5da7-47df-bf52-772bc898e2e4",
+   "slug": "lierac-lift-integral-neck-decollete-cream-50ml",
+   "name": "لييراك ليفت إنتيغرال - كريم الرقبة ومنطقة الديكولتيه 50 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "cbb9e99a-91b5-41e4-b6df-30588f99ee7e",
+   "slug": "lierac-the-cleansing-foam-150ml",
+   "name": "لييراك - رغوة The Cleansing Foam المنظفة 150 مل",
+   "active": true,
+   "stock": 3
+  }
+ ],
+ "bioderma_50": [
+  {
+   "id": "84cc6e4d-f783-4dd6-a91a-66cd88398812",
+   "slug": "bioderma-photoderm-xdefense-ultra-fluid-spf-50-invisible-40-ml",
+   "name": "بيوديرما فوتوديرم إكس ديفنس ألترا فلويد SPF 50+ شفاف 40 مل",
+   "active": true,
+   "stock": 18
+  },
+  {
+   "id": "32a03c36-32fa-44ca-a043-ce2615d98fce",
+   "slug": "bioderma-photoderm-xdefense-ultra-fluid-spf-50-tinted-very-light-01-40-ml",
+   "name": "بيوديرما فوتوديرم إكس ديفنس ألترا فلويد SPF 50+ ملون فاتح جداً (01) 40 مل",
+   "active": true,
+   "stock": 17
+  },
+  {
+   "id": "f933f033-b4fb-4810-9ef5-81b4ca6f3945",
+   "slug": "bioderma-photoderm-xdefense-ultra-fluid-spf-50-tinted-light-02-40-ml",
+   "name": "بيوديرما فوتوديرم إكس ديفنس ألترا فلويد SPF 50+ ملون فاتح (02) 40 مل",
+   "active": true,
+   "stock": 18
+  },
+  {
+   "id": "b7b1c7c4-8383-4533-8755-60ec99511e7b",
+   "slug": "bioderma-sebium-hydra-cleanser-moisturising-cleanser-for-acne-prone-skin-200-ml",
+   "name": "بيوديرما سيبيوم هيدرا غسول مرطب للبشرة المعرضة لحب الشباب 200 مل",
+   "active": true,
+   "stock": 7
+  }
+ ],
+ "bioderma_15": [
+  {
+   "id": "f1a8e3d9-b05a-458d-8132-e43e8f9d3f42",
+   "slug": "bioderma-pigmentbio-sensitive-areas-brightening-cream-75-ml",
+   "name": "بيوديرما بيغمنتبيو كريم تفتيح المناطق الحساسة 75 مل",
+   "active": true,
+   "stock": 339
+  },
+  {
+   "id": "99140f98-dc84-4c43-8882-0e37f65dfed5",
+   "slug": "bioderma-atoderm-creme-ultra-nourishing-cream-face-body-200-ml",
+   "name": "بيوديرما أتوديرم كريم ألترا مغذٍ للوجه والجسم 200 مل",
+   "active": true,
+   "stock": 49
+  },
+  {
+   "id": "bb4a7a8d-fa9f-4e46-9d29-9732f35e5871",
+   "slug": "bioderma-pigmentbio-foaming-cream-brightening-exfoliating-cleanser-200-ml",
+   "name": "بيوديرما بيغمنتبيو كريم رغوي منظف مفتح ومقشر 200 مل",
+   "active": true,
+   "stock": 98
+  },
+  {
+   "id": "6dd8deca-054b-4444-88df-2202be5281f5",
+   "slug": "bioderma-atoderm-mains-ongles-ultra-nourishing-hand-nail-cream-50-ml",
+   "name": "بيوديرما أتوديرم كريم اليدين والأظافر المغذي للغاية 50 مل",
+   "active": true,
+   "stock": 17
+  }
+ ],
+ "bioderma_10": [
+  {
+   "id": "b09c231d-d324-4edf-9f81-45d7ca8229a3",
+   "slug": "bioderma-sensibio-gel-moussant-cleansing-gel-for-sensitive-skin-200-ml",
+   "name": "بيوديرما سينسيبيو جل رغوي منظف للبشرة الحساسة 200 مل",
+   "active": true,
+   "stock": 30
+  },
+  {
+   "id": "f2b235af-57a2-4fe5-bac9-4fc9a086b8d2",
+   "slug": "bioderma-pigmentbio-h2o-brightening-micellar-water-250-ml",
+   "name": "بيوديرما بيغمنتبيو H2O ماء ميسيلار مفتح 250 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "74680d55-8fd4-436b-85b9-019e1bdb8853",
+   "slug": "bioderma-sebium-purifying-cleansing-foaming-gel-for-oily-combination-skin-200-ml",
+   "name": "بيوديرما سيبيوم جل رغوي منظف ومنقٍ للبشرة الدهنية والمختلطة 200 مل",
+   "active": false,
+   "stock": 2
+  },
+  {
+   "id": "2aec5d4c-0016-4071-9b11-5a81a41ffdb3",
+   "slug": "bioderma-pigmentbio-foaming-cream-brightening-exfoliating-cleanser-500-ml",
+   "name": "بيوديرما بيغمنتبيو كريم رغوي منظف مفتح ومقشر 500 مل",
+   "active": true,
+   "stock": 30
+  },
+  {
+   "id": "4fe0d260-bbcc-47f8-9ece-e509723b141d",
+   "slug": "bioderma-sensibio-cleansing-foaming-gel-for-sensitive-skin-500-ml",
+   "name": "بيوديرما سينسيبيو جل رغوي منظف للبشرة الحساسة 500 مل",
+   "active": false,
+   "stock": 1
+  }
+ ],
+ "brand-1784986563282_30": [
+  {
+   "id": "c15ca14f-d0a3-4b1d-baa2-ef6281c9a28a",
+   "slug": "deborah-color-moods-palette-daylight-02",
+   "name": "ديبورا ميلانو - باليت ظلال عيون Color Moods Palette Daylight 02",
+   "active": true,
+   "stock": 2
+  },
+  {
+   "id": "f7bdea55-4add-470a-8728-5e40e40f6db1",
+   "slug": "deborah-24ore-perfect-all-over-concealer",
+   "name": "ديبورا ميلانو - كونسيلر سائل 24Ore Perfect All-Over",
+   "active": true,
+   "stock": 27
+  },
+  {
+   "id": "c02a6b95-19a8-4fbf-9f85-862170e0c6de",
+   "slug": "deborah-24ore-instant-maxi-volume-pomegranate-black",
+   "name": "ديبورا ميلانو - ماسكارا 24Ore Instant Maxi Volume Pomegranate Oil & Keratin Black",
+   "active": true,
+   "stock": 4
+  },
+  {
+   "id": "fb1a355c-a376-4d7b-955d-8f88c7f4f4ec",
+   "slug": "deborah-la-cipria",
+   "name": "ديبورا ميلانو - بودرة La Cipria",
+   "active": true,
+   "stock": 5
+  },
+  {
+   "id": "28ed3f63-70e6-4b69-8866-3321ef836c97",
+   "slug": "deborah-super-tint-cheek-lip-stain-75-ml",
+   "name": "ديبورا تنت سوبر للخدود والشفاه - 7.5 مل",
+   "active": true,
+   "stock": 9
+  },
+  {
+   "id": "95da7489-8482-48e4-9a9c-c2c011b91dce",
+   "slug": "deborah-color-moods-eyeshadow-palette-01-sunrise-8g",
+   "name": "ديبورا كولور موودز باليت ظلال عيون 01 سنرايز 8 غ",
+   "active": true,
+   "stock": 3
+  }
+ ],
+ "brand-1784986563282_50": [
+  {
+   "id": "cda09f3f-4ebe-4c04-ac01-b49c663d3aa4",
+   "slug": "deborah-milano-red-mat-lipstick",
+   "name": "ديبورا ميلانو - أحمر شفاه مطفي Milano Red Mat",
+   "active": true,
+   "stock": 38
+  },
+  {
+   "id": "8dd164e1-89b4-44db-8fac-9ed0212fbcf0",
+   "slug": "deborah-super-vinyl-no-transfer-shake-lipstick",
+   "name": "ديبورا ميلانو - أحمر شفاه Super Vinyl No Transfer Shake",
+   "active": false,
+   "stock": 10
+  },
+  {
+   "id": "eecfe511-3225-44d5-8066-246e8834096d",
+   "slug": "deborah-super-plump-volumizing-gloss",
+   "name": "ديبورا ميلانو - جلوس شفاه Super Plump Volumizing Gloss",
+   "active": false,
+   "stock": 3
+  },
+  {
+   "id": "ab60edd7-17aa-4868-9588-f5275d0510d9",
+   "slug": "deborah-multi-chrome-liquid-eyeshadow",
+   "name": "ديبورا ميلانو - ظل عيون سائل Multi-Chrome Liquid",
+   "active": false,
+   "stock": 6
+  },
+  {
+   "id": "73fd83b3-a7ab-494c-b9b3-44dbcc72cfda",
+   "slug": "deborah-extraordinary-5-in-1-mascara-blue-navy",
+   "name": "ديبورا ميلانو - ماسكارا Extraordinary 5-in-1 Blue Navy",
+   "active": false,
+   "stock": 7
+  }
+ ],
+ "revox_40": [
+  {
+   "id": "4c6d2474-8fb0-40be-a93e-8c419fd0a4c0",
+   "slug": "revox-just-vitamin-c-20-face-serum-30-ml",
+   "name": "ريفوكس سيروم فيتامين C 20% للوجه 30 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "ddac5342-6834-4e0f-969c-295a95f303a6",
+   "slug": "revox-b77-just-resveratrol-ferulic-acid-antioxidant-serum-30-ml",
+   "name": "ريفوكس جست سيروم ريسفيراترول + حمض الفيروليك المضاد للأكسدة 30 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "acb6fab8-ca9a-4d5a-8582-39cf07efc181",
+   "slug": "revox-zitcare-aha-bha-pha-face-wash-250ml",
+   "name": "غسول الوجه ريفوكس زيت كير بأحماض AHA وBHA وPHA بحجم 250 مل",
+   "active": false,
+   "stock": 2
+  },
+  {
+   "id": "25ced8c8-c195-400a-85df-9e833488f994",
+   "slug": "revox-b77-zitcare-aha-bha-pha-bi-phase-multi-serum-30ml",
+   "name": "ريفوكس B77 زيتكير سيروم ثنائي الطبقة AHA BHA PHA متعدد الاستخدامات 30 مل",
+   "active": false,
+   "stock": 1
+  },
+  {
+   "id": "494f6022-3266-4ce6-a06d-406d328b46b8",
+   "slug": "revox-b77-zitcare-ahabhapha-face-toner-250-ml",
+   "name": "ريفوكس تونر زيت كير AHA.BHA.PHA للوجه 250 مل",
+   "active": false,
+   "stock": 2
+  }
+ ],
+ "dermolab_40": [
+  {
+   "id": "2f460f00-9b37-4eb3-af08-beff00360153",
+   "slug": "dermolab-soothing-hydrating-cream-spf15-50ml",
+   "name": "ديرمولاب - كريم مرطب مهدئ SPF 15 50 مل",
+   "active": true,
+   "stock": 3
+  },
+  {
+   "id": "b13154cf-bc52-4fe2-8e56-58487b39f86e",
+   "slug": "dermolab-energizing-anti-wrinkle-illuminating-booster-serum-30ml",
+   "name": "ديرمولاب - سيروم Booster المنشّط المضاد للتجاعيد والمشرق 30 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "92db4d39-406c-4fee-b09e-bf507c97f9f1",
+   "slug": "dermolab-anti-aging-eye-contour-gel-bags-dark-circles-15ml",
+   "name": "ديرمولاب جل محيط العين المضاد للشيخوخة للانتفاخ والهالات 15 مل",
+   "active": true,
+   "stock": 2
+  },
+  {
+   "id": "7cb8a0f2-39b2-4fd9-b4df-b04abab331a8",
+   "slug": "dermolab-anti-blemish-body-cream-with-10-niacinamide-400ml",
+   "name": "ديرمولاب كريم الجسم المضاد للبقع بالنياسيناميد 10% 400 مل",
+   "active": true,
+   "stock": 1
+  },
+  {
+   "id": "5d545c90-80f0-4497-acb2-901ac986e903",
+   "slug": "dermolab-whitening-anti-dark-spot-night-cream-50ml",
+   "name": "ديرمولاب - كريم ليلي للتفتيح ومكافحة البقع الداكنة 50 مل",
+   "active": true,
+   "stock": 2
+  },
+  {
+   "id": "73f0ff5d-0962-4d95-b3b3-cd63f2b90fe3",
+   "slug": "dermolab-botox-like-effect-neck-treatment-filler-effect-65ml",
+   "name": "ديرمولاب علاج الرقبة بتأثير يشبه البوتوكس وتأثير الفيلر - 65 مل",
+   "active": true,
+   "stock": 1
+  }
+ ],
+ "beesline_30": [
+  {
+   "id": "c7c44dfb-4837-420a-a81c-ecc62bf11623",
+   "slug": "beesline-super-dry-jouri-rose-whitening-roll-on-deodorant-50ml-088166",
+   "name": "بيزلين Super Dry Jouri Rose – رول أون تبييض 50 مل",
+   "active": true,
+   "stock": 185
+  },
+  {
+   "id": "74fdc80b-9578-447b-add7-d4c28a7128b0",
+   "slug": "beesline-pacific-islands-whitening-roll-on-deodorant-50ml-003176",
+   "name": "بيزلين Pacific Islands – رول أون تبييض 50 مل",
+   "active": true,
+   "stock": 71
+  },
+  {
+   "id": "c2bb1436-fc76-402f-a3a4-5353bd35f93a",
+   "slug": "beesline-sport-pulse-whitening-roll-on-deodorant-50ml-003893",
+   "name": "بيزلين Sport Pulse – رول أون تبييض 50 مل",
+   "active": true,
+   "stock": 67
+  },
+  {
+   "id": "63724c2b-2dee-4014-8d14-1781ce9357ed",
+   "slug": "beesline-elder-rose-whitening-roll-on-deodorant-50ml-003152",
+   "name": "بيزلين Elder Rose – رول أون تبييض 50 مل",
+   "active": true,
+   "stock": 46
+  },
+  {
+   "id": "6804d43f-f6d9-4d4e-a608-9a21501bcd44",
+   "slug": "beesline-beauty-pearl-whitening-roll-on-deodorant-50ml-003909",
+   "name": "بيزلين Beauty Pearl – رول أون تبييض 50 مل",
+   "active": true,
+   "stock": 45
+  },
+  {
+   "id": "0d469a51-30e9-4884-a2fa-e5e951053cb5",
+   "slug": "beesline-vitamin-c-instant-white-whitening-roll-on-deodorant-50ml-088142",
+   "name": "بيزلين Vitamin C Instant White – رول أون تبييض 50 مل",
+   "active": true,
+   "stock": 33
+  },
+  {
+   "id": "ab4d15da-f0bf-46c3-9420-7c8f94e927a8",
+   "slug": "beesline-cool-breeze-whitening-roll-on-deodorant-50ml-003183",
+   "name": "بيزلين Cool Breeze – رول أون تبييض 50 مل",
+   "active": true,
+   "stock": 30
+  },
+  {
+   "id": "aef5a760-feef-4da0-99a7-d721e030ce75",
+   "slug": "beesline-hygienic-wash",
+   "name": "بيزلاين - غسول صحي للمناطق الحساسة",
+   "active": true,
+   "stock": 5
+  }
+ ],
+ "beesline_50": [
+  {
+   "id": "2190396f-0128-4d82-a7be-541354100837",
+   "slug": "beesline-anti-wrinkle-radiance-serum-30ml",
+   "name": "بيزلاين - سيروم مضاد التجاعيد والإشراق 30 مل",
+   "active": true,
+   "stock": 10
+  },
+  {
+   "id": "f4ea3070-4463-4040-972a-c9411e7db7a7",
+   "slug": "beesline-unifying-brightening-serum-30ml",
+   "name": "بيزلاين - سيروم التفتيح الموحّد فيتامين C 15% 30 مل",
+   "active": true,
+   "stock": 4
+  },
+  {
+   "id": "70d8c0cb-118c-4f6d-aef5-f9ff7119b8df",
+   "slug": "beesline-super-hydrating-serum-30ml",
+   "name": "بيزلاين - سيروم الترطيب الفائق 30 مل",
+   "active": true,
+   "stock": 2
+  }
+ ],
+ "rybella_40": [
+  {
+   "id": "6c37d772-2d09-435d-8a8a-9d213c4c9fdc",
+   "slug": "rybella-pearl-lipstick-4-g",
+   "name": "ريبيلا أحمر شفاه لؤلؤي بيرل - 4 غ",
+   "active": true,
+   "stock": 685
+  },
+  {
+   "id": "1284b090-5638-4a65-a1d2-4e916df1e794",
+   "slug": "rybella-lovely-rose-touch-eyeshadow-palette-9-shades",
+   "name": "ريبيلا باليت ظلال عيون لافلي روز تاتش 9 ألوان",
+   "active": true,
+   "stock": 400
+  },
+  {
+   "id": "d6d5a366-1e3b-458d-8012-94c1e832ee58",
+   "slug": "rybella-extra-matt-lipstick-4-g",
+   "name": "ريبيلا أحمر شفاه إكسترا مات - 4 غ",
+   "active": true,
+   "stock": 1488
+  },
+  {
+   "id": "a391ca01-082f-46fd-b654-3276905635b1",
+   "slug": "rybella-compact-blush-highlighter-08-85-g",
+   "name": "ريبيلا أحمر خدود مضغوط - 7 غ",
+   "active": true,
+   "stock": 3005
+  },
+  {
+   "id": "3ba5ea22-046d-493c-9cc4-b497b8c43191",
+   "slug": "rybella-plump-fiction-volumizing-lip-oil-4-6-ml",
+   "name": "ريبيلا زيت شفاه منفخ بلامب فيكشن - 4.6 مل",
+   "active": true,
+   "stock": 1314
+  },
+  {
+   "id": "0f5dc7b0-59b4-473c-8a29-71bdf38d7130",
+   "slug": "rybella-mystique-smokey-touch-eyeshadow-palette-9-shades",
+   "name": "ريبيلا باليت ظلال عيون ميستيك سموكي تاتش 9 ألوان",
+   "active": true,
+   "stock": 118
+  },
+  {
+   "id": "4c09cea9-60f8-47d9-a473-1997b1b1e067",
+   "slug": "rybella-compact-powder-7-g",
+   "name": "ريبيلا بودرة مضغوطة مات - 7 غ",
+   "active": true,
+   "stock": 1646
+  },
+  {
+   "id": "f1441ae0-5c65-41fb-b3e2-5031625396c8",
+   "slug": "rybella-nude-lipstick-4-g",
+   "name": "ريبيلا أحمر شفاه نود - 4 غ",
+   "active": true,
+   "stock": 732
+  },
+  {
+   "id": "35d1f803-ff98-4f57-bbb1-b2ffb1a0f2b5",
+   "slug": "rybella-matt-lipstick-4-g",
+   "name": "ريبيلا أحمر شفاه مات - 4 غ",
+   "active": true,
+   "stock": 469
+  }
+ ]
+}
