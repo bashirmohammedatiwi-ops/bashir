@@ -10,4 +10,4 @@
 لقطة الرجوع على السيرفر: `/data/uploads/bf-2026-11-rollback.json`، وما أُنشئ: `/data/uploads/bf-2026-11-created.json`.
 كل ما أُضيف يحمل `BF2026` في `titleEn` لتنظيفه بعد العرض.
 
-الانتهاء تلقائي: البنرات العلوية endsAt، والأقسام visibleUntil، وشريط العروض الأصلي يعود بـ visibleFrom (كلها 28/11 23:59 بغداد) — .
+الانتهاء تلقائي: البنرات العلوية endsAt، والأقسام visibleUntil، وشريط العروض الأصلي يعود بـ visibleFrom (كلها 28/11 23:59 بغداد) — `schedule.js`.
