@@ -1,0 +1,86 @@
+[
+  {
+    "file": "lierac_premium_gold_coffret_landscape.jpg",
+    "url": "https://spfdbaozxvwnlppqarcz.supabase.co/storage/v1/object/public/cms-media/homepage/LCFR/1791812728051-cover_xmas2026-desktop_lierac.jpg",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Holiday 2026 campaign close-up: hands of a model in a dark suit holding the gold Lierac Premium gift box (two black-and-gold jars) over a glossy black pouch; dark torso fills the left half, warm cream light at the right edge.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "lierac_premium_gold_coffret_portrait.jpg",
+    "url": "https://spfdbaozxvwnlppqarcz.supabase.co/storage/v1/object/public/cms-media/homepage/LCFR/1791812736346-cover_xmas2026-mobile_lierac.jpg",
+    "w": 1080,
+    "h": 1920,
+    "orientation": "portrait",
+    "what": "Vertical version of the holiday 2026 shot: gold Lierac Premium coffret held up against a glossy black pouch by a model in a dark jacket; moody dark-brown tones.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "lierac_premium_model_black_suit_gold_rays_square.jpg",
+    "url": "https://media.labnative.cloud/europe/lc/premium/3701436939793/fr/3701436939793_3.jpg",
+    "w": 2000,
+    "h": 2000,
+    "orientation": "square",
+    "what": "Lierac Premium campaign: dark-haired model in an oversized black suit holding the gold Premium coffret, centered against radiating gold and bronze light rays.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "lierac_premium_model_black_pouch_square.jpg",
+    "url": "https://media.labnative.cloud/europe/lc/premium/3701436939793/fr/3701436939793_6.jpg",
+    "w": 2001,
+    "h": 2001,
+    "orientation": "square",
+    "what": "Lierac Premium campaign: model in a black suit seated on an oversized glossy black pouch, gold light rays radiating behind her; luxurious black-and-gold mood.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "lierac_sunissime_range_styled_square.jpg",
+    "url": "https://media.labnative.cloud/europe/lc/sunissime/3701436938239/fr/3701436938239_8.jpg",
+    "w": 2000,
+    "h": 2000,
+    "orientation": "square",
+    "what": "Sunissime range styled hero: golden sun oils, sprays and SPF50 sticks stacked on white plinths with hard sunlight shadows on a warm white background.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "lierac_arkeskin_smiling_model_landscape.jpg",
+    "url": "https://spfdbaozxvwnlppqarcz.supabase.co/storage/v1/object/public/cms-media/articles/lc/1790084193800-arkeskin.jpg",
+    "w": 1920,
+    "h": 800,
+    "orientation": "landscape",
+    "what": "Arkeskin campaign: laughing mature woman with dark hair in a bun and gold earrings, bare shoulders, against a textured bronze-brown plaster wall.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "lierac_arkeskin_cream_pink_ribbon_landscape.jpg",
+    "url": "https://admin.lierac.com/media/catalog/category/Push_menu_1.png",
+    "w": 1470,
+    "h": 1070,
+    "orientation": "landscape",
+    "what": "Arkeskin menopause day cream jar and its refill pod with a pink satin ribbon on a pastel-pink set with a circular backdrop; product label text only.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  }
+]

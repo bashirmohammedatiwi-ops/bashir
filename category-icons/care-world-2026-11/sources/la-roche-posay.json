@@ -1,0 +1,98 @@
+[
+  {
+    "file": "lrp-hyalu-b5-bubbles-blue.jpg",
+    "url": "https://www.larocheposay.de/-/media/project/loreal/brand-sites/lrp/emea/dach/new/home/homepage-new-slider/18-hyalu-b5/lrp_hylau-b5_kampagne_website-banner_slider_16x9_ohne-text.jpg",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Hyalu B5 serum and Hyalu B5 Suractivated cream with large translucent blue gel bubbles on a pale sky-blue background; official text-free (\"ohne Text\") campaign version.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "lrp-model-face-blue.jpg",
+    "url": "https://www.laroche-posay.com.br/-/media/project/loreal/brand-sites/lrp/america/br/products/images/couv/couvbg2x.jpg",
+    "w": 1920,
+    "h": 832,
+    "orientation": "landscape",
+    "what": "Freckled model with tousled hair, natural skin, centred frontal portrait on the signature LRP sky-blue background; no product, no text.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "lrp-anthelios-uvair-sky.jpg",
+    "url": "https://www.laroche-posay.pl/-/media/project/loreal/brand-sites/lrp/emea/pl/homepage-new-slider/anthelios-uvair-spf50plus-baner-desktop.jpg",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Sun-care scene: model in profile on the left facing an Anthelios UVAir SPF50+ bottle floating inside a water bubble, blue sky with clouds; small orange \"NOWOSC\" (new) tag next to the bubble.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": true,
+    "quality": 4
+  },
+  {
+    "file": "lrp-dermatologist-model-blue.jpg",
+    "url": "https://www.laroche-posay.com.br/-/media/project/loreal/brand-sites/lrp/america/br/homepage-new-slider/2024/new-images/header-banner-background_medecin.webp",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Dermatologist in a white coat examining a model's face, both on the left, on a flat periwinkle-blue backdrop; conveys the medical/derm positioning.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "lrp-sun-water-splash.jpg",
+    "url": "https://www.laroche-posay.com.tr/-/media/project/loreal/brand-sites/lrp/emea/tr/concerns/sun-protection/larocheposay-concernpage-sun-protection-header.jpg",
+    "w": 1440,
+    "h": 600,
+    "orientation": "landscape",
+    "what": "Blonde model with wet hair and a water splash at her jaw against a deep blue background full of droplets; summer / sun-care mood. Slightly soft at 100%.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 3
+  },
+  {
+    "file": "lrp-mela-b3-serum-dark.jpg",
+    "url": "https://www.laroche-posay.es/-/media/project/loreal/brand-sites/lrp/emea/es/homepage-new-slider/mela-b3-double-dose-desktop-slider-v2---1440x810.jpg",
+    "w": 1440,
+    "h": 810,
+    "orientation": "landscape",
+    "what": "Mela B3 Double Dose serum in front of a glossy pink-to-violet texture sphere on a dark indigo background; tiny Spanish clinical-study disclaimer along the bottom-left edge.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": true,
+    "quality": 4
+  },
+  {
+    "file": "lrp-cream-shoulder-sky-portrait.jpg",
+    "url": "https://www.larocheposay.de/-/media/project/loreal/brand-sites/lrp/emea/dach/new/ranges/header/bild1.jpg",
+    "w": 808,
+    "h": 1085,
+    "orientation": "portrait",
+    "what": "Close crop of a chin and shoulder with a broad white cream stroke being applied, against a clear blue sky; clean, no text.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "lrp-hyalu-b5-bubbles-portrait.jpg",
+    "url": "https://www.larocheposay.de/-/media/project/loreal/brand-sites/lrp/emea/dach/new/home/homepage-new-slider/18-hyalu-b5/lrp_hylau-b5_kampagne_website-banner_mobile_375x439_2x.jpg",
+    "w": 750,
+    "h": 878,
+    "orientation": "portrait",
+    "what": "Portrait (mobile) crop of the Hyalu B5 campaign: serum and cream with blue gel bubbles in the lower half, empty pale-blue sky above.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 3
+  }
+]

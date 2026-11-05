@@ -1,0 +1,98 @@
+[
+  {
+    "file": "model-portrait-wide.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/FYP-Banner-Mobile?fmt=jpg&qlt=92",
+    "w": 2250,
+    "h": 1074,
+    "orientation": "landscape",
+    "what": "Young blonde model with wet-look slicked hair and dewy, glowing skin in three-quarter profile against a soft grey studio backdrop (For You page banner).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "serum-droppers-wide.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/FYP-Banner-Option-2-Mobile?fmt=jpg&qlt=92",
+    "w": 2250,
+    "h": 1074,
+    "orientation": "landscape",
+    "what": "Two amber-glass The Ordinary dropper bottles on a thin teal-edged shelf, one pipette lifted and dripping serum, on a pale grey gradient.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "dropper-ingredient-wide.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/m3-IngredientGlossary?fmt=jpg&qlt=92",
+    "w": 2880,
+    "h": 1280,
+    "orientation": "landscape",
+    "what": "Macro of a glass pipette releasing a golden oil droplet, minimalist lab aesthetic on clean white (ingredient glossary header).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "serum-skin-closeup.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/FYP-Blog-Card?fmt=jpg&qlt=92",
+    "w": 1860,
+    "h": 1047,
+    "orientation": "landscape",
+    "what": "Macro close-up of a clear gel serum drop on deep-toned cheek skin, nose and smile visible at left.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "face-cream-model.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/For-You-Page-50-50-Desktop?fmt=jpg&qlt=92",
+    "w": 1860,
+    "h": 1488,
+    "orientation": "landscape",
+    "what": "Tight close-up of a dark-skinned model with long nude nails smoothing a dab of white cream onto her cheek.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "cream-texture-portrait.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/For-You-Page-Banner-Mobile?fmt=jpg&qlt=92",
+    "w": 969,
+    "h": 1404,
+    "orientation": "portrait",
+    "what": "Abstract macro of a thick off-white moisturiser swirl with soft sculpted ridges; full-bleed texture usable as a card background.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "serum-face-model.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/Dryness-Concern?fmt=jpg&qlt=92",
+    "w": 1080,
+    "h": 1080,
+    "orientation": "square",
+    "what": "Model with dark brows and pink nails touching her cheek where a sheen of serum glistens, on white (dryness concern visual).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "water-splash-bottle.jpg",
+    "url": "https://cdn.media.amplience.net/i/deciem/Skin-Absorption-Penetration-BodyImage3?fmt=jpg&qlt=92",
+    "w": 1240,
+    "h": 1240,
+    "orientation": "square",
+    "what": "Frosted The Ordinary Multi-Active Delivery Essence bottle with a clear water splash arcing behind it on white.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "file": "eucerin_hyaluron-filler_model_landscape.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/media-center-items/c/8/b/df7f4988e4a849d9936c9647a33ad923-original.jpg",
+    "w": 5000,
+    "h": 3241,
+    "orientation": "landscape",
+    "what": "Hyaluron-Filler campaign portrait: woman with long auburn hair in a white top, face turned three-quarters, a faint dotted grid graphic on her cheek; soft pearl-white background with a curved light-grid pattern.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "eucerin_smiling_model_white_shirt_landscape.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/media-center-items/4/2/4/8ee943ec47a3491c916abe75e10d8d86-print.jpg",
+    "w": 3508,
+    "h": 2339,
+    "orientation": "landscape",
+    "what": "Brunette model in a white shirt smiling over her shoulder, long straight hair, clean light-grey studio background; bright, natural skin look.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "eucerin_model_cream_on_cheek_warm_landscape.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/media-center-items/b/c/5/b4447a9119754ec2a66cd36b42a7b326-print.jpg",
+    "w": 3508,
+    "h": 2339,
+    "orientation": "landscape",
+    "what": "Warm-lit beauty close-up: dark-haired woman resting chin on hand with a dab of white cream on her cheekbone, soft beige blurred background.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "eucerin_curly_hair_model_landscape.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/eucerin%20relaunch%20media/eucerin/local/gb/articles/uneven-skin-tone/euc_uneven_skin_tone_teaser.jpg",
+    "w": 3746,
+    "h": 2500,
+    "orientation": "landscape",
+    "what": "Smiling woman with short curly dark hair in a white sleeveless top on a plain light-grey background (Eucerin uneven-skin-tone teaser).",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "eucerin_sun_model_orange_landscape.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/media-center-items/3/f/a/5c3d27bc61744833bb498d3885f1f58d-screen.jpg",
+    "w": 1278,
+    "h": 896,
+    "orientation": "landscape",
+    "what": "Eucerin Sun visual: young woman with long dark hair on a vivid orange gradient, with Oil Control SPF30 and Hydro Protect SPF50 bottles in front; a plain white strip (~70 px) runs along the bottom under the bottles.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "eucerin_urearepair_body_range_landscape.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/media-center-items/5/f/b/6b66206b637e4014a1ab384a203f70e7-original.png",
+    "w": 1536,
+    "h": 896,
+    "orientation": "landscape",
+    "what": "UreaRepair body-care range (lotion, shower gel, foot and hand creams) beside a seated woman in a nude bralette hugging her knees, light-grey studio; thin navy brand band along the bottom edge.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "eucerin_anti-pigment_serum_hand_portrait.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/eucerin/test/navi/desktop-image%20teaser-01.jpg",
+    "w": 1146,
+    "h": 1710,
+    "orientation": "portrait",
+    "what": "Anti-Pigment serum dropper bottle balanced on an open palm reaching in from the left, minimal pale-pink background.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "eucerin_dermopure_products_hand_portrait.jpg",
+    "url": "https://images-1.eucerin.com/~/media/eucerin%20relaunch%20media/media-center-items/f/e/6/e48ea8245ed14ba4a662b8901ccc99a2-original.jpg",
+    "w": 1520,
+    "h": 2280,
+    "orientation": "portrait",
+    "what": "DermoPure styled shot: teal DermoPure cleansing gel bottle with a hand in a white sleeve placing a small serum bottle beside it, on a white surface against a soft white ribbed backdrop.",
+    "subject_side": "center",
+    "free_space": "bottom",
+    "baked_text": false,
+    "quality": 3
+  }
+]

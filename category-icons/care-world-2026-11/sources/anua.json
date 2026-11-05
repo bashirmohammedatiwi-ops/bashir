@@ -1,0 +1,98 @@
+[
+  {
+    "file": "kendall-campaign-wide.jpg",
+    "url": "https://anua.com/cdn/shop/files/Anua_US_Official_Website_kendall_Page_main_banner_pc_47818aba-d92d-4d78-9933-81b6a37a82a9.jpg",
+    "w": 3200,
+    "h": 1800,
+    "orientation": "landscape",
+    "what": "Anua ambassador Kendall Jenner in a cream tank top with sleek pulled-back hair and dewy skin, on a pure white backdrop (US Kendall page hero).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "kendall-campaign-wide-alt.jpg",
+    "url": "https://anua.com/cdn/shop/files/Anua_US_Official_Website_Main_Page_sub_banner_pc_9d7a48fc-d10b-49e4-9175-da522a067739.jpg",
+    "w": 3200,
+    "h": 1800,
+    "orientation": "landscape",
+    "what": "Alternate frame of the same Kendall Jenner white-studio shoot, head tilted, positioned centrally with white space on both sides (US home sub-banner).",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "kendall-campaign-portrait.jpg",
+    "url": "https://anua.com/cdn/shop/files/Anua_US_Official_Website_kendall_Page_main_banner_mo_138e3967-436d-451e-b6ad-85e56ab8cd51.jpg",
+    "w": 1200,
+    "h": 1800,
+    "orientation": "portrait",
+    "what": "Portrait crop of the Kendall Jenner campaign: head and shoulders, cream tank top, white background.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "peach-serum-peaches-portrait.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0563/5466/8649/files/0515anua07006.jpg",
+    "w": 3096,
+    "h": 4128,
+    "orientation": "portrait",
+    "what": "Anua Peach 70 Niacin Serum dropper bottle nestled among fresh peaches in a woven basket with soft pink linen; warm Korean-skincare still life.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "heartleaf-cleansing-oil-splash-portrait.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0563/5466/8649/files/200ml_kv12.jpg",
+    "w": 1545,
+    "h": 2316,
+    "orientation": "portrait",
+    "what": "Heartleaf Pore Control Cleansing Oil bottle suspended among swirling ribbons and droplets of oil on a luminous pale-green backdrop (Japan key visual).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "pdrn-capsule-mist-portrait.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0563/5466/8649/files/AA001318_ANUA_PDRN_HyaluronicAcidHydratingCapsuleMist_100ml_creativeshot031.jpg",
+    "w": 2600,
+    "h": 3466,
+    "orientation": "portrait",
+    "what": "Diagonal close-up of the PDRN Hyaluronic Acid Capsule Mist bottle with teal capsules visible through the glass, white background with soft shadow.",
+    "subject_side": "center",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "pdrn-gel-texture-wide.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0563/5466/8649/files/pdrn_00076_1.jpg",
+    "w": 2608,
+    "h": 1739,
+    "orientation": "landscape",
+    "what": "Abstract macro of translucent aqua gel spread in smooth flowing waves; full-bleed texture background for PDRN/hydration banners.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "heartleaf-double-cleanse-square.jpg",
+    "url": "https://anua.com/cdn/shop/files/Anua_US_Official_Website_kendall_Page_productImage_Doubleduo_MO.jpg",
+    "w": 1200,
+    "h": 1200,
+    "orientation": "square",
+    "what": "Heartleaf Pore Control Cleansing Oil and green Heartleaf Quercetinol cleansing foam tube standing in shallow water with foam, soft grey studio light.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  }
+]

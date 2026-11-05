@@ -1,0 +1,98 @@
+[
+  {
+    "file": "keratin-alpha-sleek-model-wide.jpg",
+    "url": "https://www.lorealprofessionnel.com/-/media/project/loreal/brand-sites/lp/shared/common/kas/kas-2026-01/mixed-kas-2026-01-landing-banner-desktop-mp4-poster.jpg",
+    "w": 1920,
+    "h": 960,
+    "orientation": "landscape",
+    "what": "Model with very long glossy dark hair streaming behind her, glancing over her shoulder, on white (Keratin Alpha Sleek campaign; video poster frame).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "metal-detox-mask-wide.jpg",
+    "url": "https://www.lorealprofessionnel.com/-/media/project/loreal/brand-sites/lp/shared/common/metal-detox/metal-detox-2026-07/mixed-md-mask-2026-07-landing-banner-md-desktop-mp4-poster.jpg",
+    "w": 1920,
+    "h": 960,
+    "orientation": "landscape",
+    "what": "Serie Expert Metal Detox mask jar with a sculpted swirl of white cream on a light grey backdrop.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "curly-hair-model-portrait.jpg",
+    "url": "https://www.lorealprofessionnel.in/-/media/project/loreal/brand-sites/lp/apac/in/home-1/2-slider-haircare/home-routine-header.jpg",
+    "w": 1080,
+    "h": 1920,
+    "orientation": "portrait",
+    "what": "Model with voluminous, defined brown curls wearing a glossy bronze high-neck top, on white (India site haircare routine header).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "scalp-advanced-model-square.jpg",
+    "url": "https://www.lorealprofessionnel.com/-/media/project/loreal/brand-sites/lp/shared/common/scalp-advanced/scalp-advanced-2025-07/mixed-scalp-advanced-2025-07-landing-banner.jpg",
+    "w": 1920,
+    "h": 1920,
+    "orientation": "square",
+    "what": "Model with sleek braided dark hair in a metallic teal jacket holding a Serie Expert Scalp Advanced shampoo bottle.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "tecni-art-red-hair-styling-square.jpg",
+    "url": "https://www.lorealprofessionnel.com/-/media/project/loreal/brand-sites/lp/shared/common/tecni-art/techni-art-2024-10/mixed-2024-10-tecni-art-focus-styling.jpg",
+    "w": 1920,
+    "h": 1920,
+    "orientation": "square",
+    "what": "Stylist's hands shaping a model's voluminous copper-red waves; editorial backstage styling shot (Tecni.Art).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "tecni-art-bun-styling-square.jpg",
+    "url": "https://www.lorealprofessionnel.com/-/media/project/loreal/brand-sites/lp/shared/common/tecni-art/techni-art-2024-10/mixed-2024-10-tecni-art-focus-styling-2.jpg",
+    "w": 1920,
+    "h": 1920,
+    "orientation": "square",
+    "what": "Stylist's hands finishing a model's double space-buns with a sculpted fringe; editorial styling shot (Tecni.Art).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "absolut-repair-gold-science-square.jpg",
+    "url": "https://www.lorealprofessionnel.com/-/media/project/loreal/brand-sites/lp/shared/common/absolut-repair-molecular/arm-2025-06/mixed-arm-2025-06-science-3-mp4-poster.jpg",
+    "w": 1920,
+    "h": 1920,
+    "orientation": "square",
+    "what": "Abstract 3D render of golden glass molecule spheres and rods on black (Absolut Repair Molecular science visual).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "absolut-repair-oil-portrait.jpg",
+    "url": "https://www.lorealprofessionnel.com/-/media/project/loreal/brand-sites/lp/shared/common/home/2026-10/slider-home-2026-10-slide-arm-oil-mp4-poster.jpg",
+    "w": 960,
+    "h": 1386,
+    "orientation": "portrait",
+    "what": "Absolut Repair Molecular Oil bottle floating among golden and clear oil bubbles on white (home slider poster).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  }
+]

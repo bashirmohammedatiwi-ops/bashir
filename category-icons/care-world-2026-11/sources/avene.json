@@ -1,0 +1,98 @@
+[
+  {
+    "file": "avene-cicalfate-model-peach.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/u5wa3z31qn5segoonbzgusi7dc1cq9kaimzrs9o/AV_cicalfate-_repairing-protective-cream_3282770204667_elodie_attitude-product_HD_16x9",
+    "w": 3100,
+    "h": 1744,
+    "orientation": "landscape",
+    "what": "Model with curly hair in a white tee holding a Cicalfate+ tube to her cheek, standing left of centre on a soft peach backdrop with wide empty space on the right.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "avene-thermal-water-cans-production.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/jbcyk9ugcxa5knkweqrubodu5c/av_prod-responsable-pilier_brand-website_the-brand_ratio-4-3",
+    "w": 2240,
+    "h": 1493,
+    "orientation": "landscape",
+    "what": "Rows of white Eau Thermale Avene spray cans on the production line, shallow depth of field, airy white light; Avene logo legible on the front can.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "avene-hydrotherapy-center.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/jbcyk9ugcxa5kjqtbf88qiydgo/AV_instit-hydrotherapy-center-avene-hd",
+    "w": 3600,
+    "h": 2400,
+    "orientation": "landscape",
+    "what": "The curved glass-and-white Avene hydrotherapy centre at Avene-les-Bains surrounded by gardens and forested hillside in warm sunlight.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "avene-thermal-spring-river.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/jbcyk9ugcxa5kfr61893ftm5iy/av_protection-env-avene_brand-website_the-brand_ratio-4-3",
+    "w": 3600,
+    "h": 2403,
+    "orientation": "landscape",
+    "what": "Top-down view of clear spring water rushing over smooth rocks near the Avene source; textured, natural, no people.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "avene-sun-parasol-sky.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/u5wa3z31qn5sjgd3o1uukgw6u1pyeobbdpzg9ya/av_solaires_soleil_bienfaits_mesfaits_parasol_5x4",
+    "w": 3456,
+    "h": 2430,
+    "orientation": "landscape",
+    "what": "Looking up into a cream canvas beach parasol with wooden spokes against a clear blue sky, leaf shadows on the canvas; sun-care mood, no product.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "avene-sun-model-portrait.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/u5wa3z31qn5sejdmza9mxtaoaxz43diywws4kqe/av_solaire_juliet_3738-16x9",
+    "w": 2068,
+    "h": 3100,
+    "orientation": "portrait",
+    "what": "Portrait of a freckled model with long wavy hair and glowing skin on a warm sand-beige background, looking at camera (Sun range visual).",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "avene-thermal-water-shoulder-drops.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/jbcyk9ugcxa5kdpdjs748h8w4c/av_instit-thermal-water-skin2-hdrvb-square",
+    "w": 3600,
+    "h": 3600,
+    "orientation": "square",
+    "what": "Soft-focus close-up of a woman's lips, neck and shoulder covered in fine thermal-water droplets against a pale grey-blue background.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "avene-thermal-water-splash.jpg",
+    "url": "https://media-pierre-fabre.wedia-group.com/api/wedia/dam/transform/jbcyk9ugcxa5k5kdtruxgtxwkw/av_instit-biodiversity-orb-hdrvb-square",
+    "w": 3600,
+    "h": 3600,
+    "orientation": "square",
+    "what": "Spring water splashing onto a mossy rock, sparkling droplets against a blurred green background; thermal-spring nature shot.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 4
+  }
+]

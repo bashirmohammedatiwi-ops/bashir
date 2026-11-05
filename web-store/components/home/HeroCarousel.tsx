@@ -29,7 +29,7 @@ export function HeroCarousel({ banners }: { banners: Banner[] }) {
   if (!n) return null;
   return (
     <div
-      className="group relative overflow-hidden rounded-[28px] bg-accent-light shadow-card md:rounded-4xl lg:h-full"
+      className="group relative overflow-hidden rounded-[28px] bg-accent-light shadow-card md:rounded-4xl"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
@@ -40,7 +40,8 @@ export function HeroCarousel({ banners }: { banners: Banner[] }) {
         touch.current = null;
       }}
     >
-      <div className="relative aspect-[16/9] md:aspect-[21/8] lg:aspect-auto lg:h-full lg:min-h-[360px]">
+      {/* نفس نسبة تصاميم بنرات التطبيق (2150×1000) حتى لا يُقصّ النص المصمَّم داخل الصورة */}
+      <div className="relative aspect-[43/20]">
         {banners.map((b, k) => {
           const href = resolveLink(b.linkType, b.linkValue, b.link);
           const img = !mounted.includes(k) ? null : (
@@ -56,7 +57,8 @@ export function HeroCarousel({ banners }: { banners: Banner[] }) {
           return (
             <div key={b.id} className={clsx("absolute inset-0 transition-opacity duration-700", k === i ? "opacity-100" : "pointer-events-none opacity-0")}>
               {href ? <Link href={href} aria-label={b.title ?? "عرض"}>{img}</Link> : img}
-              {(b.title || b.ctaLabel) && (
+              {/* العنوان مكتوب داخل صورة البنر (كما في التطبيق)؛ الطبقة النصية فقط لبنر له زر صريح */}
+              {b.ctaLabel && (
                 <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/45 via-black/5 to-transparent p-5 md:p-10">
                   <div className="max-w-lg text-white">
                     {b.tag && <span className="mb-2 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur">{b.tag}</span>}

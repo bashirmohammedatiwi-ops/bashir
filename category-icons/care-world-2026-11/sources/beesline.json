@@ -1,0 +1,62 @@
+[
+  {
+    "file": "beesline_sunscreen_model_landscape.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0723/0321/4747/files/sunscreens_dekstop_en_6.jpg",
+    "w": 2300,
+    "h": 1440,
+    "orientation": "landscape",
+    "what": "Woman with long curly dark hair, eyes closed and face tilted up to the light, holding an orange Beesline Age Defense sunscreen stick at her neck; soft blue-grey background. Cropped from the right side of the official 4060x1440 sunscreen banner to remove the headline.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "beesline_underarm_serum_tubes_landscape.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0723/0321/4747/files/Underarm_Serum_Homepage_Banner_Mobile_EN.webp",
+    "w": 2160,
+    "h": 1580,
+    "orientation": "landscape",
+    "what": "Radiant Bright underarm serum tubes (blue Vit C and burgundy variants) floating diagonally with frosted mint caps on a soft grey studio background. Cropped from the middle of the official mobile banner to remove the headline and Shop Now button.",
+    "subject_side": "center",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "beesline_barrier_creams_jars_landscape.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0723/0321/4747/files/Barrier_Creams_Homepage_Banner_Mobile_EN.webp",
+    "w": 2160,
+    "h": 1090,
+    "orientation": "landscape",
+    "what": "Close-up of the red Adaptogen barrier cream jar with water droplets, an open teal Everyone barrier cream jar showing the cream and a white lid, floating on a warm grey background. Cropped from the top of the official mobile banner, above the headline.",
+    "subject_side": "left",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "beesline_serums_water_splash_square.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0723/0321/4747/files/Supercharge_Serum_Homepage_Banner_Mobile_EN.webp",
+    "w": 2160,
+    "h": 1960,
+    "orientation": "square",
+    "what": "Four Beesline serums (orange Unifying Brightening, yellow Anti-Wrinkle and Radiance, green Sebum-Control, blue Super Hydrating) tumbling through a clear water splash on light grey. Cropped from the official mobile banner to remove the headline and button; the top of the orange bottle is cut by the crop.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "beesline_whitening_deo_stone_portrait.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0723/0321/4747/files/whitening_deo_desktop_en_MOBILE_ee4ce2db-3ae4-476a-9b61-4657651d571f.webp",
+    "w": 1504,
+    "h": 1880,
+    "orientation": "portrait",
+    "what": "White Beesline Whitening roll-on deodorant standing on a pale stone dish with clear crystal pieces, on a soft grey marble-like surface; calm, minimal. Cropped 4:5 from the lower part of the official mobile banner, below the headline.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 3
+  }
+]

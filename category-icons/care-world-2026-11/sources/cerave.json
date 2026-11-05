@@ -1,0 +1,98 @@
+[
+  {
+    "file": "cerave-skin-renewing-range-purple.jpg",
+    "url": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/scx/homepage/skin-renewing/skin-renewing-lg.webp",
+    "w": 2880,
+    "h": 980,
+    "orientation": "landscape",
+    "what": "Skin Renewing Vitamin C Serum, Retinol Serum and Peptide Cream stacked on a glossy surface against a smooth purple gradient (UK homepage hero).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "cerave-brightening-vitc-lotion-purple.jpg",
+    "url": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/home/homepage/2026/09/cerave-brightening-lotion-hp-banner-1920x750-v1alt.jpg",
+    "w": 1920,
+    "h": 750,
+    "orientation": "landscape",
+    "what": "Three Brightening Vitamin C Lotion bottles with a cream swatch on a deep purple studio set; product grouped on the right (US homepage hero).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "cerave-ceramides-model-blue.jpg",
+    "url": "https://www.cerave.de/-/media/project/loreal/brand-sites/cerave/emea/de/1920x750_ceramidesstatic.jpg",
+    "w": 1920,
+    "h": 750,
+    "orientation": "landscape",
+    "what": "Model with wet hair touching her jaw, wrapped by a translucent blue \"barrier\" ribbon, on a pale blue-white gradient; small round \"3 Essential Ceramides\" badge near her hand.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": true,
+    "quality": 4
+  },
+  {
+    "file": "cerave-sun-couple-sky.jpg",
+    "url": "https://www.cerave.de/-/media/project/loreal/brand-sites/cerave/emea/de/scx/hp-banner/sunscreen-hp-banner-lg-v1.webp",
+    "w": 1920,
+    "h": 750,
+    "orientation": "landscape",
+    "what": "Smiling couple in the sun against a clear blue sky, sunscreen tick drawn on the shoulder, with the German sun range on a yellow ledge. Small German claim text and badges in the bottom-left corner.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": true,
+    "quality": 4
+  },
+  {
+    "file": "cerave-sun-woman-sky.jpg",
+    "url": "https://www.cerave.fr/-/media/project/loreal/brand-sites/cerave/emea/fr/popin-banner/fr-newsletter-suncare-lg.webp",
+    "w": 1200,
+    "h": 720,
+    "orientation": "landscape",
+    "what": "Woman with curly hair and glowing skin, eyes closed in the sun, against a flat pale-blue sky; no product, no text.",
+    "subject_side": "left",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "cerave-skin-renewing-portrait.jpg",
+    "url": "https://www.cerave.co.uk/-/media/project/loreal/brand-sites/cerave/emea/uk/scx/homepage/skin-renewing/skin-renewing-v1-sm.webp",
+    "w": 750,
+    "h": 1160,
+    "orientation": "portrait",
+    "what": "Portrait (mobile) version of the Skin Renewing hero: Vitamin C serum, Retinol serum and Peptide cream at the bottom, large purple gradient above.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "cerave-mineral-sunscreen-flatlay-blue.jpg",
+    "url": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/home/homepage/2026/05/cerave-invisible-mineral-sunscreen-50-50-desktop-v1.jpg",
+    "w": 1416,
+    "h": 1060,
+    "orientation": "landscape",
+    "what": "Flat-lay of two yellow Invisible Mineral Sunscreen SPF 50 tubes with cream swipes on a vivid turquoise background.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "cerave-range-lineup-studio.jpg",
+    "url": "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/home/new-homepage-2025/cerave-skincare-finder-sun-banner-630x530-2x-v1alt.jpg",
+    "w": 1260,
+    "h": 1060,
+    "orientation": "landscape",
+    "what": "Studio hero of the core range (AM/PM Facial Moisturizing Lotion, Hydrating Facial Cleanser, Vitamin C serum) on a reflective surface with soft blue-grey light.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 4
+  }
+]

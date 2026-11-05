@@ -1,0 +1,98 @@
+[
+  {
+    "file": "genesis-model-wide.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/emea/inter/genesis/desktop/dsc1484-2-1compressed.jpg",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Model in a red top leaning diagonally into frame, long glossy black hair sweeping across a white background (Genesis landing).",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "gloss-absolu-glasshouse-wide.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/emea/inter/gloss-landing-v2/header-gloss.jpg",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Woman in a pink tulle dress twirling with flowing caramel hair under a Paris glasshouse dome hung with oversized pink petals (Gloss Absolu campaign header).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "genesis-serum-still-life-wide.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/emea/inter/about-kerastase/about-us/genesis-range.jpg",
+    "w": 1920,
+    "h": 1280,
+    "orientation": "landscape",
+    "what": "Genesis anti-hair-fall serum bottle with its dropper resting on translucent pink acrylic blocks, soft white light.",
+    "subject_side": "center",
+    "free_space": "right",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "blond-absolu-trio-wide.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/master/dmi/blond-absolu---landing-page/blonde-landing-page-images/kerastase_blonbe_edito_trio_2_16x9-1.jpg",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Three blonde models (curly, long-wavy, honey) posing on and beside a cream vintage convertible against a white wall (Blond Absolu editorial).",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "genesis-serum-model-portrait.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/emea/inter/composant-best-seller/hair-fall.jpg",
+    "w": 1632,
+    "h": 1920,
+    "orientation": "portrait",
+    "what": "Brunette model with long waves holding the pink Genesis serum bottle beside her face, light studio background (appears to be ambassador Emily Ratajkowski).",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "chroma-red-hair-portrait.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/emea/inter/composant-best-seller/colour-protection.jpg",
+    "w": 1637,
+    "h": 1920,
+    "orientation": "portrait",
+    "what": "Model with vivid copper-red hair and blunt fringe holding a Chroma Absolu mask jar in both hands, white background.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "chronologiste-parfum-model-portrait.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/emea/inter/composant-best-seller/devitalized-hair.jpg",
+    "w": 1547,
+    "h": 1920,
+    "orientation": "portrait",
+    "what": "Close-up of a dark-haired model resting her face on her hand while cradling a Chronologiste Huile de Parfum bottle.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "elixir-ultime-oil-texture-square.jpg",
+    "url": "https://www.kerastase.com/-/media/project/loreal/brand-sites/kerastase/master/dmi/homepage/elixir-ultime-repush/elixir-ingredient-duo.jpg",
+    "w": 1920,
+    "h": 1920,
+    "orientation": "square",
+    "what": "Golden Elixir Ultime oil splashes and droplets suspended over a warm cream background; full-bleed texture.",
+    "subject_side": "center",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  }
+]

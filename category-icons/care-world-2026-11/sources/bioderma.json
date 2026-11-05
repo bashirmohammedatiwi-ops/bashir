@@ -1,0 +1,98 @@
+[
+  {
+    "file": "bioderma_photoderm_xdefense_campaign_landscape.jpg",
+    "url": "https://www.bioderma.co.za/sites/za/files/2026-08/Bioderma_Photoderm_campaign_XDefense_Website_banner%20%28Desktop%29%20%281800%20x%20800%20px%29.png",
+    "w": 3600,
+    "h": 1600,
+    "orientation": "landscape",
+    "what": "Photoderm XDefense 2026 campaign: a man and a woman side by side against a deep-blue sky gradient, Photoderm SPF50+ fluid in front, and a glossy blue-orange liquid sphere on the right.",
+    "subject_side": "left",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "bioderma_hydrabio_model_texture_landscape.jpg",
+    "url": "https://www.bioderma.com.au/sites/au/files/2026-05/Hydrabio%20Home%20Page%20Banner_Desktop.png",
+    "w": 1800,
+    "h": 800,
+    "orientation": "landscape",
+    "what": "Hydrabio visual: splash of clear blue gel texture and the Hydrabio range (gel moussant, serum, perfecteur) on the left, dark-haired woman with wind-blown hair on a pale-blue background on the right.",
+    "subject_side": "right",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "bioderma_atoderm_model_landscape.jpg",
+    "url": "https://www.bioderma.com.au/sites/au/files/Atoderm_Home%20Page%20Banner_Desktop.png",
+    "w": 1800,
+    "h": 800,
+    "orientation": "landscape",
+    "what": "Atoderm visual: woman with glowing bare skin hugging her knees, head resting on her arm, with Atoderm Intensive Baume and Atoderm Huile de Douche pump bottles on the right; warm beige background.",
+    "subject_side": "left",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "bioderma_sensibio_h2o_model_landscape.jpg",
+    "url": "https://www.bioderma.ae/sites/ae/files/2025-02/Banners%20Hero_Sensibio%20H2O_1800x800px.jpg",
+    "w": 1800,
+    "h": 800,
+    "orientation": "landscape",
+    "what": "Sensibio H2O hero: the pink-cap micellar water bottle among floating water droplets on the left, close-up of a woman with tied-back hair touching her jaw on the right; soft pearl background.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "bioderma_sensibio_ar_range_pink_landscape.jpg",
+    "url": "https://www.bioderma.it/sites/it/files/NEW_desktop.jpg",
+    "w": 1800,
+    "h": 800,
+    "orientation": "landscape",
+    "what": "Sensibio AR+ range (SOS spray, micellar gel, serum, cream) in front of a flowing pink-red silk-like texture, with a freckled red-haired woman in a white top on the right.",
+    "subject_side": "right",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "bioderma_photoderm_sun_model_sky_landscape.jpg",
+    "url": "https://www.bioderma.pl/sites/pl/files/2025-04/photoderm-xdefense-artykuly-1.jpg",
+    "w": 1920,
+    "h": 1080,
+    "orientation": "landscape",
+    "what": "Photoderm XDefense sun lifestyle shot: woman in a white tank top with arms raised over her head and eyes closed in sunlight, blue sky and a white modern building behind her. No product.",
+    "subject_side": "center",
+    "free_space": "left",
+    "baked_text": false,
+    "quality": 4
+  },
+  {
+    "file": "bioderma_photoderm_sun_model_sky_portrait.jpg",
+    "url": "https://www.bioderma.com.tr/sites/tr/files/2025-11/Shannon%20in%20the%20city%20copy.jpg",
+    "w": 3335,
+    "h": 5000,
+    "orientation": "portrait",
+    "what": "Vertical version of the Photoderm XDefense sun shoot: woman with arms raised over her head in bright sun, white tank top, blue sky and a white building on the right. High-resolution original.",
+    "subject_side": "center",
+    "free_space": "top",
+    "baked_text": false,
+    "quality": 5
+  },
+  {
+    "file": "bioderma_pigmentbio_model_square.jpg",
+    "url": "https://www.bioderma.com.tr/sites/tr/files/pigmo_MOBIL_2025_son.png",
+    "w": 1170,
+    "h": 1170,
+    "orientation": "square",
+    "what": "Pigmentbio square visual: close-up of a freckled woman with slicked-back hair and a braid, Pigmentbio Foaming Cream and Sensitive Areas tubes in the lower right; soft grey background with a faint arc graphic.",
+    "subject_side": "left",
+    "free_space": "none",
+    "baked_text": false,
+    "quality": 4
+  }
+]
