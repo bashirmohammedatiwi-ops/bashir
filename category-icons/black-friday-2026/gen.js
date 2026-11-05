@@ -70,7 +70,7 @@ const DESIGNS = [
   { key: 'o_lierac_50', brand: 'lierac', kind: 'offer', pct: 50, sub: 'على واقيات سونيسيم ولِفت إنتغرال', pick: ['lierac_50:1', 'lierac_50:0', 'lierac_50:3', 'lierac_50:2', 'lierac_50:4'] },
   { key: 'o_lierac_25', brand: 'lierac', kind: 'offer', pct: 25, sub: 'على مجموعة بريميوم وهيدراجينست', pick: ['lierac_25:0', 'lierac_25:1', 'lierac_25:2', 'lierac_25:4', 'lierac_25:3'] },
   // PHYTO
-  { key: 'hero_phyto', brand: 'phyto', kind: 'hero', pct: 50, sub: 'عروض 19% و25% و50% على عناية الشعر', pick: ['phyto_25:0', 'phyto_25:2', 'phyto_50:1', 'phyto_25:1', 'phyto_19:2'] },
+  { key: 'hero_phyto', brand: 'phyto', kind: 'hero', pct: 50, sub: 'عروض 25% و50% على عناية الشعر', pick: ['phyto_25:0', 'phyto_25:2', 'phyto_50:1', 'phyto_25:1', 'phyto_25:3'] },
   { key: 'o_phyto_50', brand: 'phyto', kind: 'offer', pct: 50, sub: 'على أمبولات فيتوسيان ومعزز اللمعان', pick: ['phyto_50:0', 'phyto_50:1'], h: 560 },
   { key: 'o_phyto_25', brand: 'phyto', kind: 'offer', pct: 25, sub: 'على شامبوهات وعلاجات فيتو للشعر', pick: ['phyto_25:0', 'phyto_25:1', 'phyto_25:2', 'phyto_25:3'] },
   { key: 'o_phyto_19', brand: 'phyto', kind: 'offer', pct: 19, sub: 'على صبغات فيتوكولور الخالية من الأمونيا', pick: ['phyto_19:2', 'phyto_19:0', 'phyto_19:3'] },
