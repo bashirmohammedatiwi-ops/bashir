@@ -1,0 +1,977 @@
+[
+ {
+  "tpl": "small",
+  "key": "i_face",
+  "pal": "face",
+  "title": "العناية<br>بالوجه",
+  "titleSize": 92,
+  "p": [
+   "b_cerave:0",
+   "b_lrp:3"
+  ],
+  "hs": [
+   389,
+   378
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "i_hair",
+  "pal": "hair",
+  "title": "العناية<br>بالشعر",
+  "titleSize": 92,
+  "p": [
+   "b_kerastase:1",
+   "b_ogx:5"
+  ],
+  "hs": [
+   389,
+   378
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "i_body",
+  "pal": "body",
+  "title": "العناية<br>بالجسم",
+  "titleSize": 92,
+  "p": [
+   "b_vaseline:0",
+   "t_bodyScrub:2"
+  ],
+  "hs": [
+   401,
+   295
+  ],
+  "maxW": [
+   236,
+   307
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "i_sun",
+  "pal": "sun",
+  "title": "واقي<br>الشمس",
+  "titleSize": 92,
+  "p": [
+   "sun_lrp:1",
+   "sun_isdin:2"
+  ],
+  "hs": [
+   378,
+   389
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "i_kor",
+  "pal": "kor",
+  "title": "العناية<br>الكورية",
+  "titleSize": 92,
+  "p": [
+   "b_anua:0",
+   "b_althea:3"
+  ],
+  "hs": [
+   401,
+   330
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "i_derma",
+  "pal": "derma",
+  "title": "العناية<br>الطبية",
+  "titleSize": 92,
+  "p": [
+   "b_qv:1",
+   "b_pharm:2"
+  ],
+  "hs": [
+   389,
+   330
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "wide",
+  "key": "f_wide",
+  "pal": "face",
+  "kicker": "SKIN RITUALS",
+  "title": "بشرة صحية<br>بروتين بسيط",
+  "sub": "غسول • علاج • ترطيب",
+  "p": [
+   "b_cerave:0",
+   "b_lrp:3",
+   "b_eucerin:3"
+  ],
+  "hs": [
+   470,
+   500,
+   400
+  ],
+  "maxW": [
+   280,
+   200,
+   340
+  ],
+  "photo": "eucerin/eucerin_model_cream_on_cheek_warm_landscape.jpg",
+  "focus": "62% 35%",
+  "textW": 760
+ },
+ {
+  "tpl": "square",
+  "key": "f_sq1",
+  "pal": "face",
+  "brand": "la-roche-posay",
+  "title": "للبشرة الدهنية<br>والمعرّضة للحبوب",
+  "p": [
+   "b_lrp:0",
+   "b_lrp:3",
+   "b_lrp:5"
+  ],
+  "hs": [
+   525,
+   549,
+   403
+  ],
+  "maxW": [
+   290,
+   310,
+   290
+  ]
+ },
+ {
+  "tpl": "square",
+  "key": "f_sq2",
+  "pal": "face",
+  "brand": "eucerin",
+  "title": "توحيد اللون<br>وتفتيح البقع",
+  "p": [
+   "b_eucerin:0",
+   "b_eucerin:3"
+  ],
+  "hs": [
+   561,
+   464
+  ],
+  "maxW": [
+   317,
+   403
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "f_s1",
+  "pal": "face",
+  "title": "غسولات الوجه",
+  "p": [
+   "b_bioderma:1",
+   "b_bioderma:3"
+  ],
+  "hs": [
+   401,
+   389
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "f_s2",
+  "pal": "face",
+  "title": "ترطيب الوجه",
+  "p": [
+   "b_qv:3",
+   "b_althea:5"
+  ],
+  "hs": [
+   378,
+   307
+  ],
+  "maxW": [
+   260,
+   283
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "f_s3",
+  "pal": "face",
+  "title": "ماسكات الوجه",
+  "p": [
+   "t_mask:2",
+   "t_mask:4"
+  ],
+  "hs": [
+   389,
+   354
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "f_s4",
+  "pal": "face",
+  "title": "العناية بالعين",
+  "p": [
+   "t_eye:5",
+   "b_isis:5"
+  ],
+  "hs": [
+   307,
+   389
+  ],
+  "maxW": [
+   271,
+   236
+  ]
+ },
+ {
+  "tpl": "wide",
+  "key": "h_wide",
+  "pal": "hair",
+  "kicker": "HAIR RITUALS",
+  "title": "شعر صحي<br>بلمعة الصالون",
+  "sub": "كيراستاس • OGX • ناشي أرغان",
+  "p": [
+   "b_ogx:5",
+   "b_kerastase:1",
+   "b_nashi:5"
+  ],
+  "hs": [
+   430,
+   520,
+   420
+  ],
+  "maxW": [
+   260,
+   280,
+   260
+  ],
+  "photo": "loreal-professionnel/curly-hair-model-portrait.jpg",
+  "focus": "50% 30%",
+  "textW": 760
+ },
+ {
+  "tpl": "square",
+  "key": "h_sq1",
+  "pal": "hair",
+  "brand": "NASHI ARGAN",
+  "title": "زيت الأرغان<br>لشعر لامع",
+  "p": [
+   "b_nashi:0",
+   "b_nashi:5",
+   "b_nashi:2"
+  ],
+  "hs": [
+   537,
+   403,
+   549
+  ],
+  "maxW": [
+   290,
+   310,
+   290
+  ]
+ },
+ {
+  "tpl": "square",
+  "key": "h_sq2",
+  "pal": "hair",
+  "brand": "OGX",
+  "title": "ترطيب عميق<br>بزيت الأرغان",
+  "p": [
+   "b_ogx:2",
+   "b_ogx:5"
+  ],
+  "hs": [
+   488,
+   549
+  ],
+  "maxW": [
+   290,
+   310,
+   290
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "h_s1",
+  "pal": "hair",
+  "title": "شامبو وبلسم",
+  "p": [
+   "b_elvive:2",
+   "b_elvive:5"
+  ],
+  "hs": [
+   413,
+   401
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "h_s2",
+  "pal": "hair",
+  "title": "زيوت وماسكات",
+  "p": [
+   "b_ogx:4",
+   "t_hairOil:3"
+  ],
+  "hs": [
+   389,
+   354
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "h_s3",
+  "pal": "hair",
+  "title": "علاجات الشعر",
+  "p": [
+   "t_hairTreat:1",
+   "t_hairTreat:5"
+  ],
+  "hs": [
+   401,
+   389
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "h_s4",
+  "pal": "hair",
+  "title": "تصفيف الشعر",
+  "p": [
+   "t_styling:4",
+   "t_styling:3"
+  ],
+  "hs": [
+   271,
+   401
+  ],
+  "maxW": [
+   319,
+   236
+  ]
+ },
+ {
+  "tpl": "wide",
+  "key": "b_wide",
+  "pal": "body",
+  "kicker": "BODY RITUALS",
+  "title": "طقوس الاستحمام<br>بنعومة تدوم",
+  "sub": "مقشرات وزبدة جسم مرطّبة",
+  "p": [
+   "t_bodyScrub:2",
+   "t_bodyMoist:5"
+  ],
+  "hs": [
+   440,
+   400
+  ],
+  "maxW": [
+   330,
+   420
+  ],
+  "photo": "avene/avene-thermal-water-shoulder-drops.jpg",
+  "focus": "45% 40%",
+  "textW": 760
+ },
+ {
+  "tpl": "square",
+  "key": "b_sq1",
+  "pal": "body",
+  "brand": "VASELINE",
+  "title": "ترطيب عميق<br>للبشرة الجافة",
+  "p": [
+   "b_vaseline:0",
+   "b_vaseline:3",
+   "b_vaseline:5"
+  ],
+  "hs": [
+   549,
+   366,
+   439
+  ],
+  "maxW": [
+   317,
+   390,
+   317
+  ]
+ },
+ {
+  "tpl": "square",
+  "key": "b_sq2",
+  "pal": "body",
+  "brand": "beesline",
+  "title": "انتعاش يدوم<br>طوال اليوم",
+  "p": [
+   "t_deo:0",
+   "t_deo:2",
+   "t_deo:4"
+  ],
+  "hs": [
+   488,
+   512,
+   488
+  ],
+  "maxW": [
+   290,
+   310,
+   290
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "b_s1",
+  "pal": "body",
+  "title": "مرطبات الجسم",
+  "p": [
+   "t_bodyMoist:4",
+   "b_nivea:3"
+  ],
+  "hs": [
+   413,
+   378
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "b_s2",
+  "pal": "body",
+  "title": "غسول الجسم",
+  "p": [
+   "t_bodyWash:1",
+   "t_bodyWash:2"
+  ],
+  "hs": [
+   413,
+   413
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "b_s3",
+  "pal": "body",
+  "title": "مقشر الجسم",
+  "p": [
+   "t_bodyScrub:4",
+   "t_bodyScrub:5"
+  ],
+  "hs": [
+   260,
+   271
+  ],
+  "maxW": [
+   307,
+   330
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "b_s4",
+  "pal": "body",
+  "title": "مزيل العرق",
+  "p": [
+   "t_deo:1",
+   "t_deo:3"
+  ],
+  "hs": [
+   354,
+   389
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "wide",
+  "key": "s_wide",
+  "pal": "sun",
+  "kicker": "SPF 50+",
+  "title": "واقي الشمس<br>كل يوم وكل فصل",
+  "sub": "حماية عالية لكل نوع بشرة",
+  "p": [
+   "sun_lrp:1",
+   "sun_isdin:2",
+   "sun_eucerin:0"
+  ],
+  "hs": [
+   482,
+   526,
+   493
+  ],
+  "maxW": [
+   260,
+   280,
+   260
+  ],
+  "photo": "bioderma/bioderma_photoderm_sun_model_sky_portrait.jpg",
+  "focus": "50% 55%",
+  "textW": 760
+ },
+ {
+  "tpl": "small",
+  "key": "s_s1",
+  "pal": "sun",
+  "brand": "la-roche-posay",
+  "title": "أنثيليوس",
+  "p": [
+   "sun_lrp:0",
+   "sun_lrp:3"
+  ],
+  "hs": [
+   401,
+   401
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "s_s2",
+  "pal": "sun",
+  "brand": "bioderma",
+  "title": "فوتوديرم",
+  "p": [
+   "sun_bioderma:3",
+   "sun_bioderma:2"
+  ],
+  "hs": [
+   401,
+   330
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "s_s3",
+  "pal": "sun",
+  "brand": "eucerin",
+  "title": "واقيات يوسيرين",
+  "p": [
+   "sun_eucerin:2",
+   "sun_eucerin:3"
+  ],
+  "hs": [
+   389,
+   330
+  ],
+  "maxW": [
+   283,
+   330
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "s_s4",
+  "pal": "sun",
+  "brand": "ISDIN",
+  "title": "فوتوبروتيكتور",
+  "p": [
+   "sun_isdin:1",
+   "sun_isdin:3"
+  ],
+  "hs": [
+   354,
+   401
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "wide",
+  "key": "k_wide",
+  "pal": "kor",
+  "kicker": "K-BEAUTY",
+  "title": "العناية الكورية<br>بخطوات لطيفة",
+  "sub": "أنوا • دكتور ألثيا • ميديكيوب",
+  "p": [
+   "b_anua:0",
+   "b_althea:3",
+   "b_medicube:2"
+  ],
+  "hs": [
+   500,
+   430,
+   360
+  ],
+  "maxW": [
+   240,
+   240,
+   300
+  ],
+  "photo": "anua/peach-serum-peaches-portrait.jpg",
+  "focus": "50% 50%",
+  "textW": 760
+ },
+ {
+  "tpl": "small",
+  "key": "k_s1",
+  "pal": "kor",
+  "brand": "DR.ALTHEA",
+  "title": "تهدئة البشرة",
+  "p": [
+   "b_althea:5",
+   "b_althea:3"
+  ],
+  "hs": [
+   307,
+   378
+  ],
+  "maxW": [
+   307,
+   236
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "k_s2",
+  "pal": "kor",
+  "brand": "MEDICUBE",
+  "title": "نضارة وكولاجين",
+  "p": [
+   "b_medicube:2",
+   "b_medicube:5"
+  ],
+  "hs": [
+   354,
+   330
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "k_s3",
+  "pal": "kor",
+  "brand": "EQQUALBERRY",
+  "title": "تونر وسيروم",
+  "p": [
+   "b_eqq:2",
+   "b_eqq:5"
+  ],
+  "hs": [
+   366,
+   389
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "wide",
+  "key": "d_wide",
+  "pal": "derma",
+  "kicker": "DERMO-COSMETICS",
+  "title": "العناية الطبية<br>للبشرة الحساسة",
+  "sub": "تركيبات جلدية لطيفة وفعّالة",
+  "p": [
+   "b_qv:1",
+   "b_pharm:2",
+   "b_isis:0"
+  ],
+  "hs": [
+   493,
+   448,
+   504
+  ],
+  "maxW": [
+   260,
+   280,
+   260
+  ],
+  "photo": "la-roche-posay/lrp-model-face-blue.jpg",
+  "focus": "62% 40%",
+  "textW": 760
+ },
+ {
+  "tpl": "small",
+  "key": "d_s1",
+  "pal": "derma",
+  "brand": "QV",
+  "title": "ترطيب لطيف",
+  "p": [
+   "b_qv:2",
+   "b_qv:0"
+  ],
+  "hs": [
+   354,
+   389
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "d_s2",
+  "pal": "derma",
+  "brand": "PHARMACERIS",
+  "title": "سيرومات مركّزة",
+  "p": [
+   "b_pharm:1",
+   "b_pharm:3"
+  ],
+  "hs": [
+   378,
+   389
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "d_s3",
+  "pal": "derma",
+  "brand": "ISISPHARMA",
+  "title": "لتوحيد اللون",
+  "p": [
+   "b_isis:4",
+   "b_isis:1"
+  ],
+  "hs": [
+   389,
+   401
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "d_s4",
+  "pal": "derma",
+  "brand": "SEBAMED",
+  "title": "للبشرة الحساسة",
+  "p": [
+   "b_sebamed:0",
+   "b_sebamed:2"
+  ],
+  "hs": [
+   401,
+   401
+  ],
+  "maxW": [
+   240,
+   240
+  ]
+ },
+ {
+  "tpl": "wide",
+  "key": "x_wide",
+  "pal": "bf",
+  "kicker": "BLACK FRIDAY",
+  "title": "على براندات<br>العناية",
+  "sub": "في المحل وعلى التطبيق • حتى 28/11",
+  "p": [
+   "bf_beesline_50:1",
+   "bf_lierac_50:2",
+   "bf_bioderma_50:3"
+  ],
+  "hs": [
+   470,
+   493,
+   470
+  ],
+  "cta": "تسوّقي العروض",
+  "maxW": [
+   260,
+   280,
+   260
+  ],
+  "photo": "lierac/lierac_premium_model_black_suit_gold_rays_square.jpg",
+  "focus": "50% 25%",
+  "textW": 760,
+  "pct": 50,
+  "pctLabel": "خصم حتى"
+ },
+ {
+  "tpl": "square",
+  "key": "x_sq1",
+  "pal": "bf",
+  "brand": "lierac",
+  "title": "خصم حتى",
+  "pct": 50,
+  "p": [
+   "bf_lierac_50:2",
+   "bf_lierac_50:1",
+   "bf_lierac_50:3"
+  ],
+  "hs": [
+   537,
+   561,
+   415
+  ],
+  "maxW": [
+   290,
+   310,
+   290
+  ]
+ },
+ {
+  "tpl": "square",
+  "key": "x_sq2",
+  "pal": "bf",
+  "brand": "bioderma",
+  "title": "خصم حتى",
+  "pct": 50,
+  "p": [
+   "bf_bioderma_50:1",
+   "bf_bioderma_50:3"
+  ],
+  "hs": [
+   537,
+   512
+  ],
+  "maxW": [
+   290,
+   310,
+   290
+  ]
+ },
+ {
+  "tpl": "small",
+  "key": "x_s1",
+  "pal": "bf",
+  "brand": "beesline",
+  "title": "خصم حتى",
+  "pct": 50,
+  "p": [
+   "bf_beesline_50:1",
+   "bf_beesline_50:2"
+  ],
+  "hs": [
+   378,
+   378
+  ],
+  "maxW": [
+   240,
+   240
+  ],
+  "brandScale": 0.42
+ },
+ {
+  "tpl": "small",
+  "key": "x_s2",
+  "pal": "bf",
+  "brand": "PHYTO",
+  "title": "خصم حتى",
+  "pct": 50,
+  "p": [
+   "bf_phyto_50:0"
+  ],
+  "hs": [
+   260
+  ],
+  "maxW": [
+   472
+  ],
+  "brandScale": 0.38
+ },
+ {
+  "tpl": "small",
+  "key": "x_s3",
+  "pal": "bf",
+  "brand": "REVOX",
+  "title": "خصم",
+  "pct": 40,
+  "p": [
+   "bf_revox_40:1",
+   "bf_revox_40:3"
+  ],
+  "hs": [
+   389,
+   342
+  ],
+  "maxW": [
+   240,
+   240
+  ],
+  "brandScale": 0.38,
+  "pctLabel": "خصم"
+ },
+ {
+  "tpl": "small",
+  "key": "x_s4",
+  "pal": "bf",
+  "brand": "DERMOLAB",
+  "title": "خصم",
+  "pct": 40,
+  "p": [
+   "bf_dermolab_40:3",
+   "bf_dermolab_40:1"
+  ],
+  "hs": [
+   378,
+   401
+  ],
+  "maxW": [
+   240,
+   240
+  ],
+  "brandScale": 0.38,
+  "pctLabel": "خصم"
+ }
+]

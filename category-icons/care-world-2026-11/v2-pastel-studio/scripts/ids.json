@@ -1,0 +1,52 @@
+{
+ "B": {
+  "cerave": "d4374c40-dc2f-4689-b130-7034d2a223ca",
+  "lrp": "0d66bfed-a33d-460f-a671-25ed2221633a",
+  "bioderma": "6858e48f-90af-41ff-9331-85b81dca4e96",
+  "eucerin": "b5636e4d-7456-4be9-ac3d-971eb22b7168",
+  "avene": "7f388b4a-0b1a-4656-bffd-4a3663c5b71d",
+  "lpro": "df4c40a8-62d2-40a3-8f43-bf7772fa3b45",
+  "nashi": "c2fe0232-a5c0-4291-9041-49862ecfa1a0",
+  "vaseline": "ad40922f-464b-4c31-adc6-054b0ec5a313",
+  "nivea": "6a46ba9b-b249-42f2-a327-45777b2532ff",
+  "isdin": "6df12630-33c8-4384-84c6-766cf7c4d48b",
+  "isis": "2b61796f-7181-486a-82a8-8a5e8d808a56",
+  "althea": "9d5ee875-3480-42f6-8d95-8db79f9421c4",
+  "medicube": "0f2e67d4-2603-45df-b60e-58d07cdc0574",
+  "anua": "63478c45-cf56-4db3-9418-90f31533aaf9",
+  "eqq": "214509e6-0275-4a87-9936-d7575b9aead6",
+  "qv": "b874a959-3342-437a-bc4a-fc56d7ce883c",
+  "pharm": "f009ff8a-83ab-4bdd-adee-66e5db96bac8",
+  "sebamed": "32e4bcfd-26c0-4663-8ce2-1d4fe6b93f33",
+  "lierac": "b551ba87-d61b-467d-910e-4084f5163ca4",
+  "phyto": "66c4a101-d13a-4ba2-9f33-72bd7cabfe49",
+  "beesline": "a3f8a056-2b83-40cb-9743-e2e2cb0df264",
+  "revox": "655a2bc8-3ec7-4d2a-8c24-336bab4a83a4",
+  "dermolab": "ab2658f4-88ea-4228-977a-088252f03472",
+  "ordinary": null
+ },
+ "T": {
+  "faceWash": "05028a17-da64-4c66-b25f-73c758acc2f8",
+  "faceMoist": "21801439-d0e9-4106-b5e8-dfdd70ffeb8d",
+  "mask": "5a89a7d0-16d9-47d6-8575-2961289fc526",
+  "eye": "09bedca5-0c6c-4a71-9b03-4bf29cecaf53",
+  "shampoo": "25b4613e-cbf3-47cc-98b1-c94b398d51f4",
+  "hairOil": "ab7c66e4-4df6-474f-b9d2-dd059dd60bfc",
+  "hairTreat": "ee39d6a6-5074-43b6-a80c-a7c1b23c3bd1",
+  "styling": "c508347a-8844-4068-b508-9653ede66b8b",
+  "bodyMoist": "fcd86b22-a0fd-47b9-ba4c-c76164dadab2",
+  "bodyWash": "35be991e-3062-4fbd-8f0a-2393bf806524",
+  "bodyScrub": "15e1a2c3-9924-4fd3-a7d9-b66d9adaddce",
+  "deo": "9464c921-9650-421f-8e2b-6a172f7524c5",
+  "sun": "ad2a9e6b-5e20-4393-849a-e5e6c6cc97e2",
+  "kor": "2cf78dfc-8e8f-4f48-b75f-59eb445ba269"
+ },
+ "S": {
+  "face": "07661898-571a-4a88-aa6c-76dcdbf53029",
+  "hair": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+  "body": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+  "sun": "25dc8086-bffa-47af-aaf7-64d503e58a9f",
+  "kor": "7d2bfaec-d963-404b-b9b5-04b64a82bf29",
+  "derma": "09146169-f9c4-4649-a365-ca1b8cda365f"
+ }
+}
