@@ -1,0 +1,927 @@
+[
+ {
+  "id": "c82948b9-b193-4a4b-bfe6-8d8e895cfa36",
+  "name": "كريجي أحمر شفاه سائل مطفي أونلي مات لونغ ستاي باور",
+  "nameEn": "GRIGI Only Matte Long Stay Power Liquid Lipstick",
+  "price": 5750,
+  "originalPrice": 11500,
+  "pct": 50,
+  "stock": 4640,
+  "shades": [
+   {
+    "name": "01 Red",
+    "hex": "#df4c5a"
+   },
+   {
+    "name": "02 Dark Nude Rose",
+    "hex": "#b67879"
+   },
+   {
+    "name": "03 Nude",
+    "hex": "#cd8a86"
+   },
+   {
+    "name": "04 Nude Pink",
+    "hex": "#c58581"
+   },
+   {
+    "name": "05 Nude Purple",
+    "hex": "#b97580"
+   },
+   {
+    "name": "06 Dark Natural Pink",
+    "hex": "#d27888"
+   },
+   {
+    "name": "07 Bordeaux",
+    "hex": "#9a4e62"
+   },
+   {
+    "name": "10 Fuchsia Purple",
+    "hex": "#bc4677"
+   },
+   {
+    "name": "11 Coral Deep",
+    "hex": "#bf5757"
+   },
+   {
+    "name": "12 Coral Cinnamon",
+    "hex": "#c1504f"
+   },
+   {
+    "name": "15 Dark Nude",
+    "hex": "#9e7d82"
+   },
+   {
+    "name": "17 Cranberry",
+    "hex": "#885964"
+   },
+   {
+    "name": "18 Dark Pink Cherry",
+    "hex": "#b15162"
+   },
+   {
+    "name": "19 Dark Nude Purple",
+    "hex": "#926168"
+   },
+   {
+    "name": "20 Nude Pink Light",
+    "hex": "#cc8f88"
+   },
+   {
+    "name": "21 Dark Nude Cherry",
+    "hex": "#a16166"
+   },
+   {
+    "name": "25 Dark Cherry",
+    "hex": "#cc4f65"
+   },
+   {
+    "name": "28 Nude Pink Bright",
+    "hex": "#946369"
+   },
+   {
+    "name": "29 Nude Pink Purple",
+    "hex": "#a8636a"
+   },
+   {
+    "name": "31 Dark Nude Brown",
+    "hex": "#965d5e"
+   },
+   {
+    "name": "34 Dark Purple",
+    "hex": "#8b4e6f"
+   },
+   {
+    "name": "37 Dark Pink",
+    "hex": "#d84a78"
+   },
+   {
+    "name": "38 Pink Purple",
+    "hex": "#cf558a"
+   },
+   {
+    "name": "39 Watermelon",
+    "hex": "#d3435b"
+   },
+   {
+    "name": "40 Warm Coral",
+    "hex": "#cb6a61"
+   },
+   {
+    "name": "41 Nude Neutral",
+    "hex": "#9c6d69"
+   },
+   {
+    "name": "46 Dark Pink Mauve",
+    "hex": "#94515b"
+   },
+   {
+    "name": "48 Fuchsia Pink Intense",
+    "hex": "#b94f98"
+   },
+   {
+    "name": "49 Red Watermelon Intense",
+    "hex": "#b55864"
+   },
+   {
+    "name": "50 Light Cherry",
+    "hex": "#992d4c"
+   },
+   {
+    "name": "51 Nude Coral Brown",
+    "hex": "#995a55"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/98c77009a17ce07a_large.webp"
+ },
+ {
+  "id": "41294991-915b-4715-9af7-f6b6ba908097",
+  "name": "كريجي أحمر شفاه ساتان برو",
+  "nameEn": "GRIGI Satin Lipstick Pro",
+  "price": 5500,
+  "originalPrice": 11000,
+  "pct": 50,
+  "stock": 2706,
+  "shades": [
+   {
+    "name": "501 Warm Caramel",
+    "hex": "#bc8484"
+   },
+   {
+    "name": "502 Nude Pink",
+    "hex": "#b46c74"
+   },
+   {
+    "name": "503 Elegant Coral",
+    "hex": "#b96c66"
+   },
+   {
+    "name": "505 Dark Red Brown",
+    "hex": "#994b58"
+   },
+   {
+    "name": "510 Nude Brown",
+    "hex": "#9B706F"
+   },
+   {
+    "name": "512 Nude Reddish Brown",
+    "hex": "#9c6c6c"
+   },
+   {
+    "name": "514 Nude Pink Cherry",
+    "hex": "#9D5A6B"
+   },
+   {
+    "name": "519 Dark Coral Nude",
+    "hex": "#bc6c64"
+   },
+   {
+    "name": "529 Caramel",
+    "hex": "#9f6057"
+   },
+   {
+    "name": "530 Peony",
+    "hex": "#bb6e6c"
+   },
+   {
+    "name": "531 Red Fire",
+    "hex": "#B92B34"
+   },
+   {
+    "name": "533 Nude Mauve",
+    "hex": "#8c5a4f"
+   },
+   {
+    "name": "534 Dark Pink Cherry",
+    "hex": "#a65456"
+   },
+   {
+    "name": "535 Dark Brown",
+    "hex": "#895851"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/ea446e1af21ef083_large.webp"
+ },
+ {
+  "id": "572e09f9-11f8-4a04-883f-73c03d10190c",
+  "name": "كريجي قلم تحديد شفاه سيلكي مقاوم للماء",
+  "nameEn": "GRIGI Waterproof Lip Silky Pencil",
+  "price": 4000,
+  "originalPrice": 7750,
+  "pct": 50,
+  "stock": 2774,
+  "shades": [
+   {
+    "name": "02 Red",
+    "hex": "#9f1e21"
+   },
+   {
+    "name": "06 Light Pink Cherry",
+    "hex": "#df586a"
+   },
+   {
+    "name": "07 Coral",
+    "hex": "#d1321a"
+   },
+   {
+    "name": "10 Pink Fuchsia",
+    "hex": "#ab3753"
+   },
+   {
+    "name": "11 Brown Mauve",
+    "hex": "#7a4247"
+   },
+   {
+    "name": "13 Light Nude",
+    "hex": "#A07265"
+   },
+   {
+    "name": "14 Nude Caramel",
+    "hex": "#B0716A"
+   },
+   {
+    "name": "16 Warm Nude",
+    "hex": "#c9a090"
+   },
+   {
+    "name": "18 Bordeaux",
+    "hex": "#57353b"
+   },
+   {
+    "name": "19 Natural Pink",
+    "hex": "#a55c73"
+   },
+   {
+    "name": "21 Nude Pink Brown",
+    "hex": "#AD6567"
+   },
+   {
+    "name": "23 Pink Cherry",
+    "hex": "#d4566f"
+   },
+   {
+    "name": "24 Bright Pink Fuchsia",
+    "hex": "#d43a72"
+   },
+   {
+    "name": "25 Purple",
+    "hex": "#753b5c"
+   },
+   {
+    "name": "27 Dark Nude Cherry",
+    "hex": "#a78896"
+   },
+   {
+    "name": "30 Sweet Dark Pink",
+    "hex": "#cb929a"
+   },
+   {
+    "name": "31 Magenta",
+    "hex": "#bc5f7c"
+   },
+   {
+    "name": "33 Pink Demure",
+    "hex": "#c86f6f"
+   },
+   {
+    "name": "35 Dark Nude Mauve",
+    "hex": "#8a656f"
+   },
+   {
+    "name": "36 Cinnamon Pink",
+    "hex": "#7B493F"
+   },
+   {
+    "name": "38 Dark Orange Coral",
+    "hex": "#dc7979"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/062af7e10c679b84_large.webp"
+ },
+ {
+  "id": "4862fc02-4023-4070-be90-ddc4f0007c8c",
+  "name": "كريجي ليب كومبو أحمر شفاه سائل مطفي مع غلوس",
+  "nameEn": "GRIGI Lip Combo Matte Liquid Lipstick & Gloss",
+  "price": 8000,
+  "originalPrice": 16000,
+  "pct": 50,
+  "stock": 631,
+  "shades": [
+   {
+    "name": "01 Pink Chic!",
+    "hex": "#B37D84"
+   },
+   {
+    "name": "02 Nude Mauve Pink",
+    "hex": "#A17273"
+   },
+   {
+    "name": "03 Nude Pink Brown",
+    "hex": "#945D5E"
+   },
+   {
+    "name": "06 Berry",
+    "hex": "#8D374D"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/0f29deba3cc13bf3_large.webp"
+ },
+ {
+  "id": "71750b07-1572-487c-9e87-1f168276b2d6",
+  "name": "كريجي أحمر شفاه سائل لامع غلوس برو",
+  "nameEn": "GRIGI Gloss Liquid Lipstick Pro",
+  "price": 8000,
+  "originalPrice": 16000,
+  "pct": 50,
+  "stock": 553,
+  "shades": [
+   {
+    "name": "407 Vinyl Dark Nude Purple",
+    "hex": "#814954"
+   },
+   {
+    "name": "408 Vinyl Dark Nude Brown",
+    "hex": "#72393A"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/2972e5758b5fcf79_large.webp"
+ },
+ {
+  "id": "6f868ba1-f98b-41c3-8811-6d5db120b2ad",
+  "name": "كريجي أحمر شفاه سائل مطفي مات برو",
+  "nameEn": "GRIGI Matte Pro Liquid Lipstick",
+  "price": 5750,
+  "originalPrice": 11500,
+  "pct": 50,
+  "stock": 2100,
+  "shades": [
+   {
+    "name": "401 Red",
+    "hex": "#c05055"
+   },
+   {
+    "name": "403 Nude Purple",
+    "hex": "#a97b7e"
+   },
+   {
+    "name": "404 Nude Brown",
+    "hex": "#b57e74"
+   },
+   {
+    "name": "410 Cranberry Lumi",
+    "hex": "#e06381"
+   },
+   {
+    "name": "411 Metallic Nude Pink",
+    "hex": "#df969c"
+   },
+   {
+    "name": "412 Nude Light",
+    "hex": "#b48682"
+   },
+   {
+    "name": "414 Nude Peach",
+    "hex": "#c46e73"
+   },
+   {
+    "name": "415 Pink Coral",
+    "hex": "#ef808a"
+   },
+   {
+    "name": "417 Nude Caramel",
+    "hex": "#c37d70"
+   },
+   {
+    "name": "418 Red Brown Dark",
+    "hex": "#a45453"
+   },
+   {
+    "name": "422",
+    "hex": "#9b555b"
+   },
+   {
+    "name": "425 Light Nude Pink",
+    "hex": "#cca89a"
+   },
+   {
+    "name": "429 Vivid Coral Pink",
+    "hex": "#d36e6a"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/47c47a9f62d1317f_large.webp"
+ },
+ {
+  "id": "8a357d6d-69b0-4c1f-acd9-aa891f21e9e9",
+  "name": "كريجي أحمر شفاه سائل مطفي مات لونغ ستاي ميني",
+  "nameEn": "GRIGI Matte Long Stay Liquid Lipstick Mini",
+  "price": 2250,
+  "originalPrice": 4250,
+  "pct": 50,
+  "stock": 4021,
+  "shades": [
+   {
+    "name": "03 Nude",
+    "hex": "#cd8a86"
+   },
+   {
+    "name": "04 Nude Pink",
+    "hex": "#B9746F"
+   },
+   {
+    "name": "05 Nude Purple",
+    "hex": "#b97580"
+   },
+   {
+    "name": "06 Dark Natural Pink",
+    "hex": "#d27888"
+   },
+   {
+    "name": "21 Dark Nude Cherry",
+    "hex": "#a16166"
+   },
+   {
+    "name": "26 Deep Red",
+    "hex": "#c44a57"
+   },
+   {
+    "name": "27 Purple",
+    "hex": "#a05078"
+   },
+   {
+    "name": "29 Nude Pink Purple",
+    "hex": "#a8636a"
+   },
+   {
+    "name": "38 Pink Purple",
+    "hex": "#cf558a"
+   },
+   {
+    "name": "39 Watermelon",
+    "hex": "#d3435b"
+   },
+   {
+    "name": "40 Warm Coral",
+    "hex": "#cb6a61"
+   },
+   {
+    "name": "43 Cinnamon",
+    "hex": "#864D45"
+   },
+   {
+    "name": "48 Fuchsia Pink Intense",
+    "hex": "#b94f98"
+   },
+   {
+    "name": "49 Red Watermelon Intense",
+    "hex": "#d44654"
+   },
+   {
+    "name": "51 Nude Coral Brown",
+    "hex": "#995a55"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/08/a46375840fbc5675_large.webp"
+ },
+ {
+  "id": "597337ee-33d0-46f4-a289-ab090b7e41bf",
+  "name": "كريجي مرطب شفاه ملوّن غلو رقم 04 نود",
+  "nameEn": "GRIGI Glow Tinted Lip Balm 04 Nude",
+  "price": 5000,
+  "originalPrice": 10000,
+  "pct": 50,
+  "stock": 278,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/69d6f598a18cb907_large.webp"
+ },
+ {
+  "id": "9056a948-3abe-4d20-8003-763339e64a2a",
+  "name": "كريجي قلم جل تحديد عيون بريميوم برو رقم 01 أسود",
+  "nameEn": "GRIGI Premium Gel Eyeliner Pencil Pro 01 Black",
+  "price": 6000,
+  "originalPrice": 12000,
+  "pct": 50,
+  "stock": 3388,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/77d015009703bf5c_large.webp"
+ },
+ {
+  "id": "1b1ec0fc-9786-485a-b6e7-b15f161b50bc",
+  "name": "كريجي ماسكارا بريميوم برو للطول والحجم والتعريف",
+  "nameEn": "GRIGI Premium Mascara Pro",
+  "price": 12000,
+  "originalPrice": 24000,
+  "pct": 50,
+  "stock": 325,
+  "shades": [
+   {
+    "name": "Brown",
+    "hex": "#554233"
+   },
+   {
+    "name": "Mermaid Blue",
+    "hex": "#343576"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/12526ba935fcb9a6_large.webp"
+ },
+ {
+  "id": "4885a4c5-5010-4cb8-98e2-37471ffce41e",
+  "name": "كريجي ماسكارا لينغث برو أسود فاحم للطول",
+  "nameEn": "GRIGI Length Pro Mascara Jet Black",
+  "price": 10000,
+  "originalPrice": 20000,
+  "pct": 50,
+  "stock": 259,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/bf84140ebe347c5c_large.webp"
+ },
+ {
+  "id": "8b743494-cc21-492f-b979-3f31d7a0cea6",
+  "name": "كريجي ماسكارا فوليوم برو أسود فاحم",
+  "nameEn": "GRIGI Volume Pro Mascara Jet Black",
+  "price": 12000,
+  "originalPrice": 24000,
+  "pct": 50,
+  "stock": 224,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/7c9b77e27fe26993_large.webp"
+ },
+ {
+  "id": "542bf9b4-836f-48f3-af84-626ce8f3ad85",
+  "name": "كريجي ظل عيون ستيك تويست آند غو برو",
+  "nameEn": "GRIGI Twist & Go Eyeshadow Stick Pro",
+  "price": 10000,
+  "originalPrice": 20000,
+  "pct": 50,
+  "stock": 534,
+  "shades": [
+   {
+    "name": "101 Shimmer Shell",
+    "hex": "#C8AAA7"
+   },
+   {
+    "name": "102 Shimmer Sand",
+    "hex": "#A38575"
+   },
+   {
+    "name": "103 Shimmer Bronze",
+    "hex": "#BC9A82"
+   },
+   {
+    "name": "104 Shimmer Brown",
+    "hex": "#745448"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/c6b141f375bde31f_large.webp"
+ },
+ {
+  "id": "c619ce48-7b7c-4261-9e82-2cc79ce03ce0",
+  "name": "كريجي آيلاينر سائل ديب لاينر بريميوم برو أسود",
+  "nameEn": "GRIGI Dipliner Premium Pro Liquid Eyeliner Black",
+  "price": 5750,
+  "originalPrice": 11500,
+  "pct": 50,
+  "stock": 357,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/677fbb46f298e0c1_large.webp"
+ },
+ {
+  "id": "6ed13437-1b34-4986-be1c-b430b8b4fde4",
+  "name": "كريجي باليت ظلال عيون برو 10 ألوان رقم 05 موكا موس بارادايس",
+  "nameEn": "GRIGI Palette Pro 10 Colours 05 The Mocha Mousse Paradise",
+  "price": 7750,
+  "originalPrice": 15500,
+  "pct": 50,
+  "stock": 100,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/46ec143b871a29d4_large.webp"
+ },
+ {
+  "id": "9d301496-6407-4c70-bafe-b913d9e59f1b",
+  "name": "كريجي كريم أساس برو لومينوس 30 مل",
+  "nameEn": "GRIGI Pro Luminous Foundation 30ml",
+  "price": 12000,
+  "originalPrice": 24000,
+  "pct": 50,
+  "stock": 309,
+  "shades": [
+   {
+    "name": "22 Neutral",
+    "hex": "#b6a293"
+   },
+   {
+    "name": "23 Candle Beige",
+    "hex": "#c5a996"
+   },
+   {
+    "name": "27 Natural",
+    "hex": "#d2b59b"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/09/280afcd4cede052d_large.webp"
+ },
+ {
+  "id": "3db018cc-5cb4-45cb-8ad6-0fb208d5606b",
+  "name": "كريجي كريم أساس برو لومينوس بمضخة إيرلس 30 مل",
+  "nameEn": "GRIGI Pro Airless Luminous Foundation 30ml",
+  "price": 12000,
+  "originalPrice": 24000,
+  "pct": 50,
+  "stock": 273,
+  "shades": [
+   {
+    "name": "27 Natural",
+    "hex": "#C3AD93"
+   },
+   {
+    "name": "28 Golden Sand",
+    "hex": "#C3AD93"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/318a358326c3aaf4_large.webp"
+ },
+ {
+  "id": "78ccf425-ae0c-418a-8430-26a2e4a1880a",
+  "name": "كريجي كريم أساس مات برو فيلر سائل مطفي 30 مل",
+  "nameEn": "GRIGI Matte Pro Filler Foundation 30ml",
+  "price": 12500,
+  "originalPrice": 24750,
+  "pct": 50,
+  "stock": 261,
+  "shades": [
+   {
+    "name": "31 Fair Beige",
+    "hex": "#c89e81"
+   },
+   {
+    "name": "32 Beige",
+    "hex": "#bf987b"
+   },
+   {
+    "name": "33 Sand Beige",
+    "hex": "#ba9070"
+   },
+   {
+    "name": "34 Vanilla",
+    "hex": "#af8368"
+   },
+   {
+    "name": "36 Nude",
+    "hex": "#bf9175"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/baaa83412c9aa513_large.webp"
+ },
+ {
+  "id": "54865083-7322-43b5-990c-c09d054f6e16",
+  "name": "كريجي برايمر بيرفكت برو بمضخة إيرلس 30 مل",
+  "nameEn": "GRIGI Pro Airless Perfect Primer Pro 30ml",
+  "price": 16500,
+  "originalPrice": 33000,
+  "pct": 50,
+  "stock": 271,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/0617920062b25143_large.webp"
+ },
+ {
+  "id": "6ef3aa7d-fbe7-48c0-b9ec-34a37ced8e9f",
+  "name": "كريجي برايمر أوبتيموم برو بمضخة إيرلس 30 مل",
+  "nameEn": "GRIGI Pro Airless Optimum Primer Pro 30ml",
+  "price": 15000,
+  "originalPrice": 30000,
+  "pct": 50,
+  "stock": 275,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/3fb39b710491508d_large.webp"
+ },
+ {
+  "id": "8643da40-711b-4e19-85bc-4aa6de37b803",
+  "name": "كريجي مثبت مكياج بيرفكت فيكسر برو 50 مل",
+  "nameEn": "GRIGI Perfect Fixer Make Up Pro 50ml",
+  "price": 8000,
+  "originalPrice": 16000,
+  "pct": 50,
+  "stock": 274,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/4b36a1e1f7d27403_large.webp"
+ },
+ {
+  "id": "63044ce9-8d22-4f38-b367-a0e50e0920e9",
+  "name": "كريجي بودرة وجه مضغوطة ماكس كومباكت",
+  "nameEn": "GRIGI Max Compact Powder",
+  "price": 6250,
+  "originalPrice": 12250,
+  "pct": 50,
+  "stock": 1326,
+  "shades": [
+   {
+    "name": "02 Pink Ivory",
+    "hex": "#baa696"
+   },
+   {
+    "name": "03 Ivory",
+    "hex": "#b4a293"
+   },
+   {
+    "name": "05 Dark Beige",
+    "hex": "#ae9a89"
+   },
+   {
+    "name": "12 Beige Neutral Gold",
+    "hex": "#c3ae92"
+   },
+   {
+    "name": "13 Peachy Neutral Gold",
+    "hex": "#b99f8c"
+   },
+   {
+    "name": "14 Medium Beige",
+    "hex": "#bd9a88"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/9d0cf5f3ae159326_large.webp"
+ },
+ {
+  "id": "99b19423-3cbd-4c48-9259-b577cb6b4f17",
+  "name": "كريجي بلاشر بودرة ماكس بلاش أون للخدود",
+  "nameEn": "GRIGI Max Blush On Powder Blush",
+  "price": 6250,
+  "originalPrice": 12250,
+  "pct": 50,
+  "stock": 2042,
+  "shades": [
+   {
+    "name": "01 Pink",
+    "hex": "#a26e66"
+   },
+   {
+    "name": "04 Peach",
+    "hex": "#d1786f"
+   },
+   {
+    "name": "05 Nude Light",
+    "hex": "#b9857f"
+   },
+   {
+    "name": "09 Purple Pink",
+    "hex": "#ad7179"
+   },
+   {
+    "name": "12 Nude",
+    "hex": "#b17b74"
+   },
+   {
+    "name": "13 Nude Pearl Pink",
+    "hex": "#ae7271"
+   },
+   {
+    "name": "15 Bronze Brown",
+    "hex": "#ad7469"
+   },
+   {
+    "name": "16 Nude Brown",
+    "hex": "#aa7364"
+   },
+   {
+    "name": "17 Pink Fuchsia",
+    "hex": "#c8727f"
+   },
+   {
+    "name": "20 Chocolate Pearl Brown",
+    "hex": "#a26d65"
+   },
+   {
+    "name": "26 Sweet Peach",
+    "hex": "#cd9c89"
+   },
+   {
+    "name": "27 Woody Rose",
+    "hex": "#a7826a"
+   },
+   {
+    "name": "28 Bright Rose",
+    "hex": "#ce9c99"
+   },
+   {
+    "name": "29 Peachy Pink Satin",
+    "hex": "#ae7a79"
+   },
+   {
+    "name": "30 True Mauve Brown",
+    "hex": "#804e4d"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/b94aa3c60761cb1e_large.webp"
+ },
+ {
+  "id": "10c66f9e-890b-4150-a2da-2d55a85075aa",
+  "name": "كريجي بلاشر ستيك بالببتيد أون ذا غو للخدود",
+  "nameEn": "GRIGI On The Go Peptide Stick Blush",
+  "price": 6750,
+  "originalPrice": 13500,
+  "pct": 50,
+  "stock": 553,
+  "shades": [
+   {
+    "name": "01 Pink Fuchsia",
+    "hex": "#d57080"
+   },
+   {
+    "name": "03 Warm Pink",
+    "hex": "#e3808b"
+   },
+   {
+    "name": "05 Muted Brick",
+    "hex": "#965644"
+   },
+   {
+    "name": "06 Browny",
+    "hex": "#8E594B"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/42833384ce59a0aa_large.webp"
+ },
+ {
+  "id": "31e4867b-a597-4521-9b98-d2961c7af192",
+  "name": "كريجي كونسيلر سائل ألترا برو عالي التغطية",
+  "nameEn": "GRIGI Ultra Pro Covering Liquid Concealer",
+  "price": 6250,
+  "originalPrice": 12250,
+  "pct": 50,
+  "stock": 67,
+  "shades": [
+   {
+    "name": "19 Nude Beige",
+    "hex": "#c0a690"
+   },
+   {
+    "name": "20 Ivory",
+    "hex": "#bb9e85"
+   },
+   {
+    "name": "21 Dark Nude Beige",
+    "hex": "#c7a894"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/9bed05869fb0d476_large.webp"
+ },
+ {
+  "id": "a567cd54-28bd-4c4b-b789-be742de3bc2b",
+  "name": "كريجي قلم تحديد شفاه أوتوماتيك تويست آند غو برو",
+  "nameEn": "GRIGI Twist & Go Lipliner Pencil Pro",
+  "price": 7000,
+  "originalPrice": 14000,
+  "pct": 50,
+  "stock": 819,
+  "shades": [
+   {
+    "name": "214 Nude Caramel",
+    "hex": "#824F51"
+   },
+   {
+    "name": "216 Warm Nude",
+    "hex": "#6D484E"
+   },
+   {
+    "name": "221 Nude Pink Brown",
+    "hex": "#7D3B45"
+   },
+   {
+    "name": "236 Cinnamon Pink",
+    "hex": "#6A2C32"
+   },
+   {
+    "name": "240 Frosted Brown",
+    "hex": "#5E4540"
+   },
+   {
+    "name": "242 Warm Rose Nude",
+    "hex": "#70464A"
+   }
+  ],
+  "img": "https://deemaalhayat.com/media/product/2026/11/c6dae2221acc31b3_large.webp"
+ },
+ {
+  "id": "b72f488a-4632-4c58-8031-7698324eeb5a",
+  "name": "كريجي باليت وجه تريو برو رقم 01 كورال بارادايس برونزر وبلاشر وهايلايتر",
+  "nameEn": "GRIGI Pro Multi Palette Trio 01 Coral Paradise",
+  "price": 7750,
+  "originalPrice": 15500,
+  "pct": 50,
+  "stock": 117,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/d5a4d098621be782_large.webp"
+ },
+ {
+  "id": "fd30f8d8-a333-43bf-ba4e-2f589e999717",
+  "name": "كريجي برايمر برو لومينوس 3 في 1 للوجه 30 مل",
+  "nameEn": "GRIGI Pro Luminous Primer 3 in 1 30ml",
+  "price": 13000,
+  "originalPrice": 25750,
+  "pct": 50,
+  "stock": 202,
+  "shades": [],
+  "img": "https://deemaalhayat.com/media/product/2026/11/b46b91642d8f9130_large.webp"
+ }
+]
