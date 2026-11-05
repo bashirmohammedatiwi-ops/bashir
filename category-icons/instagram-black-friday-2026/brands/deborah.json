@@ -1,0 +1,95 @@
+{
+ "brand": "brand-1784986563282",
+ "folder": "07 Deborah ديبورا",
+ "slides": [
+  {
+   "type": "app",
+   "hero": "hero_deborah.jpg",
+   "pct": 50,
+   "sub": "عروض ديبورا ميلانو للجمعة السوداء",
+   "products": [
+    "cda09f3f-4ebe-4c04-ac01-b49c663d3aa4",
+    "d5269b0b-c949-4a6f-9012-622ecb5ab237",
+    "7de69582-573c-4ff2-accb-4b39024f0261"
+   ],
+   "stage": [
+    "d5269b0b-c949-4a6f-9012-622ecb5ab237",
+    "cda09f3f-4ebe-4c04-ac01-b49c663d3aa4",
+    "2f3d5b9e-c48c-41a7-ba3b-3a4aa9510759",
+    "eecfe511-3225-44d5-8066-246e8834096d"
+   ]
+  },
+  {
+   "type": "hero",
+   "pct": 50,
+   "sub": "عروض 30% و50% على ديبورا ميلانو",
+   "products": [
+    "d5269b0b-c949-4a6f-9012-622ecb5ab237",
+    "c71a62ad-af38-4792-bc42-7b8f2176fb55",
+    "2c9237c4-9f7e-45e8-910b-1cd5931074c1",
+    "ab60edd7-17aa-4868-9588-f5275d0510d9",
+    "28ed3f63-70e6-4b69-8866-3321ef836c97"
+   ]
+  },
+  {
+   "type": "offer",
+   "pct": 50,
+   "sub": "على أحمر الشفاه والجلوس والماسكارا",
+   "products": [
+    "cda09f3f-4ebe-4c04-ac01-b49c663d3aa4",
+    "7de69582-573c-4ff2-accb-4b39024f0261",
+    "eecfe511-3225-44d5-8066-246e8834096d",
+    "73fd83b3-a7ab-494c-b9b3-44dbcc72cfda"
+   ],
+   "h": 420
+  },
+  {
+   "type": "spotlight",
+   "product": "8dd164e1-89b4-44db-8fac-9ed0212fbcf0",
+   "kicker": "SUPER VINYL · NO TRANSFER",
+   "title": "أحمر شفاه Super Vinyl Shake",
+   "note": "ثبات No Transfer لا ينتقل"
+  },
+  {
+   "type": "offer",
+   "pct": 30,
+   "sub": "على الفاونديشن والبودرة والكونسيلر",
+   "products": [
+    "f3b86247-ad18-47cb-8639-61ea5ff2651a",
+    "2f3d5b9e-c48c-41a7-ba3b-3a4aa9510759",
+    "c26df33f-ee1b-49f5-bf5d-bdec7f4461ae",
+    "f7bdea55-4add-470a-8728-5e40e40f6db1",
+    "c02a6b95-19a8-4fbf-9f85-862170e0c6de"
+   ]
+  },
+  {
+   "type": "spotlight",
+   "product": "ec5ba293-28d0-4307-897e-eb9d77c888fb",
+   "kicker": "INSTANT LIFT · FOUNDATION",
+   "h": 600,
+   "title": "فاونديشن Instant Lift",
+   "note": "كريم أساس بتأثير شدّ فوري"
+  },
+  {
+   "type": "grid",
+   "title": "اختياراتنا من العرض",
+   "sub": "العرض حتى 28 تشرين الثاني",
+   "products": [
+    "d5269b0b-c949-4a6f-9012-622ecb5ab237",
+    "cac595d3-1e3e-4c8b-b293-c449cb41e462",
+    "caa6b148-1719-4d86-887f-bd9b0ff41b9a",
+    "fb1a355c-a376-4d7b-955d-8f88c7f4f4ec"
+   ],
+   "names": {
+    "d5269b0b-c949-4a6f-9012-622ecb5ab237": "فاونديشن Skin Booster Serum",
+    "cac595d3-1e3e-4c8b-b293-c449cb41e462": "ظل عيون 24Ore Color Power",
+    "caa6b148-1719-4d86-887f-bd9b0ff41b9a": "ظل عيون Precious Color",
+    "fb1a355c-a376-4d7b-955d-8f88c7f4f4ec": "بودرة La Cipria"
+   }
+  },
+  {
+   "type": "cta",
+   "sub": "عروض ديبورا ميلانو حتى 50% لغاية 28 تشرين الثاني<br>اطلبيها الآن من التطبيق بلمسة واحدة"
+  }
+ ]
+}
