@@ -308,7 +308,11 @@ model Product {
   productAlerts   ProductAlert[]
   packageItems    PackageItem[]
   skinConcerns    ProductSkinConcern[]
+  /// عرض الخصم المطبّق الآن من لوحة التحكم (ProductOffer) — فارغ = السعر من الـ POS كما هو.
+  offerId         String?
+  offerItems      ProductOfferItem[]
 
+  @@index([offerId])
   @@index([brandId])
   @@index([brandId, position])
   @@index([categoryId])
@@ -324,6 +328,42 @@ model Product {
   @@index([rating])
   @@index([barcode])
   @@index([soldCount])
+}
+
+/// عرض خصم مؤقت من لوحة التحكم على منتجات (بالباركود): يبقى فوق أسعار الـ POS بين البداية والنهاية
+/// ثم يعود السعر وحده. مثال: «بيزلين — الجمعة السوداء 30%».
+model ProductOffer {
+  id              String   @id @default(uuid())
+  name            String
+  discountPercent Int
+  startsAt        DateTime
+  endsAt          DateTime
+  isActive        Boolean  @default(true)
+  barcodes        String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           ProductOfferItem[]
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+/// منتج طُبّق عليه عرض، وسعره قبل العرض (لإرجاعه عند الانتهاء إن لم يكن له سعر من الـ POS).
+model ProductOfferItem {
+  id                  String   @id @default(uuid())
+  offerId             String
+  productId           String
+  prevPrice           Int
+  prevOriginalPrice   Int
+  prevDiscountPercent Int
+  prevIsPromo         Boolean
+  createdAt           DateTime @default(now())
+
+  offer               ProductOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  product             Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([offerId, productId])
+  @@index([productId])
 }
 
 model InventorySyncSnapshot {

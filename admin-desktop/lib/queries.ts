@@ -53,6 +53,8 @@ export const queries = {
   packages: () =>
     api.get("/packages", { params: { all: 1, lite: 1 } }).then((r) => r.data?.data ?? r.data),
   coupons: () => api.get("/coupons").then((r) => r.data?.data ?? r.data),
+  productOffers: () => api.get("/admin/product-offers").then((r) => r.data?.data ?? r.data),
+  productOffer: (id: string) => api.get(`/admin/product-offers/${id}`).then((r) => r.data?.data ?? r.data),
   assistantGuides: () => api.get("/assistant/guides").then((r) => r.data?.data ?? r.data),
   advisorTraining: () => api.get("/advisor/admin/training").then((r) => r.data?.data ?? r.data),
   advisorPhrases: (params?: { source?: string; q?: string }) =>
@@ -250,6 +252,10 @@ export const mutations = {
   updateAssistantGuide: (id: string, data: any) =>
     api.patch(`/assistant/guides/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteAssistantGuide: (id: string) => api.delete(`/assistant/guides/${id}`).then((r) => r.data),
+  createProductOffer: (data: any) => api.post("/admin/product-offers", data).then((r) => r.data?.data ?? r.data),
+  updateProductOffer: (id: string, data: any) =>
+    api.patch(`/admin/product-offers/${id}`, data).then((r) => r.data?.data ?? r.data),
+  deleteProductOffer: (id: string) => api.delete(`/admin/product-offers/${id}`).then((r) => r.data),
   createCoupon: (data: any) => api.post("/coupons", data).then((r) => r.data?.data ?? r.data),
   updateCoupon: (id: string, data: any) =>
     api.patch(`/coupons/${id}`, data).then((r) => r.data?.data ?? r.data),

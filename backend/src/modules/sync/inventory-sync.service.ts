@@ -6,6 +6,7 @@ import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
 import { RecordPosSyncRunDto } from "./dto/inventory-admin.dto";
+import { ProductOffersService } from "./product-offers.service";
 import { StockAlertService } from "./stock-alert.service";
 
 type SanitizedItem = {
@@ -99,6 +100,7 @@ export class InventorySyncService {
     private readonly prisma: PrismaService,
     private readonly stockAlerts: StockAlertService,
     private readonly homeFeedCache: HomeFeedCacheService,
+    private readonly productOffers: ProductOffersService,
   ) {}
 
   async findByBarcode(barcode: string) {
@@ -343,6 +345,14 @@ export class InventorySyncService {
       productMap = catalog.productMap;
     } catch (err) {
       this.logger.error(`Catalog apply failed after snapshot sync: ${this.formatError(err)}`);
+    }
+
+    // الـ POS كتب أسعاره للتو — نعيد عروض لوحة التحكم السارية على هذه المنتجات فوراً.
+    try {
+      const ids = [...new Set([...productMap.values()].map((p) => p.id))];
+      await this.productOffers.reconcile(ids);
+    } catch (err) {
+      this.logger.warn(`Product offers reapply failed after sync: ${this.formatError(err)}`);
     }
 
     // تنبيهات المخزون في الخلفية (لا تؤخر الاستجابة بعد تحديث الكتالوج)
