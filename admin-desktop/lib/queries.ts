@@ -191,6 +191,10 @@ export const mutations = {
 
   updateUser: (id: string, data: any) =>
     api.patch(`/users/${id}`, data).then((r) => r.data?.data ?? r.data),
+  createStaff: (data: { name: string; phone: string; email?: string; password: string; role?: string }) =>
+    api.post("/users/staff", data).then((r) => r.data?.data ?? r.data),
+  setUserPassword: (id: string, password: string) =>
+    api.post(`/users/${id}/password`, { password }).then((r) => r.data?.data ?? r.data),
 
   updateReview: (id: string, data: any) =>
     api.patch(`/reviews/${id}`, data).then((r) => r.data?.data ?? r.data),

@@ -12,7 +12,7 @@ import {
 import { isValidIraqiPhone } from "../../../common/phone.util";
 
 @ValidatorConstraint({ name: "iraqiPhone", async: false })
-class IraqiPhoneConstraint implements ValidatorConstraintInterface {
+export class IraqiPhoneConstraint implements ValidatorConstraintInterface {
   validate(value: string) {
     return typeof value === "string" && isValidIraqiPhone(value);
   }
