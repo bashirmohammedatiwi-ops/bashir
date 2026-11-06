@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -88,6 +89,17 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_color" />
+        <!-- Qi/Finon SDK ships an autoVerify App Link for finon.tech, a domain we can't
+             verify; Play Console flags it as a failed domain. The SDK returns through
+             its finon://payment scheme, which is kept. -->
+        <activity android:name="tech.finon.payment.ui.PaymentActivity" tools:node="merge">
+            <intent-filter android:autoVerify="true" tools:node="remove">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:host="finon.tech" android:pathPrefix="/payment" android:scheme="https" />
+            </intent-filter>
+        </activity>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
