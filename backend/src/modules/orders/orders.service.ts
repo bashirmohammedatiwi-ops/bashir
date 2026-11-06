@@ -25,6 +25,12 @@ import {
 export interface CancelActor {
   id?: string;
   staff: boolean;
+  /** عنوان الجهاز (للسجل). */
+  ip?: string;
+  /** سبب الإلغاء التلقائي (للسجل). */
+  reason?: string;
+  /** false = المستدعي يسجّل بنفسه (تغيير الحالة من لوحة التحكم). */
+  audit?: boolean;
 }
 
 /** إلغاء من النظام نفسه (مثل انتهاء مهلة الدفع بالبطاقة) — بصلاحية الإدارة. */
@@ -543,7 +549,7 @@ export class OrdersService {
     // الإلغاء من لوحة التحكم يمر بنفس مسار الإلغاء: إعادة المخزون والنقاط والكوبون،
     // وعكس الدفعة الإلكترونية (عبر الحدث).
     if (dto.status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
-      await this.cancel(id, { id: actorId, staff: true });
+      await this.cancel(id, { id: actorId, staff: true, audit: false });
     }
     // مشروط أيضاً: طلب أُلغي (مهلة الدفع، الزبونة) بين القراءة والكتابة لا يعود نشطاً.
     const { count } = await this.prisma.order.updateMany({
@@ -618,6 +624,30 @@ export class OrdersService {
 
     await this.loyalty.reverseForCancelledOrder(order.userId, order.id);
     this.events.emitCancelled({ orderId: order.id, actorId: actor.id });
+    // كل إلغاء يُسجَّل: من ألغى (الزبونة / الإدارة / النظام) ومتى ومن أي حالة —
+    // بنفس نوع سجل تغيير الحالة فيظهر في سجل الطلب في تطبيق المدير ولوحة التحكم.
+    if (actor.audit !== false) {
+      const by = !actor.id ? "system" : actor.staff ? "staff" : "customer";
+      await this.prisma.auditLog
+        .create({
+          data: {
+            actorId: actor.id ?? null,
+            action: "ORDER_STATUS_UPDATE",
+            entity: "Order",
+            entityId: id,
+            ip: actor.ip ?? null,
+            meta: {
+              status: OrderStatus.CANCELLED,
+              by,
+              previousStatus: order.status,
+              ...(actor.reason ? { reason: actor.reason } : {}),
+              orderTotal: order.total,
+              orderNumber: order.orderNumber,
+            },
+          },
+        })
+        .catch(() => undefined); // السجل لا يُفشل الإلغاء نفسه
+    }
     return updated;
   }
 

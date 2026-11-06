@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
@@ -56,12 +57,19 @@ export class OrdersController {
 
   @Patch(":id/cancel")
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.CUSTOMER)
-  async cancel(@Param("id") id: string, @CurrentUser() user: any) {
+  async cancel(@Param("id") id: string, @CurrentUser() user: any, @Req() req: any) {
     const order = await this.orders.findOne(id);
     assertOwnerOrStaff(order.userId, user);
     // الزبونة تلغي قبل بدء التجهيز فقط؛ الإدارة تلغي أي طلب لم يُلغَ.
-    return this.orders.cancel(id, { id: user.id, staff: isStaff(user) });
+    return this.orders.cancel(id, { id: user.id, staff: isStaff(user), ip: clientIp(req) });
   }
+}
+
+/** عنوان الجهاز من خلف nginx. */
+function clientIp(req: any): string | undefined {
+  const h = req?.headers ?? {};
+  const fwd = String(h["x-forwarded-for"] ?? "").split(",")[0].trim();
+  return fwd || String(h["x-real-ip"] ?? "").trim() || req?.ip || undefined;
 }
 
 const STAFF_ROLES: Role[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF];

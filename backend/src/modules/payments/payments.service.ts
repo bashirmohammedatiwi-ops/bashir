@@ -535,7 +535,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       });
       if (open) continue; // محاولة جارية الآن — ننتظر الجولة القادمة.
       this.log.log(`Cancelling unpaid card order ${o.orderNumber}`);
-      await this.orders.cancel(o.id).catch((e) =>
+      await this.orders.cancel(o.id, { staff: true, reason: "unpaid-card-timeout" }).catch((e) =>
         this.log.warn(`Cancel unpaid ${o.orderNumber} failed: ${e.message}`),
       );
     }
