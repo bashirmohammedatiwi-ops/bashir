@@ -21,7 +21,10 @@ export class StorefrontLowStockInterceptor implements NestInterceptor {
     const req = context.switchToHttp().getRequest();
     const path = String(req?.url ?? "").split("?")[0];
     if (ADMIN_PREFIXES.some((p) => path.startsWith(p))) return next.handle();
-    if (isAdminViewRequest(req)) return next.handle();
+    // تطبيق المتجر والموقع (X-Client: deema-app) واجهة زبائن دائماً — حتى لو سجّل الدخول بحساب أدمن،
+    // يرى ما تراه الزبونة. لوحة التحكم لا ترسل هذه الترويسة فترى المخزون الحقيقي بتوكنها.
+    const storeClient = String(req?.headers?.["x-client"] ?? "") === "deema-app";
+    if (!storeClient && isAdminViewRequest(req)) return next.handle();
     return next.handle().pipe(
       mergeMap((data) =>
         from(LowStockPolicy.load(this.prisma)).pipe(map((rules) => (rules.size ? applyLowStock(data, rules, 0) : data))),
