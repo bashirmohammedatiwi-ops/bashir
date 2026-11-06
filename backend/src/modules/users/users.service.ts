@@ -107,8 +107,12 @@ export class UsersService {
     }
     const phone = normalizePhone(dto.phone.trim());
     const email = dto.email?.trim().toLowerCase() || undefined;
-    const byPhone = await this.prisma.user.findUnique({ where: { phone } });
-    if (byPhone && !byPhone.deletedAt) {
+    // حسابات قديمة تحفظ الرقم بصيغة 07… بدل +9647… — نطابق الصيغتين حتى لا يتكرر الحساب.
+    const local = phone.startsWith("+964") ? `0${phone.slice(4)}` : phone;
+    const byPhone = await this.prisma.user.findFirst({
+      where: { phone: { in: [phone, local, phone.replace(/^\+/, "")] }, deletedAt: null },
+    });
+    if (byPhone) {
       throw new ConflictException(
         "رقم الهاتف مسجّل لحساب موجود — ابحث عنه في القائمة وغيّر دوره إلى «موظف» بدل إنشاء حساب جديد",
       );
