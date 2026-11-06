@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { LowStockPolicy } from "../../common/low-stock.policy";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { getCached, setCached } from "../../common/memory-cache.util";
@@ -442,6 +443,7 @@ export class CategoriesService {
       data: normalizeCategoryWrite(data) as Prisma.CategoryUncheckedCreateInput,
     });
     this.qamarSync.notify("category", "created", row.id);
+    LowStockPolicy.invalidate();
     return this.findOne(row.id);
   }
 
@@ -456,6 +458,7 @@ export class CategoriesService {
       },
     });
     this.qamarSync.notify("category", "created", row.id);
+    LowStockPolicy.invalidate();
     return this.findSubcategory(row.id);
   }
 
@@ -477,6 +480,7 @@ export class CategoriesService {
       },
     });
     this.qamarSync.notify("category", "created", row.id);
+    LowStockPolicy.invalidate();
     return this.findTertiarySection(row.id);
   }
 
@@ -507,6 +511,7 @@ export class CategoriesService {
       data: normalizeCategoryWrite(data, { partial: true }) as Prisma.CategoryUncheckedUpdateInput,
     });
     this.qamarSync.notify("category", "updated", id);
+    LowStockPolicy.invalidate();
     return this.findOne(id);
   }
 
@@ -531,6 +536,7 @@ export class CategoriesService {
       },
     });
     this.qamarSync.notify("category", "updated", id);
+    LowStockPolicy.invalidate();
     return this.findSubcategory(id);
   }
 
@@ -558,6 +564,7 @@ export class CategoriesService {
       },
     });
     this.qamarSync.notify("category", "updated", id);
+    LowStockPolicy.invalidate();
     return this.findTertiarySection(id);
   }
 

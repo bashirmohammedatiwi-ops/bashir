@@ -49,6 +49,17 @@ export default function CategoriesPage() {
     },
   });
 
+  // تشغيل/إيقاف «المخزون القليل يظهر نافذاً» مباشرة من الجدول.
+  const toggleLowStock = useMutation({
+    mutationFn: ({ id, on }: { id: string; on: boolean }) => mutations.updateCategory(id, { hideLowStock: on }),
+    onSuccess: (_d, v) => {
+      message.success(v.on ? "تم التفعيل — المخزون القليل يظهر نافذاً للزبون" : "تم الإيقاف — يظهر المخزون الحقيقي");
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      qc.invalidateQueries({ queryKey: ["categories-full"] });
+    },
+    onError: (e) => message.error(apiErrorMessage(e, "فشل الحفظ")),
+  });
+
   const remove = useMutation({
     mutationFn: mutations.deleteCategory,
     onSuccess: () => {
@@ -63,7 +74,7 @@ export default function CategoriesPage() {
   function openCreate() {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ isActive: true, position: 0 });
+    form.setFieldsValue({ isActive: true, position: 0, hideLowStock: false, lowStockThreshold: 2 });
     setOpen(true);
   }
 
@@ -79,6 +90,8 @@ export default function CategoriesPage() {
       isActive: row.isActive,
       description: row.description,
       imageId: row.imageId ?? row.image?.id,
+      hideLowStock: !!row.hideLowStock,
+      lowStockThreshold: row.lowStockThreshold ?? 2,
     });
     setOpen(true);
   }
@@ -168,6 +181,23 @@ export default function CategoriesPage() {
                 ),
               },
               {
+                title: "المخزون القليل = نافذ",
+                width: 170,
+                render: (_: any, r: any) => (
+                  <Space size={6}>
+                    <Switch
+                      size="small"
+                      checked={!!r.hideLowStock}
+                      loading={toggleLowStock.isPending && toggleLowStock.variables?.id === r.id}
+                      onChange={(on) => toggleLowStock.mutate({ id: r.id, on })}
+                    />
+                    <span style={{ fontSize: 12, color: r.hideLowStock ? "#cf1322" : "#999" }}>
+                      {r.hideLowStock ? `≤ ${r.lowStockThreshold ?? 2} يظهر نافذ` : "موقوف"}
+                    </span>
+                  </Space>
+                ),
+              },
+              {
                 title: "إجراءات",
                 width: 260,
                 render: (_: any, r: any) => (
@@ -243,6 +273,24 @@ export default function CategoriesPage() {
           </Form.Item>
           <Form.Item name="isActive" label="نشط" valuePropName="checked" initialValue={true}>
             <Switch />
+          </Form.Item>
+          <Form.Item
+            name="hideLowStock"
+            label="إظهار المخزون القليل «نافذ» للزبون"
+            valuePropName="checked"
+            initialValue={false}
+            extra="للأقسام التي جردها غير دقيق: أي منتج أو تدرج مخزونه يساوي الحد أو أقل يظهر نافذاً في التطبيق والموقع ولا يُطلب. المخزون الحقيقي لا يتغيّر ولوحة التحكم تعرضه كما هو."
+          >
+            <Switch />
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate={(a, b) => a.hideLowStock !== b.hideLowStock}>
+            {({ getFieldValue }) =>
+              getFieldValue("hideLowStock") ? (
+                <Form.Item name="lowStockThreshold" label="الحد (يظهر نافذاً إذا المخزون ≤)" initialValue={2}>
+                  <InputNumber min={0} max={100} style={{ width: "100%" }} />
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
         </Form>
       </Modal>

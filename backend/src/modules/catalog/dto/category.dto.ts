@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from "class-validator";
 
@@ -19,6 +20,9 @@ export class CreateCategoryDto {
   @IsOptional() @IsString() imageId?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  /** «نافذ» للزبون إذا المخزون ≤ الحد (قسم رئيسي فقط). */
+  @IsOptional() @IsBoolean() hideLowStock?: boolean;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) lowStockThreshold?: number;
 }
 
 export class UpdateCategoryDto {
@@ -31,6 +35,9 @@ export class UpdateCategoryDto {
   @IsOptional() @IsString() imageId?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  /** «نافذ» للزبون إذا المخزون ≤ الحد (قسم رئيسي فقط). */
+  @IsOptional() @IsBoolean() hideLowStock?: boolean;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) lowStockThreshold?: number;
 }
 
 export class CreateSubcategoryDto {

@@ -7,6 +7,7 @@ import {
 import { DeliveryOption, DiscountType, OrderStatus, PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../../common/prisma.service";
+import { LowStockPolicy } from "../../common/low-stock.policy";
 import { SettingsService, giftWrapFeeOf } from "../settings/settings.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { LoyaltyService } from "../loyalty/loyalty.service";
@@ -281,6 +282,8 @@ export class OrdersService {
 
     // السعر والمخزون من التدرج المختار فعلاً (سعر المنتج سعر تدرجه الأبرز، ومخزونه مجموع تدرجاته) —
     // نفس ما عرضه التطبيق في السلة والدفع، وعليه تُبنى الباقات والكوبون والنقاط وحد الشحن المجاني.
+    // الأقسام التي يُعرض فيها المخزون القليل «نافذاً»: لا يُقبل طلبه أيضاً.
+    const lowStock = await LowStockPolicy.load(this.prisma);
     let subtotal = 0;
     // «المنتج — التدرج» لرسالة نفاد المخزون.
     const shadeLabels = new Map<string, string>();
@@ -292,7 +295,9 @@ export class OrdersService {
       const shade = this.lineShade(p, it.shadeId);
       const label = shade ? `${p.name} — ${shade.name}` : p.name;
       if (shade) shadeLabels.set(shade.id, label);
-      if (p.stock < it.quantity || (shade && shade.stock < it.quantity)) {
+      const pStock = LowStockPolicy.effective(lowStock, p.categoryId, p.stock);
+      const sStock = shade ? LowStockPolicy.effective(lowStock, p.categoryId, shade.stock) : null;
+      if (pStock < it.quantity || (sStock !== null && sStock < it.quantity)) {
         throw new BadRequestException(`Out of stock: ${label}`);
       }
       const unit = shade?.price ?? p.price;

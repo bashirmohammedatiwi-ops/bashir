@@ -7,6 +7,7 @@ import { AppThrottlerGuard } from "../common/guards/app-throttler.guard";
 import { TransformInterceptor } from "../common/interceptors/transform.interceptor";
 import { MobilePayloadInterceptor } from "../common/interceptors/mobile-payload.interceptor";
 import { StorefrontShadesInterceptor } from "../common/interceptors/storefront-shades.interceptor";
+import { StorefrontLowStockInterceptor } from "../common/interceptors/storefront-low-stock.interceptor";
 import { PrismaModule } from "../common/prisma.module";
 import { RedisCacheModule } from "../common/redis-cache.module";
 import { HealthModule } from "./health/health.module";
@@ -91,6 +92,8 @@ const conditionalImports: DynamicModule[] = redisEnabled
   providers: [
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_INTERCEPTOR, useClass: MobilePayloadInterceptor },
+    // الترتيب مهم: الاستجابة تمر بالأخير أولاً — التدرجات الموقوفة تُحذف، ثم المخزون القليل يصير «نافذ»، ثم تقليص التطبيق.
+    { provide: APP_INTERCEPTOR, useClass: StorefrontLowStockInterceptor },
     { provide: APP_INTERCEPTOR, useClass: StorefrontShadesInterceptor },
     { provide: APP_GUARD, useClass: AppThrottlerGuard },
   ],

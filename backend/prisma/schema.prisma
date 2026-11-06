@@ -198,6 +198,10 @@ model Category {
   isActive        Boolean        @default(true)
   parentId        String?
   imageId         String?
+  /// قسم رئيسي فقط: المنتج/التدرج الذي مخزونه ≤ lowStockThreshold يظهر للزبون «نافذ»
+  /// (الجرد غير دقيق). المخزون الحقيقي لا يتغيّر ولوحة التحكم تراه كما هو.
+  hideLowStock      Boolean      @default(false)
+  lowStockThreshold Int          @default(2)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
