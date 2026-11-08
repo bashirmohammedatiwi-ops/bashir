@@ -1,0 +1,233 @@
+[
+ {
+  "key": "56a348f0",
+  "mode": "photo",
+  "photo": "56a348f0_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.15,
+   0.03,
+   0.99,
+   0.975
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "892ab3c1",
+  "mode": "photo",
+  "photo": "892ab3c1_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.09,
+   0.22,
+   0.9,
+   0.96
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "52244f16",
+  "mode": "photo",
+  "photo": "52244f16_0.webp",
+  "rotate": 0,
+  "crop": [
+   0.35,
+   0.09,
+   0.615,
+   0.86
+  ],
+  "flatbox": false
+ },
+ {
+  "key": "ff694861",
+  "mode": "photo",
+  "photo": "ff694861_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.17,
+   0.39,
+   0.815,
+   0.64
+  ],
+  "flatbox": false
+ },
+ {
+  "key": "1c5fbede",
+  "mode": "photo",
+  "photo": "1c5fbede_0.webp",
+  "rotate": 0,
+  "crop": [
+   0.0,
+   0.1,
+   0.985,
+   0.915
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "690cf325",
+  "mode": "web",
+  "url": "https://cdn.shopify.com/s/files/1/0879/6720/3649/files/Shea-Butter--Avocado--Hydrating-Styling-Mousse.jpg"
+ },
+ {
+  "key": "8300a46c",
+  "mode": "photo",
+  "photo": "8300a46c_0.webp",
+  "rotate": 0,
+  "crop": [
+   0.21,
+   0.22,
+   0.85,
+   0.935
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "f28b85b5",
+  "mode": "photo",
+  "photo": "f28b85b5_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.11,
+   0.29,
+   0.97,
+   0.715
+  ],
+  "flatbox": false
+ },
+ {
+  "key": "83b480ae",
+  "mode": "photo",
+  "photo": "83b480ae_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.12,
+   0.275,
+   0.91,
+   0.695
+  ],
+  "flatbox": false
+ },
+ {
+  "key": "1f934b31",
+  "mode": "web",
+  "url": "https://assets.unileversolutions.com/v2/w1200/ch-retailer/web/Wu9xq8jES9Gs_usjtaJmOQ/129696069.jpeg"
+ },
+ {
+  "key": "0a5d6abd",
+  "mode": "photo",
+  "photo": "0a5d6abd_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.09,
+   0.06,
+   0.885,
+   0.985
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "3e379c2d",
+  "mode": "photo",
+  "photo": "3e379c2d_0.webp",
+  "rotate": -90,
+  "crop": [
+   0.07,
+   0.03,
+   0.9,
+   0.885
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "82d57357",
+  "mode": "photo",
+  "photo": "82d57357_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.14,
+   0.285,
+   0.85,
+   0.94
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "57514068",
+  "mode": "photo",
+  "photo": "57514068_0.webp",
+  "rotate": -90,
+  "crop": [
+   0.17,
+   0.11,
+   0.92,
+   0.885
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "2fab4811",
+  "mode": "photo",
+  "photo": "2fab4811_0.webp",
+  "rotate": 0,
+  "crop": [
+   0.395,
+   0.04,
+   0.665,
+   0.84
+  ],
+  "flatbox": false
+ },
+ {
+  "key": "813dcdbc",
+  "mode": "photo",
+  "photo": "813dcdbc_0.webp",
+  "rotate": 0,
+  "crop": [
+   0.375,
+   0.115,
+   0.675,
+   0.99
+  ],
+  "flatbox": false
+ },
+ {
+  "key": "7815b847",
+  "mode": "photo",
+  "photo": "7815b847_0.webp",
+  "rotate": 0,
+  "crop": [
+   0.31,
+   0.0,
+   0.81,
+   0.885
+  ],
+  "flatbox": false
+ },
+ {
+  "key": "c8c580a5",
+  "mode": "photo",
+  "photo": "c8c580a5_0.webp",
+  "rotate": 90,
+  "crop": [
+   0.41,
+   0.0,
+   0.805,
+   0.895
+  ],
+  "flatbox": true
+ },
+ {
+  "key": "d7e4c3c2",
+  "mode": "photo",
+  "photo": "d7e4c3c2_0.webp",
+  "rotate": 0,
+  "crop": [
+   0.44,
+   0.1,
+   0.665,
+   0.985
+  ],
+  "flatbox": false
+ }
+]

@@ -1,0 +1,21 @@
+[
+{"key": "0c444e09", "mode": "photo", "photo": "0c444e09_0.webp", "rotate": -2, "crop": [0.365, 0.315, 0.635, 0.775], "flatbox": false},
+{"key": "ca171c04", "mode": "photo", "photo": "ca171c04_0.webp", "rotate": -3, "crop": [0.32, 0.24, 0.695, 0.855], "flatbox": false},
+{"key": "ced01a84", "mode": "photo", "photo": "ced01a84_0.webp", "rotate": 0, "crop": [0.3, 0.11, 0.745, 0.89], "flatbox": false},
+{"key": "739070b4", "mode": "photo", "photo": "739070b4_0.webp", "rotate": 2, "crop": [0.09, 0.02, 0.94, 0.9], "flatbox": true},
+{"key": "4ba765a3", "mode": "photo", "photo": "4ba765a3_0.webp", "rotate": 2, "crop": [0.085, 0.19, 0.945, 0.87], "flatbox": true},
+{"key": "dec23f78", "mode": "photo", "photo": "dec23f78_0.webp", "rotate": -3, "crop": [0.17, 0.11, 0.965, 0.925], "flatbox": true},
+{"key": "9527479a", "mode": "photo", "photo": "9527479a_0.webp", "rotate": 4, "crop": [0.19, 0.19, 0.91, 0.86], "flatbox": true},
+{"key": "a946dcad", "mode": "photo", "photo": "a946dcad_0.webp", "rotate": 4, "crop": [0.03, 0.04, 0.865, 0.86], "flatbox": true},
+{"key": "cf030f5c", "mode": "photo", "photo": "cf030f5c_0.webp", "rotate": 90, "crop": [0.18, 0.355, 0.94, 0.632], "flatbox": false},
+{"key": "5d7860d1", "mode": "keep", "note": "thumb covers the box's left edge in the only photo; current cutout already excludes the hand and is the best achievable"},
+{"key": "1d30f65b", "mode": "photo", "photo": "1d30f65b_0.webp", "rotate": -5, "crop": [0.15, 0.13, 0.83, 0.9], "flatbox": true},
+{"key": "7a8272e5", "mode": "photo", "photo": "7a8272e5_0.webp", "rotate": -6, "crop": [0.235, 0.07, 0.93, 0.79], "flatbox": true},
+{"key": "f4941e67", "mode": "photo", "photo": "f4941e67_0.webp", "rotate": 182, "crop": [0.2, 0.32, 0.85, 0.625], "flatbox": false},
+{"key": "7e7889de", "mode": "keep", "note": "current cutout is clean (no hand, upright); only photo has the bottle base cut off by the frame, no online image found"},
+{"key": "5ae9dcf2", "mode": "photo", "photo": "5ae9dcf2_0.webp", "rotate": -4, "crop": [0.365, 0.14, 0.765, 0.775], "flatbox": true},
+{"key": "01e828c8", "mode": "photo", "photo": "01e828c8_0.webp", "rotate": -2, "crop": [0.28, 0.0, 0.645, 0.87], "flatbox": false},
+{"key": "be7d34e0", "mode": "photo", "photo": "be7d34e0_0.webp", "rotate": -4, "crop": [0.235, 0.035, 0.68, 0.995], "flatbox": false},
+{"key": "6d33027d", "mode": "photo", "photo": "6d33027d_0.webp", "rotate": 0, "crop": [0.39, 0.12, 0.73, 0.985], "flatbox": false},
+{"key": "742be886", "mode": "photo", "photo": "742be886_0.webp", "rotate": 0, "crop": [0.05, 0.31, 1.0, 1.0], "flatbox": true}
+]
