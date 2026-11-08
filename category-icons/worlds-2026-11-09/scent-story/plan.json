@@ -1,0 +1,892 @@
+{
+ "world": "scent-story",
+ "banners": [
+  {
+   "img": "hero01_dior_jadore.jpg",
+   "title": "ديور — جادور",
+   "linkType": "brand",
+   "linkValue": "christian-dior"
+  },
+  {
+   "img": "hero02_ch_goodgirl.jpg",
+   "title": "كارولينا هيريرا — غود غيرل",
+   "linkType": "brand",
+   "linkValue": "carolina-herrera"
+  },
+  {
+   "img": "hero03_chanel_coco.jpg",
+   "title": "شانيل — كوكو مدموزيل",
+   "linkType": "brand",
+   "linkValue": "chanel"
+  },
+  {
+   "img": "hero04_armani_si.jpg",
+   "title": "أرماني — سي باسيوني",
+   "linkType": "brand",
+   "linkValue": "giorgio-armani"
+  },
+  {
+   "img": "hero05_dior_sauvage.jpg",
+   "title": "ديور — سوفاج",
+   "linkType": "brand",
+   "linkValue": "christian-dior"
+  },
+  {
+   "img": "hero06_ysl_opium.jpg",
+   "title": "إيف سان لوران — بلاك أوبيوم",
+   "linkType": "brand",
+   "linkValue": "yves-saint-laurent"
+  },
+  {
+   "img": "hero07_lancome_lveb.jpg",
+   "title": "لانكوم — لا في إي بيل",
+   "linkType": "brand",
+   "linkValue": "lancome"
+  },
+  {
+   "img": "hero08_valentino_roma.jpg",
+   "title": "فالنتينو — بورن إن روما",
+   "linkType": "brand",
+   "linkValue": "valentino"
+  },
+  {
+   "img": "hero09_tomford_ombre.jpg",
+   "title": "توم فورد",
+   "linkType": "brand",
+   "linkValue": "tom-ford"
+  },
+  {
+   "img": "hero10_niche_pdm.jpg",
+   "title": "عطور النيش",
+   "linkType": "subcategory",
+   "linkValue": "92a95f2e-d855-4943-9875-b85e684f746a"
+  }
+ ],
+ "blocks": [
+  {
+   "ref": "96ceb4a2",
+   "title": "بيوت العطور",
+   "patch": {
+    "items": [
+     {
+      "title": "",
+      "imageId": "@img:card01_valentino.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "valentino",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card02_prada.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "prada",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card03_chanel.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "chanel",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card04_guerlain.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "guerlain",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card05_givenchy.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "givenchy",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card06_versace.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "versace",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card07_pdm.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "parfums-de-marly",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card08_xerjoff.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "xerjoff",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card09_montale.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "montale",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:card10_lancome.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "lancome",
+      "subtitleEn": ""
+     }
+    ],
+    "display": "scroll",
+    "aspectRatio": "4:5",
+    "tilesPerView": 1.6,
+    "titleEn": "The fragrance houses",
+    "showShadow": false,
+    "gap": 12,
+    "tileCornerRadius": 16
+   }
+  },
+  {
+   "ref": "adc2613f"
+  },
+  {
+   "ref": "5219ea19",
+   "title": "لمن العطر؟",
+   "patch": {
+    "items": [
+     {
+      "title": "",
+      "imageId": "@img:tile_for_her.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "1ba9f472-af81-4708-9304-07f3435b6b24",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:tile_for_him.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "8dca642a-1194-4101-b5cc-486ca1664e89",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:tile_unisex.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:tile_niche.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "92a95f2e-d855-4943-9875-b85e684f746a",
+      "subtitleEn": ""
+     }
+    ],
+    "columns": 2,
+    "aspectRatio": "1:1",
+    "titleEn": "Who is it for?",
+    "showShadow": false,
+    "tileCornerRadius": 16
+   }
+  },
+  {
+   "new": "scent-room-dior",
+   "type": "SECTION_GROUP",
+   "title": "عالم ديور",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Dior",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#F3E9E4",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_dior.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "christian-dior",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "7e22c970-a8f8-4111-925f-270181e90a29",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "83388aed"
+  },
+  {
+   "new": "scent-room-chanel",
+   "type": "SECTION_GROUP",
+   "title": "عالم شانيل",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Chanel",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#E6ECF4",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_chanel.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "chanel",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "c0758a1f-c142-4898-b3d0-1022ce36fe36",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "scent-families",
+   "type": "PHOTO_WALL",
+   "title": "عائلات العطور",
+   "payload": {
+    "gap": 10,
+    "items": [
+     {
+      "title": "",
+      "imageId": "@img:fam_floral.jpg",
+      "titleEn": "",
+      "linkType": "products",
+      "linkValue": "ids=49caebce-e0d8-40f8-945e-fb8b13c121c2,5d22d034-f08b-4256-9039-34a7434a6776,f86d5a20-a8bb-4817-950a-848de9de9e2e,b393653d-37e7-4c1e-bc7b-46fee445df98,a5edce8a-c910-4185-9245-6187f3c577de,47af59b3-f745-41b8-82c0-d4a737d6a72f,ac90eb07-4487-439b-b48a-b514688fca1a,cefb8d8b-e196-403a-980c-72d430645fc7,795eb28f-d2ce-448a-ba08-7a399a9aa654,ad394f2b-d456-400a-824e-32165672d67e,5b3bea0e-66ca-44a3-845c-e6351682416c,14560c30-a143-4e86-9b97-1fa1dd7249a7,9c7d641e-8a27-41fb-8b23-4e0a175bcd98,ced6ad45-6406-44fd-8853-27e005ee93f7,0dad4513-02c1-41d5-844a-91e5d2f6433e,f9193c59-a88b-4638-afd9-d8e5e945a3e8,b84e8b98-60d2-4133-96e1-978e49e3467c,43514cb3-d707-48e0-b532-6baa7267efb9,fe67df84-1f74-48f1-ab34-d331d76b33da,afabd1f0-8370-42d9-9bc9-3b439db515a9,a60c6579-c9e7-42ae-910d-a10f2e19e1ba,2d706313-3bd4-4232-b90a-a40c31c12f4f,66f6a2d3-28b0-4eff-b4e9-46351a7f966b,851dc685-4c7f-46fe-aa45-f17a7fd2011a&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%B2%D9%87%D8%B1%D9%8A%D8%A9",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:fam_amber.jpg",
+      "titleEn": "",
+      "linkType": "products",
+      "linkValue": "ids=4a2a8a50-6e85-48ca-bd22-4159672cace8,fdac343e-07a4-467d-89d5-58d82749a197,2e5c22a0-32d0-45f9-9f49-b656a448161a,c12f15f7-d2b3-4cc1-a9f0-6ff177f34c81,2d55274e-251f-4024-924c-71555aa1dcf2,2c584953-d55f-4391-9db1-51adf8f09734,941d9dcc-a80a-4822-9fd6-05c08a3c0304,49490b3b-79a5-4528-b7d9-34aa5bb1c81c,dea01936-6058-4265-b782-72010feb42bc,10e6bed8-ffcb-4cb1-8f61-88f96d4a65b3,bc22dd67-ac22-4ae6-ac6f-b5f2b2cd2e95,f4f5ddb1-3d66-4935-906a-218483399c86,bc2c69d7-94c1-4931-9d41-84ae464bb9de,f96d1d19-7dce-4f41-a761-43817ff9b042,e5f8082a-60bd-47b2-882c-679d0811bd40,61f461ee-d8eb-4334-b1c1-bfecfd6bb8ee,0c302857-738c-462d-aa72-e6ad39139cdd,66a2a918-cc65-40a9-b0e6-008918f8caea,3b3aa1ae-83eb-49bc-a6e1-13825969c129,5453ddff-7e5f-4793-ae08-6facd73d4ac2,f937a527-2c9b-46e4-b97c-4143f47082d8,130589f3-0aa4-4de8-9c21-9d70372eb19d,8fc2d30f-5a65-4990-81b5-25a3721f304a,7bab5df4-c5c7-4387-a5db-e4141beb8f3d&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%B9%D9%86%D8%A8%D8%B1%D9%8A%D8%A9%20%D8%B4%D8%B1%D9%82%D9%8A%D8%A9",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:fam_woody.jpg",
+      "titleEn": "",
+      "linkType": "products",
+      "linkValue": "ids=d74a4e97-5af8-4f5f-a5f6-4e3f7e814d80,424809e1-f931-4fee-b19d-f565e44699fd,b4ac9b6a-3f5a-4d6a-b4ae-d691c4541ede,408d17de-ebab-4121-88fe-6c9974ab6d19,9c3b3c8d-e066-4ee0-bd2d-1886fab7b523,d2173976-0613-4d57-a3c6-521766c616cd,7f23b6cf-b6e4-4319-bf8a-2afeb6834e8f,651b7810-b20f-41d7-95f3-10e3e85845dc,7b54258d-cd25-443c-bc54-28cb991c7cea,5c7afccc-0ba1-4c2a-9cf8-7c3a37f29e44,c720068d-e651-4129-8c28-866f0a2fd575,dc4a7826-0935-4609-a061-c408f5a0fff6,e09eb2e4-ab7d-4790-bcdb-2b430d4b5bc7,961391ee-73e5-4d64-a019-3415750ecdf8,944c34a1-b2db-43b1-867c-7ec9bbbebbb8,40890eb6-7a97-4a25-b390-0605861fd587,2a563e6a-2174-4dba-b6bc-f5951bdc3798,588028be-e187-4c7e-9785-c293ba2eebb3,acded360-8a23-4ee8-bf64-f065b29c5291,15f8f1b1-514d-4a8f-b0b5-04da2228ff29,26d03c03-5858-4ef1-b2af-0caa7dec7077,22564cf8-56a7-4d57-8199-d12b70a4233a,31b3ab69-2913-433d-a93a-a05d9a9dec76,c6aa7441-7dcb-414b-9cf2-65ba87d0ad6d&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%AE%D8%B4%D8%A8%D9%8A%D8%A9",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:fam_fresh.jpg",
+      "titleEn": "",
+      "linkType": "products",
+      "linkValue": "ids=17e1f55c-2481-42ca-aed1-e663f5fa26d4,1bcbba77-3b3a-42d9-a3f1-863d798d588c,2dc3b07b-e6a2-4929-b5d1-6ea11f9b6c4a,2110b309-56ac-4319-9b5e-8f2609b81550,39e6f37f-4885-4f6e-986c-cd275cbf152e,f2d2e400-1605-43cb-8f74-eb792281af22,8fab5b1a-eb4e-448d-ae3d-fd308a53eb41,8c7890e0-1bd8-41a2-9ceb-5b4c7c583c1f,4840d04e-2948-455c-96b6-318a7c8c76f3,abe17cfa-c0f1-42e2-aea9-9ae2e9e8a995,bbcc3a3d-9d8d-4b2d-bb1e-787a8b5d257d,e9190653-5459-4d9d-8bce-e09e2603bc40,2233f94b-9b59-4ee1-959d-88fdc4560eb0,c2f65e31-c21a-48fa-a5d2-7b3210959407,961391ee-73e5-4d64-a019-3415750ecdf8,9cd3d788-cfab-48fb-86a8-23d5a80ac51f,08b73e82-f9e3-4c3f-a6d0-e5f59ba400b7,00da7e24-9e50-4d1c-8844-fd342e475678,677205ea-d303-47b6-99e7-233f58a03b73,0dec243f-5b47-4602-9b42-618d81c9a8d9,142e852a-fccb-48e2-beb9-31c09c131cbf,83fb4876-f489-45c3-939b-3d2b8fa4adc9,6f8946be-da21-462d-948b-f79b2d52c0f7,78a344c4-fbb5-43b7-9f28-f13f358a8fca&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D9%85%D9%86%D8%B9%D8%B4%D8%A9",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:fam_gourmand.jpg",
+      "titleEn": "",
+      "linkType": "products",
+      "linkValue": "ids=7834ff73-cf78-4655-9cef-a2880c346614,56c6dfe5-eb87-4425-bf2c-2bdc94d758c9,a35b7da2-3937-4540-9ad8-d96e6e6cdb58,795eb28f-d2ce-448a-ba08-7a399a9aa654,dea01936-6058-4265-b782-72010feb42bc,7b2629d4-e797-42bf-b649-0542f050d28f,769cd4a8-a093-4946-b0d1-bf00fa753a9a,705eb41b-cc3b-4fce-8217-22c7c1001c6c,0e2df22e-1565-47eb-be51-3a184f8389f7,a0385c24-31f5-439a-8788-7caed9e78ec8,2ff48cf2-cc4c-4ac1-a2cf-7f8d54b0dad8,db789b5d-f898-4dba-90de-6d4d78f84a09,366cc396-b5fc-45d9-ba4b-a0b5ff6fc53e,7ecada57-f28a-48d3-bdc1-3f8113b5b056,cea28943-ea85-473e-ae48-0f6952f44f4a,223a8252-5db9-47b9-9dcb-b76ee81431f0,66ff55ad-4f56-4d53-93ce-c3e58858e7b2,901178c2-301f-4003-9077-e0095b907f21,33dd04e0-9c4e-491d-9c92-b967026da867,4471937f-733f-438b-9d63-f54c157b344d,a42c517e-867e-46ac-955c-47fc3759f54c,5d6f4fe7-a7bf-47ff-9270-a386e0afb1ab,2cdc750d-a64c-40fd-828d-77bff3398709,67cab8c4-d1ba-4a0b-a173-90ca78c98b90&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%AD%D9%84%D9%88%D8%A9%20%D8%BA%D9%88%D8%B1%D9%85%D8%A7%D9%86%D8%AF",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:fam_oud.jpg",
+      "titleEn": "",
+      "linkType": "products",
+      "linkValue": "ids=8e0a1e11-0ce6-4ff7-b83d-c089dcf4475b,3bd76996-2ca4-45d7-9c07-e9f4cf8664c4,50497d40-1360-4525-b19f-c81b4bcdb47e,66b4e97d-33b7-4616-aed5-f2ec88ac13a2,d8fa7236-2c57-495f-b40b-3d2efdaafb9c,769cd4a8-a093-4946-b0d1-bf00fa753a9a,489041a8-50ed-40e6-9c2b-e8b718b99df2,44aa62f9-80ab-4382-9137-fef05697a879,e09eb2e4-ab7d-4790-bcdb-2b430d4b5bc7,6cb79752-1112-469c-9571-25f4a6bcab42,d087604b-75c1-4ccc-aa32-d745fe6d9d56,c69eb8ad-5f10-4537-89e5-975b20c7aded,c8189385-9bc7-4b5e-90ff-a955448f2435,c3da6845-f769-444e-be55-4f1e8cf0bda6,f82e69be-a26e-4db7-afc8-d8f3cb90ec04,82211951-d330-48a3-b964-46c30cf10b62,f5d5fc8b-d3fe-4508-9b60-eeb13228a216,caa56317-1d0c-4059-b5ce-4ebf6acd0885,a5694ed7-d395-4f0b-851c-f96ed6fddb7f,8a9dd36b-df45-450f-8c5d-23b2a0829b53,2df58095-d018-413a-9490-c0983bf86ff2,7bab5df4-c5c7-4387-a5db-e4141beb8f3d,6faae17b-1fa2-4f0b-8e8c-7ff9cc3c5d8a,ed0c594d-b5e8-4b48-a8e1-a798af3e8f04&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%A7%D9%84%D8%B9%D9%88%D8%AF",
+      "subtitleEn": ""
+     }
+    ],
+    "textEn": "",
+    "columns": 3,
+    "display": "grid",
+    "labelEn": "",
+    "titleEn": "Scent families",
+    "showTitle": true,
+    "showShadow": false,
+    "subtitleEn": "",
+    "aspectRatio": "1:1",
+    "borderStyle": "none",
+    "showViewAll": false,
+    "overlayStyle": "none",
+    "tileCornerRadius": 14
+   }
+  },
+  {
+   "ref": "73b8e5f3",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_ch.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "carolina-herrera",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "caa4e1d5-77d5-4078-8d89-79778c5eb6e1",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ],
+    "backgroundColor": "#E9EAF4"
+   }
+  },
+  {
+   "ref": "20ae9374"
+  },
+  {
+   "new": "scent-room-ysl",
+   "type": "SECTION_GROUP",
+   "title": "عالم إيف سان لوران",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Yves Saint Laurent",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#F1EBE2",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_ysl.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "yves-saint-laurent",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "b610d576-9fb9-4b21-a6a2-74e71b471474",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "scent-strip-gifts",
+   "type": "CUSTOM_BANNER",
+   "title": "أطقم الهدايا",
+   "payload": {
+    "source": "inline",
+    "textEn": "",
+    "imageId": "@img:strip_gifts.jpg",
+    "labelEn": "",
+    "titleEn": "",
+    "linkType": "subcategory",
+    "linkValue": "13754665-184a-48c6-8dd3-b36b9c0e5f28",
+    "showTitle": false,
+    "subtitleEn": "",
+    "showViewAll": false,
+    "bannerAspect": 3.58,
+    "sectionLayout": "full"
+   }
+  },
+  {
+   "ref": "b02f8b12"
+  },
+  {
+   "ref": "b663d474",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_armani.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "giorgio-armani",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "617b380f-4c54-4017-a00a-a064d6c606fb",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ],
+    "backgroundColor": "#ECEDEE"
+   }
+  },
+  {
+   "ref": "28f2977f"
+  },
+  {
+   "new": "scent-room-lancome",
+   "type": "SECTION_GROUP",
+   "title": "عالم لانكوم",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Lancôme",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#F6EAE8",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_lancome.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "lancome",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "bca2c344-538c-4ef1-ae91-9d12f789d8fa",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "efc67343"
+  },
+  {
+   "new": "scent-room-versace",
+   "type": "SECTION_GROUP",
+   "title": "عالم فرساتشي",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Versace",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#F2EDE2",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_versace.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "versace",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "6ca2880e-f8a5-4048-adfb-859608c13283",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "scent-strip-budget",
+   "type": "CUSTOM_BANNER",
+   "title": "فخامة بسعر أقل",
+   "payload": {
+    "source": "inline",
+    "textEn": "",
+    "imageId": "@img:strip_budget.jpg",
+    "labelEn": "",
+    "titleEn": "",
+    "linkType": "products",
+    "linkValue": "maxPrice=60000&categoryId=975e0e23-edd2-4181-ad6d-ecade6452b95&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%A3%D8%B5%D9%84%D9%8A%D8%A9%20%D8%A8%D8%A3%D9%82%D9%84%20%D9%85%D9%86%2060%2C000%20%D8%AF.%D8%B9",
+    "showTitle": false,
+    "subtitleEn": "",
+    "showViewAll": false,
+    "bannerAspect": 3.58,
+    "sectionLayout": "full"
+   }
+  },
+  {
+   "new": "scent-room-dg",
+   "type": "SECTION_GROUP",
+   "title": "عالم دولتشي آند غابانا",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Dolce & Gabbana",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#F3ECE4",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_dg.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "dolce--gabbana",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "c9800f1c-5aff-4e86-8b0b-728660f02b68",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "4b3e1129"
+  },
+  {
+   "ref": "23240bb4",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_tomford.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "tom-ford",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "e838df0d-1ea2-472e-b5e2-39a2200cfd7a",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ],
+    "backgroundColor": "#EEEBEE"
+   }
+  },
+  {
+   "new": "scent-room-mancera",
+   "type": "SECTION_GROUP",
+   "title": "عالم مانسيرا",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Mancera",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#F4EBDD",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_mancera.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "mancera",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "4ab787da-96f4-4c87-8780-383e03499616",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "79da637c"
+  },
+  {
+   "new": "scent-strip-mists",
+   "type": "CUSTOM_BANNER",
+   "title": "معطرات الجسم والشعر",
+   "payload": {
+    "source": "inline",
+    "textEn": "",
+    "imageId": "@img:strip_mists.jpg",
+    "labelEn": "",
+    "titleEn": "",
+    "linkType": "subcategory",
+    "linkValue": "453c027d-0022-455b-91a9-d4299479ec62",
+    "showTitle": false,
+    "subtitleEn": "",
+    "showViewAll": false,
+    "bannerAspect": 3.58,
+    "sectionLayout": "full"
+   }
+  },
+  {
+   "ref": "eee4c280"
+  },
+  {
+   "ref": "7c73e9da"
+  },
+  {
+   "ref": "92da5ab6"
+  }
+ ]
+}

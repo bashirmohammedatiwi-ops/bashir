@@ -1,0 +1,1396 @@
+{
+ "world": "his-elegance",
+ "banners": [
+  {
+   "img": "h01_chanel.jpg",
+   "title": "شانيل — بلو دو شانيل",
+   "linkType": "brand",
+   "linkValue": "chanel"
+  },
+  {
+   "img": "h02_dior.jpg",
+   "title": "ديور — سوفاج",
+   "linkType": "brand",
+   "linkValue": "christian-dior"
+  },
+  {
+   "img": "h03_tomford.jpg",
+   "title": "توم فورد — أومبري ليذر",
+   "linkType": "brand",
+   "linkValue": "tom-ford"
+  },
+  {
+   "img": "h04_rabanne.jpg",
+   "title": "رابان — إنفيكتوس",
+   "linkType": "brand",
+   "linkValue": "paco-rabanne"
+  },
+  {
+   "img": "h05_emporio.jpg",
+   "title": "إمبوريو أرماني — سترونغر ويذ يو",
+   "linkType": "brand",
+   "linkValue": "emporio-armani"
+  },
+  {
+   "img": "h06_boss.jpg",
+   "title": "هوغو بوس — بوس بوتلد",
+   "linkType": "brand",
+   "linkValue": "hugo-boss"
+  },
+  {
+   "img": "h07_versace.jpg",
+   "title": "فيرساتشي — إيروس",
+   "linkType": "brand",
+   "linkValue": "versace"
+  },
+  {
+   "img": "h08_montblanc.jpg",
+   "title": "مونت بلانك — ليجند",
+   "linkType": "brand",
+   "linkValue": "montblanc"
+  },
+  {
+   "img": "h09_creed.jpg",
+   "title": "كريد — منذ ١٧٦٠",
+   "linkType": "brand",
+   "linkValue": "creed"
+  },
+  {
+   "img": "h10_grooming.jpg",
+   "title": "عناية الرجل اليومية",
+   "linkType": "products",
+   "linkValue": "ids=0934c68d-b98c-47fb-9a53-316398f5074f,ff7709a2-b67f-4a20-9793-ae6f832f4125,2f067c1f-ba25-469e-83ae-1ceb3a95797f,2b8ef011-2fd2-406b-9c09-39c3556557a9,2269b272-4254-4e0a-913d-7cbbac0e3e0d,64f1697f-c633-4000-8986-7e53a9b50df5,f1bc0f49-68c3-47d1-84b0-a7a2d8dd5da2,5187b42e-b7c3-4285-be63-5005211016eb,b80ce867-bb02-43e5-b03a-f970cfbfa81a,76e1da11-e88f-42b6-b339-523d38db9b06&title=%D8%B9%D9%86%D8%A7%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D8%AC%D9%84"
+  }
+ ],
+ "blocks": [
+  {
+   "ref": "f236602a",
+   "title": "بيوت العطور",
+   "patch": {
+    "items": [
+     {
+      "title": "",
+      "imageId": "@img:c01_dior.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "christian-dior",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c02_chanel.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "chanel",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c03_armani.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "giorgio-armani",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c04_rabanne.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "paco-rabanne",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c05_jpg.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "jean-paul-gaultier",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c06_azzaro.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "azzaro",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c07_ysl.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "yves-saint-laurent",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c08_ch.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "carolina-herrera",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c09_prada.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "prada",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c10_creed.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "creed",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c11_valentino.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "valentino",
+      "subtitleEn": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:c12_montblanc.jpg",
+      "titleEn": "",
+      "linkType": "brand",
+      "linkValue": "montblanc",
+      "subtitleEn": ""
+     }
+    ],
+    "tilesPerView": 1.6,
+    "aspectRatio": "4:5",
+    "display": "scroll",
+    "titleEn": "Fragrance houses",
+    "subtitle": "اكتشف أيقونات أشهر دور العطور العالمية",
+    "subtitleEn": "Discover the icons"
+   }
+  },
+  {
+   "ref": "e5436a65"
+  },
+  {
+   "ref": "3e2f8c65",
+   "patch": {
+    "items": [
+     {
+      "title": "",
+      "imageId": "@img:t_perf.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "8dca642a-1194-4101-b5cc-486ca1664e89",
+      "subtitleEn": "",
+      "subtitle": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:t_unisex.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+      "subtitleEn": "",
+      "subtitle": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:t_care.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "01300f8f-9b4d-4d15-904c-e045383c9b97",
+      "subtitleEn": "",
+      "subtitle": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:t_body.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "subtitleEn": "",
+      "subtitle": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:t_oral.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "subtitleEn": "",
+      "subtitle": ""
+     },
+     {
+      "title": "",
+      "imageId": "@img:t_gifts.jpg",
+      "titleEn": "",
+      "linkType": "subcategory",
+      "linkValue": "08770090-8df0-4f74-863f-b36521ebc8be",
+      "subtitleEn": "",
+      "subtitle": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "4521e439",
+   "patch": {
+    "children": [
+     {
+      "type": "PHOTO_WALL",
+      "title": "عطرك حسب المناسبة",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "@img:o_office.jpg",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=c76549bf-310f-4bb5-9b62-f912655dcf07,b4137bf9-9a48-4c50-8201-1eee6bf81ccd,2e7f8011-438a-4416-bf95-6ee4a67416a8,251d193e-7d17-4696-b307-63c8ab3749b0,b3b80700-7baa-4b94-8bf7-2bb04a8209c8,dbeafc90-0262-4677-b59d-351295cbb8a5,b52415a3-e7fc-4212-ac80-c9c79dd11a7b,961391ee-73e5-4d64-a019-3415750ecdf8&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%A7%D9%84%D8%B9%D9%85%D9%84",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "@img:o_evening.jpg",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=c6b706bb-dfff-41d1-841b-e2bf1390669c,941d9dcc-a80a-4822-9fd6-05c08a3c0304,40531588-2892-410a-91b7-f1a035643f8d,69ebfae3-3bb4-49ec-a17e-d0957167fc59,b1bf10ed-bbb1-41a3-a3d1-8d90a1a63898,330a2c1a-a0ba-4a2c-9952-bb6324858f08,06c6a134-a455-4576-99cf-b7c213689c67,5aa896c7-3262-44e9-a45b-383fa4c56540,3dd1e261-9e52-42af-bc72-7db6aaa4a279&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%A7%D9%84%D8%B3%D9%87%D8%B1%D8%A9",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "@img:o_sport.jpg",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=2e7f8011-438a-4416-bf95-6ee4a67416a8,1351566c-3d5a-41bf-8f1d-4969f9aa5e4f,69765d92-6bc4-4a22-b43e-c1d061667f1a,98f56997-a9f2-4273-8c5e-7095de27d8dc,8cec1380-6f79-4e08-86e4-eacff24d68b9,14fc571f-9f4f-40de-8c77-5cea2468a8de,d4f566dd-ccac-47b0-8ae6-30fae4289c1c,f0b62e57-cb9b-43f6-b2ca-59504dce9547&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D9%85%D9%86%D8%B9%D8%B4%D8%A9%20%D9%88%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A9",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "@img:o_winter.jpg",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=3c1259e6-5961-4b65-86f7-b473016b52ee,e9083e91-3424-4518-b35e-adea5823d286,9cd3d788-cfab-48fb-86a8-23d5a80ac51f,68d09272-0ceb-4ccd-908f-223fb70e1fc1,c6b706bb-dfff-41d1-841b-e2bf1390669c,0e7786ef-11c6-4203-a1b3-24328b41819c,af92e3c2-0dee-45b2-a8e0-abbed360c9d5,0ffbbb41-fa5e-433d-9854-a0cda52d24b0&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%A7%D9%84%D8%B4%D8%AA%D8%A7%D8%A1",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "@img:o_gift.jpg",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=408d17de-ebab-4121-88fe-6c9974ab6d19,c76549bf-310f-4bb5-9b62-f912655dcf07,5aa896c7-3262-44e9-a45b-383fa4c56540,e9083e91-3424-4518-b35e-adea5823d286,14094403-4ada-44dc-b1d7-114cf75403c2,c40deebb-e681-4fb9-a5b8-3f7503c950fe,bab8afde-4871-45a1-ac85-c9075baa9cdb,b52415a3-e7fc-4212-ac80-c9c79dd11a7b,2bedbee8-1073-4d2f-8d73-758cb609200a&title=%D9%87%D8%AF%D9%8A%D8%A9%20%D8%AA%D9%84%D9%8A%D9%82%20%D8%A8%D9%87",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "Your scent for every occasion",
+       "subtitle": "اختر المناسبة ونجهّزلك أنسب العطور",
+       "showTitle": true,
+       "showShadow": false,
+       "subtitleEn": "Pick the moment, we pick the scents",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 2.2,
+       "tileCornerRadius": 16
+      },
+      "titleEn": "Your perfume by occasion"
+     },
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:s_budget.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "products",
+       "linkValue": "subcategoryId=8dca642a-1194-4101-b5cc-486ca1664e89&maxPrice=50000&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%B1%D8%AC%D8%A7%D9%84%D9%8A%D8%A9%20%D8%A8%D8%A3%D9%82%D9%84%20%D9%85%D9%86%20%D9%A5%D9%A0%20%D8%A3%D9%84%D9%81",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 3.58,
+       "sectionLayout": "full"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "ref": "14efef8a",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_dior.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "christian-dior",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "7e22c970-a8f8-4111-925f-270181e90a29",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "he-room-chanel",
+   "type": "SECTION_GROUP",
+   "title": "شانيل",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Chanel",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_chanel.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "chanel",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "brandId": "c0758a1f-c142-4898-b3d0-1022ce36fe36",
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#ECEFF3"
+   }
+  },
+  {
+   "ref": "d7c207d0",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_tomford.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "tom-ford",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 13,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "e838df0d-1ea2-472e-b5e2-39a2200cfd7a",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "productIds": [
+        "3c1259e6-5961-4b65-86f7-b473016b52ee",
+        "5aa896c7-3262-44e9-a45b-383fa4c56540",
+        "71eb6c03-fc46-47fa-8231-651c9d6a68fd",
+        "36ce7c6a-fc7f-4ecc-86ea-a6e2364525c4",
+        "69765d92-6bc4-4a22-b43e-c1d061667f1a",
+        "b3b6fba3-febd-4d6c-a896-2fa2f5b87949",
+        "c3479a10-c016-4296-b3af-afb2bccc2df8",
+        "0701cd99-d1cb-49d6-bb9d-d546e8ae3a0e",
+        "4471937f-733f-438b-9d63-f54c157b344d",
+        "2ff48cf2-cc4c-4ac1-a2cf-7f8d54b0dad8",
+        "dd7044dd-b6fd-407f-8dd6-323ebc714887",
+        "f56cf147-1884-4e21-8d84-d7f79ec78856"
+       ],
+       "subtitleEn": "",
+       "showViewAll": true
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "b438bd87",
+   "title": "عائلات العطور",
+   "patch": {
+    "children": [
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 8,
+       "items": [
+        {
+         "title": "",
+         "imageId": "29c56a00-cb9b-46ee-9d6b-0ce2e084d389",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=2e7f8011-438a-4416-bf95-6ee4a67416a8,408d17de-ebab-4121-88fe-6c9974ab6d19,1351566c-3d5a-41bf-8f1d-4969f9aa5e4f,98f56997-a9f2-4273-8c5e-7095de27d8dc,14fc571f-9f4f-40de-8c77-5cea2468a8de,8cec1380-6f79-4e08-86e4-eacff24d68b9,b3b80700-7baa-4b94-8bf7-2bb04a8209c8,f0b62e57-cb9b-43f6-b2ca-59504dce9547,14094403-4ada-44dc-b1d7-114cf75403c2&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D9%85%D9%86%D8%B9%D8%B4%D8%A9",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "819685e3-199c-406e-880f-1b8b1b6914ca",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=c76549bf-310f-4bb5-9b62-f912655dcf07,3c1259e6-5961-4b65-86f7-b473016b52ee,0ffbbb41-fa5e-433d-9854-a0cda52d24b0,961391ee-73e5-4d64-a019-3415750ecdf8,dbeafc90-0262-4677-b59d-351295cbb8a5,b52415a3-e7fc-4212-ac80-c9c79dd11a7b,0af0c7d0-6e35-4408-b244-02081e0aa125,67de1f19-cde1-42e0-b615-23785f4ae4ed&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%AE%D8%B4%D8%A8%D9%8A%D8%A9",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "98047ec8-0252-492d-8ce9-582df05c70c7",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=388a630e-8726-4d66-a17f-e9a02d1fdd71,d353eb07-af34-4d6f-aa88-24a55a7bcda0,e59a41b8-9b59-407b-8d4d-8d064f3d3737,5aa896c7-3262-44e9-a45b-383fa4c56540,bab8afde-4871-45a1-ac85-c9075baa9cdb,ea0315ca-7f9d-43b1-96d8-c0da4f151e05,c40deebb-e681-4fb9-a5b8-3f7503c950fe,5670f9a8-240c-4413-99f9-077132fbfc62,5510695a-a236-425d-8594-acd1ae5f5867&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%B4%D8%B1%D9%82%D9%8A%D8%A9%20%D9%88%D8%B9%D9%88%D8%AF",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "29ec6f4e-0e5b-42f2-bfa9-c0ad640a1d56",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=3c1259e6-5961-4b65-86f7-b473016b52ee,0e7786ef-11c6-4203-a1b3-24328b41819c,b3b6fba3-febd-4d6c-a896-2fa2f5b87949,c6b706bb-dfff-41d1-841b-e2bf1390669c,68d09272-0ceb-4ccd-908f-223fb70e1fc1,3a28d9c2-fcd8-45ea-90d4-1f4d4cdfff68,40531588-2892-410a-91b7-f1a035643f8d,e9083e91-3424-4518-b35e-adea5823d286&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%AC%D9%84%D8%AF%D9%8A%D8%A9%20%D9%88%D8%AF%D8%AE%D8%A7%D9%86%D9%8A%D8%A9",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "4d4511af-148b-4c79-b18a-5e43955ffbaf",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=69765d92-6bc4-4a22-b43e-c1d061667f1a,1351566c-3d5a-41bf-8f1d-4969f9aa5e4f,98f56997-a9f2-4273-8c5e-7095de27d8dc,f4f98fdf-ef10-4ed8-8217-4b4c097a4ca0,961391ee-73e5-4d64-a019-3415750ecdf8,f0b62e57-cb9b-43f6-b2ca-59504dce9547,b4137bf9-9a48-4c50-8201-1eee6bf81ccd&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D8%AD%D9%85%D8%B6%D9%8A%D8%A9",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "cf7e9c25-5b44-4518-ab7a-741ce4e226b5",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "ids=3a28d9c2-fcd8-45ea-90d4-1f4d4cdfff68,39d37e9c-032c-41bd-82d7-5dcee3c6dfab,66e507d0-bd52-41dd-aa7e-6e22f64eec7e,d1a92b3a-745b-44fd-8822-d4f6b49e6f96,fe94e4a3-cda8-45a7-b2f4-83cc2dbb08b2,b4137bf9-9a48-4c50-8201-1eee6bf81ccd,dbccc75f-0c7b-43b1-b6ff-69e7652b19d0,67de1f19-cde1-42e0-b615-23785f4ae4ed,f4f98fdf-ef10-4ed8-8217-4b4c097a4ca0&title=%D8%B9%D8%B7%D9%88%D8%B1%20%D9%83%D9%84%D8%A7%D8%B3%D9%8A%D9%83%D9%8A%D8%A9",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "columns": 3,
+       "display": "grid",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tileCornerRadius": 14
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "he-room-armani",
+   "type": "SECTION_GROUP",
+   "title": "أرماني",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Armani",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_armani.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "giorgio-armani",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "productIds": [
+        "8c7890e0-1bd8-41a2-9ceb-5b4c7c583c1f",
+        "e1ad35de-e77a-4ae4-8e85-1f26eaaaf727",
+        "0c302857-738c-462d-aa72-e6ad39139cdd",
+        "d5b9f9ce-eae3-4260-a80b-2490936b85f3",
+        "c340babe-27df-43a7-b738-d9a91f7bbce7",
+        "dc9b887e-49fa-41e8-8e80-71f474b2214b",
+        "7b69101b-5c5e-4b87-b39b-844874ed7e19",
+        "c3c28174-0bb0-4584-b893-59c927e8ba7a",
+        "d6bce30d-aa3b-435b-84f5-a0e1cc9cadb5",
+        "a2b8b0d6-4473-4eb2-87e4-cbfeaafc6bb4",
+        "7bd138a0-8960-4f93-bd1b-bf6305a537d7",
+        "94aff4c7-a702-4aa7-aaf7-40d216ad6354",
+        "0d2f932f-7a39-4054-94a3-ffbc1631a161",
+        "0eac0150-ecf7-47dc-8dd1-7004598fea15"
+       ]
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#ECEFF3"
+   }
+  },
+  {
+   "ref": "1c013b46",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_rabanne.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "paco-rabanne",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "806ba075-02c2-4e0d-85d5-005817f27ce6",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "he-gift-edit",
+   "type": "SECTION_GROUP",
+   "title": "هدايا رجالية",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "The gift edit",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:s_gifts.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "subcategory",
+       "linkValue": "08770090-8df0-4f74-863f-b36521ebc8be",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 3.58,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "08770090-8df0-4f74-863f-b36521ebc8be"
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#F3ECE4"
+   }
+  },
+  {
+   "new": "he-room-boss",
+   "type": "SECTION_GROUP",
+   "title": "هوغو بوس",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Hugo Boss",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_boss.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "hugo-boss",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "brandId": "8532cee6-a131-4a1d-bd27-87492a674325",
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#ECEFF3"
+   }
+  },
+  {
+   "ref": "bffd16a6",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_versace.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "versace",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "6ca2880e-f8a5-4048-adfb-859608c13283",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "441abf3f",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_pdm.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "parfums-de-marly",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 6,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "10f85b2c-7bf7-447d-bf57-ecd2c9a71dc9",
+       "labelEn": "",
+       "titleEn": "Parfums de Marly",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "he-room-ysl",
+   "type": "SECTION_GROUP",
+   "title": "إيف سان لوران",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Yves Saint Laurent",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_ysl.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "yves-saint-laurent",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "brandId": "b610d576-9fb9-4b21-a6a2-74e71b471474",
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#ECEFF3"
+   }
+  },
+  {
+   "ref": "f4addf84"
+  },
+  {
+   "new": "he-room-montblanc",
+   "type": "SECTION_GROUP",
+   "title": "مونت بلانك",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Montblanc",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_montblanc.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "montblanc",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "brandId": "1e1ed2f9-5b4d-4502-b0e8-e0db91dadb6b",
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#ECEFF3"
+   }
+  },
+  {
+   "new": "he-room-azzaro",
+   "type": "SECTION_GROUP",
+   "title": "أزارو",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Azzaro",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_azzaro.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "azzaro",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "brandId": "8248e981-7afd-4f52-baa3-37d5238dc849",
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#ECEFF3"
+   }
+  },
+  {
+   "new": "he-room-valentino",
+   "type": "SECTION_GROUP",
+   "title": "فالنتينو",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Valentino",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_valentino.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "valentino",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "limit": 10,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "brandId": "948a3089-eb93-4b20-bcd0-acf8c31489e2",
+       "subcategoryId": "8dca642a-1194-4101-b5cc-486ca1664e89"
+      }
+     }
+    ],
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 18,
+    "subtitleEn": "",
+    "paddingBottom": 16,
+    "backgroundColor": "#ECEFF3"
+   }
+  },
+  {
+   "ref": "65b5eb50",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_jpg.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "jean-paul-gaultier",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 10,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "67e586de-f1c8-46b0-9363-4a9821394c9c",
+       "labelEn": "",
+       "titleEn": "Jean Paul Gaultier",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "d8f10d40",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_xerjoff.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "xerjoff",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 8,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "5f8c30b3-6cb0-4b10-ab9b-7586eb0a63b5",
+       "labelEn": "",
+       "titleEn": "Xerjoff",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "de3323d5",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_amouage.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "amouage",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 6,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "6653528a-0c2f-41db-9037-fbda80049a8f",
+       "labelEn": "",
+       "titleEn": "Amouage",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "new": "he-trust-strip",
+   "type": "CUSTOM_BANNER",
+   "title": "أصلي ١٠٠٪ — توصيل مجاني فوق ٥٠ ألف",
+   "payload": {
+    "source": "inline",
+    "textEn": "",
+    "imageId": "@img:s_trust.jpg",
+    "labelEn": "",
+    "titleEn": "",
+    "linkType": "subcategory",
+    "linkValue": "8dca642a-1194-4101-b5cc-486ca1664e89",
+    "showTitle": false,
+    "subtitleEn": "",
+    "showViewAll": false,
+    "bannerAspect": 3.58,
+    "sectionLayout": "full"
+   }
+  },
+  {
+   "ref": "cdc4a0ea",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_mancera.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "mancera",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "4ab787da-96f4-4c87-8780-383e03499616",
+       "labelEn": "",
+       "titleEn": "Mancera",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "33d3da80",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_montale.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "montale",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "brandId": "af77ef79-d076-4a85-b876-ed075b2263b6",
+       "labelEn": "",
+       "titleEn": "Montale",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "4d295aad",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:r_groom.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "products",
+       "linkValue": "ids=0934c68d-b98c-47fb-9a53-316398f5074f,ff7709a2-b67f-4a20-9793-ae6f832f4125,2f067c1f-ba25-469e-83ae-1ceb3a95797f,2b8ef011-2fd2-406b-9c09-39c3556557a9,2269b272-4254-4e0a-913d-7cbbac0e3e0d,64f1697f-c633-4000-8986-7e53a9b50df5,f1bc0f49-68c3-47d1-84b0-a7a2d8dd5da2,5187b42e-b7c3-4285-be63-5005211016eb,b80ce867-bb02-43e5-b03a-f970cfbfa81a,76e1da11-e88f-42b6-b339-523d38db9b06&title=%D8%B9%D9%86%D8%A7%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D8%AC%D9%84",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "",
+      "payload": {
+       "limit": 16,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "Men grooming",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "01300f8f-9b4d-4d15-904c-e045383c9b97"
+      },
+      "titleEn": ""
+     }
+    ]
+   }
+  },
+  {
+   "ref": "ea91dc1a"
+  },
+  {
+   "ref": "deb5a181"
+  },
+  {
+   "ref": "b940ef0b"
+  }
+ ]
+}

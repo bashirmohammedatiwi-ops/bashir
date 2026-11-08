@@ -1,0 +1,1492 @@
+{
+ "world": "care-rituals",
+ "banners": [
+  {
+   "img": "hero_evoluderm.jpg",
+   "title": "إيفولوديرم — طقوس الشعر الفرنسية",
+   "linkType": "products",
+   "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%D8%A7%D9%84%D9%81%D8%B1%D9%86%D8%B3%D9%8A%D8%A9"
+  },
+  {
+   "ref": "afdd83f4"
+  },
+  {
+   "img": "hero_lrp.jpg",
+   "title": "لاروش بوزيه — أنثيليوس",
+   "linkType": "brand",
+   "linkValue": "la-roche-posay"
+  },
+  {
+   "ref": "dd14db1b"
+  },
+  {
+   "img": "hero_cerave.jpg",
+   "title": "سيرافي — غسول الأطباء",
+   "linkType": "brand",
+   "linkValue": "cerave"
+  },
+  {
+   "ref": "bb00fa76"
+  },
+  {
+   "img": "hero_kbeauty.jpg",
+   "title": "العناية الكورية — Seoul Glow",
+   "linkType": "subcategory",
+   "linkValue": "7d2bfaec-d963-404b-b9b5-04b64a82bf29"
+  },
+  {
+   "ref": "5f58fcf5"
+  },
+  {
+   "img": "hero_garnier.jpg",
+   "title": "غارنييه — فيتامين سي",
+   "linkType": "brand",
+   "linkValue": "garnier"
+  },
+  {
+   "ref": "bd70a648"
+  },
+  {
+   "img": "hero_eucerin.jpg",
+   "title": "يوسيرين — أنتي بيغمنت",
+   "linkType": "brand",
+   "linkValue": "eucerin"
+  },
+  {
+   "ref": "ea82b5c8"
+  },
+  {
+   "img": "hero_loreal.jpg",
+   "title": "لوريال باريس — ريفيتاليفت",
+   "linkType": "products",
+   "linkValue": "brandId=7386c27c-ec13-4b5e-8dc7-cd40897cc1fd&subcategoryId=07661898-571a-4a88-aa6c-76dcdbf53029&title=%D9%84%D9%88%D8%B1%D9%8A%D8%A7%D9%84%20%D8%A8%D8%A7%D8%B1%D9%8A%D8%B3%20%E2%80%94%20%D8%A7%D9%84%D8%B9%D9%86%D8%A7%D9%8A%D8%A9%20%D8%A8%D8%A7%D9%84%D8%A8%D8%B4%D8%B1%D8%A9"
+  },
+  {
+   "img": "hero_elvive.jpg",
+   "title": "إلفيف — غلايكوليك غلوس",
+   "linkType": "brand",
+   "linkValue": "loreal-paris-elvive"
+  },
+  {
+   "img": "hero_ordinary.jpg",
+   "title": "ذا أورديناري — Clinical. Honest.",
+   "linkType": "brand",
+   "linkValue": "the-ordinary"
+  },
+  {
+   "ref": "2456f8a6-411a-4cde-83d6-1e5d0e2add52"
+  },
+  {
+   "ref": "0a73386f-b70b-428c-9ad3-b1cd172cf7da"
+  },
+  {
+   "ref": "010c77cf-43d1-4eb5-99c1-cb23e5b89e47"
+  },
+  {
+   "ref": "fcae686d-3924-4497-8489-ef63a1db63f0"
+  },
+  {
+   "ref": "c41369c8-eb3f-41fb-a66e-1646fe3e1319"
+  },
+  {
+   "ref": "e3fe9f6a-5ce9-447e-bd2d-ae3bc7bc176f"
+  },
+  {
+   "ref": "e2a3a644-fe53-495a-9080-7988c114806b"
+  }
+ ],
+ "blocks": [
+  {
+   "ref": "7ca9b92e"
+  },
+  {
+   "ref": "a19ad0b8"
+  },
+  {
+   "ref": "f1d237b1",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_evoluderm.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "products",
+       "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%D8%A7%D9%84%D9%81%D8%B1%D9%86%D8%B3%D9%8A%D8%A9",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "عالم إيفولوديرم",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "b6b5384f-fed6-451e-aec6-843dac836c73",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&subcategoryId=07661898-571a-4a88-aa6c-76dcdbf53029&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%E2%80%94%20%D8%A7%D9%84%D8%B9%D9%86%D8%A7%D9%8A%D8%A9%20%D8%A8%D8%A7%D9%84%D9%88%D8%AC%D9%87",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "71cfe326-b288-4f23-8315-c205d0e21cda",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&tertiaryCategoryId=05028a17-da64-4c66-b25f-73c758acc2f8&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%E2%80%94%20%D8%BA%D8%B3%D9%88%D9%84%D8%A7%D8%AA%20%D8%A7%D9%84%D9%88%D8%AC%D9%87",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "c8a6a134-3116-4140-9cc3-c5de27e89588",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&subcategoryId=150a633e-80a7-4cb3-8f2d-8eab90a99190&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%E2%80%94%20%D8%A7%D9%84%D8%B9%D9%86%D8%A7%D9%8A%D8%A9%20%D8%A8%D8%A7%D9%84%D8%B4%D8%B9%D8%B1",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "4edb681c-44c0-4db2-9290-58c2b7780a65",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&tertiaryCategoryId=35be991e-3062-4fbd-8f0a-2393bf806524&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%E2%80%94%20%D8%AC%D9%84%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D8%AD%D9%85%D8%A7%D9%85",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "1d2a711d-27c6-4927-a7cd-64987b6427b3",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&subcategoryId=23aaaa07-91ee-4937-847e-d7866a9e937a&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%E2%80%94%20%D8%A7%D9%84%D8%B9%D9%86%D8%A7%D9%8A%D8%A9%20%D8%A8%D8%A7%D9%84%D8%AC%D8%B3%D9%85",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "4809608f-3d17-469e-bca9-441bd998e160",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=413cdae6-b64e-4aea-99f1-c83a80635c06&tertiaryCategoryId=a898f04c-03d4-4ab6-baa7-bb64cf0d2e3e&title=%D8%A5%D9%8A%D9%81%D9%88%D9%84%D9%88%D8%AF%D9%8A%D8%B1%D9%85%20%E2%80%94%20%D8%B2%D9%8A%D9%88%D8%AA%20%D8%A7%D9%84%D8%AC%D8%B3%D9%85",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "Evoluderm world",
+       "subtitle": "الوكيل الحصري في العراق • صُنع في فرنسا",
+       "showTitle": true,
+       "showShadow": false,
+       "subtitleEn": "Exclusive Agent in Iraq • Made in France",
+       "aspectRatio": "4:5",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 1.6,
+       "tileCornerRadius": 16
+      },
+      "titleEn": "Evoloderm World"
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً من إيفولوديرم",
+      "payload": {
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "Evoluderm favourites",
+       "showTitle": true,
+       "productIds": [
+        "0429b0aa-1844-48fb-ad34-d9d2c647ddab",
+        "e4af5aa0-d5e4-49ff-8133-5a1fedaca087",
+        "2a5b76d5-6714-47e2-8e5b-c878d14beb57",
+        "68acbbc6-73a9-4a7d-b2b0-7f0788dfd284",
+        "48e2fd3a-1afa-41f4-9ffe-875c086ac9ea",
+        "4e01d1a8-02f6-4a6f-9e2e-6fe1031508b5",
+        "ab67e4d4-c888-40ed-909c-d8f69a96e0c3",
+        "4abe661a-033a-4643-adde-156d434e3ec3",
+        "30e54546-eb14-4ab1-8c67-9cf10e9cd2db",
+        "eed3ffab-d3bc-4366-a387-0b067f1f04cd",
+        "01026c71-f822-40fa-96bd-fc3005bba331",
+        "b8ac8cf7-8676-4371-b5ce-ef5050d58918",
+        "05bdc4c9-8d1a-4c29-9643-17da2d14d407",
+        "30ec2fb2-7bf1-4da4-a756-df8dbf60fe8f"
+       ],
+       "subtitleEn": "",
+       "showViewAll": false,
+       "sectionLayout": "carousel"
+      },
+      "titleEn": "Most ordered from Evoloderm"
+     }
+    ]
+   }
+  },
+  {
+   "ref": "2f695dff"
+  },
+  {
+   "new": "care5-spotlight",
+   "type": "PHOTO_WALL",
+   "title": "براندات نحبّها",
+   "payload": {
+    "gap": 10,
+    "items": [
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_evoluderm.jpg",
+      "linkType": "brand",
+      "linkValue": "evoluderm"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_lrp.jpg",
+      "linkType": "brand",
+      "linkValue": "la-roche-posay"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_garnier.jpg",
+      "linkType": "brand",
+      "linkValue": "garnier"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_boj.jpg",
+      "linkType": "brand",
+      "linkValue": "beauty-of-joseon"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_anua.jpg",
+      "linkType": "brand",
+      "linkValue": "anua"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_eucerin.jpg",
+      "linkType": "brand",
+      "linkValue": "eucerin"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_kerastase.jpg",
+      "linkType": "brand",
+      "linkValue": "kerastase"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_ordinary.jpg",
+      "linkType": "brand",
+      "linkValue": "the-ordinary"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_nivea.jpg",
+      "linkType": "brand",
+      "linkValue": "nivea"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_vichy.jpg",
+      "linkType": "brand",
+      "linkValue": "vichy"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_elvive.jpg",
+      "linkType": "brand",
+      "linkValue": "loreal-paris-elvive"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:card_lierac.jpg",
+      "linkType": "brand",
+      "linkValue": "lierac"
+     }
+    ],
+    "textEn": "",
+    "labelEn": "",
+    "titleEn": "Brands we love",
+    "subtitle": "مختارات من أهم دور العناية في العالم",
+    "subtitleEn": "The world’s leading care houses",
+    "showTitle": true,
+    "showShadow": false,
+    "display": "scroll",
+    "aspectRatio": "4:5",
+    "borderStyle": "none",
+    "overlayStyle": "none",
+    "showViewAll": false,
+    "tileCornerRadius": 16,
+    "tilesPerView": 1.6
+   }
+  },
+  {
+   "ref": "934d2533"
+  },
+  {
+   "new": "care5-routine",
+   "type": "PHOTO_WALL",
+   "title": "روتينكِ في أربع خطوات",
+   "payload": {
+    "gap": 10,
+    "items": [
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_r_cleanse.jpg",
+      "linkType": "tertiary",
+      "linkValue": "05028a17-da64-4c66-b25f-73c758acc2f8"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_r_treat.jpg",
+      "linkType": "products",
+      "linkValue": "ids=69e6125b-162f-430b-a60e-8b7c2439c29c,d142f1ee-c2d1-4fdc-ad94-7ab0d367b2d4,d844e523-660f-411f-9405-eceeb55a14ef,02270f2b-29b4-4467-a079-315f18ce2def,19eb36fb-95ff-4975-a487-21a137a66e6a,b6461cc0-81fe-430c-9149-c88a0a320418,beab48e7-2b7d-4076-af0e-c095e6e8f092,a93e1301-7647-49c0-bbeb-dac203855b9b,f6b27628-f360-4a46-824a-ae1b53955a98,c734475a-1624-4f6a-ada6-2a9b3e1a4610,7be58d75-c9b3-40ac-ae2f-f54c3a6910df,ceb69a7d-ab85-4994-b3bd-d83e912be12c&title=%D8%A7%D9%84%D8%AE%D8%B7%D9%88%D8%A9%202%20%E2%80%94%20%D8%B3%D9%8A%D8%B1%D9%88%D9%85%D8%A7%D8%AA%20%D9%88%D8%B9%D9%84%D8%A7%D8%AC%D8%A7%D8%AA"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_r_moist.jpg",
+      "linkType": "tertiary",
+      "linkValue": "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_r_protect.jpg",
+      "linkType": "subcategory",
+      "linkValue": "25dc8086-bffa-47af-aaf7-64d503e58a9f"
+     }
+    ],
+    "textEn": "",
+    "labelEn": "",
+    "titleEn": "Your 4-step routine",
+    "subtitle": "تنظيف • علاج • ترطيب • حماية",
+    "subtitleEn": "Cleanse • Treat • Moisturise • Protect",
+    "showTitle": true,
+    "showShadow": false,
+    "display": "grid",
+    "aspectRatio": "1:1",
+    "borderStyle": "none",
+    "overlayStyle": "none",
+    "showViewAll": false,
+    "tileCornerRadius": 16,
+    "sectionLayout": "grid2"
+   }
+  },
+  {
+   "ref": "73cbc22e",
+   "patch": {
+    "items": [
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_face.jpg",
+      "linkType": "subcategory",
+      "linkValue": "07661898-571a-4a88-aa6c-76dcdbf53029"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_hair.jpg",
+      "linkType": "subcategory",
+      "linkValue": "150a633e-80a7-4cb3-8f2d-8eab90a99190"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_body.jpg",
+      "linkType": "subcategory",
+      "linkValue": "23aaaa07-91ee-4937-847e-d7866a9e937a"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_sun.jpg",
+      "linkType": "subcategory",
+      "linkValue": "25dc8086-bffa-47af-aaf7-64d503e58a9f"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_derma.jpg",
+      "linkType": "subcategory",
+      "linkValue": "09146169-f9c4-4649-a365-ca1b8cda365f"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_korean.jpg",
+      "linkType": "subcategory",
+      "linkValue": "7d2bfaec-d963-404b-b9b5-04b64a82bf29"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_hands.jpg",
+      "linkType": "subcategory",
+      "linkValue": "01ad1f0d-7c15-469c-bf86-85abd135e68f"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_feet.jpg",
+      "linkType": "subcategory",
+      "linkValue": "905db637-498a-49bc-83e8-b3d0a335d5b6"
+     }
+    ],
+    "display": "scroll",
+    "tilesPerView": 2.4,
+    "aspectRatio": "1:1"
+   }
+  },
+  {
+   "ref": "fe88c58e",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_face.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "subcategory",
+       "linkValue": "07661898-571a-4a88-aa6c-76dcdbf53029",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "1578b424-f451-49e4-bb71-54974c35109d",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "la-roche-posay",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "e15277d2-e5bb-4f5b-bc4c-139a51e124eb",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "eucerin",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "grid",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "sectionLayout": "grid2",
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "fdaedaf7-2627-41c1-8cc2-86f9f329ccc2",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "05028a17-da64-4c66-b25f-73c758acc2f8",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "a722e271-9c85-43b3-8266-d57dfe7670e6",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "21801439-d0e9-4106-b5e8-dfdd70ffeb8d",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "fb3c9829-a08c-4973-a11d-377ba41e9e8b",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "5a89a7d0-16d9-47d6-8575-2961289fc526",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "b6830113-41da-4512-9bcd-a5c2e4eb4dfb",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "09bedca5-0c6c-4a71-9b03-4bf29cecaf53",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 2.6,
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً للوجه",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": true,
+       "subtitleEn": "",
+       "titleColor": "#8E3B27",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "07661898-571a-4a88-aa6c-76dcdbf53029"
+      },
+      "titleEn": "Most requested for face"
+     }
+    ]
+   }
+  },
+  {
+   "new": "care5-strip-sun",
+   "type": "CUSTOM_BANNER",
+   "title": "واقي الشمس",
+   "payload": {
+    "source": "inline",
+    "imageId": "@img:strip_sun.jpg",
+    "linkType": "subcategory",
+    "linkValue": "25dc8086-bffa-47af-aaf7-64d503e58a9f",
+    "showTitle": false,
+    "showViewAll": false,
+    "bannerAspect": 3.58,
+    "sectionLayout": "full",
+    "textEn": "",
+    "labelEn": "",
+    "titleEn": "",
+    "subtitleEn": ""
+   }
+  },
+  {
+   "new": "care5-concerns",
+   "type": "PHOTO_WALL",
+   "title": "حسب احتياجكِ",
+   "payload": {
+    "gap": 10,
+    "items": [
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_c_acne.jpg",
+      "linkType": "skinConcern",
+      "linkValue": "acne"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_c_spots.jpg",
+      "linkType": "skinConcern",
+      "linkValue": "pigmentation"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_c_dry.jpg",
+      "linkType": "skinConcern",
+      "linkValue": "dryness"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_c_age.jpg",
+      "linkType": "products",
+      "linkValue": "ids=68f45b9d-a8c4-4692-bc10-b7ee895167cc,806d570c-c835-4112-92e7-87467cb127b8,ae7313cc-6bef-4a6f-ad02-39734278daef,daf8a835-c712-4783-bc14-fb75281f66fe,4a0aea3b-6be3-40ba-9109-f6742e7d7360,80c34a01-3fb6-4a5a-9d57-3f60573652bd,230a7b0e-955c-4664-b731-d7b6d172382c,8ac195b7-b125-4cee-a10b-7daa3591b587,f6b27628-f360-4a46-824a-ae1b53955a98,b4d85fbb-9683-411c-9344-242d14f305b9,88a51430-52e0-49b8-a24e-b06647e290ee,9f505772-f6f5-48a7-8419-57beae0e7b1e&title=%D9%85%D9%83%D8%A7%D9%81%D8%AD%D8%A9%20%D8%B9%D9%84%D8%A7%D9%85%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D9%82%D8%AF%D9%91%D9%85%20%D8%A8%D8%A7%D9%84%D8%B9%D9%85%D8%B1"
+     },
+     {
+      "title": "",
+      "titleEn": "",
+      "subtitleEn": "",
+      "imageId": "@img:tile_c_hairfall.jpg",
+      "linkType": "products",
+      "linkValue": "ids=54567a7c-eb22-4d72-816a-ad6bf5afd76e,3938ec4f-ddf2-4e44-be9d-8a412d91e79e,c0623284-f30b-4d12-98a9-f892f757f97d,9d5f3633-a3fa-4e54-9329-2607d131cd90,ef0d7038-f8de-443e-b8d1-096dc5c533c5,a1e0b6c7-3001-4696-9f94-00fb99bfc14e,a624909c-96ae-491a-bb07-7610d4cb6833,3923d90f-987c-4b56-b068-e484f0f1a5ac,5a83378b-c004-4759-9a71-56df3757c694,f6148d76-d432-42df-9904-03b6fbd28bd9,cd9185a1-beb8-4525-bf4b-37230c218341,840de7f3-8289-4805-b9a3-31fc653e4639,d29c5db0-b66d-436c-9a19-6bb5bf75291c,616b25d5-6c2b-48a8-aa4b-872d975b3698&title=%D8%B9%D9%84%D8%A7%D8%AC%20%D8%AA%D8%B3%D8%A7%D9%82%D8%B7%20%D8%A7%D9%84%D8%B4%D8%B9%D8%B1"
+     }
+    ],
+    "textEn": "",
+    "labelEn": "",
+    "titleEn": "Shop by concern",
+    "subtitle": "حلول مختارة لكل مشكلة",
+    "subtitleEn": "Targeted solutions",
+    "showTitle": true,
+    "showShadow": false,
+    "display": "scroll",
+    "aspectRatio": "1:1",
+    "borderStyle": "none",
+    "overlayStyle": "none",
+    "showViewAll": false,
+    "tileCornerRadius": 16,
+    "tilesPerView": 2.4
+   }
+  },
+  {
+   "new": "care5-room-garnier",
+   "type": "SECTION_GROUP",
+   "title": "غارنييه",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Garnier",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 16,
+    "paddingBottom": 18,
+    "subtitleEn": "",
+    "backgroundColor": "#FDF0F6",
+    "titleColor": "#7A1F4E",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_garnier.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "garnier",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً من غارنييه",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "brandId": "bbc9ef55-b46e-46f7-9915-1d5d428de7f4",
+       "showTitle": true,
+       "titleColor": "#7A1F4E",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "subtitleEn": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "ref": "95ec1719",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_hair.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "subcategory",
+       "linkValue": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "61c80944-2b75-4569-854a-ff894ca57886",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "nashi-argan",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "c56691ee-7896-4117-9c67-b3be2ffc4de7",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "ogx",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "grid",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "sectionLayout": "grid2",
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "5291d19e-d15d-4926-b279-561bb5d6ab82",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "25b4613e-cbf3-47cc-98b1-c94b398d51f4",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "dea1dfac-c3bb-4c0c-826b-484f15c4806b",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "ab7c66e4-4df6-474f-b9d2-dd059dd60bfc",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "83512a93-d3b5-4b2c-8043-a7490710b92c",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "ee39d6a6-5074-43b6-a80c-a7c1b23c3bd1",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "32d7266a-867f-42cb-90ad-7e7d94b2af12",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "c508347a-8844-4068-b508-9653ede66b8b",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 2.6,
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً للشعر",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": true,
+       "subtitleEn": "",
+       "titleColor": "#55306B",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "150a633e-80a7-4cb3-8f2d-8eab90a99190"
+      },
+      "titleEn": "Most in Demand for Hair"
+     }
+    ]
+   }
+  },
+  {
+   "new": "care5-room-elvive",
+   "type": "SECTION_GROUP",
+   "title": "إلفيف",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Elvive",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 16,
+    "paddingBottom": 18,
+    "subtitleEn": "",
+    "backgroundColor": "#FBF1E6",
+    "titleColor": "#5A2E0E",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_elvive.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "loreal-paris-elvive",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً من إلفيف",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "brandId": "004d02fd-4acc-4140-9e4d-0d815a964451",
+       "showTitle": true,
+       "titleColor": "#5A2E0E",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "subtitleEn": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "ref": "1af80d62",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_korean.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "subcategory",
+       "linkValue": "7d2bfaec-d963-404b-b9b5-04b64a82bf29",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "a7f4b742-d62b-46b5-be87-cbc7f3da7e19",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "dr-althea",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "fb5035a4-6490-4198-9ece-19389d5a4300",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "medicube",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "bfec2107-d829-439b-8e70-a973779fd2ba",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "eqqualberry",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 2.6,
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً من الكورية",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": true,
+       "subtitleEn": "",
+       "titleColor": "#22604A",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "7d2bfaec-d963-404b-b9b5-04b64a82bf29"
+      },
+      "titleEn": "Most in demand from Korean"
+     }
+    ]
+   }
+  },
+  {
+   "new": "care5-strip-budget",
+   "type": "CUSTOM_BANNER",
+   "title": "عناية بأقل من 15,000 د.ع",
+   "payload": {
+    "source": "inline",
+    "imageId": "@img:strip_budget.jpg",
+    "linkType": "products",
+    "linkValue": "maxPrice=15000&categoryId=9f99dbf3-15c4-4561-8f53-1499a8743a47&title=%D8%B9%D9%86%D8%A7%D9%8A%D8%A9%20%D8%A8%D8%A3%D9%82%D9%84%20%D9%85%D9%86%2015%2C000%20%D8%AF.%D8%B9",
+    "showTitle": false,
+    "showViewAll": false,
+    "bannerAspect": 3.58,
+    "sectionLayout": "full",
+    "textEn": "",
+    "labelEn": "",
+    "titleEn": "",
+    "subtitleEn": ""
+   }
+  },
+  {
+   "ref": "bacd865c",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_derma.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "subcategory",
+       "linkValue": "09146169-f9c4-4649-a365-ca1b8cda365f",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "e584c243-e4da-4ddd-9da3-1167e2414edf",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "qv",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "cec3b5d5-7283-41f6-bb99-f5e14aca0f88",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "PHARMACERIS",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "3fa00c6f-5527-4f54-a74f-0d0dc685d2a0",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "isispharma",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "c27a436b-ad4e-40c1-b2b6-544128a899f6",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "sebamed",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 2.6,
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً طبياً",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": true,
+       "subtitleEn": "",
+       "titleColor": "#24496B",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "09146169-f9c4-4649-a365-ca1b8cda365f"
+      },
+      "titleEn": "Most Medically Demanded"
+     }
+    ]
+   }
+  },
+  {
+   "new": "care5-room-revuele",
+   "type": "SECTION_GROUP",
+   "title": "ريفويل",
+   "payload": {
+    "shadow": false,
+    "textEn": "",
+    "labelEn": "",
+    "pattern": "none",
+    "titleEn": "Revuele",
+    "paddingH": 12,
+    "showTitle": false,
+    "paddingTop": 16,
+    "paddingBottom": 18,
+    "subtitleEn": "",
+    "backgroundColor": "#EEF7F2",
+    "titleColor": "#0F4D3A",
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "titleEn": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_revuele.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "brand",
+       "linkValue": "revuele",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      }
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً من ريفويل",
+      "titleEn": "",
+      "payload": {
+       "limit": 14,
+       "filter": "all",
+       "brandId": "6d91ef8c-bc20-4b69-8eb7-9c771b576dea",
+       "showTitle": true,
+       "titleColor": "#0F4D3A",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "subtitleEn": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "ref": "eb197374",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_body.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "subcategory",
+       "linkValue": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "5fd02655-71f4-44a2-8fb3-059d0c3855ea",
+         "titleEn": "",
+         "linkType": "brand",
+         "linkValue": "vaseline",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "e9d2ab0e-89d8-4ed5-bd03-d8f5b40ea4a4",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=a3f8a056-2b83-40cb-9743-e2e2cb0df264&tertiaryCategoryId=9464c921-9650-421f-8e2b-6a172f7524c5&title=%D9%85%D8%B2%D9%8A%D9%84%D8%A7%D8%AA%20%D8%B9%D8%B1%D9%82%20%D8%A8%D9%8A%D8%B2%D9%84%D9%8A%D9%86",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "grid",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "sectionLayout": "grid2",
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "c9cb3a2c-da1c-48d6-8c0d-630e65900cd7",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "fcd86b22-a0fd-47b9-ba4c-c76164dadab2",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "e47ec8ef-b9ed-4456-b72d-024b1fbcbf90",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "35be991e-3062-4fbd-8f0a-2393bf806524",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "787fa4f0-c0b5-4967-ad89-0c434167ab55",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "15e1a2c3-9924-4fd3-a7d9-b66d9adaddce",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "932a7c9a-57f4-4478-8322-caf4479039eb",
+         "titleEn": "",
+         "linkType": "tertiary",
+         "linkValue": "9464c921-9650-421f-8e2b-6a172f7524c5",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 2.6,
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "الأكثر طلباً للجسم",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": true,
+       "subtitleEn": "",
+       "titleColor": "#6E4527",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "23aaaa07-91ee-4937-847e-d7866a9e937a"
+      },
+      "titleEn": "Most in Demand for the Body"
+     }
+    ]
+   }
+  },
+  {
+   "ref": "f6c1159a",
+   "patch": {
+    "children": [
+     {
+      "type": "CUSTOM_BANNER",
+      "title": "",
+      "payload": {
+       "source": "inline",
+       "textEn": "",
+       "imageId": "@img:room_sun.jpg",
+       "labelEn": "",
+       "titleEn": "",
+       "linkType": "subcategory",
+       "linkValue": "25dc8086-bffa-47af-aaf7-64d503e58a9f",
+       "showTitle": false,
+       "subtitleEn": "",
+       "showViewAll": false,
+       "bannerAspect": 2.15,
+       "sectionLayout": "full"
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PHOTO_WALL",
+      "title": "",
+      "payload": {
+       "gap": 10,
+       "items": [
+        {
+         "title": "",
+         "imageId": "ed062f29-6934-4b15-894b-1ea24fb952d1",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=0d66bfed-a33d-460f-a671-25ed2221633a&subcategoryId=25dc8086-bffa-47af-aaf7-64d503e58a9f&title=%D9%88%D8%A7%D9%82%D9%8A%D8%A7%D8%AA%20%D9%84%D8%A7%D8%B1%D9%88%D8%B4%20%D8%A8%D9%88%D8%B2%D9%8A%D9%87",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "e6b5cdfb-ed19-442f-b656-a925305a8f2b",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=6858e48f-90af-41ff-9331-85b81dca4e96&subcategoryId=25dc8086-bffa-47af-aaf7-64d503e58a9f&title=%D9%88%D8%A7%D9%82%D9%8A%D8%A7%D8%AA%20%D8%A8%D9%8A%D9%88%D8%AF%D9%8A%D8%B1%D9%85%D8%A7",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "1aa4fefc-c3c7-4036-8cbd-7758c207d82b",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=b5636e4d-7456-4be9-ac3d-971eb22b7168&subcategoryId=25dc8086-bffa-47af-aaf7-64d503e58a9f&title=%D9%88%D8%A7%D9%82%D9%8A%D8%A7%D8%AA%20%D9%8A%D9%88%D8%B3%D9%8A%D8%B1%D9%8A%D9%86",
+         "subtitleEn": ""
+        },
+        {
+         "title": "",
+         "imageId": "3ec87f28-3e63-4421-b757-4132920ac2ca",
+         "titleEn": "",
+         "linkType": "products",
+         "linkValue": "brandId=6df12630-33c8-4384-84c6-766cf7c4d48b&subcategoryId=25dc8086-bffa-47af-aaf7-64d503e58a9f&title=%D9%88%D8%A7%D9%82%D9%8A%D8%A7%D8%AA%20ISDIN",
+         "subtitleEn": ""
+        }
+       ],
+       "textEn": "",
+       "display": "scroll",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": false,
+       "showShadow": false,
+       "subtitleEn": "",
+       "aspectRatio": "1:1",
+       "borderStyle": "none",
+       "showViewAll": false,
+       "overlayStyle": "none",
+       "tilesPerView": 2.6,
+       "tileCornerRadius": 16
+      },
+      "titleEn": ""
+     },
+     {
+      "type": "PRODUCT_LIST",
+      "title": "واقيات الشمس",
+      "payload": {
+       "limit": 12,
+       "filter": "all",
+       "textEn": "",
+       "labelEn": "",
+       "titleEn": "",
+       "showTitle": true,
+       "subtitleEn": "",
+       "titleColor": "#8A4F06",
+       "showViewAll": true,
+       "sectionLayout": "carousel",
+       "subcategoryId": "25dc8086-bffa-47af-aaf7-64d503e58a9f"
+      },
+      "titleEn": "Sunscreen"
+     }
+    ]
+   }
+  },
+  {
+   "new": "care5-strip-delivery",
+   "type": "CUSTOM_BANNER",
+   "title": "أصلي 100% — توصيل مجاني فوق 50,000 د.ع",
+   "payload": {
+    "source": "inline",
+    "imageId": "@img:strip_delivery.jpg",
+    "linkType": "products",
+    "linkValue": "categoryId=9f99dbf3-15c4-4561-8f53-1499a8743a47&title=%D8%B7%D9%82%D9%88%D8%B3%20%D8%A7%D9%84%D8%B9%D9%86%D8%A7%D9%8A%D8%A9",
+    "showTitle": false,
+    "showViewAll": false,
+    "bannerAspect": 3.58,
+    "sectionLayout": "full",
+    "textEn": "",
+    "labelEn": "",
+    "titleEn": "",
+    "subtitleEn": ""
+   }
+  },
+  {
+   "ref": "d1539da4"
+  }
+ ]
+}
