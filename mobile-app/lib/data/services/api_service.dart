@@ -868,6 +868,17 @@ class ApiService {
 
   // ---- PACKAGES ----
   /// هل يوجد تحديث للتطبيق؟ mode: none | soft | force (من إعدادات لوحة التحكم).
+  /// إعلان عند فتح التطبيق (من لوحة التحكم) — null = لا إعلان الآن.
+  Future<Map<String, dynamic>?> getLaunchPopup() async {
+    try {
+      final r = await _dio.get('/app/launch-popup', options: Options(extra: {'auth': false}));
+      final popup = asMap(_data(r))['popup'];
+      return popup is Map ? asMap(popup) : null;
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   Future<Map<String, dynamic>> checkAppUpdate({required String platform, required String version}) async {
     try {
       final r = await _dio.get('/app/update',

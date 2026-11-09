@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { mutations, queries } from "@/lib/queries";
 
 import SmartSelect from "@/components/SmartSelect";
+import { LaunchPopupFields } from "@/components/LaunchPopupFields";
 interface Settings {
   storeName: string;
   currency: string;
@@ -38,6 +39,17 @@ interface Settings {
   priorityBrandIds?: string[];
   priorityCategoryIds?: string[];
   hideProductsWithoutImages?: boolean;
+  launchPopup?: {
+    enabled?: boolean;
+    title?: string;
+    imageId?: string | null;
+    linkType?: string | null;
+    linkValue?: string | null;
+    link?: string | null;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    frequency?: "once" | "daily" | "always";
+  };
 }
 
 export default function SettingsPage() {
@@ -55,6 +67,19 @@ export default function SettingsPage() {
   const rootOptions = ((categories as { id: string; name: string; parentId?: string | null }[] | undefined) ?? [])
     .filter((c) => !c.parentId)
     .map((c) => ({ value: c.id, label: c.name }));
+  // روابط إعلان الفتح (نفس قوائم البنرات)
+  const { data: subcategories } = useQuery({ queryKey: ["subcategories-all"], queryFn: () => queries.subcategories() });
+  const { data: tertiary } = useQuery({ queryKey: ["tertiary-all"], queryFn: () => queries.tertiarySections() });
+  const { data: products } = useQuery({ queryKey: ["products-lite-banners"], queryFn: () => queries.products({ limit: 200 }) });
+  const linkEntities = {
+    products: (products as { data?: unknown[] } | undefined)?.data ?? [],
+    categories: (categories as unknown[] | undefined) ?? [],
+    subcategories: (subcategories as unknown[] | undefined) ?? [],
+    tertiary: (tertiary as unknown[] | undefined) ?? [],
+    brands: (brands as unknown[] | undefined) ?? [],
+    packages: [],
+    skinConcerns: [],
+  } as Parameters<typeof LaunchPopupFields>[0]["entities"];
 
   useEffect(() => {
     if (data) form.setFieldsValue(data);
@@ -290,6 +315,11 @@ export default function SettingsPage() {
                       </Form.Item>
                     </>
                   ),
+                },
+                {
+                  key: "launch-popup",
+                  label: "إعلان عند الفتح",
+                  children: <LaunchPopupFields entities={linkEntities} />,
                 },
                 {
                   key: "app-update",

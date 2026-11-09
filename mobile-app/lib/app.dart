@@ -25,6 +25,7 @@ import 'features/auth/auth_provider.dart';
 import 'features/catalog/catalog_refresh.dart';
 import 'features/profile/profile_providers.dart';
 import 'features/splash/splash_screen.dart';
+import 'features/launch_popup/launch_popup.dart';
 import 'features/update/app_update.dart';
 import 'features/worlds/world_theme.dart';
 import 'features/worlds/worlds_provider.dart';
@@ -352,8 +353,11 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
               child: _OfflineBanner(
                 // فحص تحديث التطبيق (إجباري/اختياري) من إعدادات لوحة التحكم.
                 child: AppUpdateGate(
-                  child: DismissKeyboard(
-                    child: child ?? const SizedBox.shrink(),
+                  // إعلان عند فتح التطبيق (من لوحة التحكم).
+                  child: LaunchPopupHost(
+                    child: DismissKeyboard(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),

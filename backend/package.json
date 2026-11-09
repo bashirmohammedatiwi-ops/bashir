@@ -25,7 +25,8 @@
     "backfill:cms-translations": "npx tsx scripts/backfill-cms-translations.ts",
     "link:skin-concerns": "npx tsx scripts/link-skin-concern-products.ts",
     "generate:skin-concerns": "npx tsx scripts/generate-skin-concern-assignments.ts",
-    "test:low-stock": "npx tsx src/common/interceptors/storefront-low-stock.interceptor.spec.ts"
+    "test:low-stock": "npx tsx src/common/interceptors/storefront-low-stock.interceptor.spec.ts",
+    "test:launch-popup": "npx tsx src/modules/settings/launch-popup.spec.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

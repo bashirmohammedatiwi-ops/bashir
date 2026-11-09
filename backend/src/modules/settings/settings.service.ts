@@ -49,6 +49,19 @@ export const DEFAULT_STORE_SETTINGS = {
   // «براندات في المقدمة»: منتجات هذه البراندات أولاً داخل هذه الأقسام الرئيسية.
   priorityBrandIds: [] as string[],
   priorityCategoryIds: [] as string[],
+  // إعلان عند فتح التطبيق: صورة طولية بزر إغلاق، والضغط عليها يفتح الرابط.
+  launchPopup: {
+    enabled: false,
+    title: "",
+    imageId: null as string | null,
+    linkType: null as string | null,
+    linkValue: null as string | null,
+    link: null as string | null,
+    startsAt: null as string | null,
+    endsAt: null as string | null,
+    /** once = مرة واحدة لكل إعلان، daily = مرة كل يوم، always = كل فتح للتطبيق */
+    frequency: "daily" as "once" | "daily" | "always",
+  },
 };
 
 /** رسوم تغليف الهدية من الإعدادات — رقم صحيح غير سالب (افتراضياً 3000 د.ع). */
