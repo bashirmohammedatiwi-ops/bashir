@@ -4,7 +4,9 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from "@nestjs/common";
+import { OrderNotifyService } from "../delivery/order-notify.service";
 import {
   AdjustmentMethod,
   AdjustmentType,
@@ -85,6 +87,7 @@ export class FulfillmentService {
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
     private readonly timeline: OrderTimelineService,
+    @Optional() private readonly notify?: OrderNotifyService,
   ) {}
 
   // ------------------------------------------------------------ reads
@@ -279,8 +282,10 @@ export class FulfillmentService {
 
   async start(orderId: string, actor: Actor, dto: PickStartDto = {}) {
     const name = await this.actorName(actor);
+    let firstStart = false;
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
+      firstStart = !o.pickStartedAt;
       if (o.fulfillmentStage === FulfillmentStage.CANCELLED || o.status === OrderStatus.CANCELLED) {
         throw new ConflictException("الطلب ملغي");
       }
@@ -324,6 +329,7 @@ export class FulfillmentService {
         );
       }
     });
+    if (firstStart) void this.notify?.send(orderId, { kind: "PICKING" });
     return this.view(orderId);
   }
 
@@ -557,6 +563,7 @@ export class FulfillmentService {
   async finish(orderId: string, actor: Actor, dto: PickFinishDto) {
     const name = await this.actorName(actor);
     const policy = await this.policy();
+    let notice: unknown = null;
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
       this.assertPicker(o, actor);
@@ -670,7 +677,18 @@ export class FulfillmentService {
         },
         tx,
       );
+      notice = { pickup: o.deliveryOption === DeliveryOption.PICKUP, changed: money.changed, oldTotal: o.total, newTotal: money.finalTotal, lines };
     });
+    // إشعار العميل بعد نجاح المعاملة فقط: التعديل (نقص/إضافة مدفوعة) أو «جاهز للاستلام».
+    const n = notice as null | { pickup: boolean; changed: boolean; oldTotal: number; newTotal: number; lines: Array<{ kind: string; name: string; pickedQty: number; orderedQty: number; charge: string }> };
+    if (n && this.notify) {
+      const missing = n.lines.filter((l) => l.kind === "ORDERED" && l.pickedQty < l.orderedQty).map((l) => l.name);
+      const extras = n.lines.filter((l) => l.kind === "EXTRA" && l.pickedQty > 0 && l.charge === "PAID").map((l) => l.name);
+      if (n.changed && (missing.length || extras.length)) {
+        void this.notify.send(orderId, { kind: "ADJUSTED", missing, extras, oldTotal: n.oldTotal, newTotal: n.newTotal });
+      }
+      if (n.pickup) void this.notify.send(orderId, { kind: "READY_FOR_PICKUP" });
+    }
     return this.view(orderId);
   }
 

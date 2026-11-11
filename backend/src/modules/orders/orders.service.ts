@@ -21,6 +21,24 @@ import {
   UpdateOrderStatusDto,
 } from "./dto/order.dto";
 
+/** مرحلة الطلب كما تُعرض للزبونة في التطبيق والموقع. */
+export const CUSTOMER_STAGE_LABELS: Record<string, string> = {
+  NEW: "قيد المراجعة",
+  CONFIRMED: "مؤكد",
+  PICKING: "قيد التجهيز",
+  PICKED: "جاهز للشحن",
+  READY_FOR_PICKUP: "جاهز للاستلام من المحل",
+  INVOICED: "جاهز للشحن",
+  HANDED_OVER: "تم الشحن",
+  OUT_FOR_DELIVERY: "مع المندوب",
+  DELIVERY_ISSUE: "تعذّر التوصيل مؤقتاً",
+  DELIVERED: "تم التسليم",
+  PARTIALLY_DELIVERED: "تم التسليم جزئياً",
+  RETURNING: "تعذّر التسليم",
+  RETURNED: "تعذّر التسليم",
+  CANCELLED: "ملغي",
+};
+
 /** مراحل ما قبل الشحن — تغيير الحالة يدوياً من لوحة التحكم يحرّك المرحلة من هنا فقط. */
 const STAGES_BEFORE_SHIPPING: FulfillmentStage[] = [
   FulfillmentStage.NEW,
@@ -219,6 +237,58 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException("Order not found");
     return withShipSnapshot(order);
+  }
+
+  /**
+   * ما تراه الزبونة عن تجهيز طلبها وشحنه: المرحلة بالعربي، رقم التتبع، المندوب،
+   * المبلغ بعد التجهيز، والأصناف الناقصة والمضافة (نفس ألوان تطبيقات الموظفين).
+   */
+  async deliveryInfo(orderId: string) {
+    const o = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        fulfillmentStage: true,
+        finalTotal: true,
+        codAmount: true,
+        adjustmentTotal: true,
+        total: true,
+        paymentStatus: true,
+        pickLines: { orderBy: { createdAt: "asc" } },
+        shipments: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    });
+    if (!o) return null;
+    const sh = o.shipments[0];
+    const finished = !["NEW", "CONFIRMED", "PICKING"].includes(o.fulfillmentStage);
+    const changes = finished
+      ? o.pickLines
+          .filter((l) => (l.kind === "ORDERED" && l.pickedQty < l.orderedQty) || (l.kind === "EXTRA" && l.pickedQty > 0))
+          .map((l) => ({
+            name: l.name,
+            shadeName: l.shadeName,
+            kind: l.kind === "EXTRA" ? "extra" : "missing",
+            color: l.kind === "EXTRA" ? "yellow" : "red",
+            qty: l.kind === "EXTRA" ? l.pickedQty : l.orderedQty - l.pickedQty,
+            ordered: l.orderedQty,
+            picked: l.pickedQty,
+            free: l.kind === "EXTRA" && l.charge === "FREE",
+            unitPrice: l.unitPrice,
+          }))
+      : [];
+    return {
+      stage: o.fulfillmentStage,
+      stageLabel: CUSTOMER_STAGE_LABELS[o.fulfillmentStage] ?? null,
+      courier: sh ? "هاي إكسبريس" : null,
+      trackingNumber: sh?.trackingNumber ?? null,
+      courierStatus: sh?.statusName ?? null,
+      driverName: o.fulfillmentStage === "OUT_FOR_DELIVERY" ? (sh?.driverName ?? null) : null,
+      originalTotal: o.total,
+      finalTotal: finished ? (o.finalTotal ?? o.total) : o.total,
+      codAmount: finished ? o.codAmount : null,
+      prepaid: o.paymentStatus === "PAID",
+      adjusted: finished && o.adjustmentTotal !== 0,
+      changes,
+    };
   }
 
   /** طلب أنشأته المحاولة نفسها من قبل — بنفس شكل استجابة الإنشاء. */

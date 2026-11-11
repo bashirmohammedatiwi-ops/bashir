@@ -40,7 +40,8 @@ export class OrdersController {
   async one(@Param("id") id: string, @CurrentUser() user: any) {
     const order = await this.orders.findOne(id);
     assertOwnerOrStaff(order.userId, user);
-    return order;
+    // حقل إضافي «delivery» (التجهيز والشحن) — التطبيقات القديمة تتجاهله.
+    return { ...order, delivery: await this.orders.deliveryInfo(order.id) };
   }
 
   @Post()

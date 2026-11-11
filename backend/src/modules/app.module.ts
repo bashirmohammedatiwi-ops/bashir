@@ -34,6 +34,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { AlertsModule } from "./alerts/alerts.module";
 import { ControlModule } from "./control/control.module";
 import { FulfillmentModule } from "./fulfillment/fulfillment.module";
+import { DeliveryModule } from "./delivery/delivery.module";
 import { AdvisorModule } from "./advisor/advisor.module";
 import { AdminCacheController } from "./admin/admin-cache.controller";
 
@@ -89,6 +90,7 @@ const conditionalImports: DynamicModule[] = redisEnabled
     AdvisorModule,
     ControlModule,
     FulfillmentModule,
+    DeliveryModule,
   ],
   controllers: [AdminCacheController],
   providers: [

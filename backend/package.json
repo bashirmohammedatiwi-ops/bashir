@@ -29,7 +29,9 @@
     "test:launch-popup": "npx tsx src/modules/settings/launch-popup.spec.ts",
     "test:pick-engine": "npx tsx src/modules/fulfillment/pick-engine.spec.ts",
     "test:order-reservations": "npx tsx src/modules/sync/order-reservations.spec.ts",
-    "test:fulfillment-db": "npx tsx src/modules/fulfillment/fulfillment-db.spec.ts"
+    "test:fulfillment-db": "npx tsx src/modules/fulfillment/fulfillment-db.spec.ts",
+    "test:courier-rules": "npx tsx src/modules/delivery/courier-rules.spec.ts",
+    "test:delivery-db": "npx tsx src/modules/delivery/delivery-db.spec.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
