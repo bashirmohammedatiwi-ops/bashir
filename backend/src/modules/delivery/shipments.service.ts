@@ -429,12 +429,18 @@ export class ShipmentsService implements OnModuleInit, OnModuleDestroy {
       });
       for (let i = 0; i < open.length; i += 50) {
         const chunk = open.slice(i, i + 50);
-        const live = await this.client.liveStatuses(chunk.map((c) => c.clientIdentifier));
-        for (const row of live) {
-          const sh = chunk.find((c) => c.clientIdentifier === row.client_identifier);
-          if (!sh || Number(row.status_id) === sh.statusId) continue;
-          const full = await this.prisma.shipment.findUnique({ where: { id: sh.id } });
-          if (full) await this.refresh(full, "POLL", row).catch((e) => this.logger.warn(`refresh ${sh.clientIdentifier}: ${(e as Error).message}`));
+        let live: Array<{ client_identifier: string; status_id: number }> | null = null;
+        try {
+          live = await this.client.liveStatuses(chunk.map((c) => c.clientIdentifier));
+        } catch (e) {
+          // هاي إكسبريس ترفض الدفعة كلها إن كان فيها رقم لا تعرفه (طلب حُذف لديهم): نسأل عن كل شحنة وحدها.
+          if (!(e instanceof HiExpressError) || e.status !== 422) throw e;
+        }
+        for (const c of chunk) {
+          const row = live?.find((r) => r.client_identifier === c.clientIdentifier);
+          if (live && (!row || Number(row.status_id) === c.statusId)) continue;
+          const full = await this.prisma.shipment.findUnique({ where: { id: c.id } });
+          if (full) await this.refresh(full, "POLL", row ?? null).catch((err) => this.logger.warn(`refresh ${c.clientIdentifier}: ${(err as Error).message}`));
         }
       }
       this.lastPollAt = new Date();
