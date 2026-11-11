@@ -183,6 +183,7 @@ export class ControlOrdersQueryDto {
 export class ControlOrderStatusDto {
   @IsIn(["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]) status: string;
   @IsOptional() @IsIn(["PENDING", "PAID", "FAILED", "REFUNDED"]) paymentStatus?: string;
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
 
 export class PosMissingQueryDto {

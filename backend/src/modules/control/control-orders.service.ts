@@ -228,7 +228,7 @@ export class ControlOrdersService {
   async setStatus(id: string, dto: ControlOrderStatusDto, actorId?: string) {
     await this.orders.updateStatus(
       id,
-      { status: dto.status as OrderStatus, paymentStatus: dto.paymentStatus as PaymentStatus | undefined },
+      { status: dto.status as OrderStatus, paymentStatus: dto.paymentStatus as PaymentStatus | undefined, reason: dto.reason },
       actorId,
     );
     return this.detail(id);

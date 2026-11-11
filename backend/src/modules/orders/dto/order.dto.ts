@@ -50,6 +50,8 @@ export class CreateOrderDto {
 export class UpdateOrderStatusDto {
   @IsEnum(OrderStatus) status: OrderStatus;
   @IsOptional() @IsEnum(PaymentStatus) paymentStatus?: PaymentStatus;
+  /** سبب التغيير الاستثنائي (يُحفظ في سجل الطلب). */
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
 
 export class QueryOrdersDto extends PaginationDto {

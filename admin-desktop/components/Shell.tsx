@@ -68,6 +68,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/users", label: "العملاء", short: "ع" },
       { href: "/reviews", label: "التقييمات", short: "ت" },
       { href: "/shipping", label: "الشحن", short: "ش" },
+      { href: "/couriers", label: "شركة التوصيل", short: "تو" },
       { href: "/settings", label: "الإعدادات", short: "ض" },
     ],
   },

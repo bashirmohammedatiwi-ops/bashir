@@ -1,28 +1,32 @@
 "use client";
 
 import { Button, Divider, Select, Space, Typography, message } from "antd";
-import { CopyOutlined, PhoneOutlined, UserOutlined } from "@ant-design/icons";
+import { CopyOutlined, PhoneOutlined, PrinterOutlined, UserOutlined } from "@ant-design/icons";
+import { useState } from "react";
 import {
   DELIVERY_LABELS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
-  STATUS_LABELS,
-  ORDER_STATUSES,
   addressSummary,
   formatIqd,
   formatOrderDate,
 } from "./order-utils";
-import { OrderStatusBadge } from "./OrderStatusBadge";
+import { OrderAdjustedBadge, OrderStageBadge, OrderStatusBadge } from "./OrderStatusBadge";
 import { OrderStatusStepper } from "./OrderStatusStepper";
 import { OrderItemsList } from "./OrderItemsList";
 import { CardPaymentPanel } from "./CardPaymentPanel";
+import { OrderPickSection } from "./OrderPickSection";
+import { OrderShipmentSection } from "./OrderShipmentSection";
+import { OrderTimelineSection } from "./OrderTimelineSection";
+import { OrderStatusActions } from "./OrderStatusActions";
+import { PickSlipPrintModal } from "./PickSlipPrintModal";
 
 const { Text, Title } = Typography;
 
 type Props = {
   order: any;
   loading?: boolean;
-  onStatusChange: (status: string) => void;
+  onStatusChange: (status: string, reason?: string) => void;
   onPaymentStatusChange?: (status: string) => void;
   updating?: boolean;
 };
@@ -30,6 +34,8 @@ type Props = {
 const PAYMENT_STATUSES = ["PENDING", "PAID", "FAILED", "REFUNDED"];
 
 export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStatusChange, updating }: Props) {
+  const [printOpen, setPrintOpen] = useState(false);
+
   if (loading) {
     return (
       <div className="ord-detail ord-detail--loading">
@@ -71,7 +77,14 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
           </div>
           <Text type="secondary">{formatOrderDate(order.createdAt)}</Text>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <div className="ord-detail-badges">
+          <OrderStatusBadge status={order.status} />
+          <OrderStageBadge stage={order.fulfillmentStage} />
+          {(order.adjustmentTotal ?? 0) !== 0 && <OrderAdjustedBadge />}
+          <Button size="small" icon={<PrinterOutlined />} onClick={() => setPrintOpen(true)}>
+            طباعة قائمة التجهيز
+          </Button>
+        </div>
       </div>
 
       <OrderStatusStepper status={order.status} />
@@ -172,6 +185,14 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
         </div>
       </div>
 
+      <OrderPickSection orderId={order.id} stage={order.fulfillmentStage} />
+
+      <OrderShipmentSection
+        orderId={order.id}
+        stage={order.fulfillmentStage}
+        deliveryOption={order.deliveryOption}
+      />
+
       {order.isGift && (
         <div className="ord-notes-card ord-gift-card">
           <Text className="ord-section-title">🎁 طلب هدية</Text>
@@ -202,18 +223,7 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
       <div className="ord-actions-card">
         <Text className="ord-section-title">إدارة الطلب</Text>
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
-          <div>
-            <Text type="secondary" className="ord-action-label">
-              حالة الطلب
-            </Text>
-            <Select
-              style={{ width: "100%" }}
-              value={order.status}
-              loading={updating}
-              options={ORDER_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] ?? s }))}
-              onChange={onStatusChange}
-            />
-          </div>
+          <OrderStatusActions order={order} updating={updating} onStatusChange={onStatusChange} />
           {onPaymentStatusChange && order.paymentMethod !== "CARD" && (
             <div>
               <Text type="secondary" className="ord-action-label">
@@ -233,6 +243,10 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
           )}
         </Space>
       </div>
+
+      <OrderTimelineSection orderId={order.id} />
+
+      <PickSlipPrintModal open={printOpen} orderIds={[order.id]} onClose={() => setPrintOpen(false)} />
     </div>
   );
 }

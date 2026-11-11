@@ -669,7 +669,7 @@ export class OrdersService {
           action: "ORDER_STATUS_UPDATE",
           entity: "Order",
           entityId: id,
-          meta: { status: dto.status, orderTotal: order.total, orderNumber: order.orderNumber },
+          meta: { status: dto.status, previousStatus: order.status, orderTotal: order.total, orderNumber: order.orderNumber, ...(dto.reason?.trim() ? { reason: dto.reason.trim().slice(0, 300) } : {}) },
         },
       });
     }

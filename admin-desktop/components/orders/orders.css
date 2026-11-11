@@ -520,3 +520,242 @@
   flex-direction: column;
   gap: 4px;
 }
+
+/* ── مراحل التجهيز في القائمة ── */
+.ord-stage-chips {
+  align-items: center;
+  margin-top: -8px;
+}
+
+.ord-stage-chips-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.ord-list-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fcfcfd;
+}
+
+.ord-list-check {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ord-list-stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ord-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.ord-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* ── المطلوب مقابل المُجهَّز ── */
+.ord-pick-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 10px;
+}
+
+.ord-pick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ord-pick-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ord-pick-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ord-pick-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.ord-pick-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ord-pick-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ord-money-cod {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  border: 1px solid #1f9d6333;
+  color: #166534;
+  font-size: 14px;
+}
+
+/* ── الشحنة ── */
+.ord-ship-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.ord-ship-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.ord-ship-k {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.ord-ship-v {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ord-ship-s {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.ord-ship-events {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ord-ship-event {
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+.ord-ship-event-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.ord-ship-event-top span {
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.ord-ship-event-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ── السجل الزمني ── */
+.ord-tl-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ord-tl-time {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.ord-tl-actor {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.ord-tl-line {
+  font-size: 12px;
+  color: #334155;
+  margin-top: 2px;
+}
+
+/* ── معاينة الطباعة ── */
+.ord-print-preview {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.ord-print-frame {
+  display: block;
+  width: 100%;
+  height: 62vh;
+  border: 0;
+  background: #e5e7eb;
+}

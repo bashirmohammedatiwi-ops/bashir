@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Divider, Form, Input, InputNumber, Space, Switch, Tabs, message } from "antd";
+import { Alert, Button, Card, Divider, Form, Input, InputNumber, Select, Space, Switch, Tabs, message } from "antd";
 import { useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { mutations, queries } from "@/lib/queries";
@@ -39,6 +39,14 @@ interface Settings {
   priorityBrandIds?: string[];
   priorityCategoryIds?: string[];
   hideProductsWithoutImages?: boolean;
+  // طلبات التطبيق: التجهيز بالمسح والشحن عبر هاي إكسبريس
+  orderStockReservation?: boolean;
+  codRoundingStep?: number;
+  pickApprovalShortagePercent?: number;
+  pickApprovalExtraAmount?: number;
+  /** 0 في النموذج = بدون نوع (يُحفظ null). */
+  hiExpressOrderTypeId?: number | null;
+  hiExpressSendHiddenValue?: boolean;
   launchPopup?: {
     enabled?: boolean;
     title?: string;
@@ -82,11 +90,16 @@ export default function SettingsPage() {
   } as Parameters<typeof LaunchPopupFields>[0]["entities"];
 
   useEffect(() => {
-    if (data) form.setFieldsValue(data);
+    if (data) form.setFieldsValue({ ...data, hiExpressOrderTypeId: (data as Settings).hiExpressOrderTypeId ?? 0 });
   }, [data, form]);
 
   const save = useMutation({
-    mutationFn: (v: Settings) => mutations.updateSettings(v),
+    mutationFn: (v: Settings) =>
+      mutations.updateSettings(
+        v.hiExpressOrderTypeId === undefined
+          ? v
+          : { ...v, hiExpressOrderTypeId: Number(v.hiExpressOrderTypeId) > 0 ? Number(v.hiExpressOrderTypeId) : null },
+      ),
     onSuccess: () => {
       message.success("تم حفظ الإعدادات");
       qc.invalidateQueries({ queryKey: ["settings"] });
@@ -168,6 +181,81 @@ export default function SettingsPage() {
                       </Form.Item>
                       <Form.Item name="pickupHours" label="ساعات الاستلام">
                         <Input placeholder="10:00 – 22:00" />
+                      </Form.Item>
+                    </>
+                  ),
+                },
+                {
+                  key: "orders",
+                  label: "الطلبات والشحن",
+                  children: (
+                    <>
+                      <Divider titlePlacement="start">المخزون</Divider>
+                      <Alert
+                        type="warning"
+                        showIcon
+                        style={{ marginBottom: 12 }}
+                        message="فعّليه فقط بعد تشغيل كاشير الطلبات في المحل"
+                        description="عند التفعيل تُحجز كميات الطلبات المفتوحة غير المفوترة من مخزون الموقع مع كل رفعة مخزون من الكاشير. إن فُعّل قبل أن يفوتر الكاشير طلبات التطبيق تبقى الكميات محجوزة وتظهر المنتجات ناقصة أو نافدة في التطبيق."
+                      />
+                      <Form.Item
+                        name="orderStockReservation"
+                        label="حجز كميات الطلبات المفتوحة من مخزون الموقع"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+
+                      <Divider titlePlacement="start">المبالغ والتجهيز</Divider>
+                      <Form.Item
+                        name="codRoundingStep"
+                        label="تقريب مبلغ الدفع عند الاستلام (للأسفل)"
+                        extra="يُقرَّب ما تحصّله شركة التوصيل لأسفل إلى مضاعفات هذا الرقم — هاي إكسبريس تقرّب لأقرب 250. 1 = بلا تقريب."
+                      >
+                        <InputNumber style={{ width: "100%" }} min={1} max={5000} step={250} addonAfter="د.ع" />
+                      </Form.Item>
+                      <Space.Compact block>
+                        <Form.Item
+                          name="pickApprovalShortagePercent"
+                          label="نسبة النقص التي تحتاج موافقة المدير"
+                          style={{ flex: 1 }}
+                          extra="نقص أكبر من هذه النسبة من قيمة الأصناف لا يُنهى تجهيزه إلا بموافقة مدير"
+                        >
+                          <InputNumber style={{ width: "100%" }} min={0} max={100} addonAfter="%" />
+                        </Form.Item>
+                        <Form.Item
+                          name="pickApprovalExtraAmount"
+                          label="مبلغ الإضافات المدفوعة الذي يحتاج موافقة"
+                          style={{ flex: 1, marginInlineStart: 8 }}
+                          extra="إضافات مدفوعة أكبر من هذا المبلغ تحتاج موافقة مدير"
+                        >
+                          <InputNumber style={{ width: "100%" }} min={0} step={5000} addonAfter="د.ع" />
+                        </Form.Item>
+                      </Space.Compact>
+
+                      <Divider titlePlacement="start">هاي إكسبريس</Divider>
+                      <Form.Item
+                        name="hiExpressOrderTypeId"
+                        label="نوع الشحنة الافتراضي"
+                        tooltip="يُرسل مع كل شحنة جديدة لهاي إكسبريس"
+                      >
+                        <Select
+                          options={[
+                            { value: 0, label: "بدون نوع خاص" },
+                            { value: 1, label: "قابل للكسر" },
+                            { value: 2, label: "توصيل مبرد" },
+                            { value: 3, label: "ممنوع الفتح" },
+                            { value: 4, label: "معاملة خاصة" },
+                          ]}
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        name="hiExpressSendHiddenValue"
+                        label="إرسال قيمة الطلب المدفوع مسبقاً كقيمة مخفية"
+                        tooltip="للطلبات المدفوعة مسبقاً بالكامل (لا مبلغ تحصيل): تُرسل قيمتها لهاي إكسبريس كقيمة مخفية لا يطالب بها المندوب"
+                        valuePropName="checked"
+                      >
+                        <Switch />
                       </Form.Item>
                     </>
                   ),
