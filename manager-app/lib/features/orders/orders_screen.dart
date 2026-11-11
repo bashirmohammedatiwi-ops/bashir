@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../pick/pick_scan_screen.dart';
+import '../pick/pick_screen.dart';
 import 'order_screen.dart';
 
 Color orderStatusColor(String s) => switch (s) {
@@ -70,6 +73,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   @override
   void initState() {
     super.initState();
+    ScannerBus.instance.push(_onHardware);
     _seenVersion = ref.read(ordersVersionProvider);
     _scroll.addListener(() {
       if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 500) _more();
@@ -79,9 +83,49 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
   @override
   void dispose() {
+    ScannerBus.instance.pop(_onHardware);
     _debounce?.cancel();
     _scroll.dispose();
     super.dispose();
+  }
+
+  /// قارئ خارجي: مسح QR قائمة التجهيز يفتح تجهيز الطلب مباشرة.
+  bool _onHardware(ScanEvent e) {
+    if (ModalRoute.of(context)?.isCurrent != true || !isOrderCode(e.code)) return false;
+    _openByCode(e.code);
+    return true;
+  }
+
+  Future<void> _scanOrder() async {
+    String? code;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (c) => PickScanScreen(
+          hint: 'امسح QR قائمة التجهيز',
+          onCode: (v) async {
+            code = v;
+            Navigator.of(c).pop();
+            return null;
+          },
+        ),
+      ),
+    );
+    if (code != null && mounted) await _openByCode(code!);
+  }
+
+  Future<void> _openByCode(String code) async {
+    if (!isOrderCode(code)) {
+      toast(context, 'هذا ليس رمز طلب — امسح QR قائمة التجهيز', error: true);
+      return;
+    }
+    try {
+      final id = await ref.read(repoProvider).orderIdByCode(code);
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PickScreen(orderId: id)));
+      if (mounted) _load();
+    } catch (e) {
+      if (mounted) toastError(context, e);
+    }
   }
 
   Future<void> _load() async {
@@ -138,7 +182,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: !widget.embedded,
         title: const Text('الطلبات'),
-        actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded))],
+        actions: [
+          IconButton(tooltip: 'مسح QR طلب', onPressed: _scanOrder, icon: const Icon(Icons.qr_code_scanner_rounded)),
+          IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded)),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(112),
           child: Padding(

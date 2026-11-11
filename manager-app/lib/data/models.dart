@@ -518,9 +518,18 @@ class OrderDetail {
       address = j['address'] is Map ? Map<String, dynamic>.from(j['address']) : null,
       items = _list(j['items']).map(OrderItemLine.fromJson).toList(),
       history = _list(j['history']),
-      payments = _list(j['payments']);
+      payments = _list(j['payments']),
+      stage = _str(j['fulfillmentStage']),
+      isGift = j['isGift'] == true,
+      giftMessage = _str(j['giftMessage']),
+      finalTotal = j['finalTotal'] == null ? null : _int(j['finalTotal']),
+      codAmount = j['codAmount'] == null ? null : _int(j['codAmount']);
   final String id, orderNumber, status, paymentStatus, paymentMethod, deliveryOption, customerName;
   final String? notes, coupon, customerPhone;
+  /// مرحلة التجهيز الداخلية (null من سيرفر أقدم).
+  final String? stage, giftMessage;
+  final bool isGift;
+  final int? finalTotal, codAmount;
   final int subtotal, discountTotal, shippingTotal, total, loyaltySpent, customerOrders;
   final DateTime? createdAt;
   final Map<String, dynamic>? address;
@@ -536,7 +545,7 @@ class OrderDetail {
           address!['area'],
           address!['street'],
           address!['house'],
-        ].where((e) => e != null && '$e'.trim().isNotEmpty).join(' · ');
+        ].where((e) => e != null && '$e'.trim().isNotEmpty).map((e) => '$e'.trim()).toSet().join(' · ');
 }
 
 class SalesPoint {

@@ -173,6 +173,8 @@ export class ControlAddShadeDto {
 
 export class ControlOrdersQueryDto {
   @IsOptional() @IsIn(["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED", "open"]) status?: string;
+  /** مرحلة التجهيز (واحدة أو أكثر بفواصل): PICKING,PICKED ... */
+  @IsOptional() @IsString() @MaxLength(200) stage?: string;
   @IsOptional() @IsString() @MaxLength(80) q?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page: number = 1;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(60) limit: number = 30;

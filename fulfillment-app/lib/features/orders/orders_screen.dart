@@ -6,12 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/background.dart';
 import '../../core/format.dart';
 import '../../core/prefs.dart';
+import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
 import '../settings/settings_screen.dart';
+import '../pick/pick_screen.dart';
+import '../scan/scan_screen.dart';
 import 'order_screen.dart';
 
 Color orderStatusColor(String s) => switch (s) {
@@ -61,19 +64,63 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
   bool _firstPulse = true;
 
   // تبويبات التجهيز: المفتوحة أولاً، ثم حسب المرحلة.
+  // المفتاح: حالة العميل، أو «stage:» لمراحل التجهيز (بانتظار الكاشير لا يقابلها حالة عميل).
   static const _tabs = [
     ('open', 'المفتوحة'),
     ('PENDING', 'جديدة'),
-    ('CONFIRMED', 'مؤكدة'),
-    ('PROCESSING', 'قيد التحضير'),
-    ('SHIPPED', 'جاهزة'),
+    ('CONFIRMED', 'للتجهيز'),
+    ('stage:PICKING', 'قيد التجهيز'),
+    ('stage:PICKED,READY_FOR_PICKUP', 'بانتظار الكاشير'),
+    ('SHIPPED', 'تم الشحن'),
     ('DELIVERED', 'مكتملة'),
   ];
+
+  ({String? status, String? stage}) get _filter =>
+      _status.startsWith('stage:') ? (status: null, stage: _status.substring(6)) : (status: _status, stage: null);
+
+  int? _countOf(String key) {
+    if (!key.startsWith('stage:')) return _counts[key];
+    final parts = key.substring(6).split(',');
+    if (!parts.any((s) => _counts.containsKey('stage:$s'))) return null;
+    return parts.fold<int>(0, (n, s) => n + (_counts['stage:$s'] ?? 0));
+  }
+
+  /// قارئ خارجي على الطابور: مسح QR قائمة التجهيز يفتح الطلب مباشرة.
+  bool _onHardware(ScanEvent e) {
+    if (ModalRoute.of(context)?.isCurrent != true || !isOrderCode(e.code)) return false;
+    _openByCode(e.code);
+    return true;
+  }
+
+  Future<void> _scanOrder() async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const ScanScreen(hint: 'امسح QR قائمة التجهيز')),
+    );
+    if (code != null && mounted) await _openByCode(code);
+  }
+
+  Future<void> _openByCode(String code) async {
+    if (!isOrderCode(code)) {
+      Prefs.instance.feedback(error: true);
+      toast(context, 'هذا ليس رمز طلب — امسح QR قائمة التجهيز', error: true);
+      return;
+    }
+    try {
+      final id = await ref.read(repoProvider).orderIdByCode(code);
+      if (!mounted) return;
+      Prefs.instance.feedback();
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PickScreen(orderId: id)));
+      if (mounted) _load();
+    } catch (e) {
+      if (mounted) toastError(context, e);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ScannerBus.instance.push(_onHardware);
     _seenVersion = ref.read(ordersVersionProvider);
     _scroll.addListener(() {
       if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 500) _more();
@@ -85,6 +132,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    ScannerBus.instance.pop(_onHardware);
     _debounce?.cancel();
     _pulse?.cancel();
     _scroll.dispose();
@@ -140,7 +188,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
       _error = null;
     });
     try {
-      final r = await ref.read(repoProvider).orders(status: _status, q: _q.text, page: 1);
+      final r = await ref.read(repoProvider).orders(status: _filter.status, stage: _filter.stage, q: _q.text, page: 1);
       if (seq != _seq || !mounted) return;
       setState(() {
         _items
@@ -163,7 +211,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
     final seq = _seq;
     setState(() => _loading = true);
     try {
-      final r = await ref.read(repoProvider).orders(status: _status, q: _q.text, page: _page + 1);
+      final r = await ref.read(repoProvider).orders(status: _filter.status, stage: _filter.stage, q: _q.text, page: _page + 1);
       if (seq != _seq || !mounted) return;
       setState(() {
         _page += 1;
@@ -188,6 +236,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
         automaticallyImplyLeading: !widget.embedded,
         title: const Text('طابور التجهيز'),
         actions: [
+          IconButton(tooltip: 'مسح QR طلب', onPressed: _scanOrder, icon: const Icon(Icons.qr_code_scanner_rounded)),
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded)),
           IconButton(
             tooltip: 'الإعدادات',
@@ -226,7 +275,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
                             showCheckmark: false,
                             selectedColor: AppColors.primarySoft,
                             selected: _status == t.$1,
-                            label: Text('${t.$2}${_counts[t.$1] != null ? '  ${_counts[t.$1]}' : ''}'),
+                            label: Text('${t.$2}${_countOf(t.$1) != null ? '  ${_countOf(t.$1)}' : ''}'),
                             onSelected: (_) {
                               setState(() => _status = t.$1);
                               _load();
@@ -326,6 +375,24 @@ class OrderTile extends StatelessWidget {
                       children: [
                         Text('${o.quantity} قطعة', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
                         Text(money(o.total), style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                        if (o.stage == 'PICKING')
+                          Pill(
+                            o.pickerName != null ? 'يجهّزه ${o.pickerName}' : 'قيد التجهيز',
+                            color: AppColors.primary,
+                            bg: AppColors.primarySoft,
+                            small: true,
+                            icon: Icons.qr_code_scanner_rounded,
+                          ),
+                        if (o.stage == 'PICKED' || o.stage == 'READY_FOR_PICKUP')
+                          Pill(
+                            stageLabels[o.stage]!,
+                            color: AppColors.success,
+                            bg: AppColors.successSoft,
+                            small: true,
+                            icon: Icons.inventory_rounded,
+                          ),
+                        if (o.adjusted)
+                          const Pill('نقص/إضافة', color: AppColors.warning, bg: AppColors.warningSoft, small: true, icon: Icons.rule_rounded),
                         if (o.paymentMethod == 'CARD')
                           Pill(
                             o.paymentStatus == 'PAID' ? 'مدفوع بالبطاقة' : 'بطاقة',

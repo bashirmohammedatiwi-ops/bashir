@@ -8,9 +8,12 @@ import 'config.dart';
 
 /// خطأ مفهوم للمستخدم (رسالة السيرفر بالعربي إن وجدت).
 class ApiError implements Exception {
-  ApiError(this.message, {this.status});
+  ApiError(this.message, {this.status, this.code});
   final String message;
   final int? status;
+
+  /// رمز الخطأ من السيرفر (مثل SHORTAGE_REASON_REQUIRED أو APPROVAL_REQUIRED).
+  final String? code;
   bool get isNetwork => status == null;
   @override
   String toString() => message;
@@ -147,8 +150,10 @@ class Api {
     if (e is DioException) {
       final data = e.response?.data;
       String? msg;
+      String? code;
       if (data is Map) {
         final err = data['error'];
+        if (err is Map && err['code'] is String) code = err['code'] as String;
         final m = err is Map ? err['message'] : data['message'];
         msg = m is List ? m.join('\n') : m?.toString();
       }
@@ -165,7 +170,7 @@ class Api {
       if (status == 429) msg = 'طلبات كثيرة — انتظر لحظة وحاول مجدداً';
       if (status != null && status >= 500 && !arabic) msg = 'خطأ في السيرفر — حاول بعد قليل';
       if (status == 400 && msg != null && !arabic) msg = 'بيانات غير مقبولة: $msg';
-      return ApiError(msg ?? 'خطأ من السيرفر ($status)', status: status);
+      return ApiError(msg ?? 'خطأ من السيرفر ($status)', status: status, code: code);
     }
     return ApiError(e.toString());
   }

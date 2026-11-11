@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api.dart';
 import 'models.dart';
+import 'pick_models.dart';
+
+export 'pick_models.dart';
+
+PickView _pickView(dynamic b) => PickView.fromJson(Map<String, dynamic>.from(b as Map));
 
 final apiProvider = Provider<Api>((ref) => Api());
 final repoProvider = Provider<Repo>((ref) => Repo(ref.watch(apiProvider)));
@@ -267,6 +272,58 @@ extension RepoMore on Repo {
 
   Future<OrderDetail> setOrderStatus(String id, String status) =>
       api.patch('/control/orders/$id/status', data: {'status': status}, map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)));
+
+  // ---------------- picking (التجهيز بالمسح — محفوظ في السيرفر)
+
+  Future<String> orderIdByCode(String code) =>
+      api.get('/control/orders/by-code/${Uri.encodeComponent(code.trim())}', map: (b) => '${(b as Map)['id']}');
+
+  Future<PickView> pickView(String id) => api.get('/control/orders/$id/pick', map: _pickView);
+
+  Future<PickView> pickStart(String id, {bool takeover = false}) =>
+      api.post('/control/orders/$id/pick/start', data: {if (takeover) 'takeover': true}, map: _pickView);
+
+  Future<ScanOutcome> pickScan(String id, {required String barcode, int qty = 1, required String clientScanId, String? device}) => api.post(
+    '/control/orders/$id/pick/scan',
+    data: {'barcode': barcode, 'qty': qty, 'clientScanId': clientScanId, 'device': ?device},
+    map: (b) => ScanOutcome.fromJson(Map<String, dynamic>.from(b as Map)),
+  );
+
+  Future<PickView> pickExtra(
+    String id, {
+    required String barcode,
+    required String charge,
+    int qty = 1,
+    String? reason,
+    String? substituteForLineId,
+    String? clientScanId,
+  }) => api.post(
+    '/control/orders/$id/pick/extra',
+    data: {
+      'barcode': barcode,
+      'charge': charge,
+      'qty': qty,
+      'reason': ?reason,
+      'substituteForLineId': ?substituteForLineId,
+      'clientScanId': ?clientScanId,
+    },
+    map: _pickView,
+  );
+
+  Future<PickView> pickLine(String id, String lineId, Map<String, dynamic> patch) =>
+      api.patch('/control/orders/$id/pick/lines/$lineId', data: patch, map: _pickView);
+
+  Future<PickView> pickFinish(String id, {required int parcelCount, required Map<String, String> reasons}) => api.post(
+    '/control/orders/$id/pick/finish',
+    data: {
+      'parcelCount': parcelCount,
+      'reasons': [for (final e in reasons.entries) {'lineId': e.key, 'reason': e.value}],
+    },
+    map: _pickView,
+  );
+
+  Future<PickView> pickReopen(String id, String reason) =>
+      api.post('/control/orders/$id/pick/reopen', data: {'reason': reason}, map: _pickView);
 
   Future<({int pending, String? latestId, String? latestNumber, DateTime? latestAt})> pulse() => api.get(
     '/control/orders/pulse',

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
+import { FulfillmentStage, OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { OrdersService, withShipSnapshot } from "../orders/orders.service";
 import { controlMediaUrls } from "./control-media.util";
@@ -30,6 +30,8 @@ export class ControlOrdersService {
     const where: Prisma.OrderWhereInput = {};
     if (q.status === "open") where.status = { in: OPEN };
     else if (q.status) where.status = q.status as OrderStatus;
+    const stages = (q.stage ?? "").split(",").map((x) => x.trim()).filter((x): x is FulfillmentStage => (Object.values(FulfillmentStage) as string[]).includes(x));
+    if (stages.length) where.fulfillmentStage = { in: stages };
     const text = q.q?.trim();
     if (text) {
       where.OR = [
@@ -95,9 +97,14 @@ export class ControlOrdersService {
   }
 
   async statusCounts() {
-    const rows = await this.prisma.order.groupBy({ by: ["status"], _count: { _all: true } });
+    const [rows, stageRows] = await Promise.all([
+      this.prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
+      this.prisma.order.groupBy({ by: ["fulfillmentStage"], _count: { _all: true } }),
+    ]);
     const counts: Record<string, number> = Object.fromEntries(Object.values(OrderStatus).map((s) => [s, 0]));
     for (const r of rows) counts[r.status] = r._count._all;
+    // مراحل التجهيز بمفتاح «stage:X» (لتبويبات تطبيق التجهيز).
+    for (const r of stageRows) counts[`stage:${r.fulfillmentStage}`] = r._count._all;
     counts.open = OPEN.reduce((n, s) => n + (counts[s] ?? 0), 0);
     return counts;
   }

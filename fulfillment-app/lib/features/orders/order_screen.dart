@@ -5,14 +5,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/format.dart';
-import '../../core/prefs.dart';
-import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
-import '../scan/scan_screen.dart';
+import '../pick/pick_screen.dart';
 import 'orders_screen.dart';
 
 /// الخطوة التالية لكل حالة (زر رئيسي واحد).
@@ -35,25 +33,19 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   Object? _error;
   bool _busy = false;
 
-  /// وضع التجهيز: عدد القطع الممسوحة لكل سطر.
-  bool _picking = false;
-  final _picked = <String, int>{};
-
-  /// لحظة فتح الطلب — لقياس زمن التجهيز في إحصائيات الأداء.
-  final DateTime _openedAt = DateTime.now();
-
   @override
   void initState() {
     super.initState();
     _load();
-    ScannerBus.instance.push(_onScan);
   }
 
-  @override
-  void dispose() {
-    ScannerBus.instance.pop(_onScan);
-    super.dispose();
+  /// التجهيز بالمسح في شاشته الخاصة (محفوظ في السيرفر) — ثم نعيد تحميل الطلب.
+  Future<void> _openPicking() async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PickScreen(orderId: widget.orderId)));
+    if (mounted) await _load();
   }
+
+  bool get _canPick => _o != null && (_o!.stage == null || pickableStages.contains(_o!.stage)) && _o!.status != 'CANCELLED';
 
   Future<void> _load() async {
     try {
@@ -69,45 +61,6 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
   }
 
-  /// قارئ خارجي أثناء التجهيز: يشطب القطعة المطابقة.
-  bool _onScan(ScanEvent e) {
-    if (!_picking) return false;
-    _pick(e.code);
-    return true;
-  }
-
-  void _pick(String code) {
-    final o = _o;
-    if (o == null) return;
-    final c = normalizeCode(code);
-    // UPC/EAN: «0123…» و«123…» نفس الباركود.
-    bool same(OrderItemLine it) {
-      final b = normalizeCode(it.barcode ?? '');
-      return b.isNotEmpty && (b == c || b.replaceFirst(RegExp(r'^0+'), '') == c.replaceFirst(RegExp(r'^0+'), ''));
-    }
-
-    OrderItemLine? hit;
-    for (final it in o.items) {
-      if (same(it) && (_picked[it.id] ?? 0) < it.quantity) {
-        hit = it;
-        break;
-      }
-    }
-    if (hit == null) {
-      Prefs.instance.feedback(error: true);
-      final already = o.items.any(same);
-      toast(context, already ? 'هذه القطعة مكتملة العدد' : 'الباركود $c ليس ضمن هذا الطلب', error: true);
-      return;
-    }
-    Prefs.instance.feedback();
-    setState(() => _picked[hit!.id] = (_picked[hit.id] ?? 0) + 1);
-    if (_pickedAll) {
-      toast(context, 'اكتمل تجهيز كل القطع ✓');
-    }
-  }
-
-  bool get _pickedAll => _o != null && _o!.items.every((it) => (_picked[it.id] ?? 0) >= it.quantity);
-
   Future<void> _setStatus(String status, {String? confirmText}) async {
     if (confirmText != null &&
         !await confirm(context, title: confirmText, message: _cancelMessage(status), ok: 'نعم', danger: status == 'CANCELLED')) {
@@ -117,13 +70,6 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     try {
       final o = await ref.read(repoProvider).setOrderStatus(widget.orderId, status);
       if (!mounted) return;
-      // أصبح الطلب جاهزاً للتوصيل → نسجّل زمن التجهيز في إحصائيات الأداء.
-      if (status == 'SHIPPED') {
-        Prefs.instance.recordPrepared(
-          seconds: DateTime.now().difference(_openedAt).inSeconds,
-          orderNumber: o.orderNumber,
-        );
-      }
       setState(() => _o = o);
       ref.read(ordersVersionProvider.notifier).state++;
       toast(context, 'الحالة الآن: ${orderStatusLabels[status]}');
@@ -165,6 +111,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
     final next = _nextStep[o.status];
     final closed = o.status == 'CANCELLED' || o.status == 'REFUNDED' || o.status == 'DELIVERED';
+    // «بدء التحضير» صار التجهيز بالمسح: يفتح شاشة التجهيز بدل تغيير الحالة مباشرة.
+    final pickStep = _canPick && o.status != 'PENDING';
     return Scaffold(
       appBar: AppBar(
         title: Text(o.orderNumber, textDirection: TextDirection.ltr),
@@ -200,7 +148,21 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             ),
         ],
       ),
-      bottomNavigationBar: next == null || closed
+      bottomNavigationBar: closed
+          ? null
+          : pickStep
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size.fromHeight(54)),
+                  onPressed: _busy ? null : _openPicking,
+                  icon: const Icon(Icons.qr_code_scanner_rounded),
+                  label: Text(o.stage == 'PICKING' ? 'متابعة التجهيز بالمسح' : 'بدء التجهيز بالمسح', style: const TextStyle(fontSize: 16)),
+                ),
+              ),
+            )
+          : next == null
           ? null
           : SafeArea(
               child: Padding(
@@ -225,18 +187,14 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             _customer(o),
             SectionTitle(
               'المنتجات (${o.units} قطعة)',
-              trailing: closed
+              trailing: o.stage == null || o.status == 'CANCELLED'
                   ? null
                   : TextButton.icon(
-                      onPressed: () => setState(() {
-                        _picking = !_picking;
-                        if (!_picking) _picked.clear();
-                      }),
-                      icon: Icon(_picking ? Icons.close_rounded : Icons.qr_code_scanner_rounded, size: 18),
-                      label: Text(_picking ? 'إنهاء التجهيز' : 'تجهيز بالمسح'),
+                      onPressed: _openPicking,
+                      icon: const Icon(Icons.fact_check_rounded, size: 18),
+                      label: Text(_canPick ? 'تجهيز بالمسح' : 'عرض التجهيز'),
                     ),
             ),
-            if (_picking) _pickingBar(o),
             Panel(
               padding: EdgeInsets.zero,
               child: Column(
@@ -256,6 +214,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   _row('التوصيل', o.shippingTotal == 0 ? 'مجاني' : money(o.shippingTotal)),
                   const Divider(),
                   _row('الإجمالي', money(o.total), bold: true),
+                  if (o.finalTotal != null && o.finalTotal != o.total)
+                    _row('بعد التجهيز (نقص/إضافة)', money(o.finalTotal), bold: true, color: AppColors.warning),
+                  if (o.codAmount != null)
+                    _row('تحصّله شركة التوصيل', o.codAmount == 0 ? 'لا شيء (مدفوع)' : money(o.codAmount), color: AppColors.primary),
                   const SizedBox(height: 6),
                   _row(
                     'الدفع',
@@ -265,6 +227,19 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 ],
               ),
             ),
+            if (o.isGift) ...[
+              const SectionTitle('هدية'),
+              Panel(
+                color: AppColors.roseSoft,
+                child: Text(
+                  [
+                    'طلب هدية — لا تضع الفاتورة بالأسعار في الكيس.',
+                    if ((o.giftMessage ?? '').isNotEmpty) 'رسالة البطاقة: ${o.giftMessage}',
+                  ].join('\n'),
+                  style: const TextStyle(height: 1.7, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
             if ((o.notes ?? '').isNotEmpty) ...[
               const SectionTitle('ملاحظة الزبونة'),
               Panel(
@@ -431,64 +406,9 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     );
   }
 
-  Widget _pickingBar(OrderDetail o) {
-    final done = o.items.fold<int>(0, (n, it) => n + ((_picked[it.id] ?? 0).clamp(0, it.quantity)));
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Panel(
-        color: _pickedAll ? AppColors.successSoft : AppColors.infoSoft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              _pickedAll ? 'كل القطع جاهزة ✓' : 'امسح باركود كل قطعة (بالكاميرا أو القارئ) — $done من ${o.units}',
-              style: TextStyle(fontWeight: FontWeight.w800, color: _pickedAll ? AppColors.success : AppColors.info),
-            ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: o.units == 0 ? 0 : done / o.units, minHeight: 6, borderRadius: BorderRadius.circular(4)),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final code = await Navigator.of(
-                        context,
-                      ).push<String>(MaterialPageRoute(builder: (_) => const ScanScreen()));
-                      if (code != null) _pick(code);
-                    },
-                    icon: const Icon(Icons.qr_code_scanner_rounded),
-                    label: const Text('مسح قطعة'),
-                  ),
-                ),
-                if (_pickedAll && _nextStep[o.status] != null) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        setState(() => _picking = false);
-                        _setStatus(o.status == 'PENDING' || o.status == 'CONFIRMED' ? 'PROCESSING' : _nextStep[o.status]!.$1);
-                      },
-                      child: const Text('اعتماد التجهيز'),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _itemTile(OrderItemLine it) {
-    final picked = (_picked[it.id] ?? 0).clamp(0, it.quantity);
-    final complete = picked >= it.quantity;
     return InkWell(
-      // أثناء التجهيز: ضغطة مطوّلة تشطب القطعة كاملة (أو تلغي الشطب) يدوياً.
-      onLongPress: _picking ? () => setState(() => _picked[it.id] = complete ? 0 : it.quantity) : null,
       child: Container(
-        color: _picking && complete ? AppColors.successSoft : null,
         padding: const EdgeInsets.all(10),
         child: Row(
           children: [
@@ -529,24 +449,14 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            _picking
-                ? Column(
-                    children: [
-                      Icon(
-                        complete ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                        color: complete ? AppColors.success : AppColors.muted,
-                      ),
-                      Text('$picked/${it.quantity}', style: const TextStyle(fontWeight: FontWeight.w800)),
-                    ],
-                  )
-                : Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(10)),
-                    child: Text(
-                      '× ${it.quantity}',
-                      style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary),
-                    ),
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(10)),
+              child: Text(
+                '× ${it.quantity}',
+                style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary),
+              ),
+            ),
           ],
         ),
       ),

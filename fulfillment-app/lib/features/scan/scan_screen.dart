@@ -7,10 +7,17 @@ import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 
+/// نتيجة قراءة في المسح المتواصل — تُعرض فوق الكاميرا.
+typedef ScanFeedback = ({String message, bool error});
+
 /// مسح قطعة بالكاميرا أثناء التجهيز — يرجع أول باركود يُقرأ للشاشة التي فتحته.
+/// مع [onCode] يبقى مفتوحاً (مسح متواصل): كل قراءة تُرسل وتظهر نتيجتها فوق الكاميرا.
 /// يدعم القارئ الخارجي (بلوتوث/USB) والإدخال اليدوي أيضاً.
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key});
+  const ScanScreen({super.key, this.onCode, this.title, this.hint});
+  final Future<ScanFeedback?> Function(String code)? onCode;
+  final String? title;
+  final String? hint;
   @override
   State<ScanScreen> createState() => _ScanScreenState();
 }
@@ -36,6 +43,8 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   DateTime _lastAt = DateTime.fromMillisecondsSinceEpoch(0);
   bool _handling = false;
   double _zoom = 0;
+  ScanFeedback? _feedback;
+  int _count = 0;
   MobileScannerException? _camError;
 
   @override
@@ -86,8 +95,20 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     _lastAt = now;
     if (_handling) return;
     _handling = true;
-    Prefs.instance.feedback();
-    Navigator.of(context).pop(code);
+    final onCode = widget.onCode;
+    if (onCode == null) {
+      Prefs.instance.feedback();
+      Navigator.of(context).pop(code);
+      return;
+    }
+    // مسح متواصل: الشاشة المستدعية تتولى الصوت والاهتزاز حسب النتيجة.
+    onCode(code).then((fb) {
+      if (!mounted) return;
+      setState(() {
+        _feedback = fb;
+        if (fb != null && !fb.error) _count++;
+      });
+    }).whenComplete(() => _handling = false);
   }
 
   Future<void> _manual() async {
@@ -195,10 +216,30 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                       ),
                     ),
                   if (_camError == null)
-                    const Text(
-                      'وجّه الكاميرا نحو باركود القطعة',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                    Text(
+                      widget.hint ?? 'وجّه الكاميرا نحو باركود القطعة',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
                     ),
+                  if (_feedback != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _feedback!.error ? AppColors.danger : AppColors.success,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        _feedback!.message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                      ),
+                    ),
+                  ],
+                  if (widget.onCode != null && _count > 0) ...[
+                    const SizedBox(height: 8),
+                    Text('مُسح في هذه الجلسة: $_count', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  ],
                 ],
               ),
             ),

@@ -46,8 +46,15 @@ class OrderSummary {
       customer = '${j['customer'] ?? ''}',
       phone = _str(j['phone']),
       place = _str(j['place']),
-      thumbs = (j['thumbs'] as List? ?? const []).map((e) => '$e').toList();
+      thumbs = (j['thumbs'] as List? ?? const []).map((e) => '$e').toList(),
+      stage = _str(j['fulfillmentStage']),
+      pickerName = _str(j['pickerName']),
+      adjusted = j['adjusted'] == true;
   final String id, orderNumber, status, paymentStatus, paymentMethod, deliveryOption, customer;
+  /// مرحلة التجهيز الداخلية (null من سيرفر أقدم).
+  final String? stage, pickerName;
+  /// نقص أو إضافة غيّرا مبلغ الطلب.
+  final bool adjusted;
   final int total, itemsCount, quantity;
   final DateTime? createdAt;
   final String? phone, place;
@@ -97,8 +104,20 @@ class OrderDetail {
       address = j['address'] is Map ? Map<String, dynamic>.from(j['address']) : null,
       items = _list(j['items']).map(OrderItemLine.fromJson).toList(),
       history = _list(j['history']),
-      payments = _list(j['payments']);
+      payments = _list(j['payments']),
+      stage = _str(j['fulfillmentStage']),
+      pickerName = _str(j['pickerName']),
+      isGift = j['isGift'] == true,
+      giftMessage = _str(j['giftMessage']),
+      parcelCount = j['parcelCount'] == null ? null : _int(j['parcelCount']),
+      finalTotal = j['finalTotal'] == null ? null : _int(j['finalTotal']),
+      codAmount = j['codAmount'] == null ? null : _int(j['codAmount']),
+      adjustmentTotal = _int(j['adjustmentTotal']);
   final String id, orderNumber, status, paymentStatus, paymentMethod, deliveryOption, customerName;
+  final String? stage, pickerName, giftMessage;
+  final bool isGift;
+  final int? parcelCount, finalTotal, codAmount;
+  final int adjustmentTotal;
   final String? notes, coupon, customerPhone;
   final int subtotal, discountTotal, shippingTotal, total, loyaltySpent, customerOrders;
   final DateTime? createdAt;
@@ -115,5 +134,5 @@ class OrderDetail {
           address!['area'],
           address!['street'],
           address!['house'],
-        ].where((e) => e != null && '$e'.trim().isNotEmpty).join(' · ');
+        ].where((e) => e != null && '$e'.trim().isNotEmpty).map((e) => '$e'.trim()).toSet().join(' · ');
 }
