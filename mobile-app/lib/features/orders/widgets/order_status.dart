@@ -19,6 +19,10 @@ bool isOrderActive(String status) => const ['PENDING', 'CONFIRMED', 'PROCESSING'
 /// الزبونة تستطيع الإلغاء قبل بدء التجهيز فقط (نفس قاعدة السيرفر).
 bool isOrderCancellable(String status) => status == 'PENDING' || status == 'CONFIRMED';
 
+/// ألوان تعديلات التجهيز — نفس ألوان تطبيقات التجهيز والكاشير (أحمر = ناقص، أصفر = مُضاف).
+const orderChangeMissingColor = Color(0xFFD64545);
+const orderChangeExtraColor = Color(0xFFDB8B12);
+
 /// لون دلالي لكل حالة: انتظار = تحذير، جارٍ = لون العالم، تم = نجاح، ملغي = تنبيه.
 Color orderStatusColor(BuildContext context, String status) => switch (status) {
   'DELIVERED' => AppColors.success,

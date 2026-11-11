@@ -7,7 +7,7 @@ extension OrderStringsX on AppStrings {
     'PENDING' => isAr ? 'تم استلام الطلب' : 'Order placed',
     'CONFIRMED' => isAr ? 'تم تأكيد الطلب' : 'Order confirmed',
     'PROCESSING' => isAr ? 'قيد التجهيز والتغليف' : 'Preparing & packing',
-    'SHIPPED' => isAr ? 'في الطريق إليكِ' : 'On its way to you',
+    'SHIPPED' => isAr ? 'تم الشحن' : 'Shipped',
     'DELIVERED' => isAr ? 'تم التسليم' : 'Delivered',
     _ => status,
   };
@@ -23,10 +23,65 @@ extension OrderStringsX on AppStrings {
     'PENDING' => isAr ? 'نراجع طلبكِ الآن' : 'We are reviewing your order',
     'CONFIRMED' => isAr ? 'تواصلنا معكِ وتم التأكيد' : 'Confirmed with you',
     'PROCESSING' => isAr ? 'نجهّز منتجاتكِ بعناية' : 'Carefully preparing your items',
-    'SHIPPED' => isAr ? 'المندوب في الطريق' : 'The courier is on the way',
+    'SHIPPED' => isAr ? 'سلّمنا طلبكِ لشركة التوصيل وهو في طريقه إليكِ' : 'Handed to the courier and on its way to you',
     'DELIVERED' => isAr ? 'نتمنى أن تستمتعي بمنتجاتكِ' : 'Enjoy your products',
     _ => '',
   };
+
+  // ─── مراحل فرعية: «جاهز للشحن» داخل التجهيز، و«مع المندوب» داخل «تم الشحن» ──
+  String get orderReadyToShipTitle => isAr ? 'جاهز للشحن' : 'Ready to ship';
+  String get orderReadyToShipHint =>
+      isAr ? 'جهّزنا طلبكِ وسنسلّمه لشركة التوصيل قريباً' : "Your order is packed and will be handed to the courier soon";
+  String get orderOutForDeliveryTitle => isAr ? 'مع المندوب' : 'Out for delivery';
+  String get orderOutForDeliveryHint =>
+      isAr ? 'المندوب في طريقه إليكِ — أبقي هاتفكِ قريباً' : 'The driver is on the way — keep your phone close';
+  /// [label] تسمية السيرفر («تعذّر التوصيل مؤقتاً») إن وُجدت.
+  String orderDeliveryIssueTitle([String? label]) => isAr
+      ? '${label ?? 'تعذّر التوصيل مؤقتاً'} — تواصلي معنا'
+      : 'Delivery delayed — please contact us';
+  String orderOutForDeliveryDriverHint(String name) => isAr
+      ? 'المندوب: $name — في طريقه إليكِ، أبقي هاتفكِ قريباً'
+      : 'Driver: $name — on the way, keep your phone close';
+  String get orderDeliveryIssueHint => isAr
+      ? 'لم يتمكّن المندوب من التوصيل هذه المرة، نرتّب معكِ موعداً جديداً'
+      : "The driver couldn't deliver this time — we'll arrange a new time with you";
+  String get orderPartiallyDeliveredTitle => isAr ? 'تم التسليم جزئياً' : 'Partially delivered';
+  String get orderPartiallyDeliveredHint => isAr
+      ? 'استلمتِ جزءاً من طلبكِ — لأي استفسار تواصلي معنا'
+      : 'You received part of your order — contact us with any question';
+
+  // ─── بطاقة الشحن ──────────────────────────────────────────────────────────
+  String get shippingCardTitle => isAr ? 'الشحن' : 'Shipping';
+  String get courierCompanyLabel => isAr ? 'شركة التوصيل' : 'Courier';
+  String get trackingNumberLabel => isAr ? 'رقم التتبّع' : 'Tracking number';
+  String get trackingNumberPending =>
+      isAr ? 'يصلكِ رقم التتبّع قريباً' : 'Your tracking number will be ready soon';
+  String get copyTrackingNumber => isAr ? 'نسخ رقم التتبّع' : 'Copy tracking number';
+  String get trackingNumberCopied => isAr ? 'تم نسخ رقم التتبّع' : 'Tracking number copied';
+  String get courierStatusLabel => isAr ? 'حالة الشحنة' : 'Shipment status';
+  String driverLine(String name) => isAr ? 'المندوب: $name' : 'Driver: $name';
+
+  // ─── تعديلات بعد التجهيز ──────────────────────────────────────────────────
+  String get orderChangesTitle => isAr ? 'تعديلات على طلبكِ' : 'Changes to your order';
+  String get orderChangesIntro => isAr
+      ? 'جهّزنا طلبكِ بعناية، وهذه التغييرات التي حصلت أثناء التجهيز:'
+      : 'We prepared your order carefully — here is what changed:';
+  String _changeItem(String name, String? shade, int qty) =>
+      '$name${shade != null ? ' — $shade' : ''} ×$qty';
+  String orderChangeMissing(String name, String? shade, int qty) =>
+      isAr ? 'نفد: ${_changeItem(name, shade, qty)}' : 'Out of stock: ${_changeItem(name, shade, qty)}';
+  String orderChangeExtra(String name, String? shade, int qty) =>
+      isAr ? 'أُضيف: ${_changeItem(name, shade, qty)}' : 'Added: ${_changeItem(name, shade, qty)}';
+  String get orderChangeGift => isAr ? 'هدية' : 'Gift';
+  String get originalAmount => isAr ? 'المبلغ الأصلي' : 'Original amount';
+  String get newAmount => isAr ? 'المبلغ الجديد' : 'New amount';
+  String get amountOnDelivery => isAr ? 'المبلغ عند الاستلام' : 'Amount on delivery';
+  String get amountPaid => isAr ? 'مدفوع' : 'Paid';
+
+  /// ملخص الدفع بعد تعديل المبلغ.
+  String get originalTotalLabel => isAr ? 'الإجمالي الأصلي' : 'Original total';
+  String get amountToPay => isAr ? 'المبلغ المطلوب' : 'Amount to pay';
+  String get finalAmount => isAr ? 'المبلغ النهائي' : 'Final amount';
 
   String get orderNumberCaption => isAr ? 'رقم الطلب' : 'Order number';
   String get orderTracking => isAr ? 'تتبّع الطلب' : 'Order tracking';

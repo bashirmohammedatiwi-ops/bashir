@@ -15,13 +15,14 @@ import { arPoints, arProducts, formatDateTime, formatPrice } from "@/lib/format"
 import { deliveryLabel, useZones } from "@/lib/hooks/delivery";
 import { productHref } from "@/lib/links";
 import { productCover } from "@/lib/media";
-import { PAY_STATUS, PAYMENT, TIMELINE, canCancel, timelineStep } from "@/lib/orders";
+import { CHANGE_TONE, PAY_STATUS, PAYMENT, TIMELINE, activeDriver, canCancel, changeText, deliveryOf, fullyPaid, isAdjusted, subStepOf, timelineStep } from "@/lib/orders";
 import { formatPhoneLocal } from "@/lib/phone";
 import { useCart } from "@/lib/stores/cart";
 import { toast, useUi } from "@/lib/stores/ui";
 import type { Order } from "@/lib/types";
 
-const STEP_LABEL: Record<string, string> = { PENDING: "استلمنا طلبكِ", CONFIRMED: "تم التأكيد", PROCESSING: "قيد التجهيز", SHIPPED: "مع المندوب", DELIVERED: "وصل 💜" };
+const STEP_LABEL: Record<string, string> = { PENDING: "استلمنا طلبكِ", CONFIRMED: "تم التأكيد", PROCESSING: "قيد التجهيز", SHIPPED: "تم الشحن", DELIVERED: "تم التسليم" };
+const SUB_TONE = { accent: "bg-accent-light text-accent-dark", warning: "bg-amber-50 text-amber-700" } as const;
 
 export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +60,21 @@ export default function OrderPage() {
   const unpaidCard = o.paymentMethod === "CARD" && o.paymentStatus !== "PAID" && !cancelled;
   const coupon = Math.max(0, o.discountTotal - (o.packageDiscount ?? 0));
   const zone = zones.find((z) => z.governorate === o.address?.governorate);
+  // التجهيز والشحن — غائب في السيرفر القديم فتبقى الصفحة كما كانت.
+  const d = deliveryOf((o as Order & { delivery?: unknown }).delivery);
+  const pickup = o.deliveryOption === "PICKUP";
+  const sub = cancelled ? null : subStepOf(o.status, d, pickup);
+  const driver = activeDriver(d);
+  const adjusted = isAdjusted(d);
+  const original = d?.originalTotal ?? o.total;
+  const totalChanged = d?.finalTotal != null && d.finalTotal !== original;
+  const contactHref = settings.whatsapp ? `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`مرحباً، استفسار عن طلبي #${o.orderNumber}`)}` : null;
+
+  const copyTracking = (n: string) =>
+    navigator.clipboard
+      ?.writeText(n)
+      .then(() => toast({ text: "تم نسخ رقم التتبّع", tone: "success" }))
+      .catch(() => {});
 
   const rows: SummaryRow[] = [
     { label: "المنتجات", value: o.subtotal },
@@ -67,6 +83,8 @@ export default function OrderPage() {
     { label: o.deliveryOption === "PICKUP" ? "استلام من الفرع" : "التوصيل", value: o.shippingTotal, free: o.shippingTotal === 0 },
     ...(o.giftWrapFee ? [{ label: "تغليف الهدية", value: o.giftWrapFee }] : []),
     ...(o.loyaltyDiscount ? [{ label: `نقاط الولاء (${o.loyaltySpent})`, value: o.loyaltyDiscount, tone: "saving" as const }] : []),
+    // تغيّر المبلغ بعد التجهيز: الأصلي للعلم، والنهائي هو المطلوب.
+    ...(adjusted ? [{ label: "الإجمالي الأصلي", value: original, tone: "muted" as const }] : []),
   ];
 
   const cancel = async () => {
@@ -149,12 +167,38 @@ export default function OrderPage() {
                     {i < step ? <Icon name="check" size={15} stroke={3} /> : i + 1}
                   </span>
                 </span>
-                <span className={clsx("mt-2 text-[11px] font-bold leading-tight md:text-xs", i <= step ? "text-ink" : "text-ink-muted")}>{STEP_LABEL[s]}</span>
+                <span className={clsx("mt-2 text-[11px] font-bold leading-tight md:text-xs", i <= step ? "text-ink" : "text-ink-muted")}>
+                  {sub?.step === "DELIVERED" && s === "DELIVERED" ? sub.title : STEP_LABEL[s]}
+                </span>
+                {/* المرحلة الفرعية تحت خطوتها: «مع المندوب» داخل «تم الشحن». */}
+                {sub && sub.step === s && s !== "DELIVERED" && (
+                  <span className={clsx("mt-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold leading-tight md:text-[11px]", SUB_TONE[sub.tone])}>{sub.short}</span>
+                )}
               </li>
             ))}
           </ol>
         ) : (
-          <p className="mt-4 rounded-2xl bg-rose-soft px-4 py-3 text-sm font-bold text-sale">تم إلغاء هذا الطلب. يمكنكِ إعادة طلب المنتجات بضغطة واحدة.</p>
+          <p className="mt-4 rounded-2xl bg-rose-soft px-4 py-3 text-sm font-bold text-sale">
+            {d?.stage === "RETURNING" || d?.stage === "RETURNED" ? "تعذّر التسليم وأعادت شركة التوصيل الطلب إلينا." : "تم إلغاء هذا الطلب."} يمكنكِ إعادة طلب المنتجات بضغطة واحدة.
+          </p>
+        )}
+
+        {sub && (
+          <div className={clsx("mt-5 flex items-start gap-3 rounded-2xl px-4 py-3 text-sm", SUB_TONE[sub.tone])}>
+            <Icon name={sub.icon} size={20} className="mt-0.5 flex-none" />
+            <div className="min-w-0 flex-1">
+              <p className="flex flex-wrap items-center gap-2 font-extrabold">
+                {sub.title}
+                {sub.step !== "DELIVERED" && <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] shadow-card">الآن</span>}
+              </p>
+              <p className="mt-0.5 text-xs font-medium text-ink-soft">{sub.hint}</p>
+            </div>
+            {sub.tone === "warning" && contactHref && (
+              <a href={contactHref} target="_blank" rel="noopener noreferrer" className="btn-soft h-9 flex-none px-3 text-xs">
+                <Icon name="chat" size={16} /> تواصلي معنا
+              </a>
+            )}
+          </div>
         )}
 
         <div className="no-print mt-6 flex flex-wrap gap-2">
@@ -166,8 +210,8 @@ export default function OrderPage() {
           <button onClick={reorder} className="btn-soft h-11">
             <Icon name="bag" size={18} /> اطلبيه مرة أخرى
           </button>
-          {settings.whatsapp && (
-            <a href={`https://wa.me/${settings.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`مرحباً، استفسار عن طلبي #${o.orderNumber}`)}`} target="_blank" rel="noopener noreferrer" className="btn-ghost">
+          {contactHref && (
+            <a href={contactHref} target="_blank" rel="noopener noreferrer" className="btn-ghost">
               <Icon name="chat" size={18} /> تواصلي معنا
             </a>
           )}
@@ -181,6 +225,90 @@ export default function OrderPage() {
           )}
         </div>
       </div>
+
+      {(d?.courier && !cancelled) || d?.changes.length ? (
+        <div className="grid items-start gap-5 md:grid-cols-2">
+          {d?.courier && !cancelled && (
+            <div className="card p-5 md:p-6">
+              <h3 className="mb-3 flex items-center gap-2 font-extrabold">
+                <Icon name="truck" size={20} className="text-accent-dark" /> الشحن
+              </h3>
+              <div className="space-y-3 text-sm">
+                <p className="flex items-center gap-2">
+                  <span className="text-ink-muted">شركة التوصيل</span>
+                  <b>{d.courier}</b>
+                </p>
+                {d.trackingNumber ? (
+                  <button onClick={() => copyTracking(d.trackingNumber!)} className="flex w-full items-center gap-2 rounded-2xl bg-canvas px-4 py-3 text-start transition hover:bg-accent-light" aria-label="نسخ رقم التتبّع" title="نسخ رقم التتبّع">
+                    <span className="text-ink-muted">رقم التتبّع</span>
+                    <b dir="ltr" className="ms-auto truncate tabular-nums tracking-wide">
+                      {d.trackingNumber}
+                    </b>
+                    <Icon name="copy" size={16} className="flex-none text-accent-dark" />
+                  </button>
+                ) : (
+                  <p className="text-ink-muted">يصلكِ رقم التتبّع قريباً</p>
+                )}
+                {d.courierStatus && (
+                  <p className="flex items-center gap-2">
+                    <span className="text-ink-muted">حالة الشحنة</span>
+                    <b className={clsx(d.stage === "DELIVERY_ISSUE" && "text-amber-700")}>{d.courierStatus}</b>
+                  </p>
+                )}
+                {driver && (
+                  <p className="flex items-center gap-2 font-bold">
+                    <Icon name="user" size={16} className="text-accent-dark" /> المندوب: {driver}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          {!!d?.changes.length && (
+            <div className="card p-5 md:p-6">
+              <h3 className="mb-2 flex items-center gap-2 font-extrabold">
+                <Icon name="sparkle" size={20} className="text-accent-dark" /> تعديلات على طلبكِ
+              </h3>
+              <p className="text-sm text-ink-soft">جهّزنا طلبكِ بعناية، وهذه التغييرات التي حصلت أثناء التجهيز:</p>
+              <ul className="mt-3 space-y-2">
+                {[...d.changes.filter((c) => c.kind === "missing"), ...d.changes.filter((c) => c.kind === "extra")].map((c, i) => {
+                  const tone = CHANGE_TONE[c.kind];
+                  return (
+                    <li key={i} className={clsx("flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold", tone.box)}>
+                      <span className={clsx("grid h-6 w-6 flex-none place-items-center rounded-full bg-surface", tone.text)}>
+                        <Icon name={tone.icon} size={14} stroke={3} />
+                      </span>
+                      <span className="min-w-0 flex-1">{changeText(c)}</span>
+                      {c.kind === "extra" && c.free && (
+                        <span className={clsx("inline-flex flex-none items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-xs font-extrabold", tone.text)}>
+                          <Icon name="gift" size={12} /> هدية
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-4 space-y-2 border-t border-hairline pt-3 text-sm">
+                {totalChanged && (
+                  <>
+                    <div className="flex items-center justify-between gap-3 text-ink-muted">
+                      <span>المبلغ الأصلي</span>
+                      <span className="tabular-nums line-through">{formatPrice(original)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 font-bold">
+                      <span>المبلغ الجديد</span>
+                      <span className="tabular-nums">{formatPrice(d.finalTotal!)}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center justify-between gap-3 font-extrabold">
+                  <span>المبلغ عند الاستلام</span>
+                  {fullyPaid(d) ? <span className="text-success">مدفوع</span> : <span className="tabular-nums text-accent-dark">{formatPrice(d.codAmount ?? d.finalTotal ?? o.total)}</span>}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {o.status === "DELIVERED" && o.items.some((it) => it.product) && (
         <div className="card flex flex-wrap items-center gap-3 bg-gradient-to-l from-amber-50 to-surface p-4">
@@ -238,7 +366,7 @@ export default function OrderPage() {
         </div>
         <div className="space-y-5">
           <div className="card p-5">
-            <CartSummary rows={rows} total={o.total} totalLabel="الإجمالي" />
+            <CartSummary rows={rows} total={adjusted ? d.finalTotal : o.total} totalLabel={adjusted ? (d.prepaid ? "المبلغ النهائي" : "المبلغ المطلوب") : "الإجمالي"} />
           </div>
           <div className="card space-y-3 p-5 text-sm">
             <p className="flex items-start gap-2">

@@ -170,6 +170,7 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
     final active = isOrderActive(order.status);
     final delivered = order.status == 'DELIVERED';
     final shippingLabel = order.isPickup ? s.branchPickup : s.shipping;
+    final delivery = order.delivery;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -182,10 +183,24 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
           _DetailCard(
             icon: Icons.route_outlined,
             title: s.orderTracking,
-            child: _Timeline(status: order.status, pickup: order.isPickup),
+            child: _Timeline(status: order.status, pickup: order.isPickup, delivery: delivery),
           )
         else
-          _ClosedNotice(status: order.status),
+          _ClosedNotice(
+            status: order.status,
+            // أعادته شركة التوصيل: «تعذّر التسليم» أوضح لها من «ملغي».
+            title: s.isAr && (delivery?.stage == 'RETURNING' || delivery?.stage == 'RETURNED')
+                ? delivery?.stageLabel
+                : null,
+          ),
+        if (delivery != null && delivery.hasCourier && !isOrderClosedNegative(order.status)) ...[
+          const SizedBox(height: CartTheme.itemGap),
+          _ShippingCard(delivery: delivery),
+        ],
+        if (delivery != null && delivery.changes.isNotEmpty) ...[
+          const SizedBox(height: CartTheme.itemGap),
+          _ChangesCard(order: order, delivery: delivery),
+        ],
         // وصل الطلب: أفضل لحظة لتقييم المنتجات.
         if (delivered && order.items.isNotEmpty) ...[
           const SizedBox(height: CartTheme.itemGap),
@@ -289,12 +304,20 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Divider(height: 1, color: t.divider),
               ),
+              // تغيّر المبلغ بعد التجهيز: الإجمالي الأصلي مشطوب، والمبلغ النهائي هو المطلوب.
+              if (order.isAdjusted) ...[
+                _SumRow(label: s.originalTotalLabel, value: formatPrice(delivery!.originalTotal ?? order.total), strike: true),
+                const SizedBox(height: 4),
+              ],
               Row(
                 children: [
                   Expanded(
-                    child: Text(s.total, style: AppText.title3.copyWith(color: t.ink)),
+                    child: Text(
+                      order.isAdjusted ? (delivery!.prepaid ? s.finalAmount : s.amountToPay) : s.total,
+                      style: AppText.title3.copyWith(color: t.ink),
+                    ),
                   ),
-                  Text(formatPrice(order.total), style: AppText.title2.copyWith(color: t.accentDark)),
+                  Text(formatPrice(order.amountDue), style: AppText.title2.copyWith(color: t.accentDark)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -819,7 +842,7 @@ class _OrderHero extends ConsumerWidget {
                 compact: true,
               ),
               _InfoLine(icon: Icons.shopping_bag_outlined, text: s.itemCountLabel(order.itemCount), compact: true),
-              _InfoLine(icon: Icons.payments_outlined, text: formatPrice(order.total), compact: true, strong: true),
+              _InfoLine(icon: Icons.payments_outlined, text: formatPrice(order.amountDue), compact: true, strong: true),
             ],
           ),
         ],
@@ -830,7 +853,10 @@ class _OrderHero extends ConsumerWidget {
 
 class _ClosedNotice extends ConsumerWidget {
   final String status;
-  const _ClosedNotice({required this.status});
+
+  /// عنوان بدل تسمية الحالة (مرحلة السيرفر) إن وُجد.
+  final String? title;
+  const _ClosedNotice({required this.status, this.title});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -852,7 +878,7 @@ class _ClosedNotice extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.orderStatus(status), style: AppText.title3.copyWith(color: AppColors.sale)),
+                Text(title ?? s.orderStatus(status), style: AppText.title3.copyWith(color: AppColors.sale)),
                 const SizedBox(height: 2),
                 Text(switch (status) {
                   'REFUNDED' || 'RETURNED' => s.orderRefundedNote,
@@ -867,22 +893,74 @@ class _ClosedNotice extends ConsumerWidget {
   }
 }
 
+/// مرحلة فرعية داخل خطوة الخط الزمني («جاهز للشحن»، «مع المندوب»، «تعذّر التوصيل مؤقتاً»).
+typedef _SubStepData = ({IconData icon, String title, String hint, Color? color});
+
 /// خط زمني عمودي واضح لمراحل الطلب.
 class _Timeline extends ConsumerWidget {
   final String status;
 
   /// استلام من الفرع: خطوة الشحن تصبح «جاهز للاستلام» بلا مندوب.
   final bool pickup;
-  const _Timeline({required this.status, this.pickup = false});
+
+  /// مرحلة التجهيز والشحن من السيرفر — null في السيرفر القديم فيبقى الخط كما كان.
+  final OrderDelivery? delivery;
+  const _Timeline({required this.status, this.pickup = false, this.delivery});
+
+  /// تسمية السيرفر عربية فقط — بالإنجليزي نعتمد نصوصنا.
+  String? _serverLabel(AppStrings s) => s.isAr ? delivery?.stageLabel : null;
 
   String _title(AppStrings s, String step) => switch (step) {
     'SHIPPED' when pickup => s.orderPickupReadyTitle,
     'DELIVERED' when pickup => s.orderPickedUpTitle,
+    'DELIVERED' when delivery?.partiallyDelivered == true => _serverLabel(s) ?? s.orderPartiallyDeliveredTitle,
     _ => s.orderStepTitle(step),
   };
 
-  String _hint(AppStrings s, String step) =>
-      step == 'SHIPPED' && pickup ? s.orderPickupReadyHint : s.orderStepHint(step);
+  String _hint(AppStrings s, String step) => switch (step) {
+    'SHIPPED' when pickup => s.orderPickupReadyHint,
+    'DELIVERED' when delivery?.partiallyDelivered == true => s.orderPartiallyDeliveredHint,
+    _ => s.orderStepHint(step),
+  };
+
+  /// المرحلة الفرعية للخطوة الحالية حسب مرحلة التجهيز.
+  _SubStepData? _subStep(AppStrings s, String step) {
+    final d = delivery;
+    if (d == null) return null;
+    final label = _serverLabel(s);
+    switch (step) {
+      case 'PROCESSING' when d.stage == 'PICKED' || d.stage == 'INVOICED':
+        return (
+          icon: Icons.inventory_rounded,
+          title: label ?? s.orderReadyToShipTitle,
+          hint: s.orderReadyToShipHint,
+          color: null,
+        );
+      case 'PROCESSING' when d.stage == 'READY_FOR_PICKUP':
+        return (
+          icon: Icons.storefront_outlined,
+          title: label ?? s.orderPickupReadyTitle,
+          hint: s.orderPickupReadyHint,
+          color: null,
+        );
+      case 'SHIPPED' when !pickup && d.outForDelivery:
+        final driver = d.activeDriver;
+        return (
+          icon: Icons.delivery_dining_rounded,
+          title: label ?? s.orderOutForDeliveryTitle,
+          hint: driver != null ? s.orderOutForDeliveryDriverHint(driver) : s.orderOutForDeliveryHint,
+          color: null,
+        );
+      case 'SHIPPED' when !pickup && d.deliveryIssue:
+        return (
+          icon: Icons.error_outline_rounded,
+          title: s.orderDeliveryIssueTitle(label),
+          hint: s.orderDeliveryIssueHint,
+          color: AppColors.warning,
+        );
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -890,6 +968,7 @@ class _Timeline extends ConsumerWidget {
     final t = context.worldTheme;
     final current = orderStatusFlow.indexOf(status).clamp(0, orderStatusFlow.length - 1);
     final delivered = status == 'DELIVERED';
+    final sub = delivered ? null : _subStep(s, orderStatusFlow[current]);
 
     return Column(
       children: [
@@ -941,16 +1020,10 @@ class _Timeline extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            if (i == current && !delivered) ...[
+                            // «الآن» على المرحلة الفرعية إن وُجدت، وإلا على الخطوة نفسها.
+                            if (i == current && !delivered && sub == null) ...[
                               const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: t.accent,
-                                  borderRadius: BorderRadius.circular(AppCorners.pill),
-                                ),
-                                child: Text(s.currentStep, style: AppText.micro.copyWith(color: Colors.white)),
-                              ),
+                              _NowPill(color: t.accent),
                             ],
                           ],
                         ),
@@ -963,6 +1036,10 @@ class _Timeline extends ConsumerWidget {
                             style: AppText.caption.copyWith(color: t.inkMuted),
                           ),
                         ],
+                        if (i == current && sub != null) ...[
+                          const SizedBox(height: 10),
+                          _SubStep(data: sub),
+                        ],
                       ],
                     ),
                   ),
@@ -971,6 +1048,255 @@ class _Timeline extends ConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _NowPill extends ConsumerWidget {
+  final Color color;
+  const _NowPill({required this.color});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(AppCorners.pill)),
+      child: Text(ref.s.currentStep, style: AppText.micro.copyWith(color: Colors.white)),
+    );
+  }
+}
+
+/// مرحلة فرعية داخل الخطوة الحالية: صندوق خفيف بلون الحالة وشارة «الآن».
+class _SubStep extends StatelessWidget {
+  final _SubStepData data;
+  const _SubStep({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final c = data.color ?? t.accentDark;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(c.withValues(alpha: 0.08), t.surface),
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+        border: Border.all(color: c.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 1),
+            child: Icon(data.icon, size: 18, color: c),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        data.title,
+                        style: AppText.label.copyWith(color: c, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _NowPill(color: c),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(data.hint, style: AppText.caption.copyWith(color: t.inkSoft, height: 1.45)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// «الشحن»: شركة التوصيل، رقم التتبّع مع النسخ، حالة الشحنة، والمندوب وهو في الطريق.
+class _ShippingCard extends ConsumerWidget {
+  final OrderDelivery delivery;
+  const _ShippingCard({required this.delivery});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final tracking = delivery.trackingNumber;
+    final driver = delivery.activeDriver;
+    return _DetailCard(
+      icon: Icons.local_shipping_outlined,
+      title: s.shippingCardTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _InfoLine(icon: Icons.business_outlined, text: '${s.courierCompanyLabel}: ${delivery.courier}', strong: true),
+          const SizedBox(height: 8),
+          if (tracking != null)
+            Semantics(
+              button: true,
+              label: s.copyTrackingNumber,
+              child: Material(
+                color: t.accentLight,
+                borderRadius: BorderRadius.circular(AppCorners.sm),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppCorners.sm),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: tracking));
+                    HapticFeedback.selectionClick();
+                    AppSnackbar.success(context, s.trackingNumberCopied);
+                  },
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: kMinTapTarget),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.qr_code_2_rounded, size: 17, color: t.accent),
+                          const SizedBox(width: 6),
+                          Text(s.trackingNumberLabel, style: AppText.caption.copyWith(color: t.inkMuted)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              tracking,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textDirection: TextDirection.ltr,
+                              textAlign: TextAlign.end,
+                              style: AppText.label.copyWith(color: t.ink, letterSpacing: 0.4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.copy_rounded, size: 16, color: t.accentDark),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            _InfoLine(icon: Icons.qr_code_2_rounded, text: s.trackingNumberPending),
+          if (delivery.courierStatus != null) ...[
+            const SizedBox(height: 10),
+            _InfoLine(
+              icon: delivery.deliveryIssue ? Icons.error_outline_rounded : Icons.info_outline_rounded,
+              iconColor: delivery.deliveryIssue ? AppColors.warning : null,
+              text: '${s.courierStatusLabel}: ${delivery.courierStatus}',
+            ),
+          ],
+          if (driver != null) ...[
+            const SizedBox(height: 8),
+            _InfoLine(icon: Icons.delivery_dining_rounded, text: s.driverLine(driver), strong: true),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// «تعديلات على طلبكِ»: الناقص بالأحمر والمضاف بالأصفر (مع أيقونة وكلمة دائماً)، ثم المبلغ الجديد.
+class _ChangesCard extends ConsumerWidget {
+  final AppOrder order;
+  final OrderDelivery delivery;
+  const _ChangesCard({required this.order, required this.delivery});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final original = delivery.originalTotal ?? order.total;
+    final changed = delivery.finalTotal != null && delivery.finalTotal != original;
+    final cod = delivery.codAmount ?? delivery.finalTotal ?? order.total;
+    return _DetailCard(
+      icon: Icons.published_with_changes_rounded,
+      title: s.orderChangesTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(s.orderChangesIntro, style: AppText.bodySmall.copyWith(color: t.inkSoft, height: 1.5)),
+          const SizedBox(height: 10),
+          for (final c in [...delivery.missing, ...delivery.extras])
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: _ChangeLine(change: c),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1, color: t.divider),
+          ),
+          if (changed) ...[
+            _SumRow(label: s.originalAmount, value: formatPrice(original), strike: true),
+            _SumRow(label: s.newAmount, value: formatPrice(delivery.finalTotal!)),
+          ],
+          delivery.fullyPaid
+              ? _SumRow(label: s.amountOnDelivery, value: s.amountPaid, valueColor: AppColors.success)
+              : _SumRow(label: s.amountOnDelivery, value: formatPrice(cod), valueColor: t.accentDark),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChangeLine extends ConsumerWidget {
+  final OrderChange change;
+  const _ChangeLine({required this.change});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final missing = change.isMissing;
+    final c = missing ? orderChangeMissingColor : orderChangeExtraColor;
+    final text = missing
+        ? s.orderChangeMissing(change.name, change.shadeName, change.qty)
+        : s.orderChangeExtra(change.name, change.shadeName, change.qty);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(c.withValues(alpha: 0.08), t.surface),
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+        border: Border.all(color: c.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 1),
+            child: Icon(missing ? Icons.remove_circle_outline_rounded : Icons.add_circle_outline_rounded, size: 18, color: c),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: AppText.bodySmall.copyWith(color: t.ink, fontWeight: FontWeight.w600, height: 1.4),
+            ),
+          ),
+          if (change.isExtra && change.free) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsetsDirectional.fromSTEB(6, 2, 8, 2),
+              decoration: BoxDecoration(
+                color: c.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(AppCorners.pill),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.card_giftcard_rounded, size: 13, color: c),
+                  const SizedBox(width: 3),
+                  Text(s.orderChangeGift, style: AppText.micro.copyWith(color: c)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1051,7 +1377,10 @@ class _SumRow extends StatelessWidget {
   final String value;
   final Color? valueColor;
 
-  const _SumRow({required this.label, required this.value, this.valueColor});
+  /// قيمة لم تعد سارية (المبلغ قبل التعديل): رمادية ومشطوبة.
+  final bool strike;
+
+  const _SumRow({required this.label, required this.value, this.valueColor, this.strike = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1071,7 +1400,12 @@ class _SumRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             value,
-            style: AppText.bodySmall.copyWith(color: valueColor ?? t.ink, fontWeight: FontWeight.w700),
+            style: AppText.bodySmall.copyWith(
+              color: strike ? t.inkMuted : (valueColor ?? t.ink),
+              fontWeight: strike ? FontWeight.w500 : FontWeight.w700,
+              decoration: strike ? TextDecoration.lineThrough : null,
+              decorationColor: t.inkMuted,
+            ),
           ),
         ],
       ),

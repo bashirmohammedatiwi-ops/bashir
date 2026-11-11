@@ -14,7 +14,7 @@ const TABS: [string, string][] = [
   ["PENDING", "بانتظار التأكيد"],
   ["PROCESSING", "قيد التجهيز"],
   ["SHIPPED", "في الطريق"],
-  ["DELIVERED", "تم التوصيل"],
+  ["DELIVERED", "تم التسليم"],
   ["CANCELLED", "ملغاة"],
 ];
 

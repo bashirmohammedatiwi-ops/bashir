@@ -478,7 +478,10 @@ export class ShipmentsService implements OnModuleInit, OnModuleDestroy {
     const p = body?.payload ?? body;
     const clientId = String(p?.client_identifier ?? "").trim();
     const tracking = String(p?.order_identifier ?? "").trim();
-    if (!clientId && !tracking) return;
+    if (!clientId && !tracking) {
+      this.logger.warn(`webhook without order identifiers (keys: ${Object.keys(p ?? {}).join(",") || "none"})`);
+      return;
+    }
     const sh = await this.prisma.shipment.findFirst({
       where: { OR: [...(clientId ? [{ clientIdentifier: clientId }] : []), ...(tracking ? [{ trackingNumber: tracking }] : [])] },
     });

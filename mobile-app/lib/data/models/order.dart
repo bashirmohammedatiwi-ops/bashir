@@ -69,6 +69,144 @@ class OrderItem {
   }
 }
 
+/// صنف تغيّر أثناء التجهيز: ناقص (نفد) أو مُضاف — نفس ألوان تطبيقات الموظفين.
+class OrderChange {
+  final String name;
+  final String? shadeName;
+
+  /// `missing` (أحمر) أو `extra` (أصفر).
+  final String kind;
+
+  /// الكمية الناقصة أو المضافة.
+  final int qty;
+  final int ordered;
+  final int picked;
+
+  /// إضافة مجانية (هدية من المحل).
+  final bool free;
+  final int unitPrice;
+
+  const OrderChange({
+    required this.name,
+    required this.kind,
+    this.shadeName,
+    this.qty = 1,
+    this.ordered = 0,
+    this.picked = 0,
+    this.free = false,
+    this.unitPrice = 0,
+  });
+
+  bool get isMissing => kind == 'missing';
+  bool get isExtra => kind == 'extra';
+
+  /// null لسطر لا نعرف نوعه — لا نعرض للزبونة شيئاً لا نفهمه.
+  static OrderChange? fromJson(Map<String, dynamic> json) {
+    var kind = asString(json['kind']).toLowerCase();
+    if (kind != 'missing' && kind != 'extra') {
+      // سيرفر أقدم/أحدث بلا kind: اللون يكفي.
+      kind = switch (asString(json['color']).toLowerCase()) {
+        'red' => 'missing',
+        'yellow' => 'extra',
+        _ => '',
+      };
+    }
+    final name = _nonEmpty(json['name']);
+    if (kind.isEmpty || name == null) return null;
+    final qty = asInt(json['qty']);
+    return OrderChange(
+      name: name,
+      shadeName: _nonEmpty(json['shadeName']),
+      kind: kind,
+      qty: qty > 0 ? qty : 1,
+      ordered: asInt(json['ordered']),
+      picked: asInt(json['picked']),
+      free: asBool(json['free'], false),
+      unitPrice: asInt(json['unitPrice']),
+    );
+  }
+}
+
+/// تجهيز الطلب وشحنه كما تراه الزبونة (`delivery` في GET /orders/:id).
+/// غائب في السيرفر القديم — كل الشاشات تعمل بدونه كما كانت.
+class OrderDelivery {
+  /// مرحلة التجهيز (NEW … OUT_FOR_DELIVERY، DELIVERY_ISSUE، PARTIALLY_DELIVERED …).
+  final String? stage;
+
+  /// تسمية المرحلة للزبونة بالعربية من السيرفر.
+  final String? stageLabel;
+  final String? courier;
+  final String? trackingNumber;
+  final String? courierStatus;
+
+  /// اسم المندوب — يرسله السيرفر فقط والطلب مع المندوب.
+  final String? driverName;
+  final int? originalTotal;
+  final int? finalTotal;
+
+  /// المبلغ الذي يُستلم عند الباب (null قبل انتهاء التجهيز).
+  final int? codAmount;
+  final bool prepaid;
+
+  /// تغيّر المبلغ بعد التجهيز.
+  final bool adjusted;
+  final List<OrderChange> changes;
+
+  const OrderDelivery({
+    this.stage,
+    this.stageLabel,
+    this.courier,
+    this.trackingNumber,
+    this.courierStatus,
+    this.driverName,
+    this.originalTotal,
+    this.finalTotal,
+    this.codAmount,
+    this.prepaid = false,
+    this.adjusted = false,
+    this.changes = const [],
+  });
+
+  /// null إن لم يكن `delivery` كائناً (سيرفر قديم، أو قيمة null).
+  static OrderDelivery? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    final json = asMap(raw);
+    final changes = <OrderChange>[];
+    for (final c in asList(json['changes'])) {
+      final change = OrderChange.fromJson(c);
+      if (change != null) changes.add(change);
+    }
+    return OrderDelivery(
+      stage: _nonEmpty(json['stage'])?.toUpperCase(),
+      stageLabel: _nonEmpty(json['stageLabel']),
+      courier: _nonEmpty(json['courier']),
+      trackingNumber: _nonEmpty(json['trackingNumber']),
+      courierStatus: _nonEmpty(json['courierStatus']),
+      driverName: _nonEmpty(json['driverName']),
+      originalTotal: _intOrNull(json['originalTotal']),
+      finalTotal: _intOrNull(json['finalTotal']),
+      codAmount: _intOrNull(json['codAmount']),
+      prepaid: asBool(json['prepaid'], false),
+      adjusted: asBool(json['adjusted'], false),
+      changes: changes,
+    );
+  }
+
+  bool get hasCourier => courier != null;
+  bool get outForDelivery => stage == 'OUT_FOR_DELIVERY';
+  bool get deliveryIssue => stage == 'DELIVERY_ISSUE';
+  bool get partiallyDelivered => stage == 'PARTIALLY_DELIVERED';
+
+  /// المندوب يظهر فقط والطلب معه.
+  String? get activeDriver => outForDelivery ? driverName : null;
+
+  List<OrderChange> get missing => [for (final c in changes) if (c.isMissing) c];
+  List<OrderChange> get extras => [for (final c in changes) if (c.isExtra) c];
+
+  /// مدفوع بالكامل مسبقاً — لا شيء يُدفع عند الباب.
+  bool get fullyPaid => prepaid && (codAmount ?? 0) <= 0;
+}
+
 class AppOrder {
   final String id;
   final String orderNumber;
@@ -105,6 +243,9 @@ class AppOrder {
   /// عدد المنتجات الفعلي — القائمة المختصرة ترسل أول 6 منتجات فقط مع `_count`.
   final int itemCount;
 
+  /// التجهيز والشحن (تفاصيل الطلب فقط؛ null في القائمة والسيرفر القديم).
+  final OrderDelivery? delivery;
+
   const AppOrder({
     required this.id,
     required this.orderNumber,
@@ -130,6 +271,7 @@ class AppOrder {
     this.items = const [],
     this.address,
     this.itemCount = 0,
+    this.delivery,
   });
 
   factory AppOrder.fromJson(Map<String, dynamic> json) {
@@ -161,6 +303,7 @@ class AppOrder {
       address: json['address'] is Map ? Address.fromJson(asMap(json['address'])) : null,
       // تفاصيل الطلب بلا `_count`: العدد = المنتجات المرفقة.
       itemCount: asInt(count['items'], items.length),
+      delivery: OrderDelivery.fromJson(json['delivery']),
     );
   }
 
@@ -171,6 +314,12 @@ class AppOrder {
   }
 
   bool get isPickup => deliveryOption == 'PICKUP';
+
+  /// تغيّر المبلغ بعد التجهيز (نقص/إضافة) — المبلغ النهائي هو المطلوب.
+  bool get isAdjusted => delivery?.adjusted == true && delivery?.finalTotal != null;
+
+  /// المبلغ الذي يُدفع فعلاً: النهائي بعد التجهيز إن تغيّر، وإلا إجمالي الطلب.
+  int get amountDue => isAdjusted ? delivery!.finalTotal! : total;
 
   String get statusLabel => orderStatusLabel(status);
   String statusLabelFor(String lang) => orderStatusLabel(status, lang: lang);
@@ -190,6 +339,13 @@ String orderStatusLabel(String status, {String lang = 'ar'}) {
     'REFUNDED' || 'RETURNED' => ar ? 'مُسترجع' : 'Refunded',
     _ => status,
   };
+}
+
+int? _intOrNull(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  return int.tryParse(v.toString().trim());
 }
 
 String? _nonEmpty(dynamic v) {
