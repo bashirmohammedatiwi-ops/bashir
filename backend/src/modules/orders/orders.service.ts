@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { DeliveryOption, DiscountType, OrderStatus, PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
+import { DeliveryOption, DiscountType, FulfillmentStage, OrderStatus, PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../../common/prisma.service";
 import { LowStockPolicy } from "../../common/low-stock.policy";
@@ -20,6 +20,36 @@ import {
   QueryOrdersDto,
   UpdateOrderStatusDto,
 } from "./dto/order.dto";
+
+/** مراحل ما قبل الشحن — تغيير الحالة يدوياً من لوحة التحكم يحرّك المرحلة من هنا فقط. */
+const STAGES_BEFORE_SHIPPING: FulfillmentStage[] = [
+  FulfillmentStage.NEW,
+  FulfillmentStage.CONFIRMED,
+  FulfillmentStage.PICKING,
+  FulfillmentStage.PICKED,
+  FulfillmentStage.READY_FOR_PICKUP,
+  FulfillmentStage.INVOICED,
+];
+
+/**
+ * مرحلة التجهيز المقابلة لتغيير حالة العميل يدوياً (الطريقة القديمة، قبل كاشير الطلبات وهاي إكسبريس):
+ * لا تُرجع المرحلة للخلف ولا تكتب فوق ما سجّله التجهيز بالمسح.
+ */
+export function stageForStatus(status: OrderStatus, current: FulfillmentStage): FulfillmentStage | null {
+  switch (status) {
+    case OrderStatus.CANCELLED:
+    case OrderStatus.REFUNDED:
+      return FulfillmentStage.CANCELLED;
+    case OrderStatus.DELIVERED:
+      return current === FulfillmentStage.PARTIALLY_DELIVERED ? null : FulfillmentStage.DELIVERED;
+    case OrderStatus.SHIPPED:
+      return STAGES_BEFORE_SHIPPING.includes(current) ? FulfillmentStage.HANDED_OVER : null;
+    case OrderStatus.CONFIRMED:
+      return current === FulfillmentStage.NEW ? FulfillmentStage.CONFIRMED : null;
+    default:
+      return null;
+  }
+}
 
 /** من يلغي الطلب: الزبونة (طلبها قبل بدء التجهيز فقط) أو الإدارة والنظام (أي طلب لم يُلغَ). */
 export interface CancelActor {
@@ -318,6 +348,9 @@ export class OrdersService {
         totalPrice: total,
         productName: p.name,
         productSku: p.sku,
+        // لقطة للتجهيز بالمسح: باركود التدرج (أو المنتج إن لم يكن له تدرج) واسم التدرج وقت الطلب.
+        barcode: shade ? shade.barcode?.trim() || null : p.barcode?.trim() || null,
+        shadeName: shade?.name ?? null,
       };
     });
 
@@ -552,9 +585,10 @@ export class OrdersService {
       await this.cancel(id, { id: actorId, staff: true, audit: false });
     }
     // مشروط أيضاً: طلب أُلغي (مهلة الدفع، الزبونة) بين القراءة والكتابة لا يعود نشطاً.
+    const stage = stageForStatus(dto.status, order.fulfillmentStage);
     const { count } = await this.prisma.order.updateMany({
       where: dto.status === OrderStatus.CANCELLED ? { id } : { id, status: { not: OrderStatus.CANCELLED } },
-      data: { status: dto.status, paymentStatus: dto.paymentStatus },
+      data: { status: dto.status, paymentStatus: dto.paymentStatus, ...(stage ? { fulfillmentStage: stage } : {}) },
     });
     if (count === 0) throw new BadRequestException("لا يمكن إعادة تفعيل طلب ملغى — أنشئي طلباً جديداً");
     const updated = await this.prisma.order.findUniqueOrThrow({ where: { id } });
@@ -586,7 +620,11 @@ export class OrdersService {
         where: actor.staff
           ? { id, status: { not: OrderStatus.CANCELLED } }
           : { id, userId: actor.id, status: { in: CUSTOMER_CANCELLABLE } },
-        data: { status: OrderStatus.CANCELLED },
+        data: {
+          status: OrderStatus.CANCELLED,
+          fulfillmentStage: FulfillmentStage.CANCELLED,
+          ...(actor.reason ? { cancelReason: actor.reason.slice(0, 300) } : {}),
+        },
       });
       if (count === 0) return null;
       for (const it of order.items) {

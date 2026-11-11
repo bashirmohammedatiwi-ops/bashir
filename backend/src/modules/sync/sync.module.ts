@@ -6,6 +6,7 @@ import { InventorySyncService } from "./inventory-sync.service";
 import { ProductOffersController } from "./product-offers.controller";
 import { ProductOffersService } from "./product-offers.service";
 import { QamarCatalogNotifierService } from "./qamar-catalog-notifier.service";
+import { OrderReservationsService } from "./order-reservations.service";
 import { StockAlertService } from "./stock-alert.service";
 
 @Module({
@@ -16,6 +17,7 @@ import { StockAlertService } from "./stock-alert.service";
     ProductOffersService,
     InventoryAdminService,
     StockAlertService,
+    OrderReservationsService,
     QamarCatalogNotifierService,
   ],
   exports: [InventorySyncService, QamarCatalogNotifierService],

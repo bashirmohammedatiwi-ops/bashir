@@ -6,6 +6,7 @@ import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
 import { RecordPosSyncRunDto } from "./dto/inventory-admin.dto";
+import { OrderReservationsService } from "./order-reservations.service";
 import { ProductOffersService } from "./product-offers.service";
 import { StockAlertService } from "./stock-alert.service";
 
@@ -101,6 +102,7 @@ export class InventorySyncService {
     private readonly stockAlerts: StockAlertService,
     private readonly homeFeedCache: HomeFeedCacheService,
     private readonly productOffers: ProductOffersService,
+    private readonly reservations: OrderReservationsService,
   ) {}
 
   async findByBarcode(barcode: string) {
@@ -340,7 +342,9 @@ export class InventorySyncService {
     let catalogUpdated = 0;
     let productMap = new Map<string, { id: string; name: string | null }>();
     try {
-      const catalog = await this.applyCatalogUpdates(sanitized);
+      // الكتالوج يأخذ مخزون الكاشير ناقص كميات طلبات التطبيق غير المفوترة (إن فُعّل الحجز)؛
+      // اللقطة وتنبيهات المخزون تبقى على رقم الكاشير كما وصل.
+      const catalog = await this.applyCatalogUpdates(await this.reservations.apply(sanitized));
       catalogUpdated = catalog.productsUpdated;
       productMap = catalog.productMap;
     } catch (err) {

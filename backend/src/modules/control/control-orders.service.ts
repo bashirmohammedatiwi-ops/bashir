@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
-import { OrdersService } from "../orders/orders.service";
+import { OrdersService, withShipSnapshot } from "../orders/orders.service";
 import { controlMediaUrls } from "./control-media.util";
 import { ControlOrdersQueryDto, ControlOrderStatusDto } from "./dto/control.dto";
 
@@ -75,9 +75,16 @@ export class ControlOrdersService {
         itemsCount: o._count.items,
         quantity: o.items.reduce((n, i) => n + i.quantity, 0),
         createdAt: o.createdAt,
-        customer: o.address?.fullName || o.user?.name || "زبونة",
-        phone: o.address?.phone || o.user?.phone || null,
-        place: [o.address?.governorate, o.address?.city, o.address?.area].filter(Boolean).join(" · ") || null,
+        // لقطة العنوان وقت الطلب أولاً (الطلبات الأقدم بلا لقطة تبقى على دفتر العناوين).
+        customer: o.shipFullName || o.address?.fullName || o.user?.name || "زبونة",
+        phone: o.shipPhone || o.address?.phone || o.user?.phone || null,
+        place:
+          (o.shipGovernorate
+            ? [o.shipGovernorate, o.shipArea].filter(Boolean).join(" · ")
+            : [o.address?.governorate, o.address?.city, o.address?.area].filter(Boolean).join(" · ")) || null,
+        fulfillmentStage: o.fulfillmentStage,
+        pickerName: o.pickerName,
+        adjusted: o.adjustmentTotal !== 0,
         thumbs: o.items
           .map((i) => (i.shadeId ? shadeImages.get(i.shadeId) : null) ?? this.productThumb(i.product))
           .filter(Boolean),
@@ -129,6 +136,20 @@ export class ControlOrdersService {
       orderBy: { createdAt: "asc" },
       include: { actor: { select: { name: true, email: true } } },
     });
+    // العنوان كما كان وقت الطلب (لقطة الطلب) — لا دفتر العناوين الحالي الذي قد يكون عُدّل أو حُذف.
+    const snap = withShipSnapshot(o).address as Record<string, string | null> | null;
+    const address = snap
+      ? {
+          fullName: snap.fullName ?? null,
+          phone: snap.phone ?? null,
+          governorate: snap.governorate ?? null,
+          city: snap.city ?? null,
+          area: snap.area ?? null,
+          street: snap.street ?? null,
+          house: snap.house ?? null,
+          notes: snap.notes ?? null,
+        }
+      : null;
     return {
       id: o.id,
       orderNumber: o.orderNumber,
@@ -140,33 +161,38 @@ export class ControlOrdersService {
       notes: o.notes,
       subtotal: o.subtotal,
       discountTotal: o.discountTotal,
+      packageDiscount: o.packageDiscount,
       shippingTotal: o.shippingTotal,
+      giftWrapFee: o.giftWrapFee,
+      loyaltyDiscount: o.loyaltyDiscount,
       total: o.total,
       loyaltySpent: o.loyaltySpent,
       coupon: o.coupon?.code ?? null,
+      isGift: o.isGift,
+      giftMessage: o.giftMessage,
+      giftHidePrices: o.giftHidePrices,
+      // التجهيز بالمسح وكاشير الطلبات (حقول إضافية — التطبيقات القديمة تتجاهلها).
+      fulfillmentStage: o.fulfillmentStage,
+      code: o.orderNumber,
+      pickerName: o.pickerName,
+      pickedAt: o.pickedAt,
+      parcelCount: o.parcelCount,
+      finalTotal: o.finalTotal,
+      codAmount: o.codAmount,
+      adjustmentTotal: o.adjustmentTotal,
+      posReceiptNumber: o.posReceiptNumber,
       createdAt: o.createdAt,
       updatedAt: o.updatedAt,
       customer: {
         id: o.user?.id,
-        name: o.address?.fullName || o.user?.name || "زبونة",
-        phone: o.address?.phone || o.user?.phone || null,
+        name: address?.fullName || o.user?.name || "زبونة",
+        phone: address?.phone || o.user?.phone || null,
         accountPhone: o.user?.phone ?? null,
         email: o.user?.email ?? null,
         ordersCount: o.user?._count.orders ?? 0,
         since: o.user?.createdAt ?? null,
       },
-      address: o.address
-        ? {
-            fullName: o.address.fullName,
-            phone: o.address.phone,
-            governorate: o.address.governorate,
-            city: o.address.city,
-            area: o.address.area,
-            street: o.address.street,
-            house: o.address.house,
-            notes: o.address.notes,
-          }
-        : null,
+      address,
       payments: o.payments,
       items: o.items.map((i) => {
         const shade = i.shadeId ? shadeById.get(i.shadeId) : undefined;

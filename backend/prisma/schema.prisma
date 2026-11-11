@@ -65,6 +65,71 @@ enum DeliveryOption {
   PICKUP
 }
 
+/// مرحلة التجهيز الداخلية للطلب — بجانب حالة العميل (OrderStatus) التي تبقى كما هي لتطبيقات العملاء.
+enum FulfillmentStage {
+  NEW
+  CONFIRMED
+  PICKING
+  PICKED
+  READY_FOR_PICKUP
+  INVOICED
+  HANDED_OVER
+  OUT_FOR_DELIVERY
+  DELIVERY_ISSUE
+  DELIVERED
+  PARTIALLY_DELIVERED
+  RETURNING
+  RETURNED
+  CANCELLED
+}
+
+/// سطر تجهيز: صنف من الطلب نفسه، أو صنف إضافي أضافه الموظف.
+enum PickLineKind {
+  ORDERED
+  EXTRA
+}
+
+/// الصنف الإضافي: يُحسب على العميل أو هدية/عينة بسعر صفر.
+enum ExtraCharge {
+  PAID
+  FREE
+}
+
+enum ScanResult {
+  MATCHED
+  EXTRA
+  EXTRA_PROPOSED
+  OVER
+  UNKNOWN
+  REMOVED
+  MANUAL
+}
+
+enum ShipmentState {
+  PENDING
+  CREATING
+  CREATED
+  RETRYING
+  FAILED
+  CANCELLED
+}
+
+enum AdjustmentType {
+  SHORTAGE
+  EXTRA
+  DISCOUNT_RECALC
+  ROUNDING
+  PARTIAL_DELIVERY
+  MANUAL
+}
+
+enum AdjustmentMethod {
+  NONE
+  COD_CHANGE
+  CARD_REFUND
+  LOYALTY_POINTS
+}
+
 enum PackageKind {
   GENERAL
   ROUTINE_MORNING
@@ -585,6 +650,33 @@ model Order {
   shipNotes        String?
   /// خُصم مخزون التدرج عند الطلب (الطلبات الأقدم خصمت مخزون المنتج فقط) — الإلغاء يُعيده بنفس القاعدة.
   shadeStockHeld   Boolean?
+
+  // ---- التجهيز والفوترة والشحن (طلبات التطبيق) ----
+  fulfillmentStage FulfillmentStage @default(NEW)
+  /// الموظف الذي يجهّز الطلب الآن (محجوز له).
+  pickerId         String?
+  pickerName       String?
+  pickStartedAt    DateTime?
+  pickedAt         DateTime?
+  /// عدد الأكياس/الطرود بعد التجهيز.
+  parcelCount      Int?
+  /// مدير وافق على تعديل يتجاوز الحدود.
+  pickApprovedById String?
+  /// إيصال كاشير الطلبات (FOT POS).
+  posReceiptNumber   String?
+  posClientReceiptId String?
+  posInvoicedAt      DateTime?
+  posCashierName     String?
+  /// المبالغ النهائية بعد التجهيز (null = لم يُجهَّز بالنظام الجديد).
+  finalSubtotal      Int?
+  finalDiscountTotal Int?
+  /// الفرق بين المبلغ النهائي والأصلي (سالب = نقص لصالح العميل).
+  adjustmentTotal    Int     @default(0)
+  finalTotal         Int?
+  /// المبلغ الذي تحصّله شركة التوصيل (0 للمدفوع مسبقاً بلا إضافات).
+  codAmount          Int?
+  cancelReason       String?
+
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -593,6 +685,11 @@ model Order {
   items            OrderItem[]
   coupon           Coupon?       @relation(fields: [couponId], references: [id])
   payments         PaymentTransaction[]
+  pickLines        OrderPickLine[]
+  scans            OrderScan[]
+  adjustments      OrderAdjustment[]
+  shipments        Shipment[]
+  events           OrderEvent[]
 
   @@unique([userId, clientRef])
   @@index([userId])
@@ -600,6 +697,8 @@ model Order {
   @@index([paymentStatus])
   @@index([createdAt])
   @@index([status, createdAt])
+  @@index([fulfillmentStage, createdAt])
+  @@index([posInvoicedAt])
 }
 
 /// عملية دفع إلكتروني لدى بوابة كي كارد (QiCard). الطلب قد يملك أكثر من محاولة.
@@ -662,12 +761,185 @@ model OrderItem {
   totalPrice       Int
   productName      String   // snapshot
   productSku       String   // snapshot
+  /// باركود التدرج أو المنتج وقت الطلب — المسح يطابقه حتى لو تغيّر باركود المنتج لاحقاً.
+  barcode          String?
+  shadeName        String?
 
   order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product          Product  @relation(fields: [productId], references: [id])
+  pickLines        OrderPickLine[]
 
   @@index([orderId])
   @@index([productId])
+}
+
+/// المطلوب مقابل المُجهَّز: سطر لكل صنف من الطلب، وسطر لكل صنف إضافي.
+model OrderPickLine {
+  id                  String       @id @default(uuid())
+  orderId             String
+  /// سطر الطلب الأصلي (فارغ للصنف الإضافي).
+  orderItemId         String?
+  kind                PickLineKind
+  productId           String?
+  shadeId             String?
+  barcode             String?
+  name                String
+  shadeName           String?
+  orderedQty          Int          @default(0)
+  pickedQty           Int          @default(0)
+  /// سعر الطلب للصنف المطلوب، والسعر الحالي للإضافي.
+  unitPrice           Int          @default(0)
+  charge              ExtraCharge  @default(PAID)
+  /// سبب النقص أو الإضافة.
+  reason              String?
+  /// الإضافي بديل عن سطر ناقص (يُحسب بسعر الأرخص).
+  substituteForLineId String?
+  /// أُكّد يدوياً بلا مسح (منتج بلا باركود).
+  manualConfirm       Boolean      @default(false)
+  updatedById         String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  order               Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem           OrderItem?   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, orderItemId])
+  @@index([orderId])
+}
+
+/// سجل كل مسحة (المقبولة والمرفوضة) — لا يُحذف.
+model OrderScan {
+  id           String     @id @default(uuid())
+  orderId      String
+  lineId       String?
+  barcode      String
+  result       ScanResult
+  qty          Int        @default(1)
+  userId       String?
+  userName     String?
+  device       String?
+  /// معرّف من الجهاز: إعادة إرسال المسحة نفسها بعد انقطاع لا تُحسب مرتين.
+  clientScanId String?
+  createdAt    DateTime   @default(now())
+
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, clientScanId])
+  @@index([orderId, createdAt])
+}
+
+/// كل تغيير في مبلغ الطلب بعد إنشائه (نقص، إضافة، تقريب، استرجاع).
+model OrderAdjustment {
+  id        String           @id @default(uuid())
+  orderId   String
+  type      AdjustmentType
+  /// بالدينار: سالب = لصالح العميل.
+  amount    Int
+  method    AdjustmentMethod @default(NONE)
+  /// PENDING | DONE | FAILED
+  status    String           @default("DONE")
+  note      String?
+  data      Json?
+  actorId   String?
+  createdAt DateTime         @default(now())
+
+  order     Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@index([status])
+}
+
+/// شحنة لدى شركة التوصيل (هاي إكسبريس) — واحدة فعّالة لكل طلب.
+model Shipment {
+  id               String        @id @default(uuid())
+  orderId          String
+  provider         String        @default("HI_EXPRESS")
+  /// معرّفنا لديهم (رقم الطلب) — فريد عندهم، فلا تُنشأ الشحنة مرتين.
+  clientIdentifier String        @unique
+  /// رقم التتبع (order_identifier لدى هاي إكسبريس).
+  trackingNumber   String?
+  state            ShipmentState @default(PENDING)
+  /// رقم حالة شركة التوصيل (نربط بالرقم لا بالاسم).
+  statusId         Int?
+  statusName       String?
+  statusAt         DateTime?
+  isFinal          Boolean       @default(false)
+  isCanceled       Boolean       @default(false)
+  governanceId     Int?
+  cityId           Int?
+  codAmount        Int           @default(0)
+  shippingCost     Int?
+  returnCost       Int?
+  collectedAmount  Int?
+  driverName       String?
+  deliveryAttempts Int?
+  settlementId     String?
+  attempts         Int           @default(0)
+  lastError        String?
+  nextAttemptAt    DateTime?
+  /// ما أُرسل للإنشاء (بلا مفاتيح).
+  payload          Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  events           ShipmentEvent[]
+
+  @@index([orderId])
+  @@index([state, nextAttemptAt])
+  @@index([isFinal, statusAt])
+}
+
+/// كل رسالة من شركة التوصيل كما وصلت (webhook أو استعلام).
+model ShipmentEvent {
+  id          String    @id @default(uuid())
+  shipmentId  String
+  /// WEBHOOK | POLL | CREATE | API
+  source      String
+  statusId    Int?
+  statusAt    DateTime?
+  note        String?
+  proofUrl    String?
+  raw         Json?
+  dedupeKey   String    @unique
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  shipment    Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId, receivedAt])
+}
+
+/// الخط الزمني للطلب: من فعل ماذا ومتى.
+model OrderEvent {
+  id        String   @id @default(uuid())
+  orderId   String
+  type      String
+  /// STAFF | CASHIER | SYSTEM | COURIER | CUSTOMER
+  actorType String
+  actorId   String?
+  actorName String?
+  data      Json?
+  createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+/// ربط محافظاتنا ومناطقنا بأرقام شركة التوصيل.
+model CourierAreaMap {
+  id           String   @id @default(uuid())
+  provider     String   @default("HI_EXPRESS")
+  governorate  String
+  /// "" = المحافظة كلها
+  area         String   @default("")
+  governanceId Int
+  cityId       Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([provider, governorate, area])
 }
 
 // ---------------------- COUPONS / DISCOUNTS ----------------------
