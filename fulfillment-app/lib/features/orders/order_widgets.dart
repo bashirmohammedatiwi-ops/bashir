@@ -555,7 +555,7 @@ class _OrderTabsBarState extends State<OrderTabsBar> {
     final tabs = widget.tabs, selected = widget.selected, counts = widget.counts;
     // كل التبويبات مبنية (لا ListView كسول) ليصل ensureVisible لأبعدها.
     return SizedBox(
-      height: 40,
+      height: 44,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -564,21 +564,12 @@ class _OrderTabsBarState extends State<OrderTabsBar> {
               Padding(
                 key: _keys.putIfAbsent(t.key, GlobalKey.new),
                 padding: const EdgeInsetsDirectional.only(end: 8),
-                child: ChoiceChip(
-                  showCheckmark: false,
-                  selectedColor: AppColors.primarySoft,
+                child: _TabPill(
+                  label: t.label,
                   selected: selected == t.key,
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(t.label),
-                      if (t.countIn(counts) case final n?) ...[
-                        const SizedBox(width: 6),
-                        _CountBadge(n: n, alert: t.key == tabIssues.key && n > 0, selected: selected == t.key),
-                      ],
-                    ],
-                  ),
-                  onSelected: (_) => widget.onSelect(t),
+                  count: t.countIn(counts),
+                  alert: t.key == tabIssues.key && (t.countIn(counts) ?? 0) > 0,
+                  onTap: () => widget.onSelect(t),
                 ),
               ),
           ],
@@ -586,24 +577,6 @@ class _OrderTabsBarState extends State<OrderTabsBar> {
       ),
     );
   }
-}
-
-class _CountBadge extends StatelessWidget {
-  const _CountBadge({required this.n, required this.alert, required this.selected});
-  final int n;
-  final bool alert, selected;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-    decoration: BoxDecoration(
-      color: alert ? AppColors.danger : (selected ? AppColors.primary : AppColors.line),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(
-      numFmt(n),
-      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: alert || selected ? Colors.white : AppColors.ink),
-    ),
-  );
 }
 
 /// بطاقة طلب في الطابور: المرحلة بلونها، والبنود والقطع الصحيحة — وبعد التجهيز ما سيُسلَّم مع النقص والإضافة.
@@ -736,3 +709,57 @@ class OrderTile extends StatelessWidget {
   'PICKED' || 'READY_FOR_PICKUP' => (label: 'بانتظار الكاشير', icon: Icons.point_of_sale_rounded, color: _teal),
   _ => null,
 };
+
+/// تبويب واضح: المختار ملوّن بلون التطبيق ونصه أبيض عريض، والباقي أبيض بحدّ ظاهر ونص داكن.
+class _TabPill extends StatelessWidget {
+  const _TabPill({required this.label, required this.selected, required this.count, required this.alert, required this.onTap});
+  final String label;
+  final bool selected, alert;
+  final int? count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = selected ? AppColors.primary : Colors.white;
+    final fg = selected ? Colors.white : AppColors.ink;
+    return Material(
+      color: bg,
+      shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.primary : const Color(0xFFCBD5E1), width: 1.2)),
+      elevation: selected ? 2 : 0,
+      shadowColor: AppColors.primary.withValues(alpha: .35),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label, style: TextStyle(color: fg, fontWeight: selected ? FontWeight.w900 : FontWeight.w700, fontSize: 13.5)),
+              if (count != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  constraints: const BoxConstraints(minWidth: 22),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: alert ? AppColors.danger : (selected ? Colors.white : const Color(0xFFE2E8F0)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    numFmt(count!),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w900,
+                      color: alert ? Colors.white : (selected ? AppColors.primary : AppColors.ink),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

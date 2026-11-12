@@ -1,7 +1,7 @@
 name: fulfillment_app
 description: "ديما الحياة — تطبيق تجهيز الطلبات: طابور الطلبات الحيّ، التجهيز بمسح الباركود، وتنبيه الطلبات الجديدة."
 publish_to: 'none'
-version: 1.3.0+4
+version: 1.3.1+5
 
 environment:
   sdk: ^3.11.0
