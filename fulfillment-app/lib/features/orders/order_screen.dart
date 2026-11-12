@@ -11,16 +11,19 @@ import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
 import '../pick/pick_screen.dart';
+import 'order_widgets.dart';
 import 'orders_screen.dart';
 
-/// الخطوة التالية لكل حالة (زر رئيسي واحد).
-const _nextStep = {
+/// الخطوة التالية بالحالة القديمة — فقط لسيرفر أقدم لا يرسل مرحلة التجهيز.
+const _legacyNextStep = {
   'PENDING': ('CONFIRMED', 'تأكيد الطلب', Icons.check_circle_rounded),
   'CONFIRMED': ('PROCESSING', 'بدء التحضير', Icons.inventory_2_rounded),
   'PROCESSING': ('SHIPPED', 'جاهز للتوصيل', Icons.local_shipping_rounded),
   'SHIPPED': ('DELIVERED', 'تم التسليم', Icons.verified_rounded),
 };
 
+/// شاشة الطلب مبنية على مرحلة التجهيز: بعد بدء التجهيز تعرض نتيجة المسح (لا الأصناف الأصلية)،
+/// وبعد انتهائه تعرض ما ينتظره الطلب (الكاشير، هاي إكسبريس) بدل أزرار تتجاوزهما.
 class OrderScreen extends ConsumerStatefulWidget {
   const OrderScreen({super.key, required this.orderId});
   final String orderId;
@@ -30,6 +33,9 @@ class OrderScreen extends ConsumerStatefulWidget {
 
 class _OrderScreenState extends ConsumerState<OrderScreen> {
   OrderDetail? _o;
+  PickView? _pick;
+  ShipmentInfo? _ship;
+  List<TimelineEntry>? _timeline;
   Object? _error;
   bool _busy = false;
 
@@ -39,18 +45,44 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     _load();
   }
 
-  /// التجهيز بالمسح في شاشته الخاصة (محفوظ في السيرفر) — ثم نعيد تحميل الطلب.
+  void _bump() => ref.read(ordersVersionProvider.notifier).state++;
+
+  /// التجهيز بالمسح في شاشته الخاصة — عند الرجوع نعيد تحميل الطلب ونحدّث الطابور.
   Future<void> _openPicking() async {
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PickScreen(orderId: widget.orderId)));
-    if (mounted) await _load();
+    if (!mounted) return;
+    _bump();
+    await _load();
   }
 
-  bool get _canPick => _o != null && (_o!.stage == null || pickableStages.contains(_o!.stage)) && _o!.status != 'CANCELLED';
+  static Future<T?> _soft<T>(Future<T> f) async {
+    try {
+      return await f;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> _load() async {
+    final repo = ref.read(repoProvider);
+    final id = widget.orderId;
     try {
-      final o = await ref.read(repoProvider).order(widget.orderId);
-      if (mounted) setState(() => (_o = o, _error = null));
+      // الطلب أساسي؛ التجهيز والشحنة والخط الزمني إضافات لا تُفشل الشاشة.
+      final pF = _soft(repo.pickView(id));
+      final sF = _soft(repo.shipment(id));
+      final tF = _soft(repo.timeline(id));
+      final o = await repo.order(id);
+      final (p, s, t) = (await pF, await sF, await tF);
+      if (!mounted) return;
+      final prev = _o;
+      setState(() {
+        _o = o;
+        _pick = p;
+        _ship = s;
+        _timeline = t;
+        _error = null;
+      });
+      if (prev != null && (prev.stage != o.stage || prev.status != o.status)) _bump();
     } catch (e) {
       if (!mounted) return;
       if (_o != null) {
@@ -61,18 +93,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
   }
 
-  Future<void> _setStatus(String status, {String? confirmText}) async {
-    if (confirmText != null &&
-        !await confirm(context, title: confirmText, message: _cancelMessage(status), ok: 'نعم', danger: status == 'CANCELLED')) {
-      return;
-    }
+  Future<void> _setStatus(String status) async {
     setState(() => _busy = true);
     try {
       final o = await ref.read(repoProvider).setOrderStatus(widget.orderId, status);
       if (!mounted) return;
       setState(() => _o = o);
-      ref.read(ordersVersionProvider.notifier).state++;
-      toast(context, 'الحالة الآن: ${orderStatusLabels[status]}');
+      _bump();
+      toast(context, status == 'CANCELLED' ? 'أُلغي الطلب' : 'الحالة الآن: ${orderStatusLabels[status]}');
+      await _load();
     } catch (e) {
       if (mounted) toastError(context, e);
     } finally {
@@ -80,10 +109,16 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
   }
 
-  String? _cancelMessage(String status) {
-    if (status != 'CANCELLED') return null;
-    final paid = _o?.paymentMethod == 'CARD' && _o?.paymentStatus == 'PAID';
-    return 'يعود المخزون والنقاط والكوبون تلقائياً.${paid ? '\nالمبلغ المدفوع بالبطاقة يُسترجع للزبونة تلقائياً.' : ''}';
+  Future<void> _cancel(OrderDetail o) async {
+    final paid = o.paymentMethod == 'CARD' && o.paymentStatus == 'PAID';
+    final ok = await confirm(
+      context,
+      title: 'إلغاء الطلب ${o.orderNumber}؟',
+      message: 'يعود المخزون والنقاط والكوبون تلقائياً.${paid ? '\nالمبلغ المدفوع بالبطاقة يُسترجع للزبونة تلقائياً.' : ''}',
+      ok: 'نعم، إلغاء',
+      danger: true,
+    );
+    if (ok && mounted) await _setStatus('CANCELLED');
   }
 
   String _intlPhone(String raw) {
@@ -109,10 +144,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
         body: _error != null ? ErrorView(_error!, onRetry: _load) : const Center(child: CircularProgressIndicator()),
       );
     }
-    final next = _nextStep[o.status];
-    final closed = o.status == 'CANCELLED' || o.status == 'REFUNDED' || o.status == 'DELIVERED';
-    // «بدء التحضير» صار التجهيز بالمسح: يفتح شاشة التجهيز بدل تغيير الحالة مباشرة.
-    final pickStep = _canPick && o.status != 'PENDING';
+    final stage = o.stage;
+    final pick = o.pickStarted ? _pick : null;
     return Scaffold(
       appBar: AppBar(
         title: Text(o.orderNumber, textDirection: TextDirection.ltr),
@@ -130,17 +163,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             },
             icon: const Icon(Icons.copy_all_rounded),
           ),
-          if (!closed)
+          if (o.cancellable)
             PopupMenuButton<String>(
-              onSelected: (s) => _setStatus(
-                s,
-                confirmText: s == 'CANCELLED' ? 'إلغاء الطلب ${o.orderNumber}؟' : 'تغيير الحالة إلى «${orderStatusLabels[s]}»؟',
-              ),
-              itemBuilder: (_) => [
-                for (final s in orderStatusFlow)
-                  if (s != o.status) PopupMenuItem(value: s, child: Text('نقل إلى: ${orderStatusLabels[s]}')),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
+              onSelected: (_) => _cancel(o),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
                   value: 'CANCELLED',
                   child: Text('إلغاء الطلب', style: TextStyle(color: AppColors.danger)),
                 ),
@@ -148,85 +175,59 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             ),
         ],
       ),
-      bottomNavigationBar: closed
-          ? null
-          : pickStep
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size.fromHeight(54)),
-                  onPressed: _busy ? null : _openPicking,
-                  icon: const Icon(Icons.qr_code_scanner_rounded),
-                  label: Text(o.stage == 'PICKING' ? 'متابعة التجهيز بالمسح' : 'بدء التجهيز بالمسح', style: const TextStyle(fontSize: 16)),
-                ),
-              ),
-            )
-          : next == null
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: orderStatusColor(next.$1), minimumSize: const Size.fromHeight(54)),
-                  onPressed: _busy ? null : () => _setStatus(next.$1),
-                  icon: _busy
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
-                      : Icon(next.$3),
-                  label: Text(next.$2, style: const TextStyle(fontSize: 16)),
-                ),
-              ),
-            ),
+      bottomNavigationBar: _bottomBar(o),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
           children: [
-            _statusTrack(o),
+            if (stage != null) StageTrackPanel(stage: stage, pickup: o.isPickup) else _legacyTrack(o),
             const SizedBox(height: 12),
             _customer(o),
             SectionTitle(
-              'المنتجات (${o.units} قطعة)',
-              trailing: o.stage == null || o.status == 'CANCELLED'
-                  ? null
-                  : TextButton.icon(
-                      onPressed: _openPicking,
-                      icon: const Icon(Icons.fact_check_rounded, size: 18),
-                      label: Text(_canPick ? 'تجهيز بالمسح' : 'عرض التجهيز'),
-                    ),
+              'المنتجات',
+              subtitle: pick == null ? orderSizeLabel(lines: o.lines, units: o.units) : null,
             ),
-            Panel(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  for (var i = 0; i < o.items.length; i++) ...[if (i > 0) const Divider(indent: 76), _itemTile(o.items[i])],
-                ],
+            if (pick != null)
+              PickResultSection(view: pick, onOpen: _openPicking)
+            else ...[
+              if (o.pickStarted && o.pick != null) ...[_tallyPanel(o.pick!), const SizedBox(height: 10)],
+              Panel(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < o.items.length; i++) ...[if (i > 0) const Divider(indent: 76), _itemTile(o.items[i])],
+                  ],
+                ),
               ),
-            ),
-            const SectionTitle('الحساب'),
-            Panel(
-              child: Column(
-                children: [
-                  _row('المجموع', money(o.subtotal)),
-                  if (o.discountTotal > 0)
-                    _row('الخصم${o.coupon != null ? ' (${o.coupon})' : ''}', '- ${money(o.discountTotal)}', color: AppColors.rose),
-                  if (o.loyaltySpent > 0) _row('نقاط مستخدمة', numFmt(o.loyaltySpent)),
-                  _row('التوصيل', o.shippingTotal == 0 ? 'مجاني' : money(o.shippingTotal)),
-                  const Divider(),
-                  _row('الإجمالي', money(o.total), bold: true),
-                  if (o.finalTotal != null && o.finalTotal != o.total)
-                    _row('بعد التجهيز (نقص/إضافة)', money(o.finalTotal), bold: true, color: AppColors.warning),
-                  if (o.codAmount != null)
-                    _row('تحصّله شركة التوصيل', o.codAmount == 0 ? 'لا شيء (مدفوع)' : money(o.codAmount), color: AppColors.primary),
-                  const SizedBox(height: 6),
-                  _row(
-                    'الدفع',
-                    '${paymentMethodLabels[o.paymentMethod] ?? o.paymentMethod} · ${paymentStatusLabels[o.paymentStatus] ?? o.paymentStatus}',
-                  ),
-                  _row('التوصيل', deliveryLabels[o.deliveryOption] ?? o.deliveryOption),
-                ],
+            ],
+            if (stage != null && !(o.closed && !o.pickStarted)) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed: _openPicking,
+                icon: Icon(stage == 'PICKING' ? Icons.qr_code_scanner_rounded : Icons.fact_check_rounded),
+                label: Text(
+                  stage == 'PICKING'
+                      ? 'متابعة التجهيز'
+                      : o.pickStarted
+                      ? 'عرض التجهيز'
+                      : 'فتح شاشة التجهيز',
+                ),
               ),
-            ),
+            ],
+            if (_ship != null) ...[
+              const SectionTitle('الشحنة'),
+              ShipmentCard(shipment: _ship!),
+            ] else if (stage == 'INVOICED' && !o.isPickup) ...[
+              const SectionTitle('الشحنة'),
+              const Panel(
+                color: AppColors.warningSoft,
+                child: Text('لم تُنشأ شحنة هاي إكسبريس بعد — تُنشأ تلقائياً بعد الفوترة.', style: TextStyle(height: 1.6)),
+              ),
+            ],
+            const SectionTitle('المبلغ'),
+            OrderMoneyCard(order: o, pick: pick),
             if (o.isGift) ...[
               const SectionTitle('هدية'),
               Panel(
@@ -247,34 +248,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 child: Text(o.notes!, style: const TextStyle(height: 1.7)),
               ),
             ],
-            if (o.history.isNotEmpty) ...[
+            if ((_timeline ?? const []).isNotEmpty) ...[
+              const SectionTitle('الخط الزمني'),
+              TimelineCard(entries: _timeline!),
+            ] else if (o.history.isNotEmpty) ...[
               const SectionTitle('السجل'),
-              Panel(
-                child: Column(
-                  children: [
-                    for (final h in o.history)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.circle, size: 9, color: orderStatusColor('${h['status']}')),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                orderStatusLabels['${h['status']}'] ?? '${h['status'] ?? h['action']}',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            Text(
-                              [h['actor'], timeAgo(parseDate(h['at']))].whereType<String>().where((e) => e.isNotEmpty).join(' · '),
-                              style: const TextStyle(color: AppColors.muted, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+              _legacyHistory(o),
             ],
           ],
         ),
@@ -282,7 +261,71 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     );
   }
 
-  Widget _statusTrack(OrderDetail o) {
+  // ------------------------------------------------------------ bottom bar
+
+  Widget? _bottomBar(OrderDetail o) {
+    final stage = o.stage;
+    if (o.closed) return null;
+    Widget button(String label, IconData icon, VoidCallback onTap, {Color? color}) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: color ?? AppColors.primary, minimumSize: const Size.fromHeight(54)),
+          onPressed: _busy ? null : onTap,
+          icon: _busy
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
+              : Icon(icon),
+          label: Text(label, style: const TextStyle(fontSize: 16)),
+        ),
+      ),
+    );
+    if (stage == null) {
+      // سيرفر أقدم بلا مراحل: الأزرار القديمة كما كانت.
+      final next = _legacyNextStep[o.status];
+      if (next == null || o.status == 'DELIVERED') return null;
+      if (o.status != 'PENDING' && const {'CONFIRMED', 'PROCESSING'}.contains(o.status)) {
+        return button('التجهيز بالمسح', Icons.qr_code_scanner_rounded, _openPicking);
+      }
+      return button(next.$2, next.$3, () => _setStatus(next.$1), color: orderStatusColor(next.$1));
+    }
+    if (stagesBeforePicking.contains(stage)) {
+      if (o.status == 'PENDING') return button('تأكيد الطلب', Icons.check_circle_rounded, () => _setStatus('CONFIRMED'));
+      return button('بدء التجهيز بالمسح', Icons.qr_code_scanner_rounded, _openPicking);
+    }
+    if (stage == 'PICKING') return button('متابعة التجهيز', Icons.qr_code_scanner_rounded, _openPicking);
+    final w = stageWaiting(stage, pickup: o.isPickup);
+    if (w == null) return null;
+    final driver = _ship?.driverName;
+    return StageWaitingBar(
+      stage: stage,
+      title: stage == 'OUT_FOR_DELIVERY' && driver != null ? '${w.title} — $driver' : w.title,
+      hint: w.hint,
+    );
+  }
+
+  // ------------------------------------------------------------ sections
+
+  Widget _tallyPanel(PickTally t) => Panel(
+    padding: const EdgeInsets.all(14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(deliverLabel(units: t.units, lines: t.lines), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            if (t.missingUnits > 0) pickChip('ناقص ${numFmt(t.missingUnits)}', 'red', small: false),
+            if (t.extraUnits > 0) pickChip('إضافي ${numFmt(t.extraUnits)}', 'yellow', small: false),
+            if (t.missingUnits == 0 && t.extraUnits == 0) pickChip('مطابق للطلب', 'green', small: false),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _legacyTrack(OrderDetail o) {
     if (o.status == 'CANCELLED' || o.status == 'REFUNDED') {
       return Panel(
         color: AppColors.dangerSoft,
@@ -290,11 +333,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           children: [
             const Icon(Icons.cancel_rounded, color: AppColors.danger),
             const SizedBox(width: 10),
-            Text(
-              'الطلب ${orderStatusLabels[o.status]}',
-              style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w800, fontSize: 16),
+            Expanded(
+              child: Text(
+                'الطلب ${orderStatusLabels[o.status]}',
+                style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
             ),
-            const Spacer(),
             Text(timeAgo(o.createdAt), style: const TextStyle(color: AppColors.muted)),
           ],
         ),
@@ -305,7 +349,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       padding: const EdgeInsets.fromLTRB(10, 14, 10, 12),
       child: Row(
         children: [
-          for (var i = 0; i < orderStatusFlow.length; i++) ...[
+          for (var i = 0; i < orderStatusFlow.length; i++)
             Expanded(
               child: Column(
                 children: [
@@ -318,20 +362,40 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   Text(
                     orderStatusLabels[orderStatusFlow[i]]!,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: i == idx ? FontWeight.w800 : FontWeight.w600,
-                      color: i <= idx ? AppColors.ink : AppColors.muted,
-                    ),
+                    maxLines: 2,
+                    style: TextStyle(fontSize: 10.5, fontWeight: i == idx ? FontWeight.w800 : FontWeight.w600, color: i <= idx ? AppColors.ink : AppColors.muted),
                   ),
                 ],
               ),
             ),
-          ],
         ],
       ),
     );
   }
+
+  Widget _legacyHistory(OrderDetail o) => Panel(
+    child: Column(
+      children: [
+        for (final h in o.history)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Icon(Icons.circle, size: 9, color: orderStatusColor('${h['status']}')),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(orderStatusLabels['${h['status']}'] ?? '${h['status'] ?? h['action']}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                ),
+                Text(
+                  [h['actor'], timeAgo(parseDate(h['at']))].whereType<String>().where((e) => e.isNotEmpty).join(' · '),
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
 
   Widget _customer(OrderDetail o) {
     final phone = o.customerPhone;
@@ -350,18 +414,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(o.customerName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text(o.customerName, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                     Text(
                       o.customerOrders > 1 ? 'زبونة دائمة · ${o.customerOrders} طلبات' : 'أول طلب لها',
-                      style: TextStyle(
-                        color: o.customerOrders > 1 ? AppColors.success : AppColors.muted,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(color: o.customerOrders > 1 ? AppColors.success : AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Text(timeAgo(o.createdAt), style: const TextStyle(color: AppColors.muted, fontSize: 12)),
             ],
           ),
@@ -389,7 +450,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => _openUrl('tel:$phone'),
                     icon: const Icon(Icons.call_rounded, color: AppColors.success),
-                    label: Text(phone, textDirection: TextDirection.ltr),
+                    label: Text(phone, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -407,91 +468,76 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   Widget _itemTile(OrderItemLine it) {
-    return InkWell(
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        child: Row(
-          children: [
-            Stack(
+    return Container(
+      padding: const EdgeInsets.all(10),
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              NetImg(it.thumb, size: 56, fit: BoxFit.contain),
+              if (it.shadeHex != null)
+                PositionedDirectional(
+                  bottom: 0,
+                  end: 0,
+                  child: Swatch(hex: it.shadeHex, hexEnd: it.shadeHexEnd, size: 20, off: !it.shadeActive),
+                ),
+            ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                NetImg(it.thumb, size: 56, fit: BoxFit.contain),
-                if (it.shadeHex != null)
-                  PositionedDirectional(
-                    bottom: 0,
-                    end: 0,
-                    child: Swatch(hex: it.shadeHex, hexEnd: it.shadeHexEnd, size: 20, off: !it.shadeActive),
+                Text(it.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, height: 1.4)),
+                if (it.shadeName != null)
+                  Text(
+                    'اللون: ${it.shadeName}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.rose, fontWeight: FontWeight.w700, fontSize: 12.5),
                   ),
+                Text(
+                  [if (it.barcode != null) it.barcode!, money(it.unitPrice)].join(' · '),
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
               ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    it.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700, height: 1.4),
-                  ),
-                  if (it.shadeName != null)
-                    Text(
-                      'اللون: ${it.shadeName}',
-                      style: const TextStyle(color: AppColors.rose, fontWeight: FontWeight.w700, fontSize: 12.5),
-                    ),
-                  Text(
-                    [if (it.barcode != null) it.barcode!, money(it.unitPrice)].join(' · '),
-                    textDirection: TextDirection.ltr,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(10)),
-              child: Text(
-                '× ${it.quantity}',
-                style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(10)),
+            child: Text('× ${it.quantity}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _row(String k, String v, {bool bold = false, Color? color}) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
-    child: Row(
-      children: [
-        Text(
-          k,
-          style: TextStyle(color: AppColors.muted, fontWeight: bold ? FontWeight.w800 : FontWeight.w500),
-        ),
-        const Spacer(),
-        Flexible(
-          child: Text(
-            v,
-            textAlign: TextAlign.end,
-            style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w700, fontSize: bold ? 17 : 14, color: color),
-          ),
-        ),
-      ],
-    ),
-  );
-
+  /// ملخص للنسخ والمشاركة: بعد التجهيز يُرسل ما سيُسلَّم فعلاً.
   String _summary(OrderDetail o) {
     final b = StringBuffer()
       ..writeln('طلب ${o.orderNumber}')
       ..writeln('${o.customerName} — ${o.customerPhone ?? ''}')
       ..writeln(o.addressLine);
-    for (final it in o.items) {
-      b.writeln('• ${it.name}${it.shadeName != null ? ' (${it.shadeName})' : ''} × ${it.quantity}');
+    final p = o.pickStarted ? _pick : null;
+    if (p != null) {
+      for (final l in p.lines.where((l) => l.pickedQty > 0)) {
+        b.writeln('• ${l.name}${l.shadeName != null ? ' (${l.shadeName})' : ''} × ${l.pickedQty}${l.isExtra ? ' (إضافي)' : ''}');
+      }
+    } else {
+      for (final it in o.items) {
+        b.writeln('• ${it.name}${it.shadeName != null ? ' (${it.shadeName})' : ''} × ${it.quantity}');
+      }
     }
-    b.writeln('الإجمالي: ${money(o.total)} — ${paymentMethodLabels[o.paymentMethod] ?? ''}');
+    final total = o.finalTotal ?? o.total;
+    b.writeln('الإجمالي: ${money(total)} — ${paymentMethodLabels[o.paymentMethod] ?? ''}');
+    if (o.codAmount != null) b.writeln('يُحصَّل عند الاستلام: ${o.codAmount == 0 ? 'لا شيء (مدفوع)' : money(o.codAmount)}');
+    if (_ship?.trackingNumber != null) b.writeln('رقم التتبع (هاي إكسبريس): ${_ship!.trackingNumber}');
     if ((o.notes ?? '').isNotEmpty) b.writeln('ملاحظة: ${o.notes}');
     return b.toString();
   }

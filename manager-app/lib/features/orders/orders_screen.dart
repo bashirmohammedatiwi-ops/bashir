@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/format.dart';
 import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
@@ -13,6 +12,14 @@ import '../../widgets/common.dart';
 import '../pick/pick_scan_screen.dart';
 import '../pick/pick_screen.dart';
 import 'order_screen.dart';
+import 'order_widgets.dart';
+
+/// أعداد طلبات التطبيق لكل مرحلة (للوحة الرئيسية) — صفحة بطلب واحد، تتحدّث مع أي تغيير في الطلبات.
+final orderCountsProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
+  ref.watch(ordersVersionProvider);
+  final r = await ref.watch(repoProvider).orders(status: 'open', limit: 1);
+  return r.counts;
+});
 
 Color orderStatusColor(String s) => switch (s) {
   'PENDING' => AppColors.warning,
@@ -35,19 +42,22 @@ class OrderStatusPill extends StatelessWidget {
   }
 }
 
-/// الطلبات: تبويبات حسب الحالة مع العدد، بحث برقم الطلب أو اسم/هاتف الزبونة.
+/// تبويبات المدير: مراحل التجهيز نفسها في تطبيق التجهيز + الملغاة.
+const managerOrderTabs = [...orderTabs, tabCancelled];
+
+/// الطلبات: تبويبات حسب مرحلة التجهيز مع العدد، بحث برقم الطلب أو اسم/هاتف الزبونة.
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key, this.embedded = false, this.initialStatus});
   final bool embedded;
 
-  /// يفتح على تبويب معيّن (مثلاً «جديدة» من صحة المتجر).
+  /// يفتح على تبويب معيّن: مفتاح تبويب («stage:PICKING») أو حالة قديمة («PENDING» من صحة المتجر).
   final String? initialStatus;
   @override
   ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
-  late String _status = widget.initialStatus ?? 'open';
+  late String _status = orderTabKey(widget.initialStatus, _tabs);
   final _q = TextEditingController();
   Timer? _debounce;
   final _scroll = ScrollController();
@@ -60,15 +70,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   int _seq = 0;
   int _seenVersion = 0;
 
-  static const _tabs = [
-    ('open', 'المفتوحة'),
-    ('PENDING', 'جديدة'),
-    ('CONFIRMED', 'مؤكدة'),
-    ('PROCESSING', 'قيد التحضير'),
-    ('SHIPPED', 'تم الشحن'),
-    ('DELIVERED', 'مكتملة'),
-    ('CANCELLED', 'ملغاة'),
-  ];
+  static const _tabs = managerOrderTabs;
+
+  OrderTab get _filter => _tabs.firstWhere((t) => t.key == _status, orElse: () => tabOpen);
 
   @override
   void initState() {
@@ -135,7 +139,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       _error = null;
     });
     try {
-      final r = await ref.read(repoProvider).orders(status: _status, q: _q.text, page: 1);
+      final r = await ref.read(repoProvider).orders(status: _filter.status, stage: _filter.stage, q: _q.text, page: 1);
       if (seq != _seq || !mounted) return;
       setState(() {
         _items
@@ -158,7 +162,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final seq = _seq;
     setState(() => _loading = true);
     try {
-      final r = await ref.read(repoProvider).orders(status: _status, q: _q.text, page: _page + 1);
+      final r = await ref.read(repoProvider).orders(status: _filter.status, stage: _filter.stage, q: _q.text, page: _page + 1);
       if (seq != _seq || !mounted) return;
       setState(() {
         _page += 1;
@@ -205,27 +209,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      for (final t in _tabs)
-                        Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 8),
-                          child: ChoiceChip(
-                            showCheckmark: false,
-                            selectedColor: AppColors.primarySoft,
-                            selected: _status == t.$1,
-                            label: Text('${t.$2}${_counts[t.$1] != null ? '  ${_counts[t.$1]}' : ''}'),
-                            onSelected: (_) {
-                              setState(() => _status = t.$1);
-                              _load();
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
+                OrderTabsBar(
+                  tabs: _tabs,
+                  selected: _status,
+                  counts: _counts,
+                  onSelect: (t) {
+                    setState(() => _status = t.key);
+                    _load();
+                  },
                 ),
               ],
             ),
@@ -260,102 +251,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   );
                 },
               ),
-      ),
-    );
-  }
-}
-
-class OrderTile extends StatelessWidget {
-  const OrderTile({super.key, required this.order, required this.onTap});
-  final OrderSummary order;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final o = order;
-    final isNew = o.status == 'PENDING';
-    return Panel(
-      onTap: onTap,
-      padding: const EdgeInsets.all(12),
-      color: isNew ? const Color(0xFFFFFBF2) : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                o.orderNumber,
-                textDirection: TextDirection.ltr,
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15.5),
-              ),
-              const SizedBox(width: 8),
-              OrderStatusPill(o.status, small: true),
-              const Spacer(),
-              Text(timeAgo(o.createdAt), style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(o.customer, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    if (o.place != null)
-                      Text(
-                        o.place!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
-                      ),
-                    const SizedBox(height: 6),
-                    // Wrap: على الشاشات الضيقة تنزل شارة البطاقة لسطر ثانٍ بدل أن يفيض السطر.
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          money(o.total),
-                          style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary),
-                        ),
-                        Text('${o.quantity} قطعة', style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
-                        if (o.paymentMethod == 'CARD')
-                          Pill(
-                            o.paymentStatus == 'PAID' ? 'مدفوع بالبطاقة' : 'بطاقة',
-                            color: AppColors.info,
-                            bg: AppColors.infoSoft,
-                            small: true,
-                            icon: Icons.credit_card_rounded,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 92,
-                height: 44,
-                child: Stack(
-                  children: [
-                    for (var k = o.thumbs.length.clamp(0, 3) - 1; k >= 0; k--)
-                      PositionedDirectional(
-                        start: k * 24.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: NetImg(o.thumbs[k], size: 40, radius: 9, fit: BoxFit.contain),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

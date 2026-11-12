@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/background.dart';
-import '../../core/format.dart';
 import '../../core/prefs.dart';
 import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
@@ -16,6 +15,7 @@ import '../settings/settings_screen.dart';
 import '../pick/pick_screen.dart';
 import '../scan/scan_screen.dart';
 import 'order_screen.dart';
+import 'order_widgets.dart';
 
 Color orderStatusColor(String s) => switch (s) {
   'PENDING' => AppColors.warning,
@@ -63,27 +63,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
   String? _lastSeenOrderId;
   bool _firstPulse = true;
 
-  // تبويبات التجهيز: المفتوحة أولاً، ثم حسب المرحلة.
-  // المفتاح: حالة العميل، أو «stage:» لمراحل التجهيز (بانتظار الكاشير لا يقابلها حالة عميل).
-  static const _tabs = [
-    ('open', 'المفتوحة'),
-    ('PENDING', 'جديدة'),
-    ('CONFIRMED', 'للتجهيز'),
-    ('stage:PICKING', 'قيد التجهيز'),
-    ('stage:PICKED,READY_FOR_PICKUP', 'بانتظار الكاشير'),
-    ('SHIPPED', 'تم الشحن'),
-    ('DELIVERED', 'مكتملة'),
-  ];
+  // تبويبات حسب مرحلة التجهيز: المفتوحة أولاً ثم بترتيب مسار الطلب.
+  static const _tabs = orderTabs;
 
-  ({String? status, String? stage}) get _filter =>
-      _status.startsWith('stage:') ? (status: null, stage: _status.substring(6)) : (status: _status, stage: null);
-
-  int? _countOf(String key) {
-    if (!key.startsWith('stage:')) return _counts[key];
-    final parts = key.substring(6).split(',');
-    if (!parts.any((s) => _counts.containsKey('stage:$s'))) return null;
-    return parts.fold<int>(0, (n, s) => n + (_counts['stage:$s'] ?? 0));
-  }
+  OrderTab get _filter => _tabs.firstWhere((t) => t.key == _status, orElse: () => tabOpen);
 
   /// قارئ خارجي على الطابور: مسح QR قائمة التجهيز يفتح الطلب مباشرة.
   bool _onHardware(ScanEvent e) {
@@ -263,27 +246,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
                   ),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      for (final t in _tabs)
-                        Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 8),
-                          child: ChoiceChip(
-                            showCheckmark: false,
-                            selectedColor: AppColors.primarySoft,
-                            selected: _status == t.$1,
-                            label: Text('${t.$2}${_countOf(t.$1) != null ? '  ${_countOf(t.$1)}' : ''}'),
-                            onSelected: (_) {
-                              setState(() => _status = t.$1);
-                              _load();
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
+                OrderTabsBar(
+                  tabs: _tabs,
+                  selected: _status,
+                  counts: _counts,
+                  onSelect: (t) {
+                    setState(() => _status = t.key);
+                    _load();
+                  },
                 ),
               ],
             ),
@@ -318,116 +288,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
                   );
                 },
               ),
-      ),
-    );
-  }
-}
-
-class OrderTile extends StatelessWidget {
-  const OrderTile({super.key, required this.order, required this.onTap});
-  final OrderSummary order;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final o = order;
-    final isNew = o.status == 'PENDING';
-    return Panel(
-      onTap: onTap,
-      padding: const EdgeInsets.all(12),
-      color: isNew ? const Color(0xFFFFFBF2) : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                o.orderNumber,
-                textDirection: TextDirection.ltr,
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15.5),
-              ),
-              const SizedBox(width: 8),
-              OrderStatusPill(o.status, small: true),
-              const Spacer(),
-              Text(timeAgo(o.createdAt), style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(o.customer, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    if (o.place != null)
-                      Text(
-                        o.place!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
-                      ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text('${o.quantity} قطعة', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
-                        Text(money(o.total), style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
-                        if (o.stage == 'PICKING')
-                          Pill(
-                            o.pickerName != null ? 'يجهّزه ${o.pickerName}' : 'قيد التجهيز',
-                            color: AppColors.primary,
-                            bg: AppColors.primarySoft,
-                            small: true,
-                            icon: Icons.qr_code_scanner_rounded,
-                          ),
-                        if (o.stage == 'PICKED' || o.stage == 'READY_FOR_PICKUP')
-                          Pill(
-                            stageLabels[o.stage]!,
-                            color: AppColors.success,
-                            bg: AppColors.successSoft,
-                            small: true,
-                            icon: Icons.inventory_rounded,
-                          ),
-                        if (o.adjusted)
-                          const Pill('نقص/إضافة', color: AppColors.warning, bg: AppColors.warningSoft, small: true, icon: Icons.rule_rounded),
-                        if (o.paymentMethod == 'CARD')
-                          Pill(
-                            o.paymentStatus == 'PAID' ? 'مدفوع بالبطاقة' : 'بطاقة',
-                            color: AppColors.info,
-                            bg: AppColors.infoSoft,
-                            small: true,
-                            icon: Icons.credit_card_rounded,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 92,
-                height: 44,
-                child: Stack(
-                  children: [
-                    for (var k = o.thumbs.length.clamp(0, 3) - 1; k >= 0; k--)
-                      PositionedDirectional(
-                        start: k * 24.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: NetImg(o.thumbs[k], size: 40, radius: 9, fit: BoxFit.contain),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

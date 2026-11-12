@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api.dart';
 import 'models.dart';
+import 'order_flow.dart';
 import 'pick_models.dart';
 
+export 'order_flow.dart';
 export 'pick_models.dart';
 
 PickView _pickView(dynamic b) => PickView.fromJson(Map<String, dynamic>.from(b as Map));
@@ -250,28 +252,43 @@ extension RepoMore on Repo {
   // ---------------- orders
   Future<({List<OrderSummary> items, int total, bool hasNext, Map<String, int> counts})> orders({
     String? status,
+    String? stage,
     String? q,
     int page = 1,
+    int limit = 30,
   }) async {
     final res = await api.page('/control/orders', {
       'status': ?status,
+      'stage': ?stage,
       if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
       'page': page,
-      'limit': 30,
+      'limit': limit,
     });
     final meta = res['meta'] as Map;
     return (
       items: (res['data'] as List).map((e) => OrderSummary.fromJson(Map<String, dynamic>.from(e))).toList(),
       total: (meta['total'] as num).toInt(),
       hasNext: meta['hasNext'] == true,
-      counts: (res['counts'] as Map).map((k, v) => MapEntry('$k', (v as num).toInt())),
+      counts: (res['counts'] as Map? ?? const {}).map((k, v) => MapEntry('$k', (v as num).toInt())),
     );
   }
 
   Future<OrderDetail> order(String id) => api.get('/control/orders/$id', map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)));
 
-  Future<OrderDetail> setOrderStatus(String id, String status) =>
-      api.patch('/control/orders/$id/status', data: {'status': status}, map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)));
+  /// تغيير الحالة يدوياً — `reason` يُكتب في السجل (مطلوب في تطبيق المدير لأنه يتجاوز الكاشير وشركة التوصيل).
+  Future<OrderDetail> setOrderStatus(String id, String status, {String? reason}) => api.patch(
+    '/control/orders/$id/status',
+    data: {'status': status, if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim()},
+    map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)),
+  );
+
+  Future<List<TimelineEntry>> timeline(String id) => api.get(
+    '/control/orders/$id/timeline',
+    map: (b) => (b as List).whereType<Map>().map((e) => TimelineEntry.fromJson(Map<String, dynamic>.from(e))).toList(),
+  );
+
+  /// شحنة هاي إكسبريس (null = لم تُنشأ بعد).
+  Future<ShipmentInfo?> shipment(String id) => api.get('/control/orders/$id/shipment', map: ShipmentInfo.tryParse);
 
   // ---------------- picking (التجهيز بالمسح — محفوظ في السيرفر)
 

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import '../core/format.dart';
+import 'order_flow.dart';
 
 Color? hexColor(String? hex) {
   if (hex == null) return null;
@@ -49,16 +50,24 @@ class OrderSummary {
       thumbs = (j['thumbs'] as List? ?? const []).map((e) => '$e').toList(),
       stage = _str(j['fulfillmentStage']),
       pickerName = _str(j['pickerName']),
-      adjusted = j['adjusted'] == true;
+      adjusted = j['adjusted'] == true,
+      pick = PickTally.fromJson(j['pick']);
   final String id, orderNumber, status, paymentStatus, paymentMethod, deliveryOption, customer;
   /// مرحلة التجهيز الداخلية (null من سيرفر أقدم).
   final String? stage, pickerName;
   /// نقص أو إضافة غيّرا مبلغ الطلب.
   final bool adjusted;
+
+  /// itemsCount = عدد البنود، quantity = كل القطع المطلوبة.
   final int total, itemsCount, quantity;
+
+  /// نتيجة التجهيز (null قبل بدئه أو من سيرفر أقدم).
+  final PickTally? pick;
   final DateTime? createdAt;
   final String? phone, place;
   final List<String> thumbs;
+
+  bool get isPickup => deliveryOption == 'PICKUP';
 }
 
 class OrderItemLine {
@@ -112,12 +121,23 @@ class OrderDetail {
       parcelCount = j['parcelCount'] == null ? null : _int(j['parcelCount']),
       finalTotal = j['finalTotal'] == null ? null : _int(j['finalTotal']),
       codAmount = j['codAmount'] == null ? null : _int(j['codAmount']),
-      adjustmentTotal = _int(j['adjustmentTotal']);
+      adjustmentTotal = _int(j['adjustmentTotal']),
+      pickedAt = parseDate(j['pickedAt']),
+      posReceiptNumber = _str(j['posReceiptNumber']),
+      posInvoicedAt = parseDate(j['posInvoicedAt']),
+      posCashierName = _str(j['posCashierName']),
+      linesCount = j['linesCount'] == null ? null : _int(j['linesCount']),
+      unitsCount = j['unitsCount'] == null ? null : _int(j['unitsCount']),
+      pick = PickTally.fromJson(j['pick']);
   final String id, orderNumber, status, paymentStatus, paymentMethod, deliveryOption, customerName;
-  final String? stage, pickerName, giftMessage;
+  final String? stage, pickerName, giftMessage, posReceiptNumber, posCashierName;
   final bool isGift;
-  final int? parcelCount, finalTotal, codAmount;
+  final int? parcelCount, finalTotal, codAmount, linesCount, unitsCount;
   final int adjustmentTotal;
+  final DateTime? pickedAt, posInvoicedAt;
+
+  /// نتيجة التجهيز (null قبل بدئه أو من سيرفر أقدم).
+  final PickTally? pick;
   final String? notes, coupon, customerPhone;
   final int subtotal, discountTotal, shippingTotal, total, loyaltySpent, customerOrders;
   final DateTime? createdAt;
@@ -125,7 +145,19 @@ class OrderDetail {
   final List<OrderItemLine> items;
   final List<Map<String, dynamic>> history, payments;
 
-  int get units => items.fold(0, (n, i) => n + i.quantity);
+  /// كل القطع والبنود المطلوبة (من السيرفر إن أرسلها، وإلا من الأصناف).
+  int get units => unitsCount ?? items.fold(0, (n, i) => n + i.quantity);
+  int get lines => linesCount ?? items.length;
+  bool get isPickup => deliveryOption == 'PICKUP';
+  bool get pickStarted => pickStartedFor(stage) || (stage == 'CANCELLED' && pick != null);
+  bool get invoiced => posInvoicedAt != null || stagesInvoicedOrLater.contains(stage);
+  bool get closed => status == 'CANCELLED' || status == 'REFUNDED' || stage == 'CANCELLED';
+
+  /// إلغاء من التطبيق: قبل الفوترة فقط.
+  bool get cancellable =>
+      !closed &&
+      !invoiced &&
+      (stage == null ? const {'PENDING', 'CONFIRMED', 'PROCESSING'}.contains(status) : stagesCancellable.contains(stage));
   String get addressLine => address == null
       ? ''
       : [

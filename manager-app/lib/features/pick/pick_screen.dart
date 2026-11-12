@@ -43,6 +43,13 @@ class _PickScreenState extends ConsumerState<PickScreen> {
   bool _offline = false;
   Timer? _retry;
 
+  // عرض فقط (لا يغيّر منطق المسح): التصفية، البحث، وآخر مسحة.
+  PickFilter _filter = PickFilter.all;
+  final _search = TextEditingController();
+  String _query = '';
+  ScanFlash? _flash;
+  Timer? _flashTimer;
+
   Repo get _repo => ref.read(repoProvider);
   bool get _isManager => ref.read(sessionProvider).me?.isAdmin == true;
 
@@ -57,8 +64,22 @@ class _PickScreenState extends ConsumerState<PickScreen> {
   void dispose() {
     ScannerBus.instance.pop(_onHardware);
     _retry?.cancel();
+    _flashTimer?.cancel();
+    _search.dispose();
     super.dispose();
   }
+
+  /// شريط آخر مسحة لثانيتين: اسم الصنف + لونه.
+  void _showFlash(String name, String color, String text) {
+    if (!mounted) return;
+    _flashTimer?.cancel();
+    setState(() => _flash = (name: name, color: color, text: text));
+    _flashTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _flash = null);
+    });
+  }
+
+  PickLine? _lineFor(PickView? v, String code) => v?.lines.where((l) => _sameCode(l.barcode, code)).firstOrNull;
 
   Future<void> _load() async {
     try {
@@ -126,7 +147,10 @@ class _PickScreenState extends ConsumerState<PickScreen> {
     // عرض فوري: القطعة المطابقة تُحسب على الشاشة قبل رد السيرفر.
     if (qty > 0) {
       final hit = v.ordered.where((l) => _sameCode(l.barcode, code) && l.pickedQty < l.orderedQty).firstOrNull;
-      if (hit != null) setState(() => _v = v.replaceLine(hit.withPicked(hit.pickedQty + 1)));
+      if (hit != null) {
+        setState(() => _v = v.replaceLine(hit.withPicked(hit.pickedQty + 1)));
+        _showFlash(hit.name, 'green', 'مطابق ${hit.pickedQty + 1}/${hit.orderedQty}');
+      }
     }
     final p = _PendingScan(code, qty);
     _queue.add(p);
@@ -165,6 +189,7 @@ class _PickScreenState extends ConsumerState<PickScreen> {
           _queue.removeAt(0);
           Prefs.instance.feedback(error: true);
           if (mounted) toast(context, e.message, error: true);
+          _showFlash(_lineFor(_v, p.barcode)?.name ?? p.barcode, 'red', e.message);
           if (!p.done.isCompleted) p.done.complete((message: e.message, error: true));
           await _load();
         } catch (e) {
@@ -180,6 +205,22 @@ class _PickScreenState extends ConsumerState<PickScreen> {
   }
 
   Future<ScanFeedback?> _afterScan(ScanOutcome r, _PendingScan p) async {
+    final line = _lineFor(r.view, p.barcode);
+    final name = line?.name ?? r.proposal?.name ?? p.barcode;
+    switch (r.result) {
+      case 'MATCHED':
+        _showFlash(name, 'green', line != null && !line.isExtra ? 'مطابق ${line.pickedQty}/${line.orderedQty}' : 'مطابق');
+      case 'EXTRA':
+        _showFlash(name, 'yellow', r.message.isEmpty ? 'إضافي' : r.message);
+      case 'REMOVED':
+        _showFlash(name, 'grey', r.message.isEmpty ? 'أُزيلت قطعة' : r.message);
+      case 'OVER':
+        _showFlash(name, 'yellow', 'العدد المطلوب مكتمل');
+      case 'EXTRA_PROPOSED':
+        _showFlash(name, 'yellow', 'ليس ضمن الطلب');
+      default:
+        _showFlash(name, 'red', r.message.isEmpty ? 'باركود غير معروف' : r.message);
+    }
     switch (r.result) {
       case 'MATCHED':
       case 'EXTRA':
@@ -229,6 +270,7 @@ class _PickScreenState extends ConsumerState<PickScreen> {
       if (!mounted) return null;
       setState(() => _v = nv);
       Prefs.instance.feedback();
+      _showFlash(proposal.name, 'yellow', choice.charge == 'FREE' ? '+1 إضافي (هدية)' : '+1 إضافي');
       final msg = '+1 إضافي: ${proposal.name}${choice.charge == 'FREE' ? ' (هدية)' : ''}';
       toast(context, msg);
       return (message: msg, error: false);
@@ -381,59 +423,125 @@ class _PickScreenState extends ConsumerState<PickScreen> {
           ],
         ),
         bottomNavigationBar: _bottomBar(v, mine),
-        body: RefreshIndicator(
-          onRefresh: _load,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 30),
-            children: [
-              if (_offline || _queue.isNotEmpty) _offlineBanner(),
-              PickProgressPanel(view: v),
-              if (v.isGift || (v.notes ?? '').isNotEmpty) ...[const SizedBox(height: 10), PickNotesPanel(view: v)],
-              if (!mine && v.picking) ...[
-                const SizedBox(height: 10),
-                Panel(
-                  color: AppColors.warningSoft,
-                  child: Text('يجهّزه ${v.pickerName ?? 'موظف آخر'} الآن', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.warning)),
-                ),
-              ],
-              SectionTitle('أصناف الطلب', subtitle: v.picking ? 'اضغط على الصنف لتعديله يدوياً أو لتسجيل سبب النقص' : null),
-              Panel(
-                padding: EdgeInsets.zero,
-                child: Column(
+        body: Column(
+          children: [
+            // الرأس الثابت أثناء التجهيز (وقبل بدئه): التقدم وآخر مسحة لا يختفيان مع التمرير.
+            if (!_done(v)) PickStickyHeader(view: v, flash: _flash),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _load,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
                   children: [
-                    for (var i = 0; i < v.ordered.length; i++) ...[
-                      if (i > 0) const Divider(height: 1, indent: 76),
-                      PickLineTile(line: v.ordered[i], onTap: v.picking ? () => _editLine(v.ordered[i]) : null),
+                    if (_offline || _queue.isNotEmpty) _offlineBanner(),
+                    if (_done(v)) ...[PickFinishedSummary(view: v), const SizedBox(height: 10)],
+                    if (v.isGift || (v.notes ?? '').isNotEmpty) ...[PickNotesPanel(view: v), const SizedBox(height: 10)],
+                    if (!mine && v.picking) ...[
+                      Panel(
+                        color: AppColors.warningSoft,
+                        child: Text(
+                          'يجهّزه ${v.pickerName ?? 'موظف آخر'} الآن',
+                          style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.warning),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                     ],
+                    ..._linesSection(v),
+                    const SectionTitle('المبلغ'),
+                    PickMoneyPanel(view: v),
                   ],
                 ),
               ),
-              if (v.extras.isNotEmpty) ...[
-                const SectionTitle('أصناف إضافية'),
-                Panel(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < v.extras.length; i++) ...[
-                        if (i > 0) const Divider(height: 1, indent: 76),
-                        PickLineTile(
-                          line: v.extras[i],
-                          substituteFor: v.ordered.where((l) => l.id == v.extras[i].substituteForLineId).firstOrNull?.name,
-                          onTap: v.picking ? () => _editLine(v.extras[i]) : null,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-              const SectionTitle('المبلغ'),
-              PickMoneyPanel(view: v),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  /// انتهى التجهيز (بانتظار الكاشير أو بعده): ملخص في الأعلى بدل رأس التقدم.
+  bool _done(PickView v) => !v.startable && !v.picking && v.stage != 'CANCELLED';
+
+  bool _matches(PickLine l) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return l.name.toLowerCase().contains(q) || (l.shadeName ?? '').toLowerCase().contains(q) || (l.barcode ?? '').contains(normalizeCode(q));
+  }
+
+  /// الأسطر مع التصفية (الكل/المتبقي/الناقص/الإضافي) والبحث للطلبات الكبيرة.
+  List<Widget> _linesSection(PickView v) {
+    final ordered = switch (_filter) {
+      PickFilter.all => v.ordered,
+      PickFilter.remaining => v.remainingLines,
+      PickFilter.short => v.redLines,
+      PickFilter.extra => const <PickLine>[],
+    }.where(_matches).toList();
+    final extras = _filter == PickFilter.all || _filter == PickFilter.extra ? v.extras.where(_matches).toList() : const <PickLine>[];
+    return [
+      PickFilterBar(view: v, value: _filter, onChanged: (f) => setState(() => _filter = f)),
+      if (v.lines.length > 8) ...[
+        const SizedBox(height: 8),
+        TextField(
+          controller: _search,
+          onChanged: (s) => setState(() => _query = s),
+          decoration: InputDecoration(
+            hintText: 'ابحث بالاسم أو اللون أو الباركود',
+            prefixIcon: const Icon(Icons.search_rounded),
+            isDense: true,
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () => setState(() {
+                      _search.clear();
+                      _query = '';
+                    }),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+          ),
+        ),
+      ],
+      if (_filter != PickFilter.extra)
+        SectionTitle('أصناف الطلب', subtitle: v.picking ? 'اضغط على الصنف لتعديله يدوياً أو لتسجيل سبب النقص' : null),
+      if (_filter != PickFilter.extra && ordered.isNotEmpty)
+        Panel(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (var i = 0; i < ordered.length; i++) ...[
+                if (i > 0) const Divider(height: 1, indent: 76),
+                PickLineTile(line: ordered[i], onTap: v.picking ? () => _editLine(ordered[i]) : null),
+              ],
+            ],
+          ),
+        ),
+      if (_filter != PickFilter.extra && ordered.isEmpty) _emptyFilter(),
+      if (extras.isNotEmpty || _filter == PickFilter.extra) ...[
+        const SectionTitle('أصناف إضافية'),
+        if (extras.isEmpty)
+          _emptyFilter()
+        else
+          Panel(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (var i = 0; i < extras.length; i++) ...[
+                  if (i > 0) const Divider(height: 1, indent: 76),
+                  PickLineTile(
+                    line: extras[i],
+                    substituteFor: v.ordered.where((l) => l.id == extras[i].substituteForLineId).firstOrNull?.name,
+                    onTap: v.picking ? () => _editLine(extras[i]) : null,
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    ];
+  }
+
+  Widget _emptyFilter() => const Panel(
+    child: Text('لا أصناف هنا', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+  );
 
   Widget _offlineBanner() => Padding(
     padding: const EdgeInsets.only(bottom: 10),

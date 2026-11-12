@@ -12,7 +12,9 @@ import '../../data/admin_repo.dart';
 import '../admin/store_admin_screens.dart';
 import '../catalog/create_product_screen.dart';
 import '../catalog/pos_missing_screen.dart';
+import '../../data/order_flow.dart';
 import '../drafts/groups_screen.dart';
+import '../orders/orders_screen.dart';
 import '../product/product_screen.dart';
 import '../sales/sales_screen.dart';
 import '../scan/lookup_flow.dart';
@@ -73,6 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(activityProvider);
           ref.invalidate(salesProvider);
           ref.invalidate(healthProvider);
+          ref.invalidate(orderCountsProvider);
           setState(() {});
           try {
             await ref.read(statsProvider.future);
@@ -180,6 +183,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   const SizedBox(height: 14),
                   _TodayRow(onOpenOrders: widget.onOpenOrders),
+                  const SizedBox(height: 10),
+                  const _AppOrdersPanel(),
                   const SizedBox(height: 10),
                   Row(
                     children: [
@@ -487,6 +492,103 @@ class _TodayRow extends ConsumerWidget {
         const SizedBox(width: 10),
         Expanded(child: ordersCard),
       ],
+    );
+  }
+}
+
+/// «طلبات التطبيق»: عدد الطلبات في كل مرحلة مهمة — الضغط يفتح التبويب نفسه في الطلبات.
+class _AppOrdersPanel extends ConsumerWidget {
+  const _AppOrdersPanel();
+
+  static const _items = [
+    (tabToPick, Icons.inventory_2_outlined, AppColors.info),
+    (tabPicking, Icons.qr_code_scanner_rounded, AppColors.primary),
+    (tabCashier, Icons.point_of_sale_rounded, Color(0xFF0E9AA7)),
+    (tabCourier, Icons.local_shipping_outlined, Color(0xFF4F56C8)),
+    (tabIssues, Icons.report_problem_outlined, AppColors.danger),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final counts = ref.watch(orderCountsProvider).valueOrNull;
+    // سيرفر أقدم بلا أعداد المراحل؟ لا نعرض لوحة فارغة.
+    if (counts == null || !counts.keys.any((k) => k.startsWith('stage:'))) return const SizedBox.shrink();
+    return Panel(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(4, 0, 4, 10),
+            child: Row(
+              children: [
+                Icon(Icons.shopping_bag_outlined, size: 20, color: AppColors.primary),
+                SizedBox(width: 8),
+                Expanded(child: Text('طلبات التطبيق', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))),
+              ],
+            ),
+          ),
+          LayoutBuilder(
+            builder: (context, c) {
+              const gap = 8.0;
+              final w = (c.maxWidth - gap * 2) / 3;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final (tab, icon, color) in _items)
+                    SizedBox(
+                      width: w,
+                      child: _stageCount(context, tab, icon, color, tab.countIn(counts) ?? 0),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stageCount(BuildContext context, OrderTab tab, IconData icon, Color color, int n) {
+    final alert = tab == tabIssues && n > 0;
+    final active = n > 0;
+    return Material(
+      color: alert ? AppColors.dangerSoft : (active ? color.withValues(alpha: .08) : AppColors.scaffold),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => OrdersScreen(initialStatus: tab.key))),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: active ? color : AppColors.muted),
+                  const Spacer(),
+                  Text(
+                    numFmt(n),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: active ? color : AppColors.muted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              // ارتفاع ثابت لسطرين: البطاقات متساوية مهما طال الاسم.
+              SizedBox(
+                height: 31,
+                child: Text(
+                  tab == tabIssues ? 'مشاكل' : tab.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, height: 1.3),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -170,6 +170,20 @@ class PickView {
   int get pickedUnits => ordered.fold(0, (n, l) => n + l.pickedQty.clamp(0, l.orderedQty));
   int get orderedUnits => ordered.fold(0, (n, l) => n + l.orderedQty);
 
+  /// ما سيُسلَّم فعلاً: المطابق حتى المطلوب + الإضافي.
+  int get deliverUnits => pickedUnits + extraUnits;
+
+  /// البنود التي فيها شيء سيُسلَّم.
+  int get deliverLines => lines.where((l) => l.pickedQty > 0).length;
+  int get missingUnits => ordered.fold(0, (n, l) => n + l.missingQty);
+  int get extraUnits => extras.fold(0, (n, l) => n + l.pickedQty);
+
+  /// الأسطر الحمراء (نقص مسجّل) — بعد الإنهاء تصبح كل الناقصة حمراء.
+  List<PickLine> get redLines => ordered.where((l) => l.color == 'red').toList();
+
+  /// لم تكتمل بعد ولم يُسجَّل نقصها.
+  List<PickLine> get remainingLines => ordered.where((l) => l.pickedQty < l.orderedQty && l.color != 'red').toList();
+
   PickView replaceLine(PickLine line) => PickView._(order, [for (final l in lines) l.id == line.id ? line : l], counts, money, canFinish);
 }
 
@@ -201,13 +215,17 @@ class ExtraProposal {
 
 class TimelineEntry {
   TimelineEntry.fromJson(Map<String, dynamic> j)
-    : type = '${j['type']}',
+    : id = '${j['id'] ?? ''}',
+      type = '${j['type']}',
       label = '${j['label'] ?? j['type']}',
+      actorType = _str(j['actorType']),
       actorName = _str(j['actorName']),
       data = j['data'] is Map ? Map<String, dynamic>.from(j['data']) : const {},
       at = parseDate(j['at']);
-  final String type, label;
-  final String? actorName;
+  final String id, type, label;
+
+  /// STAFF | CASHIER | SYSTEM | COURIER | CUSTOMER
+  final String? actorType, actorName;
   final Map<String, dynamic> data;
   final DateTime? at;
 }

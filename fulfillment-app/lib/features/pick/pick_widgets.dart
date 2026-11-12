@@ -82,59 +82,111 @@ class PickLineTile extends StatelessWidget {
   }
 }
 
-/// شريط التقدم: كم قطعة مُسحت من المطلوب، وعدّاد كل لون.
-class PickProgressPanel extends StatelessWidget {
-  const PickProgressPanel({super.key, required this.view});
+/// «3 / 7 قطع» — المعدود يتبع العدد الكلي.
+String progressLabel(int done, int all) {
+  final r = all % 100;
+  return '${numFmt(done)} / ${numFmt(all)} ${r >= 3 && r <= 10 ? 'قطع' : 'قطعة'}';
+}
+
+/// آخر مسحة: اسم الصنف ولونه (أخضر/أصفر/أحمر/رمادي) — يظهر ثانيتين.
+typedef ScanFlash = ({String name, String color, String text});
+
+/// الرأس الثابت أثناء التجهيز: التقدم بخط كبير، شريط التقدم، عدّاد كل لون، وآخر مسحة.
+class PickStickyHeader extends StatelessWidget {
+  const PickStickyHeader({super.key, required this.view, this.flash});
   final PickView view;
+  final ScanFlash? flash;
 
   @override
   Widget build(BuildContext context) {
     final done = view.pickedUnits;
     final all = view.orderedUnits;
     final full = done >= all && all > 0;
+    final notStarted = view.startable && !view.picking;
     final matched = view.ordered.where((l) => l.color == 'green').length;
     final short = view.ordered.where((l) => l.color == 'red').length;
     final pending = view.ordered.where((l) => l.color == 'grey').length;
-    return Panel(
+    final barColor = full ? AppColors.success : AppColors.primary;
+    return Material(
       color: full ? AppColors.successSoft : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  view.startable && !view.picking
-                      ? 'لم يبدأ التجهيز — ${numFmt(all)} قطعة'
-                      : full
-                      ? 'كل القطع المطلوبة ممسوحة ✓'
-                      : 'مُسح ${numFmt(done)} من ${numFmt(all)} قطعة',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: full ? AppColors.success : AppColors.ink),
+      elevation: 1.5,
+      shadowColor: Colors.black26,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Text(
+                    notStarted ? 'لم يبدأ التجهيز' : progressLabel(done, all),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: notStarted ? 18 : 26, height: 1.1, color: full ? AppColors.success : AppColors.ink),
+                  ),
                 ),
-              ),
-              if (view.pickerName != null)
-                Text(view.pickerName!, style: const TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: all == 0 ? 0 : done / all,
-            minHeight: 7,
-            borderRadius: BorderRadius.circular(4),
-            color: full ? AppColors.success : AppColors.primary,
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _count('مطابق', matched, 'green'),
-              if (short > 0) _count('ناقص', short, 'red'),
-              if (pending > 0) _count('لم يُمسح', pending, 'grey'),
-              if (view.extras.isNotEmpty) _count('إضافي', view.extras.length, 'yellow'),
-              if (view.parcelCount != null && view.finished)
-                Pill('${view.parcelCount} كيس', color: AppColors.primary, bg: AppColors.primarySoft, icon: Icons.shopping_bag_outlined),
-            ],
+                if (full)
+                  const Padding(
+                    padding: EdgeInsetsDirectional.only(start: 8),
+                    child: Pill('اكتمل المطلوب', color: AppColors.success, bg: Colors.white, icon: Icons.check_circle_rounded),
+                  )
+                else if (view.pickerName != null)
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 8),
+                      child: Text(
+                        view.pickerName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: all == 0 ? 0 : done / all, minHeight: 9, borderRadius: BorderRadius.circular(5), color: barColor),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _count('مطابق', matched, 'green'),
+                if (short > 0) _count('ناقص', short, 'red'),
+                if (pending > 0) _count('لم يُمسح', pending, 'grey'),
+                if (view.extras.isNotEmpty) _count('إضافي', view.extras.length, 'yellow'),
+              ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              child: flash == null ? const SizedBox(width: double.infinity) : _flash(flash!),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _flash(ScanFlash f) {
+    final c = pickColor(f.color);
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.fg.withValues(alpha: .5))),
+      child: Row(
+        children: [
+          Icon(c.icon, color: c.fg, size: 26),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(f.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(f.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.fg, fontWeight: FontWeight.w800, fontSize: 12.5)),
+              ],
+            ),
           ),
         ],
       ),
@@ -143,7 +195,163 @@ class PickProgressPanel extends StatelessWidget {
 
   Widget _count(String label, int n, String color) {
     final c = pickColor(color);
-    return Pill('$label: $n', color: c.fg, bg: c.bg, icon: c.icon);
+    return Pill('$label: $n', color: c.fg, bg: c.bg, icon: c.icon, small: true);
+  }
+}
+
+/// تصفية الأسطر: الكل / المتبقي / الناقص / الإضافي.
+enum PickFilter { all, remaining, short, extra }
+
+class PickFilterBar extends StatelessWidget {
+  const PickFilterBar({super.key, required this.view, required this.value, required this.onChanged});
+  final PickView view;
+  final PickFilter value;
+  final ValueChanged<PickFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (PickFilter.all, 'الكل', view.lines.length, null),
+      (PickFilter.remaining, 'المتبقي', view.remainingLines.length, 'grey'),
+      (PickFilter.short, 'الناقص', view.redLines.length, 'red'),
+      (PickFilter.extra, 'الإضافي', view.extras.length, 'yellow'),
+    ];
+    return SizedBox(
+      height: 40,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final (f, label, n, color) in items)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: ChoiceChip(
+                  showCheckmark: false,
+                  selected: value == f,
+                  selectedColor: color == null ? AppColors.primarySoft : pickColor(color).bg,
+                  avatar: color == null ? null : Icon(pickColor(color).icon, size: 16, color: pickColor(color).fg),
+                  label: Text('$label  ${numFmt(n)}'),
+                  onSelected: (_) => onChanged(f),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ملخص بعد إنهاء التجهيز: الإجمالي النهائي، ما يُحصَّل، الأكياس، النواقص والإضافات.
+class PickFinishedSummary extends StatelessWidget {
+  const PickFinishedSummary({super.key, required this.view});
+  final PickView view;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = view;
+    final m = v.money;
+    final short = v.ordered.where((l) => l.missingQty > 0).toList();
+    final extras = v.extras.where((l) => l.pickedQty > 0).toList();
+    return Panel(
+      color: AppColors.successSoft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.task_alt_rounded, color: AppColors.success, size: 28),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      v.finished ? (v.stage == 'READY_FOR_PICKUP' ? 'تم التجهيز — جاهز للاستلام' : 'تم التجهيز') : 'تم التجهيز · ${stageLabels[v.stage] ?? v.stage}',
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppColors.success),
+                    ),
+                    Text(
+                      [
+                        'سيُسلَّم ${piecesLabel(v.deliverUnits)}',
+                        if (v.pickerName != null) v.pickerName!,
+                      ].join(' · '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _stat('الإجمالي النهائي', money(m.finalTotal), AppColors.ink),
+              _stat('يُحصَّل', m.codAmount == 0 ? 'مدفوع' : money(m.codAmount), AppColors.primary),
+              if (v.parcelCount != null) _stat('الأكياس', numFmt(v.parcelCount), AppColors.primary),
+            ],
+          ),
+          if (short.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _list('ناقص ${piecesLabel(v.missingUnits)}', 'red', [
+              for (final l in short) '${l.name} × ${l.missingQty}${(l.reason ?? '').isNotEmpty ? ' — ${l.reason}' : ''}',
+            ]),
+          ],
+          if (extras.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _list('إضافي ${piecesLabel(v.extraUnits)}', 'yellow', [
+              for (final l in extras) '${l.name} × ${l.pickedQty}${l.isFree ? ' (هدية)' : ''}',
+            ]),
+          ],
+          if (m.prepaid && m.refundAmount > 0) ...[
+            const SizedBox(height: 8),
+            Text('يُسترجع للزبونة ${money(m.refundAmount)}', style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w800)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(String label, String value, Color color) => Container(
+    constraints: const BoxConstraints(minWidth: 96),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 11.5)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: color)),
+      ],
+    ),
+  );
+
+  Widget _list(String title, String color, List<String> rows) {
+    final c = pickColor(color);
+    return Container(
+      padding: const EdgeInsets.all(10),
+      // حد جانبي ملوّن (بلا زوايا مدوّرة: الحد غير المتساوي لا يقبلها).
+      decoration: BoxDecoration(color: Colors.white, border: BorderDirectional(start: BorderSide(color: c.fg, width: 4))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(c.icon, color: c.fg, size: 18),
+              const SizedBox(width: 6),
+              Expanded(child: Text(title, style: TextStyle(color: c.fg, fontWeight: FontWeight.w900))),
+            ],
+          ),
+          for (final r in rows)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text(r, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, height: 1.4)),
+            ),
+        ],
+      ),
+    );
   }
 }
 

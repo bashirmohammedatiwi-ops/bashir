@@ -74,3 +74,21 @@ bool looksLikeBarcode(String raw) {
   final digits = n.replaceAll(RegExp(r'\D'), '');
   return digits.length >= 6 || RegExp(r'^[A-Za-z0-9_\-./+]+$').hasMatch(n) && digits.length >= 4;
 }
+
+/// المعدود بعد العدد: 1 مفرد بلا رقم، 2 مثنى، 3–10 جمع، 11–99 مفرد منصوب، والمئات مفرد مجرور.
+String _counted(int n, {required String one, required String two, required String few, required String many, required String hundred}) {
+  if (n == 1) return one;
+  if (n == 2) return two;
+  final r = n % 100;
+  if (r >= 3 && r <= 10) return '${numFmt(n)} $few';
+  if (n == 0 || (r == 0 && n >= 100) || (n > 100 && r <= 2)) return '${numFmt(n)} $hundred';
+  return '${numFmt(n)} $many';
+}
+
+/// «قطعة واحدة، قطعتان، 3 قطع، 11 قطعة». genitive للمثنى بعد حرف جر: «من قطعتين».
+String piecesLabel(int n, {bool genitive = false}) =>
+    _counted(n, one: 'قطعة واحدة', two: genitive ? 'قطعتين' : 'قطعتان', few: 'قطع', many: 'قطعة', hundred: 'قطعة');
+
+/// «بند واحد، بندان، 4 بنود، 12 بنداً». genitive للمثنى بعد حرف جر: «في بندين».
+String linesLabel(int n, {bool genitive = false}) =>
+    _counted(n, one: 'بند واحد', two: genitive ? 'بندين' : 'بندان', few: 'بنود', many: 'بنداً', hundred: 'بند');

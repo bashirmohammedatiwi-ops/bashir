@@ -125,15 +125,24 @@ class Pill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: EdgeInsets.symmetric(horizontal: small ? 7 : 10, vertical: small ? 2 : 4),
     decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[Icon(icon, size: small ? 12 : 14, color: color), const SizedBox(width: 4)],
-        Text(
-          text,
-          style: TextStyle(color: color, fontSize: small ? 11 : 12.5, fontWeight: FontWeight.w700, height: 1.3),
-        ),
-      ],
+    // نص واحد بسطر واحد: الاسم الطويل يُختصر بنقاط داخل Wrap أو عمود ضيق بدل أن يفيض.
+    child: Text.rich(
+      TextSpan(
+        children: [
+          if (icon != null)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(end: 4),
+                child: Icon(icon, size: small ? 12 : 14, color: color),
+              ),
+            ),
+          TextSpan(text: text),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(color: color, fontSize: small ? 11 : 12.5, fontWeight: FontWeight.w700, height: 1.3),
     ),
   );
 }

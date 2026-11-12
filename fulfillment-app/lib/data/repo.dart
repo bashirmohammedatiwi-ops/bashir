@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api.dart';
 import 'models.dart';
+import 'order_flow.dart';
 import 'pick_models.dart';
 
+export 'order_flow.dart';
 export 'pick_models.dart';
 
 final apiProvider = Provider<Api>((ref) => Api());
@@ -84,8 +86,14 @@ class Repo {
 
   Future<OrderDetail> order(String id) => api.get('/control/orders/$id', map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)));
 
-  Future<OrderDetail> setOrderStatus(String id, String status) =>
-      api.patch('/control/orders/$id/status', data: {'status': status}, map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)));
+  Future<OrderDetail> setOrderStatus(String id, String status, {String? reason}) => api.patch(
+    '/control/orders/$id/status',
+    data: {'status': status, if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim()},
+    map: (b) => OrderDetail.fromJson(Map<String, dynamic>.from(b)),
+  );
+
+  /// شحنة هاي إكسبريس (null = لم تُنشأ بعد).
+  Future<ShipmentInfo?> shipment(String id) => api.get('/control/orders/$id/shipment', map: ShipmentInfo.tryParse);
 
   // ---------------- picking (التجهيز بالمسح — محفوظ في السيرفر)
 
