@@ -387,6 +387,24 @@ async function main() {
     await rejects(svc.productInfo(o7.id, "000000-none").then((r) => { if (!r.found) throw new Error("غير موجود"); }), "غير موجود");
   });
 
+  await test("legacy PICKING order with no lines: view creates real lines; a preview-N id from an old screen still works", async () => {
+    const o8 = await makeOrder(s, { status: OrderStatus.PROCESSING });
+    await prisma.order.update({ where: { id: o8.id }, data: { fulfillmentStage: FulfillmentStage.PICKING } });
+    // شاشة قديمة فُتحت قبل إنشاء الأسطر: «✓» على البند الأول بمعرّف preview-0.
+    const preview = (await prisma.orderItem.findMany({ where: { orderId: o8.id }, orderBy: { id: "asc" } }))[0];
+    let v = await svc.patchLine(o8.id, "preview-0", staff, { pickedQty: 1 });
+    assert.ok(v.lines.every((l) => !l.id.startsWith("preview-")), "real ids");
+    const hit = await prisma.orderPickLine.findFirstOrThrow({ where: { orderId: o8.id, orderItemId: preview.id } });
+    assert.equal(hit.pickedQty, 1);
+    // الطلب التالي: العرض نفسه ينشئ الأسطر.
+    const o9 = await makeOrder(s, { status: OrderStatus.PROCESSING });
+    await prisma.order.update({ where: { id: o9.id }, data: { fulfillmentStage: FulfillmentStage.PICKING } });
+    v = await svc.view(o9.id);
+    assert.ok(v.lines.length === 3 && v.lines.every((l) => !l.id.startsWith("preview-")));
+    v = await svc.patchLine(o9.id, v.lines.find((l) => l.name === "كريم يد")!.id, staff, { pickedQty: 1 });
+    assert.equal(v.lines.find((l) => l.name === "كريم يد")!.collected, true);
+  });
+
   await test("slip: sorted lines, no prices, QR code is the order number", async () => {
     const slip = await svc.slip(order.id);
     assert.equal(slip.code, order.orderNumber);

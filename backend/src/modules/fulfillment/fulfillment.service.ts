@@ -129,6 +129,14 @@ export class FulfillmentService {
       include: { coupon: { select: { type: true, value: true, maxDiscount: true, code: true } } },
     });
     if (!order) throw new NotFoundException("الطلب غير موجود");
+    // طلب «قيد التجهيز» بلا أسطر (نُقل لـ«قيد التحضير» قبل النظام الجديد أو من قائمة الحالة):
+    // تُنشأ أسطره الآن فتكون معرّفاتها حقيقية يُعدَّل عليها مباشرة.
+    if (order.fulfillmentStage === FulfillmentStage.PICKING && !(await this.prisma.orderPickLine.count({ where: { orderId } }))) {
+      await this.prisma.$transaction(async (tx) => {
+        await this.lockOrder(tx, orderId);
+        await this.ensureLines(tx, orderId);
+      });
+    }
     let lines = await this.prisma.orderPickLine.findMany({
       where: { orderId },
       orderBy: [{ kind: "asc" }, { createdAt: "asc" }],
@@ -366,6 +374,7 @@ export class FulfillmentService {
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
       this.assertPicker(o, actor);
+      await this.ensureLines(tx, orderId);
       if (dto.clientScanId) {
         const dup = await tx.orderScan.findUnique({
           where: { orderId_clientScanId: { orderId, clientScanId: dto.clientScanId } },
@@ -453,6 +462,7 @@ export class FulfillmentService {
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
       this.assertPicker(o, actor);
+      await this.ensureLines(tx, orderId);
       if (dto.clientScanId) {
         const dup = await tx.orderScan.findUnique({
           where: { orderId_clientScanId: { orderId, clientScanId: dto.clientScanId } },
@@ -530,11 +540,13 @@ export class FulfillmentService {
     return this.view(orderId);
   }
 
-  async patchLine(orderId: string, lineId: string, actor: Actor, dto: PickLinePatchDto) {
+  async patchLine(orderId: string, rawLineId: string, actor: Actor, dto: PickLinePatchDto) {
     const name = await this.actorName(actor);
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
       this.assertPicker(o, actor);
+      await this.ensureLines(tx, orderId);
+      const lineId = await this.resolveLineId(tx, orderId, rawLineId);
       const line = await tx.orderPickLine.findFirst({ where: { id: lineId, orderId } });
       if (!line) throw new NotFoundException("السطر غير موجود");
       const data: Prisma.OrderPickLineUpdateInput = { updatedById: actor.id };
@@ -591,6 +603,7 @@ export class FulfillmentService {
       const o = await this.lockOrder(tx, orderId);
       this.assertPicker(o, actor);
       if (o.fulfillmentStage !== FulfillmentStage.PICKING) throw new ConflictException("الطلب ليس قيد التجهيز");
+      await this.ensureLines(tx, orderId);
 
       for (const r of dto.reasons ?? []) {
         if (!r.reason.trim()) continue;
@@ -951,6 +964,28 @@ export class FulfillmentService {
     }
   }
 
+  /** ينشئ أسطر التجهيز إن لم تكن موجودة (داخل معاملة مقفلة على الطلب). */
+  private async ensureLines(tx: Tx, orderId: string) {
+    if (await tx.orderPickLine.count({ where: { orderId } })) return;
+    const lines = await this.linesFromItems(tx, orderId);
+    if (lines.length) await tx.orderPickLine.createMany({ data: lines.map((l) => ({ ...l, orderId })) });
+  }
+
+  /**
+   * معرّف سطر من التطبيق: الحقيقي كما هو، و«preview-N» (عرض ما قبل إنشاء الأسطر) يُترجم للسطر
+   * المقابل لبند الطلب رقم N — فلا يفشل تعديل أُرسل من شاشة فُتحت قبل إنشاء الأسطر.
+   */
+  private async resolveLineId(tx: Tx, orderId: string, lineId: string) {
+    const m = /^preview-(\d+)$/.exec(lineId);
+    if (!m) return lineId;
+    await this.ensureLines(tx, orderId);
+    const items = await tx.orderItem.findMany({ where: { orderId }, orderBy: { id: "asc" }, select: { id: true } });
+    const item = items[Number(m[1])];
+    if (!item) return lineId;
+    const line = await tx.orderPickLine.findFirst({ where: { orderId, orderItemId: item.id }, select: { id: true } });
+    return line?.id ?? lineId;
+  }
+
   /** أسطر التجهيز من أسطر الطلب: الباركود والاسم كما كانا وقت الطلب إن حُفظا. */
   private async linesFromItems(db: Tx | PrismaService, orderId: string) {
     const items = await db.orderItem.findMany({
@@ -1073,6 +1108,7 @@ export class FulfillmentService {
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
       this.assertPicker(o, actor);
+      await this.ensureLines(tx, orderId);
       if (dto.clientScanId) {
         const dup = await tx.orderScan.findUnique({ where: { orderId_clientScanId: { orderId, clientScanId: dto.clientScanId } } });
         if (dup) {
