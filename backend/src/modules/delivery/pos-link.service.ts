@@ -337,7 +337,12 @@ export class PosLinkService {
     const sh = await this.prisma.shipment.findFirst({ where: { orderId: o.id }, orderBy: { createdAt: "desc" } });
     if (!sh?.trackingNumber) throw new ConflictException("رقم التتبع لم يصل بعد من هاي إكسبريس — اطبع الملصق حين يصل");
     const res = await this.shipments.label(o.id);
-    return { ...res, orderNumber: o.orderNumber, parcelCount: o.parcelCount ?? 1 };
+    // مواد الطلب كما ستُسلَّم (لجدول «منتج — عدد» على الملصق): الاسم مع اللون، والعدد مجمّعاً لكل اسم.
+    const view = await this.fulfillment.view(o.id);
+    const merged = new Map<string, number>();
+    for (const i of this.receipt(o, view.lines).items) merged.set(i.name, (merged.get(i.name) ?? 0) + i.qty);
+    const items = [...merged.entries()].map(([name, qty]) => ({ name, qty }));
+    return { ...res, orderNumber: o.orderNumber, parcelCount: o.parcelCount ?? 1, items };
   }
 
   /**
