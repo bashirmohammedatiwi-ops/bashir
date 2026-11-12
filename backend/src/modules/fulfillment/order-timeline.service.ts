@@ -24,7 +24,7 @@ export const TIMELINE_LABEL_AR: Record<string, string> = {
   PICK_FINISHED: "انتهى التجهيز",
   PICK_REOPENED: "أُعيد فتح التجهيز",
   STATUS_CHANGED: "تغيّرت الحالة",
-  POS_EDIT: "عدّل كاشير الطلبات الأصناف",
+  POS_EDIT: "عدّل كاشير الطلبات الطلب",
   INVOICED: "فُوتر في كاشير الطلبات",
   PICKUP_HANDED: "سُلّم للزبونة في المحل",
   POS_RETURN: "إيصال إرجاع في المحل",

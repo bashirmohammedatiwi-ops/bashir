@@ -96,6 +96,8 @@ export interface OrderMoneyInput {
   coupon?: { type: CouponType; value: number; maxDiscount: number | null } | null;
   /** خصم يدوي من كاشير الطلبات (بالدينار) — على الأصناف فقط، لا على التوصيل. */
   manualDiscount?: number;
+  /** «فاتورة هدية»: الخصم اليدوي = كل قيمة الأصناف بعد خصومها (يبقى التوصيل والتغليف). */
+  gift?: boolean;
 }
 
 export interface PickPolicy {
@@ -205,7 +207,8 @@ export function computePickMoney(order: OrderMoneyInput, lines: PickLineInput[],
   const finalDiscountTotal = packageDiscount + couponDiscount;
   const loyaltyDiscount = Math.max(0, order.loyaltyDiscount);
   // خصم الكاشير لا يتجاوز قيمة الأصناف بعد خصومها (التوصيل يبقى كاملاً).
-  const manualDiscount = Math.max(0, Math.min(int(order.manualDiscount ?? 0), Math.max(0, finalSubtotal - finalDiscountTotal - loyaltyDiscount)));
+  const itemsAfterDiscounts = Math.max(0, finalSubtotal - finalDiscountTotal - loyaltyDiscount);
+  const manualDiscount = order.gift ? itemsAfterDiscounts : Math.max(0, Math.min(int(order.manualDiscount ?? 0), itemsAfterDiscounts));
   const totalBeforeRounding = Math.max(
     0,
     finalSubtotal - finalDiscountTotal + order.shippingTotal + order.giftWrapFee - loyaltyDiscount - manualDiscount,

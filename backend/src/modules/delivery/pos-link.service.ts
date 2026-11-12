@@ -195,6 +195,8 @@ export class PosLinkService {
         // خصم كاشير الطلبات اليدوي (بالدينار) وسببه.
         cashierDiscount: o.cashierDiscount,
         cashierDiscountNote: o.cashierDiscountNote,
+        // «فاتورة هدية»: إيصال المحل من نوع هدية، والأصناف بلا مقابل.
+        cashierGift: o.cashierGift,
       },
       customer: {
         name: o.shipFullName,
@@ -212,7 +214,8 @@ export class PosLinkService {
       // خيارات التوصيل (نوع الشحنة عند هاي إكسبريس وغيرها) — يعدّلها الكاشير.
       courier: await this.courierInfo(o),
       money: view.money,
-      receipt: this.receipt(o, view.lines),
+      // giftDiscount: ما غطّته «فاتورة الهدية» من الخصم — إيصال الهدية في المحل بلا هذا الجزء.
+      receipt: { ...this.receipt(o, view.lines), giftDiscount: o.cashierGift ? view.money.manualDiscount : 0 },
       blockers,
       canInvoice: blockers.length === 0 && !o.posInvoicedAt && (o.fulfillmentStage === FulfillmentStage.PICKED || o.fulfillmentStage === FulfillmentStage.READY_FOR_PICKUP),
       invoiced: o.posInvoicedAt
@@ -253,8 +256,12 @@ export class PosLinkService {
   async edit(
     codeOrId: string,
     dto: {
-      op: "add" | "set" | "discount";
+      op: "add" | "set" | "discount" | "price" | "gift";
       amount?: number;
+      /** gift: «فاتورة هدية» قبل الفوترة. */
+      gift?: boolean;
+      /** price: سعر القطعة الجديد للسطر. */
+      unitPrice?: number;
       barcode?: string;
       qty?: number;
       charge?: "PAID" | "FREE";
@@ -395,7 +402,9 @@ export class PosLinkService {
       // سيرفر المحل 2.6.5+: أجور التوصيل والتغليف خارج فاتورة المحل (ضمن مبلغ شركة التوصيل فقط) —
       // فيُقبل مجموع الإيصال كاملاً (نسخ أقدم) أو بلا الأجور.
       const productsOnly = expected - o.shippingTotal - o.giftWrapFee;
-      if (Math.round(ref.total) !== expected && Math.round(ref.total) !== productsOnly) {
+      // «فاتورة هدية»: إيصال المحل هدية — لا يُحصّل منه شيء (يرسل 0).
+      const giftOk = o.cashierGift && Math.round(ref.total) === 0;
+      if (!giftOk && Math.round(ref.total) !== expected && Math.round(ref.total) !== productsOnly) {
         throw new ConflictException(`مجموع الإيصال ${ref.total} لا يساوي مبلغ الطلب ${expected} (أو ${productsOnly} بلا أجور التوصيل) — أعد فتح الطلب في الكاشير`);
       }
       await tx.order.update({
@@ -489,6 +498,7 @@ export class PosLinkService {
         isGift: o.isGift,
         giftMessage: o.giftMessage,
         giftHidePrices: o.giftHidePrices,
+        cashierGift: o.cashierGift,
         notes: o.notes,
         parcelCount: o.parcelCount ?? 1,
         receiptNumber: o.posReceiptNumber,
@@ -500,7 +510,7 @@ export class PosLinkService {
         governorate: o.shipGovernorate,
         addressLine: [o.shipGovernorate, courierAddress(o)].filter(Boolean).join(" — "),
       },
-      receipt: this.receipt(o, view.lines),
+      receipt: { ...this.receipt(o, view.lines), giftDiscount: o.cashierGift ? view.money.manualDiscount : 0 },
       changes: {
         missing: view.lines.filter((l) => l.kind === "ORDERED" && l.pickedQty < l.orderedQty).map((l) => ({ name: l.name, shadeName: l.shadeName, qty: l.orderedQty - l.pickedQty, reason: l.reason })),
         extras: view.lines.filter((l) => l.kind === "EXTRA").map((l) => ({ name: l.name, shadeName: l.shadeName, qty: l.pickedQty, free: l.charge === "FREE", reason: l.reason })),
@@ -518,7 +528,12 @@ export class PosLinkService {
     if (!o.posInvoicedAt) {
       if (o.fulfillmentStage !== FulfillmentStage.READY_FOR_PICKUP && o.fulfillmentStage !== FulfillmentStage.PICKED) throw new ConflictException("لم ينتهِ تجهيز الطلب");
       const expected = o.finalTotal ?? o.total;
-      if (Math.round(ref.total) !== expected) throw new ConflictException(`مجموع الإيصال ${ref.total} لا يساوي مبلغ الطلب ${expected}`);
+      // إيصال المحل بالمنتجات فقط: أجور التغليف/التوصيل خارج فاتورة المحل (كاشير الطلبات 2.6.6+).
+      const productsOnly = expected - o.shippingTotal - o.giftWrapFee;
+      const giftOk = o.cashierGift && Math.round(ref.total) === 0;
+      if (!giftOk && Math.round(ref.total) !== expected && Math.round(ref.total) !== productsOnly) {
+        throw new ConflictException(`مجموع الإيصال ${ref.total} لا يساوي مبلغ الطلب ${expected} (أو ${productsOnly} بلا الأجور)`);
+      }
       await this.prisma.order.update({
         where: { id: o.id },
         data: { posInvoicedAt: new Date(), posReceiptNumber: ref.receiptNumber, posClientReceiptId: ref.clientReceiptId, posCashierName: ref.cashierName },

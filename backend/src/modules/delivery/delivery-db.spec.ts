@@ -139,8 +139,9 @@ async function main() {
   const p = await prisma.product.create({ data: { sku: `D-${tag}`, barcode: `628${String(Date.now()).slice(-10)}`, name: "عطر", nameAr: "عطر", slug: `d-${tag.toLowerCase()}`, price: 20_000, stock: 9, brandId: brand.id } });
   const actor = { id: staff.id, role: Role.STAFF };
 
-  const makePicked = async (opts: { gov?: string; phone?: string; qty?: number; picked?: number; pickup?: boolean; paid?: boolean } = {}) => {
+  const makePicked = async (opts: { gov?: string; phone?: string; qty?: number; picked?: number; pickup?: boolean; paid?: boolean; giftWrap?: number } = {}) => {
     const qty = opts.qty ?? 2;
+    const wrap = opts.giftWrap ?? 0;
     const o = await prisma.order.create({
       data: {
         orderNumber: `ORD-D${tag}${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
@@ -152,7 +153,9 @@ async function main() {
         deliveryOption: opts.pickup ? "PICKUP" : "STANDARD",
         subtotal: 20_000 * qty,
         shippingTotal: opts.pickup ? 0 : 5_000,
-        total: 20_000 * qty + (opts.pickup ? 0 : 5_000),
+        giftWrapFee: wrap,
+        isGift: wrap > 0,
+        total: 20_000 * qty + (opts.pickup ? 0 : 5_000) + wrap,
         loyaltyEarned: 999,
         shipFullName: "زبونة الاختبار",
         shipPhone: opts.phone ?? "+9647701234567",
@@ -229,6 +232,16 @@ async function main() {
     assert.equal(hi.created.get(o.orderNumber).order_value, 60_000);
     const back = await link.edit(o.orderNumber, { op: "discount", amount: 0, cashierName: "كاشير الطلبات", allowInvoiced: true });
     assert.equal(back.receipt.total, 65_000);
+    // تعديل سعر صنف من الكاشير: يتغير مبلغ الطلب والمحصّل عند هاي إكسبريس، ثم يعود.
+    const priced = back.lines.find((l: any) => l.kind === "ORDERED")!;
+    const cheaper = await link.edit(o.orderNumber, { op: "price", lineId: priced.id, unitPrice: 15_000, reason: "عرض المحل", cashierName: "كاشير الطلبات", allowInvoiced: true });
+    const units = priced.pickedQty;
+    assert.equal(cheaper.receipt.total, 65_000 - units * 5_000);
+    assert.equal(hi.created.get(o.orderNumber).order_value, 65_000 - units * 5_000);
+    assert.equal(cheaper.receipt.itemsTotal + cheaper.receipt.shipping + cheaper.receipt.giftWrap - cheaper.receipt.discount, cheaper.receipt.total);
+    await rejects(link.edit(o.orderNumber, { op: "price", lineId: "nope", unitPrice: 1, cashierName: "ك", allowInvoiced: true }), "غير موجود");
+    const restored = await link.edit(o.orderNumber, { op: "price", lineId: priced.id, unitPrice: 20_000, cashierName: "كاشير الطلبات", allowInvoiced: true });
+    assert.equal(restored.receipt.total, 65_000);
     // خيارات التوصيل بعد الفوترة: نوع الشحنة والملاحظة والهاتف الثاني تصل هاي إكسبريس فوراً.
     const opt = await link.courierOptions(o.orderNumber, { typeId: 2, parcelCount: 2, note: "اتصل قبل الوصول", phone2: "07801112233", cashierName: "كاشير الطلبات" });
     assert.equal(opt.courierUpdate?.ok, true);
@@ -341,6 +354,37 @@ async function main() {
     const after = await prisma.order.findUniqueOrThrow({ where: { id: o.id } });
     assert.equal(after.status, OrderStatus.DELIVERED);
     assert.equal(await prisma.shipment.count({ where: { orderId: o.id } }), 0);
+  });
+
+  await test("pickup order with gift wrap: a products-only shop receipt is accepted", async () => {
+    const o = await makePicked({ pickup: true, giftWrap: 3_000 });
+    assert.equal(o.total, 43_000);
+    await rejects(link.pickupHandover(o.orderNumber, { clientReceiptId: `pkw-${o.id}`, receiptNumber: "P-2", cashierName: "ك", total: 41_000 }), "لا يساوي");
+    const r = await link.pickupHandover(o.orderNumber, { clientReceiptId: `pkw-${o.id}`, receiptNumber: "P-2", cashierName: "ك", total: 40_000 });
+    assert.equal(r.delivered, true);
+    assert.equal((await prisma.order.findUniqueOrThrow({ where: { id: o.id } })).status, OrderStatus.DELIVERED);
+  });
+
+  await test("gift receipt: products free, Hi Express collects only the delivery; chosen before invoicing only", async () => {
+    const o = await makePicked();
+    const g = await link.edit(o.orderNumber, { op: "gift", gift: true, cashierName: "كاشير الطلبات" });
+    assert.equal(g.order.cashierGift, true);
+    assert.equal(g.receipt.total, 5_000);
+    assert.equal(g.receipt.giftDiscount, 40_000);
+    assert.equal(g.money.codAmount, 5_000);
+    assert.equal(g.receipt.itemsTotal + g.receipt.shipping + g.receipt.giftWrap - g.receipt.discount, 5_000);
+    await rejects(link.invoice(o.orderNumber, { clientReceiptId: `gf-${o.id}`, receiptNumber: "G-1", cashierName: "ك", total: 40_000 }), "لا يساوي");
+    await link.invoice(o.orderNumber, { clientReceiptId: `gf-${o.id}`, receiptNumber: "G-1", cashierName: "ك", total: 0 });
+    assert.equal(hi.created.get(o.orderNumber).order_value, 5_000);
+    await rejects(link.edit(o.orderNumber, { op: "gift", gift: false, cashierName: "ك", allowInvoiced: true }), "قبل الفوترة");
+    const paid = await makePicked({ paid: true });
+    await rejects(link.edit(paid.orderNumber, { op: "gift", gift: true, cashierName: "ك" }), "مدفوع مسبقاً");
+    // إلغاء الهدية قبل الفوترة يعيد المبلغ كاملاً.
+    const o2 = await makePicked();
+    await link.edit(o2.orderNumber, { op: "gift", gift: true, cashierName: "ك" });
+    const back = await link.edit(o2.orderNumber, { op: "gift", gift: false, cashierName: "ك" });
+    assert.equal(back.receipt.total, 45_000);
+    assert.equal(back.receipt.giftDiscount, 0);
   });
 
   await test("prepaid card order with a shortage: refund is requested after invoicing", async () => {

@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from "class-validator";
 
 export class LinkCodeDto {
   /** رمز الطلب (ORD-…) أو معرّفه. */
@@ -39,9 +39,13 @@ export class LinkReturnDto {
 /** «كاشير الطلبات» يضيف صنفاً بالباركود أو يغيّر كمية سطر قبل الفوترة. */
 export class LinkEditDto {
   @IsString() @MaxLength(80) code: string;
-  @IsIn(["add", "set", "discount"]) op: "add" | "set" | "discount";
+  @IsIn(["add", "set", "discount", "price", "gift"]) op: "add" | "set" | "discount" | "price" | "gift";
+  /** gift: «فاتورة هدية» (صلاحية «الهدايا» يتحقق منها سيرفر المحل). */
+  @IsOptional() @IsBoolean() gift?: boolean;
   /** discount: الخصم اليدوي بالدينار (0 = إلغاء). */
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) amount?: number;
+  /** price: سعر القطعة الجديد للسطر (صلاحية «تغيير السعر» يتحقق منها سيرفر المحل). */
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100_000_000) unitPrice?: number;
   @IsOptional() @IsString() @MaxLength(80) barcode?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) qty?: number;
   @IsOptional() @IsIn(["PAID", "FREE"]) charge?: "PAID" | "FREE";

@@ -686,6 +686,8 @@ model Order {
   /// خصم يدوي من كاشير الطلبات (بالدينار، على الأصناف) وسببه.
   cashierDiscount     Int     @default(0)
   cashierDiscountNote String?
+  /// «فاتورة هدية» من كاشير الطلبات: الأصناف بلا مقابل، والتوصيل/التغليف فقط على شركة التوصيل.
+  cashierGift         Boolean @default(false)
 
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

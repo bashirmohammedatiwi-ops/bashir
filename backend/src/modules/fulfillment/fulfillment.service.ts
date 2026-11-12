@@ -54,9 +54,13 @@ type Tx = Prisma.TransactionClient;
 
 /** تعديل «كاشير الطلبات» على طلب مُجهَّز (عبر سيرفر المحل الموقّع). */
 export interface CashierEditInput {
-  op: "add" | "set" | "discount";
+  op: "add" | "set" | "discount" | "price" | "gift";
   /** discount: الخصم اليدوي بالدينار (0 = إلغاء الخصم). */
   amount?: number;
+  /** gift: «فاتورة هدية» (true) أو إلغاؤها (false). */
+  gift?: boolean;
+  /** price: سعر القطعة الجديد للسطر (lineId). */
+  unitPrice?: number;
   /** add: الباركود كما في المحل (أو «POS:Seq» لمادة بلا باركود). */
   barcode?: string;
   qty?: number;
@@ -189,6 +193,7 @@ export class FulfillmentService {
         paymentStatus: order.paymentStatus,
         coupon: order.coupon ? { type: order.coupon.type, value: order.coupon.value, maxDiscount: order.coupon.maxDiscount } : null,
         manualDiscount: order.cashierDiscount,
+        gift: order.cashierGift,
       },
       engineLines,
       policy,
@@ -857,6 +862,25 @@ export class FulfillmentService {
           data: { cashierDiscount: amount, cashierDiscountNote: amount ? dto.reason?.trim().slice(0, 200) || null : null },
         });
         summary = { op: "discount", from: previous, to: amount, reason: dto.reason ?? null };
+      } else if (dto.op === "gift") {
+        // «فاتورة هدية» كالكاشير الأصلي (سيرفر المحل يتحقق من صلاحية «الهدايا»): تُختار قبل الفوترة،
+        // لأن نوع إيصال المحل (هدية) يُحدَّد عند حفظه.
+        if (o.posInvoicedAt) throw new ConflictException("فاتورة الهدية تُختار قبل الفوترة");
+        if (o.paymentStatus === PaymentStatus.PAID) throw new ConflictException("طلب مدفوع مسبقاً بالبطاقة — لا يُحوَّل لهدية من الكاشير");
+        const gift = !!dto.gift;
+        const previous = o.cashierGift;
+        o.cashierGift = gift;
+        await tx.order.update({ where: { id: orderId }, data: { cashierGift: gift } });
+        summary = { op: "gift", from: previous, to: gift, reason: dto.reason ?? null };
+      } else if (dto.op === "price") {
+        // تعديل سعر صنف كما في الكاشير الأصلي (سيرفر المحل يتحقق من صلاحية «تغيير السعر»).
+        const line = dto.lineId ? await tx.orderPickLine.findFirst({ where: { id: dto.lineId, orderId } }) : null;
+        if (!line) throw new NotFoundException("السطر غير موجود في هذا الطلب");
+        const price = Math.round(Number(dto.unitPrice));
+        if (!Number.isFinite(price) || price < 0 || price > 100_000_000) throw new BadRequestException("سعر غير صالح");
+        await tx.orderPickLine.update({ where: { id: line.id }, data: { unitPrice: price } });
+        await audit(line.id, line.barcode ?? "-", ScanResult.MANUAL, 0);
+        summary = { op: "price", name: line.name, shadeName: line.shadeName, kind: line.kind, from: line.unitPrice, to: price, reason: dto.reason ?? null };
       } else {
         throw new BadRequestException("عملية غير معروفة");
       }
@@ -908,6 +932,7 @@ export class FulfillmentService {
         paymentStatus: o.paymentStatus,
         coupon,
         manualDiscount: o.cashierDiscount,
+        gift: o.cashierGift,
       },
       lines.map((l) => ({ ...l })),
       policy,
