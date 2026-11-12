@@ -128,7 +128,7 @@ export class ReportsService {
           LEFT JOIN "OrderItem" oi ON oi."orderId" = o.id
           WHERE o."createdAt" >= ${from}
             AND o."createdAt" <= ${to}
-            AND o.status IN (${Prisma.join(statusList)})
+            AND o.status IN (${Prisma.join(statusList.map((st) => Prisma.sql`${st}::"OrderStatus"`))})
         `,
         this.prisma.$queryRaw<
           Array<{ brandId: string; brandName: string; revenue: number; quantity: number }>
@@ -143,7 +143,7 @@ export class ReportsService {
           INNER JOIN "Brand" b ON p."brandId" = b.id
           WHERE o."createdAt" >= ${from}
             AND o."createdAt" <= ${to}
-            AND o.status IN (${Prisma.join(statusList)})
+            AND o.status IN (${Prisma.join(statusList.map((st) => Prisma.sql`${st}::"OrderStatus"`))})
           GROUP BY b.id, b.name
           ORDER BY revenue DESC
         `,
@@ -160,7 +160,7 @@ export class ReportsService {
           INNER JOIN "Category" c ON p."categoryId" = c.id
           WHERE o."createdAt" >= ${from}
             AND o."createdAt" <= ${to}
-            AND o.status IN (${Prisma.join(statusList)})
+            AND o.status IN (${Prisma.join(statusList.map((st) => Prisma.sql`${st}::"OrderStatus"`))})
           GROUP BY c.id, c.name
           ORDER BY revenue DESC
         `,
@@ -176,7 +176,7 @@ export class ReportsService {
           INNER JOIN "Order" o ON oi."orderId" = o.id
           WHERE o."createdAt" >= ${from}
             AND o."createdAt" <= ${to}
-            AND o.status IN (${Prisma.join(statusList)})
+            AND o.status IN (${Prisma.join(statusList.map((st) => Prisma.sql`${st}::"OrderStatus"`))})
           GROUP BY oi."productId"
           ORDER BY quantity DESC
           LIMIT 20
@@ -218,7 +218,7 @@ export class ReportsService {
             AND al.entity = 'Order'
             AND al."createdAt" >= ${from}
             AND al."createdAt" <= ${to}
-            AND u.role IN (${Prisma.join([Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF])})
+            AND u.role IN (${Prisma.join([Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF].map((r) => Prisma.sql`${r}::"Role"`))})
           GROUP BY u.id, u.name, u.email
           ORDER BY "orderTotal" DESC
         `,

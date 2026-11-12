@@ -29,6 +29,13 @@ export interface Preflight {
   phone: string | null;
 }
 
+/** هاي إكسبريس يرسل الأرقام أحياناً نصاً ("2500.00") — تُحوَّل لعدد صحيح أو null. */
+function toInt(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  const n = typeof v === "number" ? v : Number(String(v).replace(/,/g, "").trim());
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
 export interface StatusUpdate {
   statusId: number;
   at: Date | null;
@@ -313,18 +320,24 @@ export class ShipmentsService implements OnModuleInit, OnModuleDestroy {
     const rule = statusRule(u.statusId);
     const apply = shouldApply(sh, { statusId: u.statusId, at: u.at });
     // تفاصيل الشحنة تُحدَّث دائماً (المندوب، المحاولات، المبلغ المحصّل) حتى لو لم تتغير المرحلة.
-    await this.prisma.shipment.update({
-      where: { id: sh.id },
-      data: {
-        ...(apply ? { statusId: u.statusId, statusName: rule!.label, statusAt: u.at ?? new Date(), isFinal: rule!.final } : {}),
-        ...(u.driver ? { driverName: u.driver } : {}),
-        ...(u.attempts != null ? { deliveryAttempts: u.attempts } : {}),
-        ...(u.collected != null && apply && (rule!.stage === "DELIVERED" || rule!.stage === "PARTIALLY_DELIVERED") ? { collectedAmount: u.collected } : {}),
-        ...(u.returnCost != null ? { returnCost: u.returnCost } : {}),
-        ...(u.settlementId ? { settlementId: String(u.settlementId) } : {}),
-        ...(rule?.stage === "CANCELLED" && apply ? { isCanceled: true } : {}),
-      },
-    });
+    // إن فشل الحفظ تُحذف الرسالة المسجّلة لتُعاد معالجتها في الاستعلام التالي بدل أن تضيع.
+    try {
+      await this.prisma.shipment.update({
+        where: { id: sh.id },
+        data: {
+          ...(apply ? { statusId: u.statusId, statusName: rule!.label, statusAt: u.at ?? new Date(), isFinal: rule!.final } : {}),
+          ...(u.driver ? { driverName: u.driver } : {}),
+          ...(u.attempts != null ? { deliveryAttempts: u.attempts } : {}),
+          ...(u.collected != null && apply && (rule!.stage === "DELIVERED" || rule!.stage === "PARTIALLY_DELIVERED") ? { collectedAmount: u.collected } : {}),
+          ...(u.returnCost != null ? { returnCost: u.returnCost } : {}),
+          ...(u.settlementId ? { settlementId: String(u.settlementId) } : {}),
+          ...(rule?.stage === "CANCELLED" && apply ? { isCanceled: true } : {}),
+        },
+      });
+    } catch (e) {
+      await this.prisma.shipmentEvent.delete({ where: { id: eventId } }).catch(() => undefined);
+      throw e;
+    }
     if (!apply || !rule) {
       if (!rule) {
         await this.timeline.log({ orderId: sh.orderId, type: "COURIER_STATUS_UNKNOWN", actorType: "COURIER", data: { statusId: u.statusId, note: u.note ?? null } });
@@ -410,9 +423,9 @@ export class ShipmentsService implements OnModuleInit, OnModuleDestroy {
       note: last?.status_msg ?? null,
       proof: last?.proof_of_status ?? null,
       driver: o.driver_name ?? null,
-      collected: o.order_value ?? null,
-      returnCost: o.return_cost ?? null,
-      attempts: o.delivery_attempts ?? null,
+      collected: toInt(o.order_value),
+      returnCost: toInt(o.return_cost),
+      attempts: toInt(o.delivery_attempts),
       settlementId: o.settlement_id != null ? String(o.settlement_id) : null,
       source,
       raw,

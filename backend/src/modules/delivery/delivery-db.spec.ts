@@ -84,7 +84,7 @@ class FakeHi {
       client_identifier: c.client_identifier,
       order_value: st.value ?? c.order_value,
       delivery_amount: 0,
-      return_cost: 0,
+      return_cost: "2500.00" as unknown as number, // هاي إكسبريس يرسلها نصاً
       shipping_cost: 5000,
       last_status_type_id: st.id,
       last_status_date: st.at,
@@ -279,6 +279,7 @@ async function main() {
     const s2 = await prisma.shipment.findUniqueOrThrow({ where: { id: sh.id } });
     assert.equal(s2.isFinal, true);
     assert.equal(s2.collectedAmount, 45_000);
+    assert.equal(s2.returnCost, 2_500); // وصلت نصاً "2500.00"
     // رسالة متأخرة بعد التسليم لا تغيّر شيئاً.
     hi.set(o.orderNumber, 1);
     await shipments.handleWebhook({ payload: { client_identifier: o.orderNumber } });
