@@ -7,15 +7,10 @@ import '../../core/scanner_bus.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 
-/// نتيجة قراءة في المسح المتواصل — تُعرض فوق الكاميرا.
-typedef ScanFeedback = ({String message, bool error});
-
-/// مسح قطعة بالكاميرا أثناء التجهيز — يرجع أول باركود يُقرأ للشاشة التي فتحته.
-/// مع [onCode] يبقى مفتوحاً (مسح متواصل): كل قراءة تُرسل وتظهر نتيجتها فوق الكاميرا.
+/// مسح باركود واحد بالكاميرا (إضافة منتج للطلب، أو QR طلب) — يرجع أول قراءة للشاشة التي فتحته.
 /// يدعم القارئ الخارجي (بلوتوث/USB) والإدخال اليدوي أيضاً.
 class PickScanScreen extends StatefulWidget {
-  const PickScanScreen({super.key, this.onCode, this.title, this.hint});
-  final Future<ScanFeedback?> Function(String code)? onCode;
+  const PickScanScreen({super.key, this.title, this.hint});
   final String? title;
   final String? hint;
   @override
@@ -41,10 +36,8 @@ class _PickScanScreenState extends State<PickScanScreen> with WidgetsBindingObse
   );
   String? _lastCode;
   DateTime _lastAt = DateTime.fromMillisecondsSinceEpoch(0);
-  bool _handling = false;
+  bool _done = false;
   double _zoom = 0;
-  ScanFeedback? _feedback;
-  int _count = 0;
   MobileScannerException? _camError;
 
   @override
@@ -93,22 +86,10 @@ class _PickScanScreenState extends State<PickScanScreen> with WidgetsBindingObse
     if (code == _lastCode && now.difference(_lastAt) < const Duration(seconds: 3)) return;
     _lastCode = code;
     _lastAt = now;
-    if (_handling) return;
-    _handling = true;
-    final onCode = widget.onCode;
-    if (onCode == null) {
-      Prefs.instance.feedback();
-      Navigator.of(context).pop(code);
-      return;
-    }
-    // مسح متواصل: الشاشة المستدعية تتولى الصوت والاهتزاز حسب النتيجة.
-    onCode(code).then((fb) {
-      if (!mounted) return;
-      setState(() {
-        _feedback = fb;
-        if (fb != null && !fb.error) _count++;
-      });
-    }).whenComplete(() => _handling = false);
+    if (_done) return;
+    _done = true;
+    Prefs.instance.feedback();
+    Navigator.of(context).pop(code);
   }
 
   Future<void> _manual() async {
@@ -215,31 +196,20 @@ class _PickScanScreenState extends State<PickScanScreen> with WidgetsBindingObse
                         ],
                       ),
                     ),
-                  if (_camError == null)
+                  if (_camError == null && widget.title != null)
                     Text(
-                      widget.hint ?? 'وجّه الكاميرا نحو باركود القطعة',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                      widget.title!,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
                     ),
-                  if (_feedback != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: _feedback!.error ? AppColors.danger : AppColors.success,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                  if (_camError == null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Text(
-                        _feedback!.message,
+                        widget.hint ?? 'وجّه الكاميرا نحو الباركود',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
                       ),
                     ),
-                  ],
-                  if (widget.onCode != null && _count > 0) ...[
-                    const SizedBox(height: 8),
-                    Text('مُسح في هذه الجلسة: $_count', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
                 ],
               ),
             ),

@@ -8,7 +8,7 @@ Map<String, dynamic> _view({List<Map<String, dynamic>>? lines, String stage = 'P
   'lines':
       lines ??
       [
-        {'id': 'a', 'kind': 'ORDERED', 'name': 'أحمر شفاه', 'barcode': '6281000000011', 'orderedQty': 2, 'pickedQty': 1, 'unitPrice': 10000, 'state': 'PENDING', 'color': 'grey', 'label': 'لم يُمسح بعد'},
+        {'id': 'a', 'kind': 'ORDERED', 'name': 'أحمر شفاه', 'barcode': '6281000000011', 'orderedQty': 2, 'pickedQty': 1, 'unitPrice': 10000, 'state': 'PENDING', 'color': 'grey', 'label': 'لم يُجمع بعد'},
         {'id': 'b', 'kind': 'ORDERED', 'name': 'سيروم', 'orderedQty': 1, 'pickedQty': 0, 'unitPrice': 15000, 'state': 'SHORT', 'color': 'red', 'label': 'ناقص', 'reason': 'نفد المخزون'},
         {'id': 'x', 'kind': 'EXTRA', 'name': 'بديل', 'orderedQty': 0, 'pickedQty': 1, 'unitPrice': 6500, 'charge': 'FREE', 'state': 'EXTRA', 'color': 'yellow', 'label': 'إضافي'},
       ],
@@ -42,17 +42,6 @@ void main() {
       expect(v.money.codAmount, 15000);
     });
 
-    test('instant scan display turns a completed line green', () {
-      final v = PickView.fromJson(_view());
-      final a = v.ordered.first;
-      final done = a.withPicked(2);
-      expect(done.color, 'green');
-      expect(done.missingQty, 0);
-      final nv = v.replaceLine(done);
-      expect(nv.pickedUnits, 2);
-      expect(nv.shortLines.map((l) => l.id), ['b']);
-    });
-
     test('finished stages', () {
       expect(PickView.fromJson(_view(stage: 'PICKED')).finished, isTrue);
       expect(PickView.fromJson(_view(stage: 'READY_FOR_PICKUP')).finished, isTrue);
@@ -61,7 +50,8 @@ void main() {
   });
 
   group('colours', () {
-    test('green matched, red short, yellow extra, grey pending', () {
+    test('green matched, red short, yellow extra, blue over, grey pending', () {
+      expect(pickColor('blue').fg, overBlue);
       expect(pickColor('green').fg, AppColors.success);
       expect(pickColor('red').fg, AppColors.danger);
       expect(pickColor('yellow').fg, AppColors.warning);

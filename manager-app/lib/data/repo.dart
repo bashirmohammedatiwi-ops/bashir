@@ -290,7 +290,7 @@ extension RepoMore on Repo {
   /// شحنة هاي إكسبريس (null = لم تُنشأ بعد).
   Future<ShipmentInfo?> shipment(String id) => api.get('/control/orders/$id/shipment', map: ShipmentInfo.tryParse);
 
-  // ---------------- picking (التجهيز بالمسح — محفوظ في السيرفر)
+  // ---------------- جمع الطلب (منتجاً منتجاً — محفوظ في السيرفر)
 
   Future<String> orderIdByCode(String code) =>
       api.get('/control/orders/by-code/${Uri.encodeComponent(code.trim())}', map: (b) => '${(b as Map)['id']}');
@@ -300,32 +300,19 @@ extension RepoMore on Repo {
   Future<PickView> pickStart(String id, {bool takeover = false}) =>
       api.post('/control/orders/$id/pick/start', data: {if (takeover) 'takeover': true}, map: _pickView);
 
-  Future<ScanOutcome> pickScan(String id, {required String barcode, int qty = 1, required String clientScanId, String? device}) => api.post(
-    '/control/orders/$id/pick/scan',
-    data: {'barcode': barcode, 'qty': qty, 'clientScanId': clientScanId, 'device': ?device},
-    map: (b) => ScanOutcome.fromJson(Map<String, dynamic>.from(b as Map)),
+  /// منتج بالباركود قبل إضافته (من التطبيق أو من كتالوج المحل) وهل هو في الطلب.
+  Future<PickProductInfo> pickProduct(String id, String barcode) => api.get(
+    '/control/orders/$id/pick/product/${Uri.encodeComponent(barcode.trim())}',
+    map: (b) => PickProductInfo.fromJson(Map<String, dynamic>.from(b as Map)),
   );
 
-  Future<PickView> pickExtra(
-    String id, {
-    required String barcode,
-    required String charge,
-    int qty = 1,
-    String? reason,
-    String? substituteForLineId,
-    String? clientScanId,
-  }) => api.post(
-    '/control/orders/$id/pick/extra',
-    data: {
-      'barcode': barcode,
-      'charge': charge,
-      'qty': qty,
-      'reason': ?reason,
-      'substituteForLineId': ?substituteForLineId,
-      'clientScanId': ?clientScanId,
-    },
-    map: _pickView,
-  );
+  /// إضافة بالباركود: يكمل ناقص الطلب أولاً، والباقي إضافي (أو زيادة على منتج مكتمل).
+  Future<PickView> pickAdd(String id, {required String barcode, int qty = 1, String? charge, String? reason, required String clientScanId}) =>
+      api.post(
+        '/control/orders/$id/pick/add',
+        data: {'barcode': barcode, 'qty': qty, 'charge': ?charge, 'reason': ?reason, 'clientScanId': clientScanId},
+        map: _pickView,
+      );
 
   Future<PickView> pickLine(String id, String lineId, Map<String, dynamic> patch) =>
       api.patch('/control/orders/$id/pick/lines/$lineId', data: patch, map: _pickView);

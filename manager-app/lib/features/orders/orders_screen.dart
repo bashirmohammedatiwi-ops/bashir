@@ -101,20 +101,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 
   Future<void> _scanOrder() async {
-    String? code;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (c) => PickScanScreen(
-          hint: 'امسح QR قائمة التجهيز',
-          onCode: (v) async {
-            code = v;
-            Navigator.of(c).pop();
-            return null;
-          },
-        ),
-      ),
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const PickScanScreen(hint: 'امسح QR الطلب')),
     );
-    if (code != null && mounted) await _openByCode(code!);
+    if (code != null && mounted) await _openByCode(code);
   }
 
   Future<void> _openByCode(String code) async {

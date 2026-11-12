@@ -1,16 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/api.dart';
 import '../../core/format.dart';
+import '../../core/prefs.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
 import '../pick/pick_screen.dart';
+import '../pick/pick_widgets.dart';
 import 'order_widgets.dart';
 import 'orders_screen.dart';
 
@@ -31,28 +36,78 @@ class OrderScreen extends ConsumerStatefulWidget {
   ConsumerState<OrderScreen> createState() => _OrderScreenState();
 }
 
-class _OrderScreenState extends ConsumerState<OrderScreen> {
+class _OrderScreenState extends ConsumerState<OrderScreen> with WidgetsBindingObserver {
   OrderDetail? _o;
   PickView? _pick;
   ShipmentInfo? _ship;
   List<TimelineEntry>? _timeline;
   Object? _error;
   bool _busy = false;
+  Timer? _auto;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    _startAuto();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _auto?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startAuto();
+      _load(quiet: true);
+    } else if (state == AppLifecycleState.paused) {
+      _auto?.cancel();
+    }
+  }
+
+  /// تحديث تلقائي كل 15 ثانية والشاشة ظاهرة (تعديلات كاشير الطلبات تظهر هنا).
+  void _startAuto() {
+    _auto?.cancel();
+    _auto = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted && !_busy && ModalRoute.of(context)?.isCurrent == true) _load(quiet: true);
+    });
   }
 
   void _bump() => ref.read(ordersVersionProvider.notifier).state++;
 
-  /// التجهيز بالمسح في شاشته الخاصة — عند الرجوع نعيد تحميل الطلب ونحدّث الطابور.
+  /// جمع الطلب في شاشته الخاصة — عند الرجوع نعيد تحميل الطلب ونحدّث الطابور.
   Future<void> _openPicking() async {
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PickScreen(orderId: widget.orderId)));
     if (!mounted) return;
     _bump();
     await _load();
+  }
+
+  /// «تأكيد الطلب»: يبدأ الجمع باسم هذا الموظف ثم يفتح شاشة الجمع.
+  Future<void> _confirmAndCollect() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(repoProvider).pickStart(widget.orderId);
+      if (!mounted) return;
+      Prefs.instance.feedback();
+      _bump();
+    } catch (e) {
+      if (!mounted) return;
+      final err = Api.toError(e);
+      // يجمعه موظف آخر: شاشة الجمع تعرض ذلك (وتتيح النقل للمدير).
+      if (!(err.status == 409 && err.message.contains('يجهّزه'))) {
+        toastError(context, e);
+        return;
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (mounted) await _openPicking();
   }
 
   static Future<T?> _soft<T>(Future<T> f) async {
@@ -63,7 +118,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool quiet = false}) async {
     final repo = ref.read(repoProvider);
     final id = widget.orderId;
     try {
@@ -86,7 +141,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     } catch (e) {
       if (!mounted) return;
       if (_o != null) {
-        toastError(context, e);
+        if (!quiet) toastError(context, e);
       } else {
         setState(() => _error = e);
       }
@@ -150,6 +205,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       appBar: AppBar(
         title: Text(o.orderNumber, textDirection: TextDirection.ltr),
         actions: [
+          if (!_cancelled(o))
+            IconButton(
+              tooltip: 'رمز الطلب للكاشير',
+              onPressed: () => showOrderQr(context, o.orderNumber),
+              icon: const Icon(Icons.qr_code_2_rounded),
+            ),
           IconButton(
             tooltip: 'مشاركة الطلب (للمندوب مثلاً)',
             onPressed: () => SharePlus.instance.share(ShareParams(text: _summary(o), subject: 'طلب ${o.orderNumber}')),
@@ -183,6 +244,14 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           children: [
             if (stage != null) StageTrackPanel(stage: stage, pickup: o.isPickup) else _legacyTrack(o),
             const SizedBox(height: 12),
+            if (stage == 'PICKED' || stage == 'READY_FOR_PICKUP') ...[
+              OrderQrCard(
+                orderNumber: o.orderNumber,
+                title: stage == 'READY_FOR_PICKUP' ? 'جاهز للاستلام — بانتظار الكاشير' : 'بانتظار الكاشير',
+                onExpand: () => showOrderQr(context, o.orderNumber),
+              ),
+              const SizedBox(height: 12),
+            ],
             _customer(o),
             SectionTitle(
               'المنتجات',
@@ -201,19 +270,13 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 ),
               ),
             ],
-            if (stage != null && !(o.closed && !o.pickStarted)) ...[
-              const SizedBox(height: 10),
+            if (stage != null && o.pickStarted && stage != 'PICKING') ...[
+              const SizedBox(height: 2),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                 onPressed: _openPicking,
-                icon: Icon(stage == 'PICKING' ? Icons.qr_code_scanner_rounded : Icons.fact_check_rounded),
-                label: Text(
-                  stage == 'PICKING'
-                      ? 'متابعة التجهيز'
-                      : o.pickStarted
-                      ? 'عرض التجهيز'
-                      : 'فتح شاشة التجهيز',
-                ),
+                icon: const Icon(Icons.fact_check_rounded),
+                label: const Text('عرض تفاصيل الجمع'),
               ),
             ],
             if (_ship != null) ...[
@@ -284,15 +347,25 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       final next = _legacyNextStep[o.status];
       if (next == null || o.status == 'DELIVERED') return null;
       if (o.status != 'PENDING' && const {'CONFIRMED', 'PROCESSING'}.contains(o.status)) {
-        return button('التجهيز بالمسح', Icons.qr_code_scanner_rounded, _openPicking);
+        return button('جمع الطلب', Icons.shopping_basket_rounded, _openPicking);
       }
       return button(next.$2, next.$3, () => _setStatus(next.$1), color: orderStatusColor(next.$1));
     }
-    if (stagesBeforePicking.contains(stage)) {
-      if (o.status == 'PENDING') return button('تأكيد الطلب', Icons.check_circle_rounded, () => _setStatus('CONFIRMED'));
-      return button('بدء التجهيز بالمسح', Icons.qr_code_scanner_rounded, _openPicking);
+    if (stagesBeforePicking.contains(stage)) return button('تأكيد الطلب', Icons.check_circle_rounded, _confirmAndCollect);
+    if (stage == 'PICKING') return button('متابعة جمع الطلب', Icons.shopping_basket_rounded, _openPicking);
+    if (stage == 'PICKED' || stage == 'READY_FOR_PICKUP') {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(54)),
+            onPressed: () => showOrderQr(context, o.orderNumber),
+            icon: const Icon(Icons.qr_code_2_rounded),
+            label: const Text('عرض الرمز بحجم كبير للكاشير', style: TextStyle(fontSize: 15.5)),
+          ),
+        ),
+      );
     }
-    if (stage == 'PICKING') return button('متابعة التجهيز', Icons.qr_code_scanner_rounded, _openPicking);
     final w = stageWaiting(stage, pickup: o.isPickup);
     if (w == null) return null;
     final driver = _ship?.driverName;
@@ -302,6 +375,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       hint: w.hint,
     );
   }
+
+  bool _cancelled(OrderDetail o) => o.stage == 'CANCELLED' || o.status == 'CANCELLED';
 
   // ------------------------------------------------------------ sections
 

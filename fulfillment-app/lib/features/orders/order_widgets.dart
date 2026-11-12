@@ -31,7 +31,7 @@ Color stageColor(String? stage) => switch (stage) {
 IconData stageIcon(String? stage) => switch (stage) {
   'NEW' => Icons.fiber_new_rounded,
   'CONFIRMED' => Icons.check_circle_outline_rounded,
-  'PICKING' => Icons.qr_code_scanner_rounded,
+  'PICKING' => Icons.shopping_basket_rounded,
   'PICKED' => Icons.point_of_sale_rounded,
   'READY_FOR_PICKUP' => Icons.storefront_rounded,
   'INVOICED' => Icons.receipt_long_rounded,
@@ -164,7 +164,7 @@ Widget pickChip(String text, String color, {bool small = true}) {
   return Pill(text, color: c.fg, bg: c.bg, small: small, icon: c.icon);
 }
 
-/// نتيجة التجهيز في شاشة الطلب: ما سيُسلَّم فعلاً بالألوان، النواقص بأسبابها، والإضافات.
+/// نتيجة الجمع في شاشة الطلب: كل منتج بلونه (مكتمل، زيادة، أُزيل، إضافي)، والملخص.
 class PickResultSection extends StatelessWidget {
   const PickResultSection({super.key, required this.view, this.onOpen});
   final PickView view;
@@ -174,8 +174,11 @@ class PickResultSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final v = view;
     final picking = v.picking;
+    final items = sortPickItems(v.items);
+    final u = pickUnits(items);
+    final t = pickTally(items);
     final head = picking
-        ? 'مُسح ${numFmt(v.pickedUnits)} من ${piecesLabel(v.orderedUnits, genitive: true)}'
+        ? 'جُمع ${numFmt(u.done)} من ${piecesLabel(u.all, genitive: true)}'
         : deliverLabel(units: v.deliverUnits, lines: v.deliverLines);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -194,13 +197,12 @@ class PickResultSection extends StatelessWidget {
                 children: [
                   if (!picking && v.missingUnits == 0 && v.extraUnits == 0) pickChip('مطابق للطلب', 'green', small: false),
                   if (!picking && v.missingUnits > 0) pickChip('ناقص ${numFmt(v.missingUnits)}', 'red', small: false),
-                  if (picking && v.remainingLines.isNotEmpty) pickChip('متبقٍ ${linesLabel(v.remainingLines.length)}', 'grey', small: false),
-                  if (picking && v.redLines.isNotEmpty) pickChip('ناقص ${linesLabel(v.redLines.length)}', 'red', small: false),
+                  if (picking && t.remaining > 0) pickChip('متبقٍ ${linesLabel(t.remaining)}', 'grey', small: false),
+                  if (picking && t.removed > 0) pickChip('أُزيل ${linesLabel(t.removed)}', 'red', small: false),
                   if (v.extraUnits > 0) pickChip('إضافي ${numFmt(v.extraUnits)}', 'yellow', small: false),
                   if (v.parcelCount != null && !picking)
                     Pill('${numFmt(v.parcelCount)} كيس', color: AppColors.primary, bg: AppColors.primarySoft, icon: Icons.shopping_bag_outlined),
-                  if (v.pickerName != null)
-                    Pill(v.pickerName!, color: AppColors.muted, bg: AppColors.scaffold, icon: Icons.badge_outlined),
+                  if (v.pickerName != null) Pill(v.pickerName!, color: AppColors.muted, bg: AppColors.scaffold, icon: Icons.badge_outlined),
                 ],
               ),
               Padding(
@@ -214,46 +216,7 @@ class PickResultSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Panel(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              for (var i = 0; i < v.ordered.length; i++) ...[
-                if (i > 0) const Divider(height: 1, indent: 76),
-                PickLineTile(line: v.ordered[i], onTap: onOpen),
-              ],
-            ],
-          ),
-        ),
-        if (v.extras.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
-            child: Row(
-              children: [
-                Icon(pickColor('yellow').icon, color: AppColors.warning, size: 18),
-                const SizedBox(width: 6),
-                const Expanded(
-                  child: Text('أصناف إضافية', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                ),
-              ],
-            ),
-          ),
-          Panel(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (var i = 0; i < v.extras.length; i++) ...[
-                  if (i > 0) const Divider(height: 1, indent: 76),
-                  PickLineTile(
-                    line: v.extras[i],
-                    substituteFor: v.ordered.where((l) => l.id == v.extras[i].substituteForLineId).firstOrNull?.name,
-                    onTap: onOpen,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+        for (final i in items) ...[PickItemCard(item: i, onOpen: onOpen), const SizedBox(height: 8)],
       ],
     );
   }
@@ -428,7 +391,7 @@ class TimelineCard extends StatelessWidget {
   final List<TimelineEntry> entries;
 
   static (IconData, Color) _look(TimelineEntry e) => switch (e.type) {
-    'PICK_STARTED' || 'PICK_TAKEOVER' => (Icons.qr_code_scanner_rounded, AppColors.primary),
+    'PICK_STARTED' || 'PICK_TAKEOVER' => (Icons.shopping_basket_rounded, AppColors.primary),
     'PICK_FINISHED' => (Icons.task_alt_rounded, AppColors.success),
     'PICK_EXTRA_ADDED' => (Icons.add_circle_rounded, AppColors.warning),
     'PICK_LINE_EDITED' || 'POS_EDIT' => (Icons.edit_note_rounded, AppColors.warning),
@@ -709,7 +672,7 @@ class OrderTile extends StatelessWidget {
                           if (p.missingUnits > 0) pickChip('ناقص ${numFmt(p.missingUnits)}', 'red'),
                           if (p.extraUnits > 0) pickChip('+${numFmt(p.extraUnits)} إضافي', 'yellow'),
                         ] else if (p != null && picking) ...[
-                          Text('مُسح ${numFmt(p.matchedUnits)} من ${piecesLabel(o.quantity, genitive: true)}', style: strong),
+                          Text('جُمع ${numFmt(p.matchedUnits)} من ${piecesLabel(o.quantity, genitive: true)}', style: strong),
                           if (p.extraUnits > 0) pickChip('+${numFmt(p.extraUnits)} إضافي', 'yellow'),
                         ] else
                           Text(orderSizeLabel(lines: o.itemsCount, units: o.quantity), style: strong),
@@ -752,8 +715,24 @@ class OrderTile extends StatelessWidget {
               ),
             ],
           ),
+          if (tileAction(stage) case final a?)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Pill(a.label, color: a.color, bg: a.color.withValues(alpha: .12), icon: a.icon),
+              ),
+            ),
         ],
       ),
     );
   }
 }
+
+/// تلميح الخطوة التالية على بطاقة الطلب حسب مرحلته.
+({String label, IconData icon, Color color})? tileAction(String? stage) => switch (stage) {
+  'NEW' || 'CONFIRMED' => (label: 'تأكيد', icon: Icons.check_circle_outline_rounded, color: AppColors.primary),
+  'PICKING' => (label: 'متابعة الجمع', icon: Icons.shopping_basket_rounded, color: AppColors.primary),
+  'PICKED' || 'READY_FOR_PICKUP' => (label: 'بانتظار الكاشير', icon: Icons.point_of_sale_rounded, color: _teal),
+  _ => null,
+};

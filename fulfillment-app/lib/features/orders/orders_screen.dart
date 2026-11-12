@@ -77,7 +77,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBinding
 
   Future<void> _scanOrder() async {
     final code = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const ScanScreen(hint: 'امسح QR قائمة التجهيز')),
+      MaterialPageRoute(builder: (_) => const ScanScreen(hint: 'امسح QR الطلب')),
     );
     if (code != null && mounted) await _openByCode(code);
   }

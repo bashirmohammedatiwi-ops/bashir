@@ -248,6 +248,11 @@ void main() {
       await pump(tester, OrderTile(order: OrderSummary.fromJson(_summary(stage: 'CONFIRMED')..remove('pick')), onTap: () {}));
       expect(tester.takeException(), isNull);
       expect(find.text('4 بنود · 7 قطع'), findsOneWidget);
+      expect(find.textContaining('تأكيد'), findsOneWidget);
+      await pump(tester, OrderTile(order: OrderSummary.fromJson(_summary(stage: 'PICKING', pick: _tally)), onTap: () {}));
+      expect(find.textContaining('متابعة الجمع'), findsOneWidget);
+      expect(tileAction('PICKED')!.label, 'بانتظار الكاشير');
+      expect(tileAction('INVOICED'), isNull);
     });
 
     testWidgets('stage track fits six steps', (tester) async {
@@ -274,17 +279,15 @@ void main() {
       await pump(tester, PickResultSection(view: v));
       expect(tester.takeException(), isNull);
       expect(find.text('سيُسلَّم 3 قطع في بندين'), findsOneWidget);
-      expect(find.text('بديل عن: سيروم'), findsOneWidget);
+      expect(find.byType(PickItemCard), findsNWidgets(3));
+      expect(find.text('أُزيل'), findsOneWidget);
+      expect(find.text('نفد المخزون'), findsOneWidget);
       await pump(tester, PickFinishedSummary(view: v));
       expect(tester.takeException(), isNull);
-      await pump(tester, PickStickyHeader(view: v, flash: (name: 'اسم صنف ${'طويل ' * 12}', color: 'red', text: 'باركود غير معروف')));
+      await pump(tester, PickProgressHeader(items: v.items, pickerName: 'نور'));
       expect(tester.takeException(), isNull);
-      expect(progressLabel(3, 7), '3 / 7 قطع');
-      await pump(tester, PickFilterBar(view: v, value: PickFilter.short, onChanged: (_) {}));
-      expect(tester.takeException(), isNull);
-      expect(find.text('الناقص  1'), findsOneWidget);
-      expect(v.redLines.single.id, 'b');
-      expect(v.remainingLines, isEmpty);
+      expect(find.text('جُمع 2 من 3 قطع'), findsOneWidget);
+      expect(pendingItems(v.items), isEmpty);
     });
 
     testWidgets('shipment, money and timeline cards', (tester) async {
