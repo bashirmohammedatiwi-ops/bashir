@@ -392,8 +392,11 @@ export class PosLinkService {
       }
       if (o.deliveryOption === DeliveryOption.PICKUP) throw new BadRequestException("طلب استلام من المحل — استعمل «تسليم للزبونة»");
       const expected = o.finalTotal ?? o.total;
-      if (Math.round(ref.total) !== expected) {
-        throw new ConflictException(`مجموع الإيصال ${ref.total} لا يساوي مبلغ الطلب ${expected} — أعد فتح الطلب في الكاشير`);
+      // سيرفر المحل 2.6.5+: أجور التوصيل والتغليف خارج فاتورة المحل (ضمن مبلغ شركة التوصيل فقط) —
+      // فيُقبل مجموع الإيصال كاملاً (نسخ أقدم) أو بلا الأجور.
+      const productsOnly = expected - o.shippingTotal - o.giftWrapFee;
+      if (Math.round(ref.total) !== expected && Math.round(ref.total) !== productsOnly) {
+        throw new ConflictException(`مجموع الإيصال ${ref.total} لا يساوي مبلغ الطلب ${expected} (أو ${productsOnly} بلا أجور التوصيل) — أعد فتح الطلب في الكاشير`);
       }
       await tx.order.update({
         where: { id: o.id },

@@ -201,6 +201,14 @@ async function main() {
     assert.ok(notices.some((n) => n.orderId === o.id && n.kind === "SHIPPED"));
   });
 
+  await test("shop receipt without delivery fee (products only) is accepted; COD still includes delivery", async () => {
+    const o = await makePicked();
+    await rejects(link.invoice(o.orderNumber, { clientReceiptId: `rc-f-${o.id}`, receiptNumber: "A-301", cashierName: "ك", total: 39_000 }), "لا يساوي");
+    const r = await link.invoice(o.orderNumber, { clientReceiptId: `rc-f-${o.id}`, receiptNumber: "A-301", cashierName: "ك", total: 40_000 });
+    assert.equal(r.invoiced, true);
+    assert.equal(hi.created.get(o.orderNumber).order_value, 45_000);
+  });
+
   await test("edit after invoicing: only when allowed, reaches Hi Express; locked once the driver picks it up; label is theirs", async () => {
     const o = await makePicked();
     await link.invoice(o.orderNumber, { clientReceiptId: `rc-e-${o.id}`, receiptNumber: "A-201", cashierName: "كاشير الطلبات", total: 45_000 });
