@@ -726,6 +726,12 @@ export class FulfillmentService {
    * معرّف التعديل من الكاشير (clientEditId) يمنع تكرار الإضافة عند إعادة الإرسال.
    */
   async cashierEdit(orderId: string, cashier: { name: string; id?: string | null }, dto: CashierEditInput) {
+    await this.applyCashierEdit(orderId, cashier, dto);
+    return this.view(orderId);
+  }
+
+  /** التعديل وحده بلا بناء العرض — رابط المحل يبني الطلب كاملاً بنفسه (lookup) بعده. */
+  async applyCashierEdit(orderId: string, cashier: { name: string; id?: string | null }, dto: CashierEditInput): Promise<void> {
     const policy = await this.policy();
     let summary: Record<string, unknown> = {};
     await this.prisma.$transaction(async (tx) => {
@@ -907,7 +913,6 @@ export class FulfillmentService {
         tx,
       );
     });
-    return this.view(orderId);
   }
 
   // ------------------------------------------------------------ helpers

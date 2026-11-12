@@ -159,19 +159,23 @@ export class PosLinkService {
   /** الطلب كما يحتاجه الكاشير: الأسطر بالألوان، أسطر الإيصال بالأسعار، المبالغ، وموانع الفوترة. */
   async lookup(codeOrId: string) {
     const o = await this.findOrder(codeOrId);
-    const view = await this.fulfillment.view(o.id);
-    const shipment = await this.shipments.forOrder(o.id);
-    const blockers: string[] = [];
     const delivery = o.deliveryOption !== DeliveryOption.PICKUP;
+    const needPreflight = o.status !== OrderStatus.CANCELLED && !o.posInvoicedAt && delivery;
+    // الأجزاء مستقلة: تُقرأ معاً (الكاشير ينتظر هذا الرد بعد كل تعديل).
+    const [view, shipment, pre, totals, courier] = await Promise.all([
+      this.fulfillment.view(o.id),
+      this.shipments.forOrder(o.id),
+      needPreflight ? this.shipments.preflight(o) : Promise.resolve(null),
+      this.totals(o.id),
+      this.courierInfo(o),
+    ]);
+    const blockers: string[] = [];
     if (o.status === OrderStatus.CANCELLED) blockers.push("الطلب ملغي");
     else if (!o.posInvoicedAt) {
       if (o.fulfillmentStage === FulfillmentStage.PICKING || o.fulfillmentStage === FulfillmentStage.NEW || o.fulfillmentStage === FulfillmentStage.CONFIRMED) {
         blockers.push("لم ينتهِ تجهيز الطلب — يُنهى من تطبيق التجهيز أولاً");
       }
-      if (delivery) {
-        const pre = await this.shipments.preflight(o);
-        blockers.push(...pre.problems.filter((p) => !p.includes("لم ينتهِ تجهيز")));
-      }
+      if (pre) blockers.push(...pre.problems.filter((p) => !p.includes("لم ينتهِ تجهيز")));
     }
     return {
       order: {
@@ -210,9 +214,9 @@ export class PosLinkService {
       },
       lines: view.lines,
       counts: view.counts,
-      totals: await this.totals(o.id),
+      totals,
       // خيارات التوصيل (نوع الشحنة عند هاي إكسبريس وغيرها) — يعدّلها الكاشير.
-      courier: await this.courierInfo(o),
+      courier,
       money: view.money,
       // giftDiscount: ما غطّته «فاتورة الهدية» من الخصم — إيصال الهدية في المحل بلا هذا الجزء.
       receipt: { ...this.receipt(o, view.lines), giftDiscount: o.cashierGift ? view.money.manualDiscount : 0 },
@@ -284,7 +288,7 @@ export class PosLinkService {
       const courier = await this.shipments.courierEditable(o.id);
       if (!courier.ok) throw new ConflictException({ message: courier.reason, code: "COURIER_LOCKED" });
     }
-    await this.fulfillment.cashierEdit(o.id, { name: dto.cashierName || "كاشير الطلبات", id: dto.cashierId ?? null }, dto);
+    await this.fulfillment.applyCashierEdit(o.id, { name: dto.cashierName || "كاشير الطلبات", id: dto.cashierId ?? null }, dto);
     // الفاتورة المعدّلة تصل شركة التوصيل فوراً (الأصناف والمبلغ المحصّل)، ثم يُطبع ملصقها من جديد.
     const courierUpdate = afterInvoice ? await this.shipments.pushUpdate(o.id, dto.cashierName) : null;
     return { ...(await this.lookup(o.id)), courierUpdate };
