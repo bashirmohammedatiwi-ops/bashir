@@ -35,6 +35,7 @@ export const TIMELINE_LABEL_AR: Record<string, string> = {
   SHIPMENT_CANCELLED: "أُلغيت الشحنة",
   SHIPMENT_DECISION: "قرار على الشحنة",
   SHIPMENT_UPDATED: "عُدّل الطلب عند هاي إكسبريس",
+  COURIER_OPTIONS: "عُدّلت خيارات التوصيل",
   SHIPMENT_UPDATE_FAILED: "تعذر تعديل الطلب عند هاي إكسبريس",
   COURIER_STATUS: "تحديث من شركة التوصيل",
   COURIER_STATUS_UNKNOWN: "حالة غير معروفة من شركة التوصيل",

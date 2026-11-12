@@ -676,6 +676,13 @@ model Order {
   /// المبلغ الذي تحصّله شركة التوصيل (0 للمدفوع مسبقاً بلا إضافات).
   codAmount          Int?
   cancelReason       String?
+  /// خيارات شركة التوصيل لهذا الطلب (من كاشير الطلبات): نوع الشحنة عند هاي إكسبريس
+  /// (1 قابل للكسر، 2 توصيل مبرد، 3 ممنوع الفتح، 4 معاملة خاصة؛ null = الافتراضي من الإعدادات).
+  courierTypeId      Int?
+  /// ملاحظة للمندوب تُضاف لملاحظات الشحنة.
+  courierNote        String?
+  /// هاتف ثانٍ للزبونة (يُرسل customer_secondary_phone).
+  courierPhone2      String?
 
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

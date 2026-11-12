@@ -51,6 +51,14 @@ export function unitCounts(
   return { orderedLines, orderedUnits, lines: deliveredLines, units, missingUnits, extraUnits };
 }
 
+/** أنواع الشحنة عند هاي إكسبريس (order_type_id) — نفس مربعات ملصقهم. */
+export const HI_ORDER_TYPES = [
+  { id: 1, name: "قابل للكسر" },
+  { id: 2, name: "توصيل مبرد" },
+  { id: 3, name: "ممنوع الفتح" },
+  { id: 4, name: "معاملة خاصة" },
+];
+
 const QUEUE_STAGES: FulfillmentStage[] = [
   FulfillmentStage.PICKED,
   FulfillmentStage.READY_FOR_PICKUP,
@@ -198,6 +206,8 @@ export class PosLinkService {
       lines: view.lines,
       counts: view.counts,
       totals: await this.totals(o.id),
+      // خيارات التوصيل (نوع الشحنة عند هاي إكسبريس وغيرها) — يعدّلها الكاشير.
+      courier: await this.courierInfo(o),
       money: view.money,
       receipt: this.receipt(o, view.lines),
       blockers,
@@ -208,6 +218,20 @@ export class PosLinkService {
       shipment: shipment
         ? { state: shipment.state, trackingNumber: shipment.trackingNumber, statusName: shipment.statusName, lastError: shipment.lastError, codAmount: shipment.codAmount }
         : null,
+    };
+  }
+
+  private async courierInfo(o: { courierTypeId: number | null; courierNote: string | null; courierPhone2: string | null; parcelCount: number | null }) {
+    const s = (await this.settings.getAll()) as Record<string, unknown>;
+    const def = Number(s.hiExpressOrderTypeId) > 0 ? Number(s.hiExpressOrderTypeId) : null;
+    return {
+      typeId: o.courierTypeId,
+      defaultTypeId: def,
+      effectiveTypeId: o.courierTypeId != null ? (o.courierTypeId > 0 ? o.courierTypeId : null) : def,
+      note: o.courierNote,
+      phone2: o.courierPhone2,
+      parcelCount: o.parcelCount ?? 1,
+      types: HI_ORDER_TYPES,
     };
   }
 
@@ -253,6 +277,54 @@ export class PosLinkService {
     // الفاتورة المعدّلة تصل شركة التوصيل فوراً (الأصناف والمبلغ المحصّل)، ثم يُطبع ملصقها من جديد.
     const courierUpdate = afterInvoice ? await this.shipments.pushUpdate(o.id, dto.cashierName) : null;
     return { ...(await this.lookup(o.id)), courierUpdate };
+  }
+
+  /**
+   * خيارات التوصيل للطلب من الكاشير: نوع الشحنة عند هاي إكسبريس، عدد الطرود، ملاحظة للمندوب، هاتف ثانٍ.
+   * قبل الفوترة تُحفظ وتُرسل مع إنشاء الشحنة؛ بعدها تُرسل فوراً لهاي إكسبريس ما دام المندوب لم يستلم الطرد.
+   */
+  async courierOptions(
+    codeOrId: string,
+    dto: { typeId?: number | null; parcelCount?: number | null; note?: string | null; phone2?: string | null; cashierName: string; cashierId?: string },
+  ) {
+    const o = await this.findOrder(codeOrId);
+    if (o.status === OrderStatus.CANCELLED) throw new ConflictException("الطلب ملغي");
+    if (o.deliveryOption === DeliveryOption.PICKUP) throw new BadRequestException("طلب استلام من المحل — لا شحنة");
+    const afterInvoice = !!o.posInvoicedAt;
+    if (afterInvoice) {
+      if (o.fulfillmentStage !== FulfillmentStage.INVOICED && o.fulfillmentStage !== FulfillmentStage.HANDED_OVER) {
+        throw new ConflictException("خرج الطلب من المحل — لا تُعدّل خيارات التوصيل بعد استلام المندوب");
+      }
+      const courier = await this.shipments.courierEditable(o.id);
+      if (!courier.ok) throw new ConflictException({ message: courier.reason, code: "COURIER_LOCKED" });
+    }
+    const data: Prisma.OrderUpdateInput = {};
+    if (dto.typeId !== undefined) {
+      if (dto.typeId !== null && ![0, 1, 2, 3, 4].includes(Number(dto.typeId))) throw new BadRequestException("نوع شحنة غير معروف");
+      data.courierTypeId = dto.typeId === null ? null : Number(dto.typeId);
+    }
+    if (dto.parcelCount !== undefined && dto.parcelCount !== null) {
+      const n = Math.trunc(Number(dto.parcelCount));
+      if (!(n >= 1 && n <= 20)) throw new BadRequestException("عدد الطرود بين 1 و20");
+      data.parcelCount = n;
+    }
+    if (dto.note !== undefined) data.courierNote = dto.note?.trim().slice(0, 300) || null;
+    if (dto.phone2 !== undefined) {
+      const raw = dto.phone2?.trim() || "";
+      if (raw && !courierPhone(raw)) throw new BadRequestException(`رقم الهاتف الثاني غير صالح: ${raw}`);
+      data.courierPhone2 = raw ? courierPhone(raw) : null;
+    }
+    await this.prisma.order.update({ where: { id: o.id }, data });
+    await this.timeline.log({
+      orderId: o.id,
+      type: "COURIER_OPTIONS",
+      actorType: "CASHIER",
+      actorId: dto.cashierId ?? null,
+      actorName: dto.cashierName || null,
+      data: JSON.parse(JSON.stringify({ typeId: data.courierTypeId, parcelCount: data.parcelCount, note: data.courierNote, phone2: data.courierPhone2 })),
+    });
+    const courierUpdate = afterInvoice ? await this.shipments.pushUpdate(o.id, dto.cashierName) : null;
+    return { ...(await this.lookup(o.id)), courierUpdate, reprintLabel: afterInvoice && !!courierUpdate?.ok };
   }
 
   /** ملصق شركة التوصيل نفسه (PDF من هاي إكسبريس) — للطباعة على طابعة الملصقات. */

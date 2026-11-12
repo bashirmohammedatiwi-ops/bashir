@@ -213,6 +213,16 @@ async function main() {
     assert.equal(sent.items.reduce((n: number, i: any) => n + i.count, 0), 3);
     assert.equal(hi.updates[hi.updates.length - 1]?.body.client_identifier, undefined);
     assert.ok((await timeline.list(o.id)).some((e) => e.type === "SHIPMENT_UPDATED"));
+    // خيارات التوصيل بعد الفوترة: نوع الشحنة والملاحظة والهاتف الثاني تصل هاي إكسبريس فوراً.
+    const opt = await link.courierOptions(o.orderNumber, { typeId: 2, parcelCount: 2, note: "اتصل قبل الوصول", phone2: "07801112233", cashierName: "كاشير الطلبات" });
+    assert.equal(opt.courierUpdate?.ok, true);
+    assert.equal(opt.courier.effectiveTypeId, 2);
+    const sentOpt = hi.created.get(o.orderNumber);
+    assert.equal(sentOpt.order_type_id, 2);
+    assert.equal(sentOpt.customer_secondary_phone, "07801112233");
+    assert.match(sentOpt.notes, /للمندوب: اتصل قبل الوصول/);
+    assert.match(sentOpt.notes, /عدد الأكياس: 2/);
+    await rejects(link.courierOptions(o.orderNumber, { phone2: "123", cashierName: "ك" }), "غير صالح");
     const lbl = await link.label(o.orderNumber);
     assert.match(lbl.pdfBase64, /^JVBERi0/);
     hi.set(o.orderNumber, 1, { driver: "علي" });

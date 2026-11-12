@@ -53,6 +53,18 @@ export class LinkEditDto {
   @IsOptional() @IsBoolean() allowInvoiced?: boolean;
 }
 
+/** خيارات التوصيل للطلب من الكاشير (نوع الشحنة عند هاي إكسبريس، الطرود، ملاحظة، هاتف ثانٍ). */
+export class LinkCourierOptionsDto {
+  @IsString() @MaxLength(80) code: string;
+  /** null = الافتراضي من الإعدادات، 0 = بلا نوع، 1–4 أنواع هاي إكسبريس. */
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) typeId?: number | null;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) parcelCount?: number | null;
+  @IsOptional() @IsString() @MaxLength(300) note?: string | null;
+  @IsOptional() @IsString() @MaxLength(40) phone2?: string | null;
+  @IsString() @MaxLength(80) cashierName: string;
+  @IsOptional() @IsString() @MaxLength(64) cashierId?: string;
+}
+
 export class ShipmentDecisionDto {
   @IsIn(["resend", "approve", "return"]) decision: "resend" | "approve" | "return";
   @IsOptional() @IsString() @MaxLength(1000) note?: string;

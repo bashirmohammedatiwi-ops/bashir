@@ -7,7 +7,7 @@ import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
-import { CourierAreaDto, LinkCodeDto, LinkEditDto, LinkInvoiceDto, LinkQueueDto, LinkReturnDto, ShipmentDecisionDto } from "./dto/delivery.dto";
+import { CourierAreaDto, LinkCodeDto, LinkCourierOptionsDto, LinkEditDto, LinkInvoiceDto, LinkQueueDto, LinkReturnDto, ShipmentDecisionDto } from "./dto/delivery.dto";
 import { OrdersLinkGuard } from "./orders-link.guard";
 import { PosLinkService } from "./pos-link.service";
 import { ShipmentsService } from "./shipments.service";
@@ -47,6 +47,13 @@ export class PosLinkController {
   @HttpCode(200)
   edit(@Body() dto: LinkEditDto) {
     return this.link.edit(dto.code, dto);
+  }
+
+  /** خيارات التوصيل (قابل للكسر، مبرد...، الطرود، ملاحظة، هاتف ثانٍ) — تصل هاي إكسبريس فوراً بعد الفوترة. */
+  @Post("orders/courier-options")
+  @HttpCode(200)
+  courierOptions(@Body() dto: LinkCourierOptionsDto) {
+    return this.link.courierOptions(dto.code, dto);
   }
 
   /** ملصق هاي إكسبريس نفسه (PDF base64) — كاشير الطلبات يطبعه على طابعة الملصقات. */

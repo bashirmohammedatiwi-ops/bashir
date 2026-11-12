@@ -128,8 +128,10 @@ export class ShipmentsService implements OnModuleInit, OnModuleDestroy {
       if (count <= 0) continue;
       items.push({ name: `${l.name}${l.shadeName ? ` — ${l.shadeName}` : ""}`.slice(0, 100), count, notes: l.kind === "EXTRA" && l.charge === "FREE" ? "هدية" : null });
     }
-    const secondary = courierPhone(order.user?.phone);
+    // هاتف ثانٍ: ما أدخله الكاشير أولاً، وإلا هاتف حساب الزبونة.
+    const secondary = courierPhone(order.courierPhone2) ?? courierPhone(order.user?.phone);
     const notes = [
+      order.courierNote?.trim() ? `للمندوب: ${order.courierNote.trim()}` : null,
       order.isGift ? "طلب هدية — لا تُسلَّم الفاتورة بالأسعار" : null,
       order.parcelCount && order.parcelCount > 1 ? `عدد الأكياس: ${order.parcelCount}` : null,
       order.notes?.trim() || null,
@@ -149,7 +151,15 @@ export class ShipmentsService implements OnModuleInit, OnModuleDestroy {
       ...(s.hiExpressSendHiddenValue === true && (order.codAmount ?? 0) === 0 && prepaidValue > 0 ? { hidden_order_value: prepaidValue } : {}),
       delivery_address: courierAddress(order) || null,
       notes: notes || null,
-      order_type_id: Number(s.hiExpressOrderTypeId) > 0 ? Number(s.hiExpressOrderTypeId) : null,
+      // نوع الشحنة: اختيار الكاشير لهذا الطلب (0 = بلا نوع)، وإلا الافتراضي من الإعدادات.
+      order_type_id:
+        order.courierTypeId != null
+          ? order.courierTypeId > 0
+            ? order.courierTypeId
+            : null
+          : Number(s.hiExpressOrderTypeId) > 0
+            ? Number(s.hiExpressOrderTypeId)
+            : null,
       client_name: (s.storeName as string) || "ديما الحياة",
       client_phone1: courierPhone(s.supportPhone as string) ?? null,
       items,
