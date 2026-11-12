@@ -356,6 +356,37 @@ async function main() {
     await rejects(svc.cashierEdit(o6.id, cashier, { op: "add", barcode: s.lip.barcode! }), "مُفوتر");
   });
 
+  await test("camera add: shop-only product (POS snapshot) at shop price; an ordered short item fills its shortage; large image", async () => {
+    const o7 = await makeOrder(s);
+    await svc.start(o7.id, staff);
+    const posBc = `POSCAM${tag}`;
+    await prisma.inventorySyncSnapshot.create({ data: { barcode: posBc, name: "مشط خشبي من المحل", price: 4_000, originalPrice: 4_000, stock: 7 } });
+    const info = await svc.productInfo(o7.id, posBc);
+    assert.equal(info.found, true);
+    if (info.found) {
+      assert.equal(info.posOnly, true);
+      assert.equal(info.price, 4_000);
+      assert.equal(info.stock, 7);
+      assert.equal(info.inOrder, null);
+    }
+    let v = await svc.addProduct(o7.id, staff, { barcode: posBc, qty: 2, clientScanId: "cam-1" });
+    v = await svc.addProduct(o7.id, staff, { barcode: posBc, qty: 2, clientScanId: "cam-1" });
+    const comb = v.lines.find((l) => l.barcode === posBc)!;
+    assert.equal(comb.kind, "EXTRA");
+    assert.equal(comb.pickedQty, 2);
+    assert.equal(comb.posOnly, true);
+    // صنف من الطلب (أحمر الشفاه، 0 من 2): الكاميرا تكمل الناقص ولا تنشئ إضافياً.
+    const lipInfo = await svc.productInfo(o7.id, s.lip.barcode!);
+    assert.equal(lipInfo.found && lipInfo.inOrder?.missingQty, 2);
+    v = await svc.addProduct(o7.id, staff, { barcode: s.lip.barcode!, qty: 3 });
+    const lip = v.lines.find((l) => l.name === "أحمر شفاه" && l.kind === "ORDERED")!;
+    assert.equal(lip.pickedQty, 2);
+    assert.equal(lip.collected, true);
+    assert.equal(v.lines.find((l) => l.name === "أحمر شفاه" && l.kind === "EXTRA")!.pickedQty, 1);
+    assert.ok("image" in lip);
+    await rejects(svc.productInfo(o7.id, "000000-none").then((r) => { if (!r.found) throw new Error("غير موجود"); }), "غير موجود");
+  });
+
   await test("slip: sorted lines, no prices, QR code is the order number", async () => {
     const slip = await svc.slip(order.id);
     assert.equal(slip.code, order.orderNumber);

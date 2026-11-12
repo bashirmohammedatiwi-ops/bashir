@@ -226,7 +226,12 @@ export class FulfillmentService {
           state,
           color: LINE_COLOR[state],
           label: LINE_LABEL_AR[state],
-          thumb: thumbs.get(l.shadeId ?? "") ?? thumbs.get(l.productId ?? "") ?? null,
+          thumb: (thumbs.get(l.shadeId ?? "") ?? thumbs.get(l.productId ?? ""))?.thumb ?? null,
+          // صورة كبيرة لعرض الصنف عند الضغط عليه في تطبيق التجهيز.
+          image: (thumbs.get(l.shadeId ?? "") ?? thumbs.get(l.productId ?? ""))?.large ?? null,
+          /** صنف من كتالوج المحل غير موجود في التطبيق. */
+          posOnly: l.kind === "EXTRA" && !l.productId,
+          collected: l.kind === "ORDERED" ? l.pickedQty >= l.orderedQty : l.pickedQty > 0,
         };
       }),
       counts: pickCounts(engineLines, finalized),
@@ -998,16 +1003,112 @@ export class FulfillmentService {
       where: { OR: [{ barcode: { in: candidates } }, { sku: { in: candidates } }] },
       select: productSelect,
     });
-    if (!product) return null;
+    if (product) {
+      return {
+        productId: product.id,
+        shadeId: null,
+        barcode: product.barcode ?? candidates[0],
+        name: product.nameAr || product.name,
+        shadeName: null,
+        price: product.price,
+        thumb: this.productThumb(product),
+      };
+    }
+    // ليس في التطبيق: كتالوج المحل كاملاً كما يرفعه FOT POS (لقطة المزامنة) — الاسم والسعر من المحل.
+    const pos = await db.inventorySyncSnapshot.findFirst({
+      where: { barcode: { in: candidates } },
+      select: { barcode: true, name: true, price: true },
+    });
+    if (!pos || !pos.name || !(pos.price > 0)) return null;
     return {
-      productId: product.id,
+      productId: null,
       shadeId: null,
-      barcode: product.barcode ?? candidates[0],
-      name: product.nameAr || product.name,
+      barcode: pos.barcode,
+      name: pos.name,
       shadeName: null,
-      price: product.price,
-      thumb: this.productThumb(product),
+      price: pos.price,
+      thumb: null,
     };
+  }
+
+  /**
+   * صنف بالباركود قبل إضافته للطلب (كاميرا تطبيق التجهيز): من التطبيق أو من كتالوج المحل، مع صورته الكبيرة
+   * ومخزون المحل، وهل هو في الطلب أصلاً (فيُكمل الناقص بدل أن يصير إضافياً).
+   */
+  async productInfo(orderId: string, barcode: string) {
+    const found = await this.lookup(barcode);
+    if (!found) return { found: false as const, barcode };
+    const [snap, lines] = await Promise.all([
+      this.prisma.inventorySyncSnapshot.findFirst({ where: { barcode: { in: barcodeLookupCandidates(found.barcode) } }, select: { stock: true } }),
+      this.prisma.orderPickLine.findMany({ where: { orderId } }),
+    ]);
+    const keys = new Set(barcodeLookupCandidates(barcode).concat(barcodeLookupCandidates(found.barcode)));
+    const inOrder = lines.find((l) => l.barcode && barcodeLookupCandidates(l.barcode).some((k) => keys.has(k)));
+    const images = await this.thumbs([{ productId: found.productId, shadeId: found.shadeId }]);
+    const img = images.get(found.shadeId ?? "") ?? images.get(found.productId ?? "");
+    return {
+      found: true as const,
+      barcode: found.barcode,
+      name: found.name,
+      shadeName: found.shadeName,
+      price: found.price,
+      posOnly: !found.productId,
+      stock: snap?.stock ?? null,
+      thumb: img?.thumb ?? null,
+      image: img?.large ?? null,
+      inOrder: inOrder
+        ? { lineId: inOrder.id, kind: inOrder.kind, orderedQty: inOrder.orderedQty, pickedQty: inOrder.pickedQty, missingQty: Math.max(0, inOrder.orderedQty - inOrder.pickedQty) }
+        : null,
+    };
+  }
+
+  /**
+   * إضافة صنف من كاميرا تطبيق التجهيز: إن كان من الطلب وناقصاً يكمل الناقص أولاً، والباقي إضافي
+   * (من التطبيق بسعره، أو من كتالوج المحل بسعر المحل).
+   */
+  async addProduct(orderId: string, actor: Actor, dto: { barcode: string; qty?: number; charge?: "PAID" | "FREE"; reason?: string; clientScanId?: string }) {
+    const qty = Math.max(1, Math.min(999, Math.trunc(dto.qty ?? 1)));
+    const name = await this.actorName(actor);
+    let left = qty;
+    await this.prisma.$transaction(async (tx) => {
+      const o = await this.lockOrder(tx, orderId);
+      this.assertPicker(o, actor);
+      if (dto.clientScanId) {
+        const dup = await tx.orderScan.findUnique({ where: { orderId_clientScanId: { orderId, clientScanId: dto.clientScanId } } });
+        if (dup) {
+          left = 0;
+          return;
+        }
+      }
+      if (dto.charge !== "FREE") {
+        const found = await this.lookup(dto.barcode, tx);
+        const keys = new Set(barcodeLookupCandidates(dto.barcode).concat(found ? barcodeLookupCandidates(found.barcode) : []));
+        const lines = await tx.orderPickLine.findMany({ where: { orderId, kind: "ORDERED" }, orderBy: { createdAt: "asc" } });
+        for (const l of lines) {
+          if (!left) break;
+          if (!l.barcode || !barcodeLookupCandidates(l.barcode).some((k) => keys.has(k)) || l.pickedQty >= l.orderedQty) continue;
+          const take = Math.min(left, l.orderedQty - l.pickedQty);
+          await tx.orderPickLine.update({
+            where: { id: l.id },
+            data: { pickedQty: { increment: take }, updatedById: actor.id, ...(l.pickedQty + take >= l.orderedQty ? { reason: null } : {}) },
+          });
+          await tx.orderScan.create({
+            data: { orderId, lineId: l.id, barcode: dto.barcode.slice(0, 80), result: ScanResult.MATCHED, qty: take, userId: actor.id, userName: name, device: "camera-add", clientScanId: dto.clientScanId ?? null },
+          });
+          left -= take;
+        }
+      }
+    });
+    if (left > 0) {
+      await this.addExtra(orderId, actor, {
+        barcode: dto.barcode,
+        qty: left,
+        charge: dto.charge ?? "PAID",
+        reason: dto.reason,
+        clientScanId: dto.clientScanId ? `${dto.clientScanId}-x` : undefined,
+      } as PickExtraDto);
+    }
+    return this.view(orderId);
   }
 
   private productThumb(p?: Pick<ProductRow, "images"> | null) {
@@ -1016,8 +1117,9 @@ export class FulfillmentService {
     return controlMediaUrls(m).thumb;
   }
 
+  /** صورة صغيرة (للقائمة) وكبيرة (لعرض الصنف) لكل منتج أو تدرج. */
   private async thumbs(refs: Array<{ productId: string | null; shadeId: string | null }>) {
-    const map = new Map<string, string | null>();
+    const map = new Map<string, { thumb: string | null; large: string | null }>();
     const shadeIds = [...new Set(refs.map((r) => r.shadeId).filter((x): x is string => !!x))];
     const productIds = [...new Set(refs.map((r) => r.productId).filter((x): x is string => !!x))];
     const [shades, products] = await Promise.all([
@@ -1028,8 +1130,17 @@ export class FulfillmentService {
         ? this.prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, images: productSelect.images } })
         : [],
     ]);
-    for (const s of shades) if (s.image) map.set(s.id, controlMediaUrls(s.image).thumb);
-    for (const p of products) map.set(p.id, this.productThumb(p));
+    for (const s of shades) {
+      if (!s.image) continue;
+      const u = controlMediaUrls(s.image);
+      map.set(s.id, { thumb: u.thumb, large: u.large });
+    }
+    for (const p of products) {
+      const m = p.images?.[0]?.media;
+      if (!m || m.storagePath === "placeholder") continue;
+      const u = controlMediaUrls(m);
+      map.set(p.id, { thumb: u.thumb, large: u.large });
+    }
     return map;
   }
 

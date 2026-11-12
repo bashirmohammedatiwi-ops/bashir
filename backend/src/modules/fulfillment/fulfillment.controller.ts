@@ -6,6 +6,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import {
+  PickAddProductDto,
   PickExtraDto,
   PickFinishDto,
   PickLinePatchDto,
@@ -54,6 +55,18 @@ export class FulfillmentController {
   @Post(":id/pick/extra")
   extra(@Param("id") id: string, @Body() dto: PickExtraDto, @CurrentUser() user: JwtUser) {
     return this.fulfillment.addExtra(id, actorOf(user), dto);
+  }
+
+  /** صنف بالباركود قبل إضافته (الاسم، الصورة، السعر، مخزون المحل، وهل هو في الطلب). */
+  @Get(":id/pick/product/:barcode")
+  product(@Param("id") id: string, @Param("barcode") barcode: string) {
+    return this.fulfillment.productInfo(id, barcode);
+  }
+
+  /** إضافة صنف من الكاميرا: يكمل ناقص الطلب أولاً، والباقي إضافي (من التطبيق أو من المحل). */
+  @Post(":id/pick/add")
+  add(@Param("id") id: string, @Body() dto: PickAddProductDto, @CurrentUser() user: JwtUser) {
+    return this.fulfillment.addProduct(id, actorOf(user), dto);
   }
 
   @Patch(":id/pick/lines/:lineId")

@@ -39,6 +39,15 @@ export class PickExtraDto {
   @IsOptional() @IsString() @MaxLength(80) device?: string;
 }
 
+/** إضافة صنف من كاميرا تطبيق التجهيز (من التطبيق أو من كتالوج المحل). */
+export class PickAddProductDto {
+  @IsString() @MaxLength(80) barcode: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(50) qty?: number;
+  @IsOptional() @IsIn(["PAID", "FREE"]) charge?: "PAID" | "FREE";
+  @IsOptional() @IsString() @MaxLength(200) reason?: string;
+  @IsOptional() @IsString() @MaxLength(64) clientScanId?: string;
+}
+
 export class PickLinePatchDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(500) pickedQty?: number;
   @IsOptional() @IsString() @MaxLength(200) reason?: string;
