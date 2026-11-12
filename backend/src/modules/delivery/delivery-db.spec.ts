@@ -356,6 +356,28 @@ async function main() {
     assert.equal(await prisma.shipment.count({ where: { orderId: o.id } }), 0);
   });
 
+  await test("cashier edits as the shop server sends them (null fields): remove, restore, delete an extra", async () => {
+    const o = await makePicked();
+    const pos = { reason: null, charge: null, barcode: null, posName: null, posPrice: null, amount: null, unitPrice: null, gift: null, clientEditId: null, cashierName: "كاشير الطلبات", cashierId: "1" } as any;
+    // صنف من المحل فقط (ليس في التطبيق) كي لا يفرغ الطلب عند إزالة صنفه الوحيد.
+    const v0 = await link.edit(o.orderNumber, { ...pos, op: "add", barcode: "POS-ONLY-77", qty: 1, charge: "PAID", posName: "مشط", posPrice: 3_000 });
+    assert.equal(v0.receipt.total, 48_000);
+    const line = v0.lines.find((l: any) => l.kind === "ORDERED")!;
+    // إزالة الصنف (بسبب) ثم إرجاعه بلا سبب (reason: null) — كان يرد 500.
+    const removed = await link.edit(o.orderNumber, { ...pos, op: "set", lineId: line.id, qty: 0, reason: "نفد من المحل" });
+    assert.equal(removed.lines.find((l: any) => l.id === line.id)!.pickedQty, 0);
+    const restored = await link.edit(o.orderNumber, { ...pos, op: "set", lineId: line.id, qty: line.orderedQty });
+    assert.equal(restored.lines.find((l: any) => l.id === line.id)!.pickedQty, line.orderedQty);
+    assert.equal(restored.receipt.total, 48_000);
+    // حذف الصنف الإضافي بلا سبب (reason: null).
+    const extra = restored.lines.find((l: any) => l.kind === "EXTRA")!;
+    const back = await link.edit(o.orderNumber, { ...pos, op: "set", lineId: extra.id, qty: 0 });
+    assert.equal(back.lines.some((l: any) => l.kind === "EXTRA"), false);
+    assert.equal(back.receipt.total, 45_000);
+    // إزالة الصنف الوحيد تُرفض برسالة واضحة (لا 500).
+    await rejects(link.edit(o.orderNumber, { ...pos, op: "set", lineId: line.id, qty: 0, reason: "نفد" }), "لا يبقى في الطلب");
+  });
+
   await test("pickup order with gift wrap: a products-only shop receipt is accepted", async () => {
     const o = await makePicked({ pickup: true, giftWrap: 3_000 });
     assert.equal(o.total, 43_000);

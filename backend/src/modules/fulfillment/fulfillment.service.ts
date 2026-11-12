@@ -575,7 +575,8 @@ export class FulfillmentService {
         data.pickedQty = dto.pickedQty;
         if (dto.manualConfirm !== true) data.manualConfirm = false;
       }
-      if (dto.reason !== undefined) data.reason = dto.reason.trim() || null;
+      if (typeof dto.reason === "string") data.reason = dto.reason.trim() || null;
+      else if (dto.reason === null) data.reason = null;
       if (dto.charge && line.kind === "EXTRA") data.charge = dto.charge;
       if (dto.substituteForLineId !== undefined && line.kind === "EXTRA") {
         data.substituteForLineId = dto.substituteForLineId || null;
@@ -832,7 +833,8 @@ export class FulfillmentService {
         if (!line) throw new NotFoundException("السطر غير موجود في هذا الطلب");
         const qty = Math.trunc(dto.qty ?? line.pickedQty);
         if (qty < 0 || qty > 999) throw new BadRequestException("كمية غير صالحة");
-        const reason = dto.reason !== undefined ? dto.reason.trim().slice(0, 300) || null : line.reason;
+        // سيرفر المحل يرسل reason: null حين لا سبب (إرجاع قطعة، حذف صنف جديد) — يُعامَل كغيابه.
+        const reason = typeof dto.reason === "string" ? dto.reason.trim().slice(0, 300) || null : line.reason;
         if (line.kind === "ORDERED") {
           if (qty > line.orderedQty) throw new BadRequestException(`المطلوب ${line.orderedQty} فقط — الزيادة تُضاف كصنف إضافي بمسح الباركود`);
           if (qty < line.orderedQty && !reason) {
