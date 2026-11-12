@@ -58,20 +58,21 @@ Future<String?> showReasonSheet(BuildContext context, {required String title, St
               runSpacing: 8,
               children: [
                 for (final r in removeReasons)
-                  ChoiceChip(
-                    label: Text(r),
+                  PickChip(
+                    label: r,
                     selected: !other && picked == r,
-                    selectedColor: AppColors.dangerSoft,
-                    onSelected: (_) => set(() {
+                    color: AppColors.danger,
+                    onTap: () => set(() {
                       other = false;
                       picked = r;
                     }),
                   ),
-                ChoiceChip(
-                  label: const Text('سبب آخر…'),
+                PickChip(
+                  label: 'سبب آخر…',
                   selected: other,
-                  selectedColor: AppColors.dangerSoft,
-                  onSelected: (_) => set(() => other = true),
+                  color: AppColors.danger,
+                  icon: Icons.edit_outlined,
+                  onTap: () => set(() => other = true),
                 ),
               ],
             ),
@@ -399,6 +400,7 @@ class _PickItemSheetState extends State<PickItemSheet> {
           if (i.isExtra) ...[
             _label('على حساب من؟'),
             SegmentedButton<String>(
+              style: pickSegmentStyle,
               segments: const [
                 ButtonSegment(value: 'PAID', label: Text('مدفوع'), icon: Icon(Icons.payments_outlined)),
                 ButtonSegment(value: 'FREE', label: Text('هدية'), icon: Icon(Icons.card_giftcard_rounded)),
@@ -521,6 +523,7 @@ Future<AddChoice?> showAddProductSheet(BuildContext context, {required PickProdu
               ),
             _label('على حساب من؟'),
             SegmentedButton<String>(
+              style: pickSegmentStyle,
               segments: const [
                 ButtonSegment(value: 'PAID', label: Text('مدفوع'), icon: Icon(Icons.payments_outlined)),
                 ButtonSegment(value: 'FREE', label: Text('هدية'), icon: Icon(Icons.card_giftcard_rounded)),
@@ -538,10 +541,12 @@ Future<AddChoice?> showAddProductSheet(BuildContext context, {required PickProdu
               runSpacing: 8,
               children: [
                 for (final r in addReasons)
-                  ChoiceChip(
-                    label: Text(r),
+                  PickChip(
+                    label: r,
                     selected: reason == r,
-                    onSelected: (on) => set(() {
+                    color: AppColors.primary,
+                    onTap: () => set(() {
+                      final on = reason != r;
                       reason = on ? r : null;
                       if (r == 'هدية' && on) charge = 'FREE';
                     }),
@@ -663,4 +668,55 @@ Widget _row(String k, String v, {bool bold = false, Color? color}) => Padding(
       Text(v, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w700, color: color, fontSize: bold ? 16 : 14)),
     ],
   ),
+);
+
+/// زر اختيار واضح بألوان صريحة (لا يعتمد على ثيم النظام): غير المختار أبيض بحدّ رمادي ونص داكن،
+/// والمختار ممتلئ بلونه ونصه أبيض عريض مع ✓ — مقروء في أي إضاءة وأي جهاز.
+class PickChip extends StatelessWidget {
+  const PickChip({super.key, required this.label, required this.selected, required this.onTap, this.color = AppColors.primary, this.icon});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color color;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? color : Colors.white,
+      shape: StadiumBorder(side: BorderSide(color: selected ? color : const Color(0xFFB9B0C8), width: 1.4)),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selected) ...[const Icon(Icons.check_rounded, size: 18, color: Colors.white), const SizedBox(width: 6)]
+                else if (icon != null) ...[Icon(icon, size: 17, color: AppColors.ink), const SizedBox(width: 6)],
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(fontSize: 14.5, fontWeight: selected ? FontWeight.w900 : FontWeight.w700, color: selected ? Colors.white : AppColors.ink),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+/// ألوان صريحة لأزرار «مدفوع/هدية»: المختار بنفسجي ونصه أبيض، والآخر أبيض بنص داكن.
+final pickSegmentStyle = ButtonStyle(
+  backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? AppColors.primary : Colors.white),
+  foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Colors.white : AppColors.ink),
+  iconColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Colors.white : AppColors.ink),
+  side: WidgetStateProperty.all(const BorderSide(color: Color(0xFFB9B0C8), width: 1.2)),
+  textStyle: WidgetStateProperty.all(const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 14)),
+  minimumSize: WidgetStateProperty.all(const Size(0, 46)),
 );

@@ -98,9 +98,15 @@ ThemeData buildTheme() {
         textStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600),
       ),
     ),
+    // ألوان صريحة للرقائق: نص داكن على أبيض، والمختار بنفسجي فاتح بنص بنفسجي عريض — مقروءة دائماً.
     chipTheme: base.chipTheme.copyWith(
-      side: const BorderSide(color: AppColors.line),
-      labelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, fontSize: 13),
+      backgroundColor: Colors.white,
+      selectedColor: AppColors.primarySoft,
+      disabledColor: const Color(0xFFF1EFF4),
+      side: const BorderSide(color: Color(0xFFCFC6DC)),
+      labelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13.5, color: AppColors.ink),
+      secondaryLabelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 13.5, color: AppColors.primaryDeep),
+      checkmarkColor: AppColors.primaryDeep,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     snackBarTheme: SnackBarThemeData(
