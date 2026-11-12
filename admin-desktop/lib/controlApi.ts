@@ -2,7 +2,9 @@ import { api } from "./api";
 
 /** واجهة «مركز التحكم» وتطبيق المدير (/control) — نفس المسارات التي يستخدمها الهاتف. */
 
-const data = <T,>(r: { data: any }) => (r.data?.data ?? r.data) as T;
+/** يفكّ غلاف { data } — ويُبقي data: null كما هو (لا شحنة مثلاً) بدل إرجاع الغلاف نفسه. */
+const data = <T,>(r: { data: any }) =>
+  (r.data !== null && typeof r.data === "object" && !Array.isArray(r.data) && "data" in r.data ? r.data.data : r.data) as T;
 
 export type ControlShadeDot = { colorHex: string; colorHexEnd?: string | null; isActive: boolean };
 

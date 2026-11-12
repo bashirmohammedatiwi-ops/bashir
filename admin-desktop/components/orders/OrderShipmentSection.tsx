@@ -182,6 +182,7 @@ export function OrderShipmentSection({
     );
   }
 
+  const events = Array.isArray(sh.events) ? sh.events : [];
   const st = SHIPMENT_STATE_LABELS[sh.state] ?? { label: sh.state, color: "default" };
   const statusId = sh.statusId ?? 0;
   const canCancel = isAdmin && sh.state === "CREATED" && !sh.isCanceled && !sh.isFinal && statusId === 0;
@@ -327,12 +328,12 @@ export function OrderShipmentSection({
         )}
       </Space>
 
-      {sh.events.length > 0 && (
+      {events.length > 0 && (
         <div className="ord-ship-events">
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 700 }}>
-            رسائل شركة التوصيل ({sh.events.length})
+            رسائل شركة التوصيل ({events.length})
           </Text>
-          {sh.events.map((e, i) => (
+          {events.map((e, i) => (
             <div key={e.id ?? `${e.statusId}-${e.receivedAt}-${i}`} className="ord-ship-event">
               <div className="ord-ship-event-top">
                 <b>{e.label}</b>

@@ -2,7 +2,9 @@ import { api } from "./api";
 
 /** طلبات التطبيق: التجهيز بالمسح، قائمة التجهيز، الخط الزمني، وشحن هاي إكسبريس (مسارات /control). */
 
-const data = <T,>(r: { data: any }) => (r.data?.data ?? r.data) as T;
+/** يفكّ غلاف { data } — ويُبقي data: null كما هو (لا شحنة مثلاً) بدل إرجاع الغلاف نفسه. */
+const data = <T,>(r: { data: any }) =>
+  (r.data !== null && typeof r.data === "object" && !Array.isArray(r.data) && "data" in r.data ? r.data.data : r.data) as T;
 
 export type FulfillmentStage =
   | "NEW"
