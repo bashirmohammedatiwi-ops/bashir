@@ -683,6 +683,9 @@ model Order {
   courierNote        String?
   /// هاتف ثانٍ للزبونة (يُرسل customer_secondary_phone).
   courierPhone2      String?
+  /// خصم يدوي من كاشير الطلبات (بالدينار، على الأصناف) وسببه.
+  cashierDiscount     Int     @default(0)
+  cashierDiscountNote String?
 
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

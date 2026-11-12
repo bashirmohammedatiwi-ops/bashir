@@ -213,6 +213,14 @@ async function main() {
     assert.equal(sent.items.reduce((n: number, i: any) => n + i.count, 0), 3);
     assert.equal(hi.updates[hi.updates.length - 1]?.body.client_identifier, undefined);
     assert.ok((await timeline.list(o.id)).some((e) => e.type === "SHIPMENT_UPDATED"));
+    // خصم يدوي من الكاشير بعد الفوترة: المبلغ والمحصّل يقلّان ويصلان هاي إكسبريس، والإيصال يطابق.
+    const disc = await link.edit(o.orderNumber, { op: "discount", amount: 5_000, reason: "زبونة دائمة", cashierName: "كاشير الطلبات", allowInvoiced: true });
+    assert.equal(disc.receipt.total, 60_000);
+    assert.equal(disc.order.cashierDiscount, 5_000);
+    assert.equal(disc.receipt.itemsTotal + disc.receipt.shipping + disc.receipt.giftWrap - disc.receipt.discount, 60_000);
+    assert.equal(hi.created.get(o.orderNumber).order_value, 60_000);
+    const back = await link.edit(o.orderNumber, { op: "discount", amount: 0, cashierName: "كاشير الطلبات", allowInvoiced: true });
+    assert.equal(back.receipt.total, 65_000);
     // خيارات التوصيل بعد الفوترة: نوع الشحنة والملاحظة والهاتف الثاني تصل هاي إكسبريس فوراً.
     const opt = await link.courierOptions(o.orderNumber, { typeId: 2, parcelCount: 2, note: "اتصل قبل الوصول", phone2: "07801112233", cashierName: "كاشير الطلبات" });
     assert.equal(opt.courierUpdate?.ok, true);

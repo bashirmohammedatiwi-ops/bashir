@@ -192,6 +192,9 @@ export class PosLinkService {
         isGift: o.isGift,
         giftMessage: o.giftMessage,
         giftHidePrices: o.giftHidePrices,
+        // خصم كاشير الطلبات اليدوي (بالدينار) وسببه.
+        cashierDiscount: o.cashierDiscount,
+        cashierDiscountNote: o.cashierDiscountNote,
       },
       customer: {
         name: o.shipFullName,
@@ -250,7 +253,8 @@ export class PosLinkService {
   async edit(
     codeOrId: string,
     dto: {
-      op: "add" | "set";
+      op: "add" | "set" | "discount";
+      amount?: number;
       barcode?: string;
       qty?: number;
       charge?: "PAID" | "FREE";

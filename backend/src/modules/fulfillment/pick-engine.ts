@@ -94,6 +94,8 @@ export interface OrderMoneyInput {
   /** PAID = مدفوع مسبقاً (بطاقة، أو مغطّى بالنقاط/الكوبون). */
   paymentStatus: string;
   coupon?: { type: CouponType; value: number; maxDiscount: number | null } | null;
+  /** خصم يدوي من كاشير الطلبات (بالدينار) — على الأصناف فقط، لا على التوصيل. */
+  manualDiscount?: number;
 }
 
 export interface PickPolicy {
@@ -130,6 +132,8 @@ export interface PickMoney {
   shippingTotal: number;
   giftWrapFee: number;
   loyaltyDiscount: number;
+  /** خصم الكاشير اليدوي المطبّق فعلاً. */
+  manualDiscount: number;
   /** المبلغ قبل التقريب. */
   totalBeforeRounding: number;
   prepaid: boolean;
@@ -200,9 +204,11 @@ export function computePickMoney(order: OrderMoneyInput, lines: PickLineInput[],
   const finalSubtotal = deliveredValue + extrasValue;
   const finalDiscountTotal = packageDiscount + couponDiscount;
   const loyaltyDiscount = Math.max(0, order.loyaltyDiscount);
+  // خصم الكاشير لا يتجاوز قيمة الأصناف بعد خصومها (التوصيل يبقى كاملاً).
+  const manualDiscount = Math.max(0, Math.min(int(order.manualDiscount ?? 0), Math.max(0, finalSubtotal - finalDiscountTotal - loyaltyDiscount)));
   const totalBeforeRounding = Math.max(
     0,
-    finalSubtotal - finalDiscountTotal + order.shippingTotal + order.giftWrapFee - loyaltyDiscount,
+    finalSubtotal - finalDiscountTotal + order.shippingTotal + order.giftWrapFee - loyaltyDiscount - manualDiscount,
   );
 
   const prepaid = order.paymentStatus === "PAID";
@@ -239,6 +245,7 @@ export function computePickMoney(order: OrderMoneyInput, lines: PickLineInput[],
 
   const changed =
     shortageValue > 0 ||
+    manualDiscount > 0 ||
     lines.some((l) => l.kind === "EXTRA" && l.pickedQty > 0);
 
   return {
@@ -255,6 +262,7 @@ export function computePickMoney(order: OrderMoneyInput, lines: PickLineInput[],
     shippingTotal: order.shippingTotal,
     giftWrapFee: order.giftWrapFee,
     loyaltyDiscount,
+    manualDiscount,
     totalBeforeRounding,
     prepaid,
     paidAmount,

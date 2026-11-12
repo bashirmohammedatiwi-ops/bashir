@@ -54,7 +54,9 @@ type Tx = Prisma.TransactionClient;
 
 /** تعديل «كاشير الطلبات» على طلب مُجهَّز (عبر سيرفر المحل الموقّع). */
 export interface CashierEditInput {
-  op: "add" | "set";
+  op: "add" | "set" | "discount";
+  /** discount: الخصم اليدوي بالدينار (0 = إلغاء الخصم). */
+  amount?: number;
   /** add: الباركود كما في المحل (أو «POS:Seq» لمادة بلا باركود). */
   barcode?: string;
   qty?: number;
@@ -80,6 +82,7 @@ const PICK_ADJUSTMENTS: AdjustmentType[] = [
   AdjustmentType.EXTRA,
   AdjustmentType.DISCOUNT_RECALC,
   AdjustmentType.ROUNDING,
+  AdjustmentType.MANUAL,
 ];
 
 const isManager = (a: Actor) => a.role === Role.ADMIN || a.role === Role.SUPER_ADMIN;
@@ -185,6 +188,7 @@ export class FulfillmentService {
         total: order.total,
         paymentStatus: order.paymentStatus,
         coupon: order.coupon ? { type: order.coupon.type, value: order.coupon.value, maxDiscount: order.coupon.maxDiscount } : null,
+        manualDiscount: order.cashierDiscount,
       },
       engineLines,
       policy,
@@ -843,6 +847,16 @@ export class FulfillmentService {
         }
         await audit(qty === 0 && line.kind === "EXTRA" ? null : line.id, line.barcode ?? "-", ScanResult.MANUAL, qty - line.pickedQty);
         summary = { op: "set", name: line.name, shadeName: line.shadeName, kind: line.kind, from: line.pickedQty, to: qty, reason, charge: dto.charge ?? null };
+      } else if (dto.op === "discount") {
+        // خصم يدوي كما في الكاشير الأصلي (سيرفر المحل يتحقق من صلاحية الخصم وحدّه) — 0 يلغيه.
+        const amount = Math.max(0, Math.round(Number(dto.amount ?? 0)));
+        const previous = o.cashierDiscount;
+        o.cashierDiscount = amount;
+        await tx.order.update({
+          where: { id: orderId },
+          data: { cashierDiscount: amount, cashierDiscountNote: amount ? dto.reason?.trim().slice(0, 200) || null : null },
+        });
+        summary = { op: "discount", from: previous, to: amount, reason: dto.reason ?? null };
       } else {
         throw new BadRequestException("عملية غير معروفة");
       }
@@ -893,6 +907,7 @@ export class FulfillmentService {
         total: o.total,
         paymentStatus: o.paymentStatus,
         coupon,
+        manualDiscount: o.cashierDiscount,
       },
       lines.map((l) => ({ ...l })),
       policy,
@@ -930,6 +945,9 @@ export class FulfillmentService {
     }
     if (money.roundingDiscount) {
       adjustments.push({ orderId, type: AdjustmentType.ROUNDING, amount: -money.roundingDiscount, method: AdjustmentMethod.NONE, actorId });
+    }
+    if (money.manualDiscount) {
+      adjustments.push({ orderId, type: AdjustmentType.MANUAL, amount: -money.manualDiscount, method: AdjustmentMethod.COD_CHANGE, actorId, note: "خصم كاشير الطلبات" });
     }
     if (adjustments.length) await tx.orderAdjustment.createMany({ data: adjustments });
     await tx.order.update({

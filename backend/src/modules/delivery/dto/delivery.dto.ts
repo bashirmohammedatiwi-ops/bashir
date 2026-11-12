@@ -39,7 +39,9 @@ export class LinkReturnDto {
 /** «كاشير الطلبات» يضيف صنفاً بالباركود أو يغيّر كمية سطر قبل الفوترة. */
 export class LinkEditDto {
   @IsString() @MaxLength(80) code: string;
-  @IsIn(["add", "set"]) op: "add" | "set";
+  @IsIn(["add", "set", "discount"]) op: "add" | "set" | "discount";
+  /** discount: الخصم اليدوي بالدينار (0 = إلغاء). */
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) amount?: number;
   @IsOptional() @IsString() @MaxLength(80) barcode?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) qty?: number;
   @IsOptional() @IsIn(["PAID", "FREE"]) charge?: "PAID" | "FREE";
