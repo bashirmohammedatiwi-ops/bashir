@@ -303,6 +303,59 @@ async function main() {
     assert.equal(stageForStatus(OrderStatus.DELIVERED, FulfillmentStage.PARTIALLY_DELIVERED), null);
   });
 
+  await test("cashier edits: fill a shortage, add a POS-only item, remove it, shortage needs a reason, gift is free", async () => {
+    const cashier = { name: "كاشير الطلبات" };
+    const o6 = await makeOrder(s);
+    await svc.start(o6.id, staff);
+    await rejects(svc.cashierEdit(o6.id, cashier, { op: "add", barcode: s.lip.barcode! }), "قيد التجهيز");
+    await svc.scan(o6.id, staff, { barcode: s.lip.barcode! });
+    await svc.scan(o6.id, staff, { barcode: s.lip.barcode! });
+    await svc.scan(o6.id, staff, { barcode: `0${s.cream.barcode}` });
+    const serum = await lineOf(o6.id, "سيروم");
+    let v = await svc.finish(o6.id, staff, { reasons: [{ lineId: serum.id, reason: "لم يُجد" }] });
+    assert.equal(v.money.finalTotal, 33_000);
+
+    // الكاشير وجد السيروم: يكمل الناقص بدل أن يصير إضافياً.
+    v = await svc.cashierEdit(o6.id, cashier, { op: "add", barcode: s.serumShade.barcode!, clientEditId: "e1" });
+    assert.equal(v.lines.find((l) => l.name === "سيروم")!.color, "green");
+    assert.equal(v.lines.filter((l) => l.kind === "EXTRA").length, 0);
+    assert.equal(v.money.finalTotal, 48_000);
+    assert.equal(v.order.stage, FulfillmentStage.PICKED);
+
+    // صنف في المحل غير موجود في التطبيق: بسعر المحل، والمعرّف المكرر لا يُضاف مرتين.
+    const posOnly = `POSX${tag}`;
+    v = await svc.cashierEdit(o6.id, cashier, { op: "add", barcode: posOnly, qty: 2, posName: "مشط شعر", posPrice: 3_000, clientEditId: "e2" });
+    v = await svc.cashierEdit(o6.id, cashier, { op: "add", barcode: posOnly, qty: 2, posName: "مشط شعر", posPrice: 3_000, clientEditId: "e2" });
+    const comb = v.lines.find((l) => l.kind === "EXTRA" && l.barcode === posOnly)!;
+    assert.equal(comb.pickedQty, 2);
+    assert.equal(comb.productId, null);
+    assert.equal(comb.color, "yellow");
+    assert.equal(v.money.finalTotal, 54_000);
+    await rejects(svc.cashierEdit(o6.id, cashier, { op: "add", barcode: "000-unknown" }), "غير موجود");
+
+    v = await svc.cashierEdit(o6.id, cashier, { op: "set", lineId: comb.id, qty: 0 });
+    assert.ok(!v.lines.some((l) => l.barcode === posOnly));
+    assert.equal(v.money.finalTotal, 48_000);
+
+    const lip = await lineOf(o6.id, "أحمر شفاه");
+    await rejects(svc.cashierEdit(o6.id, cashier, { op: "set", lineId: lip.id, qty: 1 }), "SHORTAGE_REASON_REQUIRED");
+    v = await svc.cashierEdit(o6.id, cashier, { op: "set", lineId: lip.id, qty: 1, reason: "قطعة تالفة" });
+    assert.equal(v.lines.find((l) => l.id === lip.id)!.color, "red");
+    assert.equal(v.money.finalTotal, 38_000);
+
+    v = await svc.cashierEdit(o6.id, cashier, { op: "add", barcode: s.sub.barcode!, charge: "FREE", reason: "هدية" });
+    assert.equal(v.lines.find((l) => l.kind === "EXTRA")!.charge, "FREE");
+    assert.equal(v.money.finalTotal, 38_000);
+
+    const o = await prisma.order.findUniqueOrThrow({ where: { id: o6.id } });
+    assert.equal(o.finalTotal, 38_000);
+    assert.equal(o.codAmount, 38_000);
+    assert.ok((await svc.timelineOf(o6.id)).some((e) => e.type === "POS_EDIT" && e.actorName === "كاشير الطلبات"));
+
+    await prisma.order.update({ where: { id: o6.id }, data: { posInvoicedAt: new Date(), posReceiptNumber: "77" } });
+    await rejects(svc.cashierEdit(o6.id, cashier, { op: "add", barcode: s.lip.barcode! }), "مُفوتر");
+  });
+
   await test("slip: sorted lines, no prices, QR code is the order number", async () => {
     const slip = await svc.slip(order.id);
     assert.equal(slip.code, order.orderNumber);

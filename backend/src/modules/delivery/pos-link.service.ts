@@ -19,6 +19,38 @@ export interface CashierRef {
   terminal?: string | null;
 }
 
+/**
+ * أسطر الطلب وقطعه كما طُلب، وما سيُسلَّم بعد التجهيز (المطابق + الإضافي) — للطابور والطلب.
+ * قبل بدء التجهيز لا توجد أسطر تجهيز فيُعرض المطلوب.
+ */
+export function unitCounts(
+  items: Array<{ quantity: number }>,
+  lines: Array<{ kind: string; orderedQty: number; pickedQty: number }>,
+) {
+  const orderedLines = items.length;
+  const orderedUnits = items.reduce((n, i) => n + i.quantity, 0);
+  if (!lines.length) {
+    return { orderedLines, orderedUnits, lines: orderedLines, units: orderedUnits, missingUnits: 0, extraUnits: 0 };
+  }
+  let units = 0;
+  let deliveredLines = 0;
+  let missingUnits = 0;
+  let extraUnits = 0;
+  for (const l of lines) {
+    if (l.kind === "ORDERED") {
+      const got = Math.min(l.pickedQty, l.orderedQty);
+      units += got;
+      missingUnits += Math.max(0, l.orderedQty - l.pickedQty);
+      if (got > 0) deliveredLines += 1;
+    } else if (l.pickedQty > 0) {
+      units += l.pickedQty;
+      extraUnits += l.pickedQty;
+      deliveredLines += 1;
+    }
+  }
+  return { orderedLines, orderedUnits, lines: deliveredLines, units, missingUnits, extraUnits };
+}
+
 const QUEUE_STAGES: FulfillmentStage[] = [
   FulfillmentStage.PICKED,
   FulfillmentStage.READY_FOR_PICKUP,
@@ -61,9 +93,12 @@ export class PosLinkService {
         shipments: { orderBy: { createdAt: "desc" }, take: 1 },
         events: { where: { type: "POS_RETURN" }, select: { id: true }, take: 1 },
         _count: { select: { items: true } },
+        items: { select: { quantity: true } },
+        pickLines: { select: { kind: true, orderedQty: true, pickedQty: true } },
       },
     });
     const pick = (o: (typeof rows)[number]) => ({
+      ...unitCounts(o.items, o.pickLines),
       id: o.id,
       orderNumber: o.orderNumber,
       code: orderCode(o.orderNumber),
@@ -162,6 +197,7 @@ export class PosLinkService {
       },
       lines: view.lines,
       counts: view.counts,
+      totals: await this.totals(o.id),
       money: view.money,
       receipt: this.receipt(o, view.lines),
       blockers,
@@ -173,6 +209,59 @@ export class PosLinkService {
         ? { state: shipment.state, trackingNumber: shipment.trackingNumber, statusName: shipment.statusName, lastError: shipment.lastError, codAmount: shipment.codAmount }
         : null,
     };
+  }
+
+  private async totals(orderId: string) {
+    const [items, lines] = await Promise.all([
+      this.prisma.orderItem.findMany({ where: { orderId }, select: { quantity: true } }),
+      this.prisma.orderPickLine.findMany({ where: { orderId }, select: { kind: true, orderedQty: true, pickedQty: true } }),
+    ]);
+    return unitCounts(items, lines);
+  }
+
+  /**
+   * الكاشير يضيف صنفاً بالباركود (من التطبيق، أو من المحل بسعره إن لم يكن في التطبيق) أو يغيّر كمية سطر،
+   * قبل الفوترة فقط. المبلغ يُعاد حسابه، ويرد بالطلب كما في lookup ليعرضه الكاشير فوراً.
+   */
+  async edit(
+    codeOrId: string,
+    dto: {
+      op: "add" | "set";
+      barcode?: string;
+      qty?: number;
+      charge?: "PAID" | "FREE";
+      reason?: string;
+      posName?: string;
+      posPrice?: number;
+      lineId?: string;
+      clientEditId?: string;
+      cashierName: string;
+      cashierId?: string;
+      /** سيرفر المحل: الفاتورة مُفوترة لكنها لم تُرحَّل للإداري بعد — يُسمح بتعديلها. */
+      allowInvoiced?: boolean;
+    },
+  ) {
+    const o = await this.findOrder(codeOrId);
+    const afterInvoice = !!o.posInvoicedAt;
+    if (afterInvoice) {
+      if (!dto.allowInvoiced) throw new ConflictException(`الطلب مُفوتر بالإيصال ${o.posReceiptNumber ?? ""} — لا يُعدّل بعد الفوترة`);
+      // التحقق من شركة التوصيل قبل أي كتابة: بعد استلام المندوب لا يتطابق التعديل معها.
+      const courier = await this.shipments.courierEditable(o.id);
+      if (!courier.ok) throw new ConflictException({ message: courier.reason, code: "COURIER_LOCKED" });
+    }
+    await this.fulfillment.cashierEdit(o.id, { name: dto.cashierName || "كاشير الطلبات", id: dto.cashierId ?? null }, dto);
+    // الفاتورة المعدّلة تصل شركة التوصيل فوراً (الأصناف والمبلغ المحصّل)، ثم يُطبع ملصقها من جديد.
+    const courierUpdate = afterInvoice ? await this.shipments.pushUpdate(o.id, dto.cashierName) : null;
+    return { ...(await this.lookup(o.id)), courierUpdate };
+  }
+
+  /** ملصق شركة التوصيل نفسه (PDF من هاي إكسبريس) — للطباعة على طابعة الملصقات. */
+  async label(codeOrId: string) {
+    const o = await this.findOrder(codeOrId);
+    const sh = await this.prisma.shipment.findFirst({ where: { orderId: o.id }, orderBy: { createdAt: "desc" } });
+    if (!sh?.trackingNumber) throw new ConflictException("رقم التتبع لم يصل بعد من هاي إكسبريس — اطبع الملصق حين يصل");
+    const res = await this.shipments.label(o.id);
+    return { ...res, orderNumber: o.orderNumber, parcelCount: o.parcelCount ?? 1 };
   }
 
   /**
@@ -208,6 +297,7 @@ export class PosLinkService {
       const pre = await this.shipments.preflight(o0);
       if (!pre.ok) throw new ConflictException({ message: pre.problems.join(" — "), code: "SHIPMENT_BLOCKED" });
     }
+    let fresh = false;
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order-pick:${o0.id}`}))`;
       const o = (await tx.order.findUnique({ where: { id: o0.id } }))!;
@@ -245,8 +335,10 @@ export class PosLinkService {
         },
         tx,
       );
+      fresh = true;
     });
     await this.refundShortages(o0.id);
+    if (fresh) await this.notifyCashierChanges(o0.id);
     const sh = await this.shipments.requestShipment(o0.id).catch((e) => {
       this.logger.warn(`shipment request ${o0.orderNumber}: ${(e as Error).message}`);
       return null;
@@ -256,6 +348,25 @@ export class PosLinkService {
       shipment: sh ? { state: sh.state, trackingNumber: sh.trackingNumber, lastError: sh.lastError } : null,
       print: await this.printData(o0.id),
     };
+  }
+
+  /**
+   * عدّل الكاشير الأصناف قبل الفوترة: إشعار واحد للزبونة بالنتيجة النهائية (لا إشعار لكل مسحة).
+   * إشعار «إنهاء التجهيز» إن وُجد كان عن مبلغ قبل تعديل الكاشير.
+   */
+  private async notifyCashierChanges(orderId: string) {
+    try {
+      const edited = await this.prisma.orderEvent.count({ where: { orderId, type: "POS_EDIT" } });
+      if (!edited) return;
+      const o = await this.prisma.order.findUnique({ where: { id: orderId }, select: { total: true, finalTotal: true } });
+      const lines = await this.prisma.orderPickLine.findMany({ where: { orderId } });
+      const missing = lines.filter((l) => l.kind === "ORDERED" && l.pickedQty < l.orderedQty).map((l) => l.name);
+      const extras = lines.filter((l) => l.kind === "EXTRA" && l.pickedQty > 0 && l.charge === "PAID").map((l) => l.name);
+      if (!o || (!missing.length && !extras.length) || (o.finalTotal ?? o.total) === o.total) return;
+      await this.notify.send(orderId, { kind: "ADJUSTED", missing, extras, oldTotal: o.total, newTotal: o.finalTotal ?? o.total });
+    } catch (e) {
+      this.logger.warn(`notify cashier changes ${orderId}: ${(e as Error).message}`);
+    }
   }
 
   /** طلب مدفوع بالبطاقة ونقصت أصنافه: الاسترجاع الجزئي عبر كي كارد بعد الفوترة. */

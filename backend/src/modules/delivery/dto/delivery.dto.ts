@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from "class-validator";
 
 export class LinkCodeDto {
   /** رمز الطلب (ORD-…) أو معرّفه. */
@@ -34,6 +34,23 @@ export class LinkReturnDto {
   @IsOptional() @IsString() @MaxLength(64) cashierId?: string;
   @IsOptional() @IsString() @MaxLength(80) terminal?: string;
   @IsArray() @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => LinkReturnLineDto) lines: LinkReturnLineDto[];
+}
+
+/** «كاشير الطلبات» يضيف صنفاً بالباركود أو يغيّر كمية سطر قبل الفوترة. */
+export class LinkEditDto {
+  @IsString() @MaxLength(80) code: string;
+  @IsIn(["add", "set"]) op: "add" | "set";
+  @IsOptional() @IsString() @MaxLength(80) barcode?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) qty?: number;
+  @IsOptional() @IsIn(["PAID", "FREE"]) charge?: "PAID" | "FREE";
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
+  @IsOptional() @IsString() @MaxLength(200) posName?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) posPrice?: number;
+  @IsOptional() @IsString() @MaxLength(64) lineId?: string;
+  @IsOptional() @IsString() @MaxLength(80) clientEditId?: string;
+  @IsString() @MaxLength(80) cashierName: string;
+  @IsOptional() @IsString() @MaxLength(64) cashierId?: string;
+  @IsOptional() @IsBoolean() allowInvoiced?: boolean;
 }
 
 export class ShipmentDecisionDto {

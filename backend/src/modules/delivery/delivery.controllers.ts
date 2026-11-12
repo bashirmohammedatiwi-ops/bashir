@@ -7,7 +7,7 @@ import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
-import { CourierAreaDto, LinkCodeDto, LinkInvoiceDto, LinkQueueDto, LinkReturnDto, ShipmentDecisionDto } from "./dto/delivery.dto";
+import { CourierAreaDto, LinkCodeDto, LinkEditDto, LinkInvoiceDto, LinkQueueDto, LinkReturnDto, ShipmentDecisionDto } from "./dto/delivery.dto";
 import { OrdersLinkGuard } from "./orders-link.guard";
 import { PosLinkService } from "./pos-link.service";
 import { ShipmentsService } from "./shipments.service";
@@ -40,6 +40,20 @@ export class PosLinkController {
   @HttpCode(200)
   lookup(@Body() dto: LinkCodeDto) {
     return this.link.lookup(dto.code);
+  }
+
+  /** إضافة صنف بالباركود أو تغيير كمية سطر من الكاشير — يرد بالطلب محدّثاً (نفس شكل lookup). */
+  @Post("orders/edit")
+  @HttpCode(200)
+  edit(@Body() dto: LinkEditDto) {
+    return this.link.edit(dto.code, dto);
+  }
+
+  /** ملصق هاي إكسبريس نفسه (PDF base64) — كاشير الطلبات يطبعه على طابعة الملصقات. */
+  @Post("orders/label")
+  @HttpCode(200)
+  label(@Body() dto: LinkCodeDto) {
+    return this.link.label(dto.code);
   }
 
   @Post("orders/invoice")

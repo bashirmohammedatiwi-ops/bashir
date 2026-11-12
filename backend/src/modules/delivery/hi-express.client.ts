@@ -21,6 +21,29 @@ export class HiExpressError extends Error {
   }
 }
 
+/** أول نص يشبه PDF بصيغة base64 («JVBERi0» = «%PDF-») في أي مكان من الرد — شكل الرد غير موثّق بدقة. */
+export function findPdfBase64(node: unknown, depth = 0): string | null {
+  if (depth > 6 || node == null) return null;
+  if (typeof node === "string") {
+    const s = node.replace(/^data:application\/pdf;base64,/i, "");
+    return s.startsWith("JVBERi0") ? s : null;
+  }
+  if (Array.isArray(node)) {
+    for (const x of node) {
+      const hit = findPdfBase64(x, depth + 1);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  if (typeof node === "object") {
+    for (const v of Object.values(node as Record<string, unknown>)) {
+      const hit = findPdfBase64(v, depth + 1);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
 export interface HiCreateOrder {
   client_identifier: string;
   customer_phone: string;
@@ -193,9 +216,13 @@ export class HiExpressClient {
     return Array.isArray(c) ? c : [];
   }
 
+  /** ملصق الشحنة كما تصممه هاي إكسبريس (PDF بصيغة base64). */
   async labelBase64(alias: string): Promise<string> {
     const r = await this.call<any>("GET", `/orders/${encodeURIComponent(alias)}/label`, undefined, { format: "base64" });
-    return r?.pdf_base64 ?? r?.data?.pdf_base64 ?? r?.data?.content?.pdf_base64 ?? "";
+    const direct = r?.pdf_base64 ?? r?.data?.pdf_base64 ?? r?.data?.content?.pdf_base64 ?? r?.data?.content?.label ?? r?.data?.label;
+    const found = typeof direct === "string" && direct ? direct : findPdfBase64(r);
+    if (!found) throw new HiExpressError("لم ترجع هاي إكسبريس ملف الملصق", 200, true, Object.keys(r ?? {}));
+    return found.replace(/^data:application\/pdf;base64,/i, "");
   }
 
   async prepareDispatch(clientIdentifiers: string[], note?: string) {

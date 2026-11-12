@@ -52,6 +52,24 @@ export interface Actor {
 
 type Tx = Prisma.TransactionClient;
 
+/** تعديل «كاشير الطلبات» على طلب مُجهَّز (عبر سيرفر المحل الموقّع). */
+export interface CashierEditInput {
+  op: "add" | "set";
+  /** add: الباركود كما في المحل (أو «POS:Seq» لمادة بلا باركود). */
+  barcode?: string;
+  qty?: number;
+  charge?: "PAID" | "FREE";
+  reason?: string;
+  /** add لصنف غير موجود في التطبيق: اسمه وسعره من كتالوج المحل. */
+  posName?: string;
+  posPrice?: number;
+  /** set: السطر المعدّل. */
+  lineId?: string;
+  clientEditId?: string;
+  /** تعديل فاتورة مُفوترة لم تُرحَّل بعد (من سيرفر المحل فقط، بعد التحقق من شركة التوصيل). */
+  allowInvoiced?: boolean;
+}
+
 /** مراحل يبدأ منها التجهيز (أو يكمل). */
 const STARTABLE: FulfillmentStage[] = [FulfillmentStage.NEW, FulfillmentStage.CONFIRMED, FulfillmentStage.PICKING];
 /** بعد «إنهاء التجهيز» وقبل الفوترة. */
@@ -583,24 +601,7 @@ export class FulfillmentService {
           lineIds: missingReason.map((l) => l.id),
         });
       }
-      const coupon = o.couponId
-        ? await tx.coupon.findUnique({ where: { id: o.couponId }, select: { type: true, value: true, maxDiscount: true } })
-        : null;
-      const money = computePickMoney(
-        {
-          subtotal: o.subtotal,
-          discountTotal: o.discountTotal,
-          packageDiscount: o.packageDiscount,
-          shippingTotal: o.shippingTotal,
-          giftWrapFee: o.giftWrapFee,
-          loyaltyDiscount: o.loyaltyDiscount,
-          total: o.total,
-          paymentStatus: o.paymentStatus,
-          coupon,
-        },
-        lines.map((l) => ({ ...l })),
-        policy,
-      );
+      const money = await this.moneyFor(tx, o, lines, policy);
       if (money.allMissing) {
         throw new ConflictException({
           message: "كل أصناف الطلب ناقصة — ألغِ الطلب وأبلغ العميل بدل إنهاء التجهيز",
@@ -615,45 +616,11 @@ export class FulfillmentService {
         });
       }
 
-      await tx.orderAdjustment.deleteMany({ where: { orderId, type: { in: PICK_ADJUSTMENTS } } });
-      const method = money.prepaid ? AdjustmentMethod.CARD_REFUND : AdjustmentMethod.COD_CHANGE;
-      const adjustments: Prisma.OrderAdjustmentCreateManyInput[] = [];
-      if (money.shortageValue) {
-        adjustments.push({
-          orderId,
-          type: AdjustmentType.SHORTAGE,
-          amount: -money.shortageValue,
-          method,
-          // الاسترجاع بالبطاقة يُنفَّذ بعد الفوترة.
-          status: money.prepaid && money.refundAmount > 0 ? "PENDING" : "DONE",
-          data: { refundAmount: money.refundAmount },
-          actorId: actor.id,
-        });
-      }
-      if (money.extrasValue) {
-        adjustments.push({ orderId, type: AdjustmentType.EXTRA, amount: money.extrasValue, method: AdjustmentMethod.COD_CHANGE, actorId: actor.id });
-      }
-      if (money.discountRecalc) {
-        adjustments.push({ orderId, type: AdjustmentType.DISCOUNT_RECALC, amount: money.discountRecalc, method: AdjustmentMethod.NONE, actorId: actor.id });
-      }
-      if (money.roundingDiscount) {
-        adjustments.push({ orderId, type: AdjustmentType.ROUNDING, amount: -money.roundingDiscount, method: AdjustmentMethod.NONE, actorId: actor.id });
-      }
-      if (adjustments.length) await tx.orderAdjustment.createMany({ data: adjustments });
-
-      await tx.order.update({
-        where: { id: orderId },
-        data: {
-          fulfillmentStage: o.deliveryOption === DeliveryOption.PICKUP ? FulfillmentStage.READY_FOR_PICKUP : FulfillmentStage.PICKED,
-          pickedAt: new Date(),
-          parcelCount: dto.parcelCount ?? o.parcelCount ?? 1,
-          pickApprovedById: money.needsApproval ? actor.id : null,
-          finalSubtotal: money.finalSubtotal,
-          finalDiscountTotal: money.finalDiscountTotal,
-          adjustmentTotal: money.adjustmentTotal,
-          finalTotal: money.finalTotal,
-          codAmount: money.codAmount,
-        },
+      await this.writeMoney(tx, orderId, money, actor.id, {
+        fulfillmentStage: o.deliveryOption === DeliveryOption.PICKUP ? FulfillmentStage.READY_FOR_PICKUP : FulfillmentStage.PICKED,
+        pickedAt: new Date(),
+        parcelCount: dto.parcelCount ?? o.parcelCount ?? 1,
+        pickApprovedById: money.needsApproval ? actor.id : null,
       });
       const counts = pickCounts(lines, true);
       await this.timeline.log(
@@ -722,7 +689,243 @@ export class FulfillmentService {
     return this.view(orderId);
   }
 
+  // ------------------------------------------------------------ cashier edits
+
+  /**
+   * «كاشير الطلبات» يعدّل طلباً مُجهَّزاً قبل الفوترة: يضيف صنفاً بالباركود (من كتالوج الموقع، أو من كتالوج
+   * المحل لصنف غير موجود في التطبيق بسعر المحل)، أو يغيّر كمية سطر (نقص/إلغاء إضافي)، أو يجعل الإضافي هدية.
+   * المبلغ النهائي يُعاد حسابه بنفس قواعد «إنهاء التجهيز»، والمرحلة تبقى كما هي.
+   * معرّف التعديل من الكاشير (clientEditId) يمنع تكرار الإضافة عند إعادة الإرسال.
+   */
+  async cashierEdit(orderId: string, cashier: { name: string; id?: string | null }, dto: CashierEditInput) {
+    const policy = await this.policy();
+    let summary: Record<string, unknown> = {};
+    await this.prisma.$transaction(async (tx) => {
+      const o = await this.lockOrder(tx, orderId);
+      if (o.status === OrderStatus.CANCELLED || o.fulfillmentStage === FulfillmentStage.CANCELLED) throw new ConflictException("الطلب ملغي");
+      if (o.posInvoicedAt) {
+        // بعد الفوترة: فقط من كاشير الطلبات وفاتورته لم تُرحَّل للإداري (يتحقق سيرفر المحل)، والطرد في المحل
+        // بانتظار المندوب، والطلب غير مدفوع مسبقاً (المسترجع بالبطاقة نُفّذ عند الفوترة).
+        if (!dto.allowInvoiced) throw new ConflictException(`الطلب مُفوتر بالإيصال ${o.posReceiptNumber ?? ""} — لا يُعدّل بعد الفوترة`);
+        // «سُلّم للشحن» تعني أُنشئت الشحنة والطرد ما زال في المحل؛ استلام المندوب يتحقق منه الرابط من هاي إكسبريس.
+        if (o.fulfillmentStage !== FulfillmentStage.INVOICED && o.fulfillmentStage !== FulfillmentStage.HANDED_OVER) {
+          throw new ConflictException("خرج الطلب من المحل — لا تُعدّل فاتورته بعد تسليمه للمندوب أو للزبونة");
+        }
+        if (o.paymentStatus === PaymentStatus.PAID) {
+          throw new ConflictException("طلب مدفوع مسبقاً بالبطاقة — لا تُعدّل فاتورته بعد الفوترة؛ عالجه من لوحة الإدارة");
+        }
+      } else if (!PICKED_STAGES.includes(o.fulfillmentStage)) {
+        throw new ConflictException(
+          o.fulfillmentStage === FulfillmentStage.PICKING ? "الطلب قيد التجهيز الآن — ينهيه الموظف أولاً" : "لم يُجهَّز الطلب بعد",
+        );
+      }
+      if (dto.clientEditId) {
+        const dup = await tx.orderScan.findUnique({ where: { orderId_clientScanId: { orderId, clientScanId: dto.clientEditId } } });
+        if (dup) return;
+      }
+      const audit = async (lineId: string | null, barcode: string, result: ScanResult, qty: number) => {
+        await tx.orderScan.create({
+          data: {
+            orderId,
+            lineId,
+            barcode: barcode.slice(0, 80),
+            result,
+            qty,
+            userName: cashier.name.slice(0, 80),
+            device: "pos-orders-cashier",
+            clientScanId: dto.clientEditId ?? null,
+          },
+        });
+      };
+
+      if (dto.op === "add") {
+        const qty = Math.trunc(dto.qty ?? 1);
+        if (qty < 1 || qty > 999) throw new BadRequestException("الكمية بين 1 و999");
+        const raw = (dto.barcode ?? "").trim();
+        if (!raw) throw new BadRequestException("امسح باركود الصنف");
+        const charge = dto.charge === "FREE" ? "FREE" : "PAID";
+        const site = await this.lookup(raw, tx);
+        let item: { productId: string | null; shadeId: string | null; barcode: string; name: string; shadeName: string | null; price: number };
+        if (site) {
+          item = site;
+        } else {
+          // صنف في المحل غير موجود في التطبيق: اسمه وسعره من كتالوج المحل (السيرفر الموقّع).
+          const price = Math.round(Number(dto.posPrice ?? 0));
+          const name = (dto.posName ?? "").trim();
+          if (!name || !(price > 0)) throw new BadRequestException("الصنف غير موجود في كتالوج المحل ولا في التطبيق");
+          item = { productId: null, shadeId: null, barcode: raw.slice(0, 80), name: name.slice(0, 200), shadeName: null, price };
+        }
+        let left = qty;
+        // إن كان الصنف من الطلب وناقصاً: يكمل الناقص أولاً، والباقي إضافي.
+        if (charge === "PAID") {
+          const lines = await tx.orderPickLine.findMany({ where: { orderId, kind: "ORDERED" }, orderBy: { createdAt: "asc" } });
+          const keys = new Set(barcodeLookupCandidates(raw).map((c) => c.toUpperCase()));
+          if (site?.barcode) keys.add(site.barcode.toUpperCase());
+          for (const l of lines) {
+            if (!left) break;
+            const same = (l.barcode && keys.has(l.barcode.toUpperCase())) || (site && ((site.shadeId && l.shadeId === site.shadeId) || (!site.shadeId && !l.shadeId && l.productId === site.productId)));
+            if (!same || l.pickedQty >= l.orderedQty) continue;
+            const take = Math.min(left, l.orderedQty - l.pickedQty);
+            await tx.orderPickLine.update({
+              where: { id: l.id },
+              data: { pickedQty: { increment: take }, ...(l.pickedQty + take >= l.orderedQty ? { reason: null } : {}) },
+            });
+            await audit(l.id, raw, ScanResult.MATCHED, take);
+            left -= take;
+          }
+        }
+        if (left > 0) {
+          const existing = await tx.orderPickLine.findFirst({ where: { orderId, kind: "EXTRA", barcode: item.barcode, charge } });
+          const line = existing
+            ? await tx.orderPickLine.update({
+                where: { id: existing.id },
+                data: { pickedQty: { increment: left }, ...(dto.reason ? { reason: dto.reason.trim().slice(0, 300) } : {}) },
+              })
+            : await tx.orderPickLine.create({
+                data: {
+                  orderId,
+                  kind: "EXTRA",
+                  productId: item.productId,
+                  shadeId: item.shadeId,
+                  barcode: item.barcode,
+                  name: item.name,
+                  shadeName: item.shadeName,
+                  orderedQty: 0,
+                  pickedQty: left,
+                  unitPrice: item.price,
+                  charge,
+                  reason: dto.reason?.trim().slice(0, 300) || "أُضيف عند الكاشير",
+                },
+              });
+          await audit(line.id, raw, ScanResult.EXTRA, left);
+        }
+        summary = { op: "add", name: item.name, shadeName: item.shadeName, qty, charge, posOnly: !site, unitPrice: item.price };
+      } else if (dto.op === "set") {
+        const line = dto.lineId ? await tx.orderPickLine.findFirst({ where: { id: dto.lineId, orderId } }) : null;
+        if (!line) throw new NotFoundException("السطر غير موجود في هذا الطلب");
+        const qty = Math.trunc(dto.qty ?? line.pickedQty);
+        if (qty < 0 || qty > 999) throw new BadRequestException("كمية غير صالحة");
+        const reason = dto.reason !== undefined ? dto.reason.trim().slice(0, 300) || null : line.reason;
+        if (line.kind === "ORDERED") {
+          if (qty > line.orderedQty) throw new BadRequestException(`المطلوب ${line.orderedQty} فقط — الزيادة تُضاف كصنف إضافي بمسح الباركود`);
+          if (qty < line.orderedQty && !reason) {
+            throw new BadRequestException({ message: `اذكر سبب النقص: ${line.name}`, code: "SHORTAGE_REASON_REQUIRED", lineIds: [line.id] });
+          }
+          await tx.orderPickLine.update({
+            where: { id: line.id },
+            data: { pickedQty: qty, manualConfirm: false, reason: qty >= line.orderedQty ? null : reason },
+          });
+        } else if (qty === 0) {
+          await tx.orderPickLine.delete({ where: { id: line.id } });
+        } else {
+          await tx.orderPickLine.update({
+            where: { id: line.id },
+            data: { pickedQty: qty, reason, ...(dto.charge ? { charge: dto.charge === "FREE" ? "FREE" : "PAID" } : {}) },
+          });
+        }
+        await audit(qty === 0 && line.kind === "EXTRA" ? null : line.id, line.barcode ?? "-", ScanResult.MANUAL, qty - line.pickedQty);
+        summary = { op: "set", name: line.name, shadeName: line.shadeName, kind: line.kind, from: line.pickedQty, to: qty, reason, charge: dto.charge ?? null };
+      } else {
+        throw new BadRequestException("عملية غير معروفة");
+      }
+
+      const lines = await tx.orderPickLine.findMany({ where: { orderId } });
+      const money = await this.moneyFor(tx, o, lines, policy);
+      if (money.allMissing) {
+        throw new ConflictException({ message: "لا يبقى في الطلب أي صنف — ألغِ الطلب بدل ذلك", code: "ALL_MISSING" });
+      }
+      await this.writeMoney(tx, orderId, money, null, {});
+      await this.timeline.log(
+        {
+          orderId,
+          type: "POS_EDIT",
+          actorType: "CASHIER",
+          actorId: cashier.id ?? null,
+          actorName: cashier.name,
+          data: JSON.parse(
+            JSON.stringify({ ...summary, afterInvoice: !!o.posInvoicedAt, oldTotal: o.finalTotal ?? o.total, newTotal: money.finalTotal, codAmount: money.codAmount }),
+          ) as Prisma.InputJsonValue,
+        },
+        tx,
+      );
+    });
+    return this.view(orderId);
+  }
+
   // ------------------------------------------------------------ helpers
+
+  /** المبلغ النهائي من أسطر التجهيز (نفس الحساب في الإنهاء وتعديل الكاشير). */
+  private async moneyFor(
+    tx: Tx,
+    o: Prisma.OrderGetPayload<object>,
+    lines: Array<Prisma.OrderPickLineGetPayload<object>>,
+    policy: PickPolicy,
+  ) {
+    const coupon = o.couponId
+      ? await tx.coupon.findUnique({ where: { id: o.couponId }, select: { type: true, value: true, maxDiscount: true } })
+      : null;
+    return computePickMoney(
+      {
+        subtotal: o.subtotal,
+        discountTotal: o.discountTotal,
+        packageDiscount: o.packageDiscount,
+        shippingTotal: o.shippingTotal,
+        giftWrapFee: o.giftWrapFee,
+        loyaltyDiscount: o.loyaltyDiscount,
+        total: o.total,
+        paymentStatus: o.paymentStatus,
+        coupon,
+      },
+      lines.map((l) => ({ ...l })),
+      policy,
+    );
+  }
+
+  /** يستبدل تعديلات مبلغ التجهيز ويحفظ المبلغ النهائي على الطلب. */
+  private async writeMoney(
+    tx: Tx,
+    orderId: string,
+    money: ReturnType<typeof computePickMoney>,
+    actorId: string | null,
+    extra: Prisma.OrderUpdateInput,
+  ) {
+    await tx.orderAdjustment.deleteMany({ where: { orderId, type: { in: PICK_ADJUSTMENTS } } });
+    const method = money.prepaid ? AdjustmentMethod.CARD_REFUND : AdjustmentMethod.COD_CHANGE;
+    const adjustments: Prisma.OrderAdjustmentCreateManyInput[] = [];
+    if (money.shortageValue) {
+      adjustments.push({
+        orderId,
+        type: AdjustmentType.SHORTAGE,
+        amount: -money.shortageValue,
+        method,
+        // الاسترجاع بالبطاقة يُنفَّذ بعد الفوترة.
+        status: money.prepaid && money.refundAmount > 0 ? "PENDING" : "DONE",
+        data: { refundAmount: money.refundAmount },
+        actorId,
+      });
+    }
+    if (money.extrasValue) {
+      adjustments.push({ orderId, type: AdjustmentType.EXTRA, amount: money.extrasValue, method: AdjustmentMethod.COD_CHANGE, actorId });
+    }
+    if (money.discountRecalc) {
+      adjustments.push({ orderId, type: AdjustmentType.DISCOUNT_RECALC, amount: money.discountRecalc, method: AdjustmentMethod.NONE, actorId });
+    }
+    if (money.roundingDiscount) {
+      adjustments.push({ orderId, type: AdjustmentType.ROUNDING, amount: -money.roundingDiscount, method: AdjustmentMethod.NONE, actorId });
+    }
+    if (adjustments.length) await tx.orderAdjustment.createMany({ data: adjustments });
+    await tx.order.update({
+      where: { id: orderId },
+      data: {
+        ...extra,
+        finalSubtotal: money.finalSubtotal,
+        finalDiscountTotal: money.finalDiscountTotal,
+        adjustmentTotal: money.adjustmentTotal,
+        finalTotal: money.finalTotal,
+        codAmount: money.codAmount,
+      },
+    });
+  }
 
   /** يقفل الطلب حتى نهاية المعاملة (عمليات التجهيز على الطلب نفسه تُنفّذ واحدة تلو الأخرى). */
   private async lockOrder(tx: Tx, orderId: string) {

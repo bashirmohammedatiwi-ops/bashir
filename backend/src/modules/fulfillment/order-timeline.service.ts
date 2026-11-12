@@ -24,6 +24,22 @@ export const TIMELINE_LABEL_AR: Record<string, string> = {
   PICK_FINISHED: "انتهى التجهيز",
   PICK_REOPENED: "أُعيد فتح التجهيز",
   STATUS_CHANGED: "تغيّرت الحالة",
+  POS_EDIT: "عدّل كاشير الطلبات الأصناف",
+  INVOICED: "فُوتر في كاشير الطلبات",
+  PICKUP_HANDED: "سُلّم للزبونة في المحل",
+  POS_RETURN: "إيصال إرجاع في المحل",
+  SHIPMENT_CREATED: "أُنشئت شحنة هاي إكسبريس",
+  SHIPMENT_RETRYING: "إعادة محاولة إنشاء الشحنة",
+  SHIPMENT_FAILED: "تعذر إنشاء الشحنة",
+  SHIPMENT_RETRY: "أُعيدت محاولة الشحنة يدوياً",
+  SHIPMENT_CANCELLED: "أُلغيت الشحنة",
+  SHIPMENT_DECISION: "قرار على الشحنة",
+  SHIPMENT_UPDATED: "عُدّل الطلب عند هاي إكسبريس",
+  SHIPMENT_UPDATE_FAILED: "تعذر تعديل الطلب عند هاي إكسبريس",
+  COURIER_STATUS: "تحديث من شركة التوصيل",
+  COURIER_STATUS_UNKNOWN: "حالة غير معروفة من شركة التوصيل",
+  CUSTOMER_NOTIFIED: "أُبلغت الزبونة",
+  REFUND_FAILED: "تعذر الاسترجاع بالبطاقة",
 };
 
 /**

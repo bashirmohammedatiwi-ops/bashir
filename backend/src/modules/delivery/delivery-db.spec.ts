@@ -99,6 +99,17 @@ class FakeHi {
   async deleteOrder(alias: string) {
     this.deleted.push(alias);
   }
+  updates: Array<{ id: string; body: any }> = [];
+  async updateOrder(clientIdentifier: string, body: any) {
+    const c = this.created.get(clientIdentifier);
+    if (!c) throw new HiExpressError("not found", 404, false);
+    if ((this.status.get(clientIdentifier)?.id ?? 0) !== 0) throw new HiExpressError("order can not be updated", 422, false);
+    this.updates.push({ id: clientIdentifier, body });
+    this.created.set(clientIdentifier, { ...c, ...body });
+  }
+  async labelBase64(_alias: string) {
+    return "JVBERi0xLjQKJcfsj6IK";
+  }
   set(clientId: string, id: number, extra: { value?: number; driver?: string } = {}) {
     this.status.set(clientId, { id, at: new Date(Date.now() + id * 1000).toISOString(), ...extra });
   }
@@ -188,6 +199,27 @@ async function main() {
     assert.equal(hi.created.size >= 1, true);
     await rejects(link.invoice(o.orderNumber, { ...ref, clientReceiptId: "other" }), "مُفوتر");
     assert.ok(notices.some((n) => n.orderId === o.id && n.kind === "SHIPPED"));
+  });
+
+  await test("edit after invoicing: only when allowed, reaches Hi Express; locked once the driver picks it up; label is theirs", async () => {
+    const o = await makePicked();
+    await link.invoice(o.orderNumber, { clientReceiptId: `rc-e-${o.id}`, receiptNumber: "A-201", cashierName: "كاشير الطلبات", total: 45_000 });
+    await rejects(link.edit(o.orderNumber, { op: "add", barcode: p.barcode!, cashierName: "ك" }), "مُفوتر");
+    const r = await link.edit(o.orderNumber, { op: "add", barcode: p.barcode!, cashierName: "كاشير الطلبات", allowInvoiced: true, clientEditId: "inv-e1" });
+    assert.equal(r.courierUpdate?.ok, true);
+    assert.equal(r.receipt.total, 65_000);
+    const sent = hi.created.get(o.orderNumber);
+    assert.equal(sent.order_value, 65_000);
+    assert.equal(sent.items.reduce((n: number, i: any) => n + i.count, 0), 3);
+    assert.equal(hi.updates[hi.updates.length - 1]?.body.client_identifier, undefined);
+    assert.ok((await timeline.list(o.id)).some((e) => e.type === "SHIPMENT_UPDATED"));
+    const lbl = await link.label(o.orderNumber);
+    assert.match(lbl.pdfBase64, /^JVBERi0/);
+    hi.set(o.orderNumber, 1, { driver: "علي" });
+    await rejects(link.edit(o.orderNumber, { op: "add", barcode: p.barcode!, cashierName: "ك", allowInvoiced: true }), "COURIER_LOCKED");
+    const paid = await makePicked({ paid: true });
+    await link.invoice(paid.orderNumber, { clientReceiptId: `rc-p-${paid.id}`, receiptNumber: "A-202", cashierName: "ك", total: paid.finalTotal ?? paid.total });
+    await rejects(link.edit(paid.orderNumber, { op: "add", barcode: p.barcode!, cashierName: "ك", allowInvoiced: true }), "مدفوع مسبقاً");
   });
 
   await test("Hi Express statuses: out for delivery, then delivered → order DELIVERED, points from collected cash", async () => {

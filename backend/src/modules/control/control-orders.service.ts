@@ -65,6 +65,7 @@ export class ControlOrdersService {
       this.statusCounts(),
     ]);
     const shadeImages = await this.shadeImages(rows.flatMap((o) => o.items.map((i) => i.shadeId)));
+    const tally = await this.unitTally(rows.map((o) => o.id));
     return {
       data: rows.map((o) => ({
         id: o.id,
@@ -74,8 +75,11 @@ export class ControlOrdersService {
         paymentMethod: o.paymentMethod,
         deliveryOption: o.deliveryOption,
         total: o.total,
+        // أسطر الطلب وقطعه كلها (لا أول 4 أسطر المعروضة صورها فقط).
         itemsCount: o._count.items,
-        quantity: o.items.reduce((n, i) => n + i.quantity, 0),
+        quantity: tally.get(o.id)?.ordered ?? 0,
+        // بعد بدء التجهيز: ما جُهّز فعلاً (مطابق + إضافي) وما نقص.
+        pick: tally.get(o.id)?.pick ?? null,
         createdAt: o.createdAt,
         // لقطة العنوان وقت الطلب أولاً (الطلبات الأقدم بلا لقطة تبقى على دفتر العناوين).
         customer: o.shipFullName || o.address?.fullName || o.user?.name || "زبونة",
@@ -94,6 +98,45 @@ export class ControlOrdersService {
       meta: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)), hasNext: page * limit < total },
       counts,
     };
+  }
+
+  /**
+   * قطع كل طلب من كل أسطره، ونتيجة التجهيز إن بدأ: الأسطر والقطع المطابقة والناقصة والإضافية.
+   * `units` = ما سيُسلَّم فعلاً (المطابق حتى المطلوب + الإضافي).
+   */
+  async unitTally(orderIds: string[]) {
+    const out = new Map<
+      string,
+      { ordered: number; pick: { lines: number; units: number; matchedUnits: number; missingUnits: number; extraUnits: number; extraLines: number; shortLines: number } | null }
+    >();
+    if (!orderIds.length) return out;
+    const [items, lines] = await Promise.all([
+      this.prisma.orderItem.groupBy({ by: ["orderId"], where: { orderId: { in: orderIds } }, _sum: { quantity: true } }),
+      this.prisma.orderPickLine.findMany({
+        where: { orderId: { in: orderIds } },
+        select: { orderId: true, kind: true, orderedQty: true, pickedQty: true },
+      }),
+    ]);
+    for (const r of items) out.set(r.orderId, { ordered: r._sum.quantity ?? 0, pick: null });
+    for (const l of lines) {
+      const row = out.get(l.orderId) ?? { ordered: 0, pick: null };
+      const p = (row.pick ??= { lines: 0, units: 0, matchedUnits: 0, missingUnits: 0, extraUnits: 0, extraLines: 0, shortLines: 0 });
+      if (l.kind === "ORDERED") {
+        const got = Math.min(l.pickedQty, l.orderedQty);
+        p.matchedUnits += got;
+        p.missingUnits += Math.max(0, l.orderedQty - l.pickedQty);
+        if (l.pickedQty < l.orderedQty) p.shortLines += 1;
+        if (got > 0) p.lines += 1;
+        p.units += got;
+      } else if (l.pickedQty > 0) {
+        p.extraUnits += l.pickedQty;
+        p.extraLines += 1;
+        p.lines += 1;
+        p.units += l.pickedQty;
+      }
+      out.set(l.orderId, row);
+    }
+    return out;
   }
 
   async statusCounts() {
@@ -188,6 +231,12 @@ export class ControlOrdersService {
       codAmount: o.codAmount,
       adjustmentTotal: o.adjustmentTotal,
       posReceiptNumber: o.posReceiptNumber,
+      posInvoicedAt: o.posInvoicedAt,
+      posCashierName: o.posCashierName,
+      // أسطر الطلب وقطعه، ونتيجة التجهيز إن بدأ (نفس حساب الطابور).
+      linesCount: o.items.length,
+      unitsCount: o.items.reduce((n, i) => n + i.quantity, 0),
+      pick: (await this.unitTally([o.id])).get(o.id)?.pick ?? null,
       createdAt: o.createdAt,
       updatedAt: o.updatedAt,
       customer: {
@@ -208,11 +257,11 @@ export class ControlOrdersService {
           productId: i.productId,
           name: i.product?.nameAr || i.productName,
           sku: i.productSku,
-          barcode: shade?.barcode ?? i.product?.barcode ?? null,
+          barcode: i.barcode ?? shade?.barcode ?? i.product?.barcode ?? null,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
           totalPrice: i.totalPrice,
-          shade: shade ? { id: shade.id, name: shade.name, colorHex: shade.colorHex, colorHexEnd: shade.colorHexEnd, isActive: shade.isActive } : null,
+          shade: shade ? { id: shade.id, name: i.shadeName ?? shade.name, colorHex: shade.colorHex, colorHexEnd: shade.colorHexEnd, isActive: shade.isActive } : null,
           thumb: (shade?.image ? controlMediaUrls(shade.image).thumb : null) ?? this.productThumb(i.product),
         };
       }),

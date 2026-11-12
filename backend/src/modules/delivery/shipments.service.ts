@@ -564,7 +564,68 @@ export class ShipmentsService implements OnModuleInit, OnModuleDestroy {
   async label(orderId: string) {
     const sh = await this.shipmentOf(orderId);
     if (!sh.trackingNumber) throw new BadRequestException("لا رقم تتبع بعد");
-    return { pdfBase64: await this.client.labelBase64(sh.trackingNumber) };
+    return { pdfBase64: await this.client.labelBase64(sh.trackingNumber), trackingNumber: sh.trackingNumber };
+  }
+
+  // ------------------------------------------------------------ edits after invoicing
+
+  /**
+   * قبل تعديل فاتورة مُفوترة: هاي إكسبريس تقبل تعديل الطلب ما دامت حالته «أُنشئ» (0) فقط.
+   * شحنة لم تُنشأ بعد (بانتظار/إعادة محاولة/فشل) تُنشأ لاحقاً بالبيانات الجديدة تلقائياً.
+   */
+  async courierEditable(orderId: string): Promise<{ ok: boolean; reason?: string }> {
+    const sh = await this.prisma.shipment.findFirst({ where: { orderId }, orderBy: { createdAt: "desc" } });
+    if (!sh || sh.state === ShipmentState.CANCELLED) return { ok: true };
+    if (sh.state === ShipmentState.CREATING) return { ok: false, reason: "الشحنة تُنشأ الآن عند هاي إكسبريس — أعد المحاولة بعد لحظات" };
+    if (sh.state !== ShipmentState.CREATED) return { ok: true };
+    try {
+      const o = await this.client.showOrder(sh.trackingNumber ?? sh.clientIdentifier);
+      const status = Number(o?.last_status_type_id ?? 0);
+      if (status !== 0) {
+        return { ok: false, reason: `الشحنة عند هاي إكسبريس «${statusRule(status)?.label ?? `حالة ${status}`}» — تُعدّل الفاتورة قبل أن يستلمها المندوب فقط` };
+      }
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: `تعذر التحقق من حالة الشحنة عند هاي إكسبريس: ${(e as Error).message}` };
+    }
+  }
+
+  /** بعد تعديل فاتورة مُفوترة: يرسل الأصناف والمبلغ الجديدين لهاي إكسبريس (PUT — الأصناف تُستبدل كلها). */
+  async pushUpdate(orderId: string, actorName?: string | null): Promise<{ ok: boolean; error?: string; codAmount?: number }> {
+    const sh = await this.prisma.shipment.findFirst({ where: { orderId }, orderBy: { createdAt: "desc" } });
+    if (!sh || sh.state === ShipmentState.CANCELLED) return { ok: true };
+    const order = (await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { pickLines: true, user: { select: { phone: true } } },
+    })) as Order;
+    if (sh.state !== ShipmentState.CREATED) {
+      await this.prisma.shipment.update({ where: { id: sh.id }, data: { codAmount: order.codAmount ?? 0 } });
+      return { ok: true, codAmount: order.codAmount ?? 0 };
+    }
+    const pre = await this.preflight(order);
+    if (!pre.ok) return { ok: false, error: pre.problems.join(" — ") };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { client_identifier, hidden_order_value, ...body } = await this.payload(order, pre);
+    try {
+      await this.client.updateOrder(sh.clientIdentifier, body);
+      await this.prisma.shipment.update({
+        where: { id: sh.id },
+        data: { codAmount: order.codAmount ?? 0, lastError: null, payload: JSON.parse(JSON.stringify(body)) },
+      });
+      await this.timeline.log({
+        orderId,
+        type: "SHIPMENT_UPDATED",
+        actorType: "CASHIER",
+        actorName: actorName ?? null,
+        data: { codAmount: order.codAmount ?? 0, items: body.items?.length ?? 0 },
+      });
+      return { ok: true, codAmount: order.codAmount ?? 0 };
+    } catch (e) {
+      const msg = (e as Error).message;
+      await this.prisma.shipment.update({ where: { id: sh.id }, data: { lastError: `تعذر تحديث الطلب عند هاي إكسبريس: ${msg}`.slice(0, 500) } });
+      await this.timeline.log({ orderId, type: "SHIPMENT_UPDATE_FAILED", actorType: "SYSTEM", data: { error: msg.slice(0, 300) } });
+      return { ok: false, error: msg };
+    }
   }
 
   /** ربط المحافظات: محافظاتنا، المربوط منها، واقتراح لكل غير مربوط. */
