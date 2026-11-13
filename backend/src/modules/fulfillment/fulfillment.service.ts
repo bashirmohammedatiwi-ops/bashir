@@ -213,7 +213,10 @@ export class FulfillmentService {
         giftMessage: order.giftMessage,
         giftHidePrices: order.giftHidePrices,
         notes: order.notes,
-        pickerId: order.pickerId,
+        // تطبيقا التجهيز والمدير يقفلان الشاشة على من بدأ الجمع إذا جاء pickerId لموظف آخر.
+        // الجمع صار مشتركاً، فلا نرسله لهما (الاسم يبقى ظاهراً)، والقيمة الحقيقية في pickerUserId.
+        pickerId: null,
+        pickerUserId: order.pickerId,
         pickerName: order.pickerName,
         pickStartedAt: order.pickStartedAt,
         pickedAt: order.pickedAt,
@@ -335,10 +338,9 @@ export class FulfillmentService {
       if (o.paymentMethod === PaymentMethod.CARD && o.paymentStatus !== PaymentStatus.PAID) {
         throw new ConflictException("طلب بطاقة لم يُدفع بعد — لا يُجهَّز حتى يكتمل الدفع");
       }
-      const takenByOther = o.pickerId && o.pickerId !== actor.id;
-      if (takenByOther && !(dto.takeover && isManager(actor))) {
-        throw new ConflictException(`يجهّزه ${o.pickerName ?? "موظف آخر"} الآن`);
-      }
+      // الجمع مشترك: أي موظف يكمل طلباً بدأه غيره، ويُسجَّل الانتقال في سجل الطلب (انظر claimPicker).
+      const takenByOther = !!o.pickerId && o.pickerId !== actor.id;
+      void dto.takeover;
       const existing = await tx.orderPickLine.count({ where: { orderId } });
       if (!existing) {
         const lines = await this.linesFromItems(tx, orderId);
@@ -382,7 +384,7 @@ export class FulfillmentService {
     let message = "";
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
-      this.assertPicker(o, actor);
+      await this.claimPicker(tx, o, actor, name);
       await this.ensureLines(tx, orderId);
       if (dto.clientScanId) {
         const dup = await tx.orderScan.findUnique({
@@ -470,7 +472,7 @@ export class FulfillmentService {
     const qty = dto.qty ?? 1;
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
-      this.assertPicker(o, actor);
+      await this.claimPicker(tx, o, actor, name);
       await this.ensureLines(tx, orderId);
       if (dto.clientScanId) {
         const dup = await tx.orderScan.findUnique({
@@ -553,7 +555,7 @@ export class FulfillmentService {
     const name = await this.actorName(actor);
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
-      this.assertPicker(o, actor);
+      await this.claimPicker(tx, o, actor, name);
       await this.ensureLines(tx, orderId);
       const lineId = await this.resolveLineId(tx, orderId, rawLineId);
       const line = await tx.orderPickLine.findFirst({ where: { id: lineId, orderId } });
@@ -611,7 +613,7 @@ export class FulfillmentService {
     let notice: unknown = null;
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
-      this.assertPicker(o, actor);
+      await this.claimPicker(tx, o, actor, name);
       if (o.fulfillmentStage !== FulfillmentStage.PICKING) throw new ConflictException("الطلب ليس قيد التجهيز");
       await this.ensureLines(tx, orderId);
 
@@ -1003,14 +1005,28 @@ export class FulfillmentService {
     return o;
   }
 
-  private assertPicker(o: { fulfillmentStage: FulfillmentStage; pickerId: string | null; pickerName: string | null }, actor: Actor) {
+  /**
+   * الجمع مشترك بين الموظفين: أي موظف يكمل طلباً بدأه غيره (من هاتف آخر، أو بعد أن نفد شحن هاتف زميله).
+   * أول تعديل منه ينقل الجمع إليه ويُسجَّل في سجل الطلب. المدير يعدّل دون أن ينقل الجمع إليه.
+   */
+  private async claimPicker(
+    tx: Tx,
+    o: { id: string; fulfillmentStage: FulfillmentStage; pickerId: string | null; pickerName: string | null },
+    actor: Actor,
+    name: string,
+  ) {
     if (o.fulfillmentStage !== FulfillmentStage.PICKING) {
       throw new ConflictException(
         PICKED_STAGES.includes(o.fulfillmentStage) ? "انتهى التجهيز — يعيد المدير فتحه إن لزم" : "ابدأ التجهيز أولاً",
       );
     }
-    if (o.pickerId && o.pickerId !== actor.id && !isManager(actor)) {
-      throw new ForbiddenException(`يجهّزه ${o.pickerName ?? "موظف آخر"}`);
+    if (o.pickerId === actor.id || (o.pickerId && isManager(actor))) return;
+    await tx.order.update({ where: { id: o.id }, data: { pickerId: actor.id, pickerName: name } });
+    if (o.pickerId) {
+      await this.timeline.log(
+        { orderId: o.id, type: "PICK_TAKEOVER", actorType: "STAFF", actorId: actor.id, actorName: name, data: { from: o.pickerName } },
+        tx,
+      );
     }
   }
 
@@ -1157,7 +1173,7 @@ export class FulfillmentService {
     let left = qty;
     await this.prisma.$transaction(async (tx) => {
       const o = await this.lockOrder(tx, orderId);
-      this.assertPicker(o, actor);
+      await this.claimPicker(tx, o, actor, name);
       await this.ensureLines(tx, orderId);
       if (dto.clientScanId) {
         const dup = await tx.orderScan.findUnique({ where: { orderId_clientScanId: { orderId, clientScanId: dto.clientScanId } } });

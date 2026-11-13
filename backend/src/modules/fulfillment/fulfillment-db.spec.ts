@@ -141,13 +141,25 @@ async function main() {
     assert.equal(await prisma.orderPickLine.count({ where: { orderId: order.id } }), 0);
   });
 
-  await test("start: claims the order, customer sees PROCESSING, another picker is refused", async () => {
+  await test("start: claims the order, customer sees PROCESSING; another staff member can carry on from their phone", async () => {
     const v = await svc.start(order.id, staff);
     assert.equal(v.order.stage, FulfillmentStage.PICKING);
     assert.equal(v.order.status, OrderStatus.PROCESSING);
     assert.equal(v.order.pickerName, "مجهّزة");
-    await rejects(svc.start(order.id, staff2), "يجهّزه");
-    await rejects(svc.scan(order.id, staff2, { barcode: s.lip.barcode! }), "يجهّزه");
+    // التطبيقات تقفل الشاشة إذا جاء pickerId لموظف آخر: لا يُرسل، والقيمة الحقيقية في pickerUserId.
+    assert.equal(v.order.pickerId, null);
+    assert.equal(v.order.pickerUserId, s.staff.id);
+    // موظفة ثانية تكمل الجمع: أول تعديل منها ينقل الجمع إليها ويُسجَّل (مسحة إزالة بلا قطعة لا تغيّر العدد).
+    await svc.scan(order.id, staff2, { barcode: s.lip.barcode!, qty: -1 });
+    let w = await svc.view(order.id);
+    assert.equal(w.order.pickerName, "مجهّزة ثانية");
+    assert.equal(w.order.pickerUserId, s.staff2.id);
+    assert.equal(await prisma.orderEvent.count({ where: { orderId: order.id, type: "PICK_TAKEOVER" } }), 1);
+    // «تأكيد الطلب» من هاتف الأولى بعدها يعيده إليها بلا رفض.
+    w = await svc.start(order.id, staff);
+    assert.equal(w.order.pickerName, "مجهّزة");
+    assert.equal(await prisma.orderEvent.count({ where: { orderId: order.id, type: "PICK_TAKEOVER" } }), 2);
+    assert.equal((await lineOf(order.id, "أحمر شفاه")).pickedQty, 0);
   });
 
   await test("scan: match, duplicate clientScanId counted once, EAN-13 form of a UPC-12 matches", async () => {
