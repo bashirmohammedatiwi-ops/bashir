@@ -1,4 +1,4 @@
-import type { HomeSection, Media, Product, ProductImage, Shade } from "./types";
+import type { HomeFeed, HomeSection, Media, Product, ProductImage, Shade } from "./types";
 
 /**
  * نسخة خفيفة من المنتج لبطاقات القوائم: ما تعرضه البطاقة وتحتاجه السلة والمفضلة فقط.
@@ -74,4 +74,19 @@ export function slimHomeSections(sections: HomeSection[]): HomeSection[] {
     ...(s.products ? { products: s.products.map(toCardProduct) } : {}),
     ...(s.children ? { children: slimHomeSections(s.children) } : {}),
   }));
+}
+
+/** قوائم يرسلها الـ API للتطبيق ولا يعرضها الموقع — لا داعي لحفظها. */
+const UNUSED_FEED_KEYS = ["homeBlocks", "newArrivals", "bestSellers", "featuredProducts", "promoProducts"];
+
+/**
+ * الرئيسية كما يحتاجها الموقع: منتجات بطاقات خفيفة في الأقسام والتخفيضات، وبلا القوائم غير المستخدمة.
+ * (رئيسية «سحر الجمال» ~1.85MB من الـ API.)
+ */
+export function slimHomeFeed(raw: HomeFeed): HomeFeed {
+  const out = { ...raw } as HomeFeed & Record<string, unknown>;
+  for (const key of UNUSED_FEED_KEYS) delete out[key];
+  out.sections = slimHomeSections(raw.sections ?? []);
+  if (raw.flashSale) out.flashSale = { ...raw.flashSale, products: (raw.flashSale.products ?? []).map(toCardProduct) };
+  return out;
 }

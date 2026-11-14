@@ -12,20 +12,14 @@ import { Icon } from "@/components/ui/Icon";
 import { Deferred } from "@/components/ui/Deferred";
 import { SafeSection } from "@/components/ui/SafeSection";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { slimHomeSections, toCardProduct } from "@/lib/cardProduct";
 import { currentWorld, getHome, getWorlds } from "@/lib/data";
 
 export const revalidate = 60;
 
 export default async function HomePage({ searchParams }: { searchParams: { world?: string } }) {
   const [worlds, world] = await Promise.all([getWorlds(), currentWorld(searchParams.world)]);
-  const raw = await getHome(world?.slug).catch(() => null);
-  // منتجات خفيفة للبطاقات: الـ API يرسلها كاملة (~9KB للمنتج) وتُنسخ كلها في الصفحة.
-  const feed = raw && {
-    ...raw,
-    sections: slimHomeSections(raw.sections ?? []),
-    flashSale: raw.flashSale && { ...raw.flashSale, products: (raw.flashSale.products ?? []).map(toCardProduct) },
-  };
+  // منتجات البطاقات تصل مخفّفة من getHome (slimHomeFeed).
+  const feed = await getHome(world?.slug).catch(() => null);
   if (!feed) {
     return (
       <div className="container py-24 text-center">

@@ -2,6 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { serverGet, serverTry } from "./api";
+import { slimHomeFeed } from "./cardProduct";
+import { swrCache } from "./swrCache";
 import type { Brand, Category, HomeFeed, Paged, Product, World } from "./types";
 
 export const getWorlds = cache(() => serverTry<World[]>("/worlds", { revalidate: 300 }).then((w) => w ?? []));
@@ -14,9 +16,18 @@ export const currentWorld = cache(async (requested?: string | null): Promise<Wor
   return worlds.find((w) => w.slug === slug) ?? worlds[0];
 });
 
-export const getHome = cache((world?: string | null) =>
-  serverGet<HomeFeed>(world ? `/home?world=${encodeURIComponent(world)}` : "/home", { revalidate: 60 }),
+/**
+ * الرئيسية لا تمرّ بكاش fetch في Next: رئيسية العالم قد تتجاوز حدّه (2MB) فيرفض حفظها بصمت
+ * ويبقى يقدّم نسخة قديمة للأبد. نجلبها بلا كاش، نخفّف منتجاتها، ونحفظ النسخة الخفيفة في ذاكرة
+ * السيرفر دقيقة (تُقدَّم القديمة حتى 10 دقائق أثناء التحديث في الخلفية).
+ */
+const homeFeedCache = swrCache(
+  async (world: string) =>
+    slimHomeFeed(await serverGet<HomeFeed>(world ? `/home?world=${encodeURIComponent(world)}` : "/home", { revalidate: 0 })),
+  { ttlMs: 60_000, maxStaleMs: 600_000 },
 );
+
+export const getHome = cache((world?: string | null) => homeFeedCache(world ?? ""));
 
 export const getCategories = cache(() => serverTry<Category[]>("/categories", { revalidate: 300 }).then((c) => c ?? []));
 export const getBrands = cache(() => serverTry<Brand[]>("/brands?all=1", { revalidate: 300 }).then((b) => b ?? []));
