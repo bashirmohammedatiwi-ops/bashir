@@ -66,7 +66,8 @@ export function applyLowStock(node: unknown, rules: Map<string, number>, depth: 
     if (next !== value) set(key, next);
   }
 
-  if (isProduct(obj) && rules.has(obj.categoryId as string)) {
+  // «العدد المحلي»: المدير أدخل العدد بنفسه، فيُعرض كما هو حتى في قسم مفعّلة فيه القاعدة.
+  if (isProduct(obj) && rules.has(obj.categoryId as string) && !LowStockPolicy.isManual(obj.id as string)) {
     const cat = obj.categoryId as string;
     const cur = (out ?? obj) as Record<string, unknown>;
     let stock = LowStockPolicy.effective(rules, cat, obj.stock as number);

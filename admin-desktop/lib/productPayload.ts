@@ -52,6 +52,8 @@ export function buildProductPayload(
     originalPrice: Number(values.originalPrice ?? 0),
     discountPercent: Number(values.discountPercent ?? 0),
     stock: Number(values.stock ?? 0),
+    // فقط إن كان في النموذج — الاستيراد والإضافة الذكية لا تغيّر «العدد المحلي» لمنتج قائم.
+    manualStock: typeof values.manualStock === "boolean" ? values.manualStock : undefined,
     pointsEarned: Number(values.pointsEarned ?? 0),
     rating: Number(values.rating ?? 0),
     isNew: !!values.isNew,

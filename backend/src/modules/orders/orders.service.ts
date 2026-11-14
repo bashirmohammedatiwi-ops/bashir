@@ -401,8 +401,8 @@ export class OrdersService {
       const shade = this.lineShade(p, it.shadeId);
       const label = shade ? `${p.name} — ${shade.name}` : p.name;
       if (shade) shadeLabels.set(shade.id, label);
-      const pStock = LowStockPolicy.effective(lowStock, p.categoryId, p.stock);
-      const sStock = shade ? LowStockPolicy.effective(lowStock, p.categoryId, shade.stock) : null;
+      const pStock = LowStockPolicy.effective(lowStock, p.categoryId, p.stock, p.id);
+      const sStock = shade ? LowStockPolicy.effective(lowStock, p.categoryId, shade.stock, p.id) : null;
       if (pStock < it.quantity || (sStock !== null && sStock < it.quantity)) {
         throw new BadRequestException(`Out of stock: ${label}`);
       }

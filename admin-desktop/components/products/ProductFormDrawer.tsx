@@ -129,6 +129,16 @@ export function ProductFormDrawer({
     onClose,
   });
 
+  // «عدد محلي»: العدد يُدخل يدوياً للمنتج أو لكل تدرج، ولا يُؤخذ من الكاشير.
+  const manualStock = Form.useWatch("manualStock", form) === true;
+  const shadesValue = (Form.useWatch("shades", form) ?? []) as Array<{ stock?: number; isActive?: boolean }>;
+  const hasShades = shadesValue.length > 0;
+  useEffect(() => {
+    if (!manualStock || !hasShades) return;
+    const sum = shadesValue.reduce((n, sh) => n + (sh?.isActive === false ? 0 : Number(sh?.stock ?? 0)), 0);
+    if (Number(form.getFieldValue("stock") ?? 0) !== sum) form.setFieldValue("stock", sum);
+  }, [manualStock, hasShades, shadesValue, form]);
+
   // فحص فوري: هل الباركود مستخدم في منتج موجود مسبقاً؟
   const barcodeValue = Form.useWatch("barcode", form);
   const [duplicate, setDuplicate] = useState<{
@@ -337,8 +347,27 @@ export function ProductFormDrawer({
         </TabPanel>
 
         <TabPanel tabKey="pricing" activeTab={activeTab}>
+            <div className="alhayaa-form-row" style={{ alignItems: "center" }}>
+              <Form.Item
+                name="manualStock"
+                label="عدد محلي (لا يُؤخذ العدد من الكاشير)"
+                valuePropName="checked"
+                className="alhayaa-form-col"
+                extra={
+                  manualStock
+                    ? hasShades
+                      ? "اكتب عدد كل تدرج في تبويب التدرجات — مخزون المنتج مجموعها. لا تُطبَّق عليه قاعدة «2 أو أقل نافذ»."
+                      : "اكتب العدد بنفسك هنا. السعر والخصم يبقيان من الكاشير، ولا تُطبَّق عليه قاعدة «2 أو أقل نافذ»."
+                    : "للمنتجات التي لها أعداد معزولة عن الكاشير."
+                }
+              >
+                <Switch />
+              </Form.Item>
+            </div>
             <div className="alhayaa-sync-banner">
-              السعر والكمية تُحدَّث تلقائياً من POS — لا يمكن تعديلها يدوياً
+              {manualStock
+                ? "السعر يُحدَّث تلقائياً من POS — العدد محلي يُدخل يدوياً"
+                : "السعر والكمية تُحدَّث تلقائياً من POS — لا يمكن تعديلها يدوياً"}
               {syncMeta?.syncedAt
                 ? ` — آخر مزامنة: ${new Date(syncMeta.syncedAt).toLocaleString("ar-IQ")}`
                 : ""}
@@ -364,11 +393,17 @@ export function ProductFormDrawer({
               </Form.Item>
               <Form.Item
                 name="stock"
-                label="المخزون"
+                label={manualStock ? (hasShades ? "المخزون (مجموع التدرجات)" : "المخزون (محلي)") : "المخزون"}
                 className="alhayaa-form-col"
                 rules={[{ required: true }]}
               >
-                <InputNumber style={{ width: "100%" }} min={0} disabled readOnly />
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={0}
+                  precision={0}
+                  disabled={!manualStock || hasShades}
+                  readOnly={!manualStock || hasShades}
+                />
               </Form.Item>
             </div>
             <div className="alhayaa-form-row">
@@ -418,6 +453,7 @@ export function ProductFormDrawer({
                   setShadePreviews={setShadePreviews}
                   onShadeBarcodeLookup={onShadeBarcodeLookup}
                   shadeSyncLoading={shadeSyncLoading}
+                  manualStock={manualStock}
                 />
               )}
             </Form.List>

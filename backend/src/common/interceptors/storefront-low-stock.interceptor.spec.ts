@@ -37,6 +37,21 @@ const rules = new Map([[CARE, 2]]);
   ) as any;
   assert.equal(out.inStock, false);
 }
+// «العدد المحلي»: لا تُطبَّق القاعدة على المنتج ولا تدرجاته
+{
+  LowStockPolicy._setForTest(rules, ["m"]);
+  const out = applyLowStock(
+    { data: [{ id: "m", categoryId: CARE, stock: 3, shades: [{ id: "s1", stock: 1 }, { id: "s2", stock: 2 }] }, { id: "n", categoryId: CARE, stock: 2 }] },
+    rules,
+    0,
+  ) as any;
+  assert.equal(out.data[0].stock, 3);
+  assert.deepEqual(out.data[0].shades.map((s: any) => s.stock), [1, 2]);
+  assert.equal(out.data[1].stock, 0);
+  assert.equal(LowStockPolicy.effective(rules, CARE, 1, "m"), 1);
+  assert.equal(LowStockPolicy.effective(rules, CARE, 1, "n"), 0);
+  LowStockPolicy._setForTest(rules, []);
+}
 // effective()
 assert.equal(LowStockPolicy.effective(rules, CARE, 0), 0);
 assert.equal(LowStockPolicy.effective(rules, CARE, 3), 3);

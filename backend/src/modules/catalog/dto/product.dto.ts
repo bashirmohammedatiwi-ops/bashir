@@ -62,6 +62,8 @@ export class CreateProductDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) discountPercent?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) stock?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) pointsEarned?: number;
+  /** «عدد محلي»: المخزون (ولكل تدرج) يُدخل يدوياً ولا تغيّره مزامنة الكاشير ولا قاعدة المخزون القليل. */
+  @IsOptional() @IsBoolean() manualStock?: boolean;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(5) rating?: number;
 
   @IsOptional() @IsBoolean() isNew?: boolean;
@@ -115,6 +117,8 @@ export class UpdateProductDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) discountPercent?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) stock?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) pointsEarned?: number;
+  /** «عدد محلي»: المخزون (ولكل تدرج) يُدخل يدوياً ولا تغيّره مزامنة الكاشير ولا قاعدة المخزون القليل. */
+  @IsOptional() @IsBoolean() manualStock?: boolean;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(5) rating?: number;
 
   @IsOptional() @IsBoolean() isNew?: boolean;

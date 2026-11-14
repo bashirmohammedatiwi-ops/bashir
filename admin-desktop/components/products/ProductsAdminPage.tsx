@@ -312,6 +312,7 @@ export function ProductsAdminPage({
     form.resetFields();
     form.setFieldsValue({
       isActive: true,
+      manualStock: false,
       price: 0,
       stock: 0,
       originalPrice: 0,
@@ -382,6 +383,7 @@ export function ProductsAdminPage({
               })()
             : [],
         concernIds: full?.concernIds ?? full?.skinConcerns?.map((c: any) => c.id) ?? [],
+        manualStock: full?.manualStock === true,
         shades: (full?.shades ?? []).map(shadeFromApi),
         variants: full?.variants ?? [],
       });

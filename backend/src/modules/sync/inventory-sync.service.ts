@@ -458,8 +458,9 @@ export class InventorySyncService {
     ];
     if (!codes.length) return { products: 0, shades: 0 };
 
+    // منتجات «العدد المحلي» لا يُصفَّر عددها لأن الكاشير لم يعد يعرف باركودها.
     const affectedShades = await this.prisma.productShade.findMany({
-      where: { barcode: { in: codes } },
+      where: { barcode: { in: codes }, product: { manualStock: false } },
       select: { id: true, productId: true },
     });
 
@@ -473,6 +474,7 @@ export class InventorySyncService {
     const productResult = await this.prisma.product.updateMany({
       where: {
         OR: [{ barcode: { in: codes } }, { sku: { in: codes } }],
+        manualStock: false,
       },
       data: { stock: 0, isPromo: false, discountPercent: 0 },
     });
@@ -720,13 +722,16 @@ export class InventorySyncService {
           in: [...new Set(items.flatMap((item) => barcodeLookupCandidates(item.barcode)))],
         },
       },
-      select: { id: true, barcode: true },
+      select: { id: true, barcode: true, stock: true, product: { select: { manualStock: true } } },
     });
     if (!shades.length) return updated;
 
     const shadeByBarcode = new Map<string, string>();
+    // تدرجات منتجات «العدد المحلي»: السعر والخصم من الكاشير، والعدد يبقى كما أدخله المدير.
+    const manualShadeStock = new Map<string, number>();
     for (const shade of shades) {
       if (!shade.barcode) continue;
+      if (shade.product?.manualStock) manualShadeStock.set(shade.id, shade.stock);
       for (const key of barcodeLookupCandidates(shade.barcode)) {
         shadeByBarcode.set(key, shade.id);
       }
@@ -739,7 +744,8 @@ export class InventorySyncService {
         resolveBarcodeMapKey(shadeByBarcode, item.productNum) ||
         resolveBarcodeMapKey(shadeByBarcode, item.productCode);
       if (!shadeId) continue;
-      updateRows.push({ shadeId, item, barcode: item.barcode });
+      const kept = manualShadeStock.get(shadeId);
+      updateRows.push({ shadeId, item: kept === undefined ? item : { ...item, stock: kept }, barcode: item.barcode });
     }
     if (!updateRows.length) return updated;
 
@@ -849,7 +855,7 @@ export class InventorySyncService {
     const [products, allShades] = await Promise.all([
       this.prisma.product.findMany({
         where: { id: { in: idList } },
-        select: { id: true, barcode: true },
+        select: { id: true, barcode: true, stock: true, manualStock: true },
       }),
       this.prisma.productShade.findMany({
         where: { productId: { in: idList } },
@@ -930,8 +936,8 @@ export class InventorySyncService {
         barcode: fallback.barcode,
         item: {
           ...source,
-          // أبقِ المخزون من عنصر المزامنة (كمية POS لهذا الباركود)
-          stock: source.stock,
+          // أبقِ المخزون من عنصر المزامنة (كمية POS لهذا الباركود) — إلا «العدد المحلي» فيبقى كما أدخله المدير.
+          stock: product.manualStock ? product.stock : source.stock,
         },
       });
     }

@@ -345,6 +345,9 @@ model Product {
   reviewCount     Int             @default(0)
   soldCount       Int             @default(0)
   stock           Int             @default(0)
+  /// عدد محلي: المدير يُدخل مخزون المنتج وتدرجاته يدوياً — مزامنة الكاشير لا تغيّره،
+  /// وقاعدة «المخزون القليل يظهر نافذاً» لا تُطبَّق عليه. السعر والخصم يبقيان من الكاشير.
+  manualStock     Boolean         @default(false)
   pointsEarned    Int             @default(0)
   isNew           Boolean         @default(false)
   isBestSeller    Boolean         @default(false)

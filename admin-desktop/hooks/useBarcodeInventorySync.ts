@@ -45,7 +45,8 @@ function aggregateProductPricingFromShades(form: FormInstance) {
   );
 
   form.setFieldsValue({
-    stock: totalStock,
+    // «عدد محلي»: العدد مجموع ما كتبه المدير للتدرجات (يحسبه النموذج)، لا من الكاشير.
+    ...(form.getFieldValue("manualStock") === true ? {} : { stock: totalStock }),
     price: lead?.price ?? form.getFieldValue("price"),
     originalPrice: lead?.originalPrice ?? form.getFieldValue("originalPrice"),
     discountPercent: maxDiscount,
@@ -92,7 +93,7 @@ export function useBarcodeInventorySync(form: FormInstance) {
           price: data.price,
           originalPrice: data.originalPrice,
           discountPercent: data.discountPercent,
-          stock: data.stock,
+          ...(form.getFieldValue("manualStock") === true ? {} : { stock: data.stock }),
         });
 
         setHasSyncData(true);
@@ -141,7 +142,7 @@ export function useBarcodeInventorySync(form: FormInstance) {
           price: data.price,
           originalPrice: data.originalPrice,
           discountPercent: data.discountPercent,
-          stock: data.stock,
+          stock: form.getFieldValue("manualStock") === true ? shades[shadeIndex]?.stock ?? 0 : data.stock,
         };
 
         form.setFieldsValue({ shades });

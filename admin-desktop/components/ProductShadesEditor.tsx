@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Button, Form, Input, Radio, Space, Switch, Tag, message } from "antd";
+import { Button, Form, Input, InputNumber, Radio, Space, Switch, Tag, message } from "antd";
 import type { FormListFieldData } from "antd/es/form";
 import {
   ProductImageDropzone,
@@ -20,6 +20,8 @@ type Props = {
   setShadePreviews: React.Dispatch<React.SetStateAction<Record<number, ImageItem | null>>>;
   onShadeBarcodeLookup?: (shadeIndex: number, barcode: string) => void;
   shadeSyncLoading?: Record<number, boolean>;
+  /** «عدد محلي»: عدد كل تدرج يُكتب يدوياً بدل الكاشير. */
+  manualStock?: boolean;
 };
 
 export function ProductShadesEditor({
@@ -31,6 +33,7 @@ export function ProductShadesEditor({
   setShadePreviews,
   onShadeBarcodeLookup,
   shadeSyncLoading = {},
+  manualStock = false,
 }: Props) {
   const shadesWatch = Form.useWatch("shades", form) ?? [];
   const [tablePasteRaw, setTablePasteRaw] = useState("");
@@ -332,7 +335,7 @@ export function ProductShadesEditor({
                       <strong>{Number(shade.discountPercent ?? 0)}%</strong>
                     </div>
                     <div>
-                      <span>المخزون</span>
+                      <span>{manualStock ? "المخزون (محلي)" : "المخزون"}</span>
                       <strong>{Number(shade.stock ?? 0)}</strong>
                     </div>
                   </div>
@@ -347,9 +350,20 @@ export function ProductShadesEditor({
                 <Form.Item {...field} name={[field.name, "discountPercent"]} hidden>
                   <Input />
                 </Form.Item>
-                <Form.Item {...field} name={[field.name, "stock"]} hidden>
-                  <Input />
-                </Form.Item>
+                {manualStock ? (
+                  <Form.Item
+                    {...field}
+                    name={[field.name, "stock"]}
+                    label="العدد (محلي)"
+                    style={{ marginTop: 8, marginBottom: 0 }}
+                  >
+                    <InputNumber min={0} precision={0} style={{ width: 140 }} placeholder="0" />
+                  </Form.Item>
+                ) : (
+                  <Form.Item {...field} name={[field.name, "stock"]} hidden>
+                    <Input />
+                  </Form.Item>
+                )}
               </div>
 
               <div style={{ width: 160 }}>

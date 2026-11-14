@@ -7,6 +7,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
+import { LowStockPolicy } from "../../common/low-stock.policy";
 import { paginate } from "../../common/dto/pagination.dto";
 import { getCached, setCached } from "../../common/memory-cache.util";
 import { CategoriesService } from "./categories.service";
@@ -715,7 +716,9 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
   }
 
   async create(dto: CreateProductDto) {
-    dto = await this.applySyncedPricing(dto);
+    // «عدد محلي»: السعر والخصم من الكاشير، والعدد كما أدخله المدير (للمنتج ولكل تدرج).
+    const manualStock = dto.manualStock === true;
+    dto = await this.applySyncedPricing(dto, manualStock);
     dto = this.applyShadeAggregates(dto);
     const names = resolveProductNames(dto);
     const descriptions = resolveProductDescriptions(dto);
@@ -752,6 +755,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
           originalPrice: dto.originalPrice ?? dto.price,
           discountPercent: dto.discountPercent ?? 0,
           stock: dto.stock ?? 0,
+          manualStock,
           rating: dto.rating ?? 0,
           pointsEarned: dto.pointsEarned ?? pointsForAmount(dto.price),
           isNew: dto.isNew ?? false,
@@ -802,6 +806,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
       if (dto.concernIds?.length) {
         await this.syncSkinConcerns(product.id, dto.concernIds);
       }
+      if (manualStock) LowStockPolicy.invalidate();
       await this.homeFeedCache.invalidateAll();
       this.advisor.markDirty();
       return this.findOne(product.id);
@@ -823,7 +828,9 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
         shades: dto.shades.map((s) => ({ ...s, isActive: s.isActive ?? previousShadeActive(state, s) ?? true })),
       };
     }
-    dto = await this.applySyncedPricing(dto);
+    const current = await this.prisma.product.findUnique({ where: { id }, select: { manualStock: true } });
+    const manualStock = dto.manualStock ?? current?.manualStock ?? false;
+    dto = await this.applySyncedPricing(dto, manualStock);
     dto = this.applyShadeAggregates(dto);
     await this.ensureExists(id);
     const existing = await this.prisma.product.findUnique({ where: { id } });
@@ -895,6 +902,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
           originalPrice: dto.originalPrice,
           discountPercent: dto.discountPercent,
           stock: dto.stock,
+          manualStock: dto.manualStock,
           rating: dto.rating,
           pointsEarned: dto.pointsEarned,
           isNew: dto.isNew,
@@ -939,6 +947,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
     if (dto.concernIds) {
       await this.syncSkinConcerns(id, dto.concernIds);
     }
+    if (dto.manualStock !== undefined && dto.manualStock !== existing.manualStock) LowStockPolicy.invalidate();
     await this.homeFeedCache.invalidateAll();
     this.advisor.markDirty();
     return this.findOne(id);
@@ -1351,7 +1360,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
     };
   }
 
-  private async applySyncedPricing<T extends { barcode?: string; shades?: CreateProductDto["shades"]; price?: number; originalPrice?: number; discountPercent?: number; stock?: number; isPromo?: boolean }>(dto: T): Promise<T> {
+  private async applySyncedPricing<T extends { barcode?: string; shades?: CreateProductDto["shades"]; price?: number; originalPrice?: number; discountPercent?: number; stock?: number; isPromo?: boolean }>(dto: T, keepStock = false): Promise<T> {
     const shadeCodes = (dto.shades ?? [])
       .map((shade) => shade.barcode?.trim())
       .filter((code): code is string => !!code);
@@ -1376,7 +1385,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
           price: pricing.price,
           originalPrice: pricing.originalPrice,
           discountPercent: pricing.discountPercent,
-          stock: pricing.stock,
+          stock: keepStock ? shade.stock : pricing.stock,
         };
       });
     }
@@ -1390,7 +1399,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
           price: pricing.price,
           originalPrice: pricing.originalPrice,
           discountPercent: pricing.discountPercent,
-          stock: pricing.stock,
+          stock: keepStock ? next.stock : pricing.stock,
           isPromo: pricing.isPromo,
         };
       }
