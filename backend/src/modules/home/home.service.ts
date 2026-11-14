@@ -15,6 +15,7 @@ import { publicConcern } from "../cms/skin-concerns.service";
 import { loyaltyRules } from "../loyalty/loyalty.rules";
 import { giftWrapFeeOf } from "../settings/settings.service";
 import { cleanHomeShelves } from "../worlds/worlds.service";
+import { worldTileKind } from "../worlds/world-tiles.util";
 
 const productInclude = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -75,7 +76,7 @@ export class HomeService {
       if (cached) return cached;
     }
 
-    const payload = await this.buildFeed(settings, worldId, { subIds, legacyRootIds }, world);
+    const payload = await this.buildFeed(settings, worldId, { subIds, legacyRootIds }, world, selected.map((category) => category.id));
     if (!options?.skipCache) {
       await this.homeFeedCache.set(cacheKey, payload);
     }
@@ -124,6 +125,7 @@ export class HomeService {
     worldId: string | null = null,
     scope: WorldScope = { subIds: [], legacyRootIds: [] },
     world: { id: string; slug: string; nameAr: string; nameEn: string | null; taglineAr: string | null; taglineEn: string | null; accentColor: string; canvasColor: string; inkColor: string; surfaceColor: string; homeShelves?: Prisma.JsonValue | null } | null = null,
+    tileIds: string[] = [],
   ) {
     const flashEndsAt = (settings as any).flashSaleEndsAt ?? null;
     const s = settings as Record<string, unknown>;
@@ -135,7 +137,7 @@ export class HomeService {
       ...(s.hideProductsWithoutImages ? hasRealProductImagesWhere() : {}),
       ...worldProductScope,
     };
-    const promotedCategories = worldId ? await this.promotedWorldCategories(scope) : null;
+    const promotedCategories = worldId ? await this.promotedWorldCategories(tileIds) : null;
 
     const [
       banners,
@@ -364,19 +366,11 @@ export class HomeService {
   }
 
   /**
-   * الأقسام الفرعية المختارة تظهر في رئيسية العالم. نُرجع parentId ونوع القائمة (listingKind)
-   * حتى يبني categoryDefaultLink رابط القسم الفرعي/الدقيق الصحيح — لا رابط قسم رئيسي يفتح قائمة فارغة.
+   * أقسام العالم في رئيسيته بترتيب ربطها — كل قسم مربوط بلاطة واحدة (worldTileKind):
+   * الرئيسي (مثل «عدسات») بلاطة تفتح كل منتجاته، لا بلاطة لكل قسم فرعي تحته.
+   * نُرجع parentId ونوع القائمة (listingKind) حتى يبني categoryDefaultLink الرابط الصحيح.
    */
-  private async promotedWorldCategories(scope: WorldScope) {
-    const ids = [...scope.subIds];
-    if (scope.legacyRootIds.length) {
-      const children = await this.prisma.category.findMany({
-        where: { parentId: { in: scope.legacyRootIds }, isActive: true },
-        select: { id: true },
-        orderBy: { position: "asc" },
-      });
-      ids.push(...children.map((child) => child.id));
-    }
+  private async promotedWorldCategories(ids: string[]) {
     if (!ids.length) return [];
     const rows = await this.prisma.category.findMany({
       where: { id: { in: ids }, isActive: true },
@@ -397,7 +391,7 @@ export class HomeService {
         isActive: node.isActive,
         image: node.image,
         parentId: node.parentId,
-        listingKind: node.parent?.parentId ? "tertiary" : "subcategory",
+        listingKind: worldTileKind(node),
         children: [] as unknown[],
       }];
     });

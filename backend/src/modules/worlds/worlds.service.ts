@@ -4,6 +4,7 @@ import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { invalidateCache } from "../../common/memory-cache.util";
 import { PrismaService } from "../../common/prisma.service";
 import { WORLD_SEEDS } from "./worlds.defaults";
+import { worldTiles } from "./world-tiles.util";
 import { HOME_SHELF_KEYS, HomeShelfKey, UpdateWorldDto } from "./dto/update-world.dto";
 
 const worldInclude = {
@@ -153,20 +154,12 @@ export class WorldsService {
   }
 
   /**
-   * الأقسام الفرعية المختارة تظهر كأقسام العالم.
-   * الربط القديم بقسم رئيسي يُوسَّع إلى كل أقسامه الفرعية.
+   * كل قسم مربوط بالعالم بلاطة واحدة (worldTiles): الفرعي والدقيق كما هما،
+   * والرئيسي (مثل «عدسات») بلاطة واحدة تفتح كل منتجاته بدل بلاطة لكل قسم فرعي.
    */
   toStorefront(world: Prisma.WorldGetPayload<{ include: typeof worldInclude }>) {
     const linked = world.categories.map((link) => link.category);
-    const categories = linked.flatMap((node) => {
-      if (node.parentId) {
-        // قسم دقيق (مستوى ثالث) يُفتح بـ tertiaryCategoryId — كفرعي كانت قائمته فارغة.
-        return [{ ...node, parentId: null, listingKind: node.parent?.parentId ? "tertiary" : "subcategory" }];
-      }
-      const subs = node.children ?? [];
-      if (!subs.length) return [{ ...node, parentId: null, listingKind: "category" }];
-      return subs.map((sub) => ({ ...sub, parentId: null, listingKind: "subcategory" }));
-    });
+    const categories = worldTiles(linked);
     const rootCategoryIds = [
       ...new Set(
         linked.map((node) => node.parent?.parentId || node.parentId || node.id),
