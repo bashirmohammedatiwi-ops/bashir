@@ -1,0 +1,69 @@
+{
+ "banners": [
+  {
+   "img": "offer_hero_centella.jpg",
+   "title": "سنتيلا — عرض خصم حتى ٢٠٪",
+   "linkType": "products",
+   "linkValue": "brandId=7f45a2ad-1adc-4081-8012-8f7cf7a80390&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%B3%D9%86%D8%AA%D9%8A%D9%84%D8%A7"
+  },
+  {
+   "img": "offer_hero_axisy.jpg",
+   "title": "أكسيس واي — عرض خصم ٢٠٪ على كل المنتجات",
+   "linkType": "products",
+   "linkValue": "brandId=9e7126ef-5073-48e6-951c-8652a0fe5782&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%A3%D9%83%D8%B3%D9%8A%D8%B3%20%D9%88%D8%A7%D9%8A"
+  },
+  {
+   "img": "offer_hero_eucerin.jpg",
+   "title": "يوسيرين — عرض خصم حتى ١٥٪",
+   "linkType": "products",
+   "linkValue": "brandId=b5636e4d-7456-4be9-ac3d-971eb22b7168&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D9%8A%D9%88%D8%B3%D9%8A%D8%B1%D9%8A%D9%86"
+  }
+ ],
+ "wall": {
+  "new": "offers-1115-wall",
+  "type": "PHOTO_WALL",
+  "title": "عروض الأسبوع",
+  "payload": {
+   "gap": 10,
+   "items": [
+    {
+     "title": "",
+     "titleEn": "",
+     "subtitleEn": "",
+     "imageId": "@img:offer_card_centella.jpg",
+     "linkType": "products",
+     "linkValue": "brandId=7f45a2ad-1adc-4081-8012-8f7cf7a80390&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%B3%D9%86%D8%AA%D9%8A%D9%84%D8%A7"
+    },
+    {
+     "title": "",
+     "titleEn": "",
+     "subtitleEn": "",
+     "imageId": "@img:offer_card_axisy.jpg",
+     "linkType": "products",
+     "linkValue": "brandId=9e7126ef-5073-48e6-951c-8652a0fe5782&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%A3%D9%83%D8%B3%D9%8A%D8%B3%20%D9%88%D8%A7%D9%8A"
+    },
+    {
+     "title": "",
+     "titleEn": "",
+     "subtitleEn": "",
+     "imageId": "@img:offer_card_eucerin.jpg",
+     "linkType": "products",
+     "linkValue": "brandId=b5636e4d-7456-4be9-ac3d-971eb22b7168&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D9%8A%D9%88%D8%B3%D9%8A%D8%B1%D9%8A%D9%86"
+    }
+   ],
+   "textEn": "",
+   "display": "scroll",
+   "labelEn": "",
+   "titleEn": "This week's offers",
+   "showTitle": true,
+   "showShadow": false,
+   "subtitleEn": "",
+   "aspectRatio": "4:5",
+   "borderStyle": "none",
+   "showViewAll": false,
+   "overlayStyle": "none",
+   "tilesPerView": 1.6,
+   "tileCornerRadius": 16
+  }
+ }
+}

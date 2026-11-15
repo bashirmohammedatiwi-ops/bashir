@@ -1,0 +1,112 @@
+{
+ "world": "beauty-spell",
+ "banners": [
+  {
+   "img": "oh1_rybella.jpg",
+   "title": "ريبيلا — عرض خصم ٤٠٪",
+   "linkType": "products",
+   "linkValue": "brandId=1b83af76-aa9e-4808-b3a8-85ded4e88675&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%B1%D9%8A%D8%A8%D9%8A%D9%84%D8%A7"
+  },
+  {
+   "img": "oh2_grigi.jpg",
+   "title": "كريجي — عرض خصم ٥٠٪",
+   "linkType": "products",
+   "linkValue": "brandId=0c940ed6-fa52-40b4-9d01-aa2cd9c14ed4&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D9%83%D8%B1%D9%8A%D8%AC%D9%8A"
+  },
+  {
+   "img": "oh3_huda.jpg",
+   "title": "هدى بيوتي — عرض خصم حتى ٢٥٪",
+   "linkType": "products",
+   "linkValue": "brandId=cae7565f-0e4c-4eec-b75c-84a210be0dfc&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D9%87%D8%AF%D9%89%20%D8%A8%D9%8A%D9%88%D8%AA%D9%8A"
+  },
+  {
+   "img": "oh4_artdeco.jpg",
+   "title": "آرتديكو — عرض خصم ٥٠٪",
+   "linkType": "products",
+   "linkValue": "brandId=035854fa-41b8-4e06-a7ad-19b09cfea003&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%A2%D8%B1%D8%AA%D8%AF%D9%8A%D9%83%D9%88"
+  },
+  {
+   "img": "oh5_essence.jpg",
+   "title": "إيسنس — عرض خصم حتى ٥٠٪",
+   "linkType": "products",
+   "linkValue": "brandId=9c5204f9-10be-484a-8e65-23b3ad53bb3c&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%A5%D9%8A%D8%B3%D9%86%D8%B3"
+  },
+  {
+   "img": "oh6_deborah.jpg",
+   "title": "ديبورا ميلانو — عرض خصم حتى ٥٠٪",
+   "linkType": "products",
+   "linkValue": "brandId=03bf1748-150d-47b0-9ffc-8aa13f1142d0&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%AF%D9%8A%D8%A8%D9%88%D8%B1%D8%A7%20%D9%85%D9%8A%D9%84%D8%A7%D9%86%D9%88"
+  }
+ ],
+ "wall": {
+  "new": "offers-1115-wall",
+  "type": "PHOTO_WALL",
+  "title": "عروض الأسبوع",
+  "payload": {
+   "gap": 10,
+   "items": [
+    {
+     "title": "",
+     "imageId": "@img:oc1_rybella.jpg",
+     "titleEn": "",
+     "linkType": "products",
+     "linkValue": "brandId=1b83af76-aa9e-4808-b3a8-85ded4e88675&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%B1%D9%8A%D8%A8%D9%8A%D9%84%D8%A7",
+     "subtitleEn": ""
+    },
+    {
+     "title": "",
+     "imageId": "@img:oc2_grigi.jpg",
+     "titleEn": "",
+     "linkType": "products",
+     "linkValue": "brandId=0c940ed6-fa52-40b4-9d01-aa2cd9c14ed4&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D9%83%D8%B1%D9%8A%D8%AC%D9%8A",
+     "subtitleEn": ""
+    },
+    {
+     "title": "",
+     "imageId": "@img:oc3_huda.jpg",
+     "titleEn": "",
+     "linkType": "products",
+     "linkValue": "brandId=cae7565f-0e4c-4eec-b75c-84a210be0dfc&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D9%87%D8%AF%D9%89%20%D8%A8%D9%8A%D9%88%D8%AA%D9%8A",
+     "subtitleEn": ""
+    },
+    {
+     "title": "",
+     "imageId": "@img:oc4_artdeco.jpg",
+     "titleEn": "",
+     "linkType": "products",
+     "linkValue": "brandId=035854fa-41b8-4e06-a7ad-19b09cfea003&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%A2%D8%B1%D8%AA%D8%AF%D9%8A%D9%83%D9%88",
+     "subtitleEn": ""
+    },
+    {
+     "title": "",
+     "imageId": "@img:oc5_essence.jpg",
+     "titleEn": "",
+     "linkType": "products",
+     "linkValue": "brandId=9c5204f9-10be-484a-8e65-23b3ad53bb3c&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%A5%D9%8A%D8%B3%D9%86%D8%B3",
+     "subtitleEn": ""
+    },
+    {
+     "title": "",
+     "imageId": "@img:oc6_deborah.jpg",
+     "titleEn": "",
+     "linkType": "products",
+     "linkValue": "brandId=03bf1748-150d-47b0-9ffc-8aa13f1142d0&minDiscount=1&title=%D8%B9%D8%B1%D9%88%D8%B6%20%D8%AF%D9%8A%D8%A8%D9%88%D8%B1%D8%A7%20%D9%85%D9%8A%D9%84%D8%A7%D9%86%D9%88",
+     "subtitleEn": ""
+    }
+   ],
+   "textEn": "",
+   "display": "scroll",
+   "labelEn": "",
+   "titleEn": "",
+   "showTitle": true,
+   "showShadow": false,
+   "subtitleEn": "",
+   "aspectRatio": "4:5",
+   "borderStyle": "none",
+   "showViewAll": false,
+   "overlayStyle": "none",
+   "tilesPerView": 1.6,
+   "tileCornerRadius": 16
+  }
+ }
+}
